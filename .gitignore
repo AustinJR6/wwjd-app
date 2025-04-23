@@ -1,0 +1,32 @@
+.env
+node_modules/
+.expo/
+dist/
+web-build/
+*.log
+# Node modules and build artifacts
+node_modules/
+.expo/
+dist/
+build/
+
+# Firebase files
+.firebaserc
+firebase-debug.log
+
+# Environment
+.env
+.env.*
+
+# VSCode/Visual Studio files
+.vscode/
+.vs/
+
+# System files
+.DS_Store
+Thumbs.db
+*.log
+
+# Expo/React Native stuff
+*.hbc
+*.map

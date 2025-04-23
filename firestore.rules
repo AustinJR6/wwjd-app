@@ -1,0 +1,35 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // 🌞 Daily challenges (read-only to all, write only for authenticated users)
+    match /dailyChallenges/{docId} {
+      allow read, write: if request.auth != null;
+    }
+
+    // 📓 Journal entries (open to authenticated users for now)
+    match /journalEntries/{docId} {
+      allow read, write: if request.auth != null;
+    }
+
+    // 🔥 Completed challenges (used for streak tracking)
+    match /completedChallenges/{docId} {
+      allow read, write: if request.auth != null;
+    }
+
+    // 🧪 Test messages & onboarding
+    match /testCollection/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // 💳 Token & subscription data
+    match /users/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // 🚫 Default: deny everything else
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

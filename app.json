@@ -1,0 +1,18 @@
+{
+  "expo": {
+    "extra": {
+      "eas": {
+        "projectId": "4e9fc79d-ed33-4fc3-8e71-5533c8872160"
+      }
+    },
+    "owner": "whippybuckle",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/4e9fc79d-ed33-4fc3-8e71-5533c8872160"
+    },
+    "android": {},
+    "ios": {}
+  }
+}
