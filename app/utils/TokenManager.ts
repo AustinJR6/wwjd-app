@@ -13,18 +13,20 @@ export const getTokenCount = async () => {
   return tokenSnap.exists() ? tokenSnap.data().count || 0 : 0;
 };
 
-export const consumeToken = async () => {
-  const user = auth.currentUser;
-  if (!user) return;
-  const tokenRef = doc(db, 'tokens', user.uid);
-  const tokenSnap = await getDoc(tokenRef);
-  if (!tokenSnap.exists()) return;
+export const consumeToken = async (cost: number = 1) => {
+    const user = auth.currentUser;
+    if (!user) return;
 
-  const current = tokenSnap.data().count || 0;
-  if (current > 0) {
-    await updateDoc(tokenRef, { count: current - 1 });
-  }
+    const tokenRef = doc(db, 'tokens', user.uid);
+    const tokenSnap = await getDoc(tokenRef);
+    if (!tokenSnap.exists()) return;
+
+    const current = tokenSnap.data().count || 0;
+    if (current >= cost) {
+        await updateDoc(tokenRef, { count: current - cost });
+    }
 };
+
 
 export const canUseFreeAsk = async () => {
   const user = auth.currentUser;

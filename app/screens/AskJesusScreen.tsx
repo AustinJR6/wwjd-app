@@ -10,10 +10,10 @@ import {
     ScrollView
 } from 'react-native'
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore'
-import { auth, db } from '../firebaseConfig'
+import { auth, db } from '../config/firebaseConfig'
 import ScreenContainer from '../components/theme/ScreenContainer'
 import { theme } from '../components/theme/theme'
-import { getTokenCount, setTokenCount } from '../utils/TokenManager'
+import { getTokenCount, consumeToken } from '../utils/TokenManager'
 import { ASK_GEMINI_FUNCTION } from '../utils/constants'
 
 export default function AskJesusScreen() {
@@ -71,7 +71,7 @@ export default function AskJesusScreen() {
                     return
                 }
 
-                await setTokenCount(tokens - cost)
+                await consumeToken(cost)
             } else {
                 await setDoc(userRef, { lastFreeAsk: serverTimestamp() }, { merge: true })
             }
