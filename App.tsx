@@ -1,28 +1,38 @@
-// App.tsx (updated for login flow)
+// App.tsx
 import React, { useEffect, useState } from 'react'
 import { View, ActivityIndicator } from 'react-native'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { NavigationContainer } from '@react-navigation/native'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { onAuthStateChanged } from 'firebase/auth'
-import { auth } from './firebaseConfig'
-import { syncSubscriptionStatus } from './utils/TokenManager'
 
-import QuoteScreen from './screens/QuoteScreen'
-import HomeScreen from './screens/HomeScreen'
-import AskJesusScreen from './screens/AskJesusScreen'
-import JournalScreen from './screens/JournalScreen'
-import StreakScreen from './screens/StreakScreen'
-import ChallengeScreen from './screens/ChallengeScreen'
-import ConfessionalScreen from './screens/ConfessionalScreen'
-import BuyTokensScreen from './screens/BuyTokensScreen'
-import UpgradeScreen from './screens/UpgradeScreen'
-import OnboardingScreen from './screens/OnboardingScreen'
-import GiveBackScreen from './screens/GiveBackScreen'
-import LoginScreen from './screens/LoginScreen'
-import SignupScreen from './screens/SignupScreen'
+import { auth } from './App/config/firebaseConfig'
+import TokenManager from './App/utils/TokenManager'
 
-import { theme } from './components/theme/theme'
+// Auth Screens
+import LoginScreen from './App/screens/auth/LoginScreen'
+import SignupScreen from './App/screens/auth/SignupScreen'
+import OnboardingScreen from './App/screens/auth/OnboardingScreen'
+
+// Dashboard Screens
+import HomeScreen from './App/screens/dashboard/HomeScreen'
+import ChallengeScreen from './App/screens/dashboard/ChallengeScreen'
+import StreakScreen from './App/screens/dashboard/StreakScreen'
+
+// Profile Screens
+import ProfileScreen from './App/screens/profile/ProfileScreen'
+import SettingsScreen from './App/screens/profile/SettingsScreen'
+
+// Root-Level Screens
+import QuoteScreen from './App/screens/QuoteScreen'
+import AskJesusScreen from './App/screens/AskJesusScreen'
+import JournalScreen from './App/screens/JournalScreen'
+import ConfessionalScreen from './App/screens/ConfessionalScreen'
+import BuyTokensScreen from './App/screens/BuyTokensScreen'
+import UpgradeScreen from './App/screens/dashboard/UpgradeScreen'
+import GiveBackScreen from './App/screens/GiveBackScreen'
+
+import { theme } from './App/components/theme/theme'
 
 const Stack = createNativeStackNavigator()
 
@@ -37,14 +47,14 @@ export default function App() {
       if (user) {
         const hasSeen = await AsyncStorage.getItem(`hasSeenOnboarding-${user.uid}`)
         setInitialRoute(hasSeen === 'true' ? 'Quote' : 'Onboarding')
-        syncSubscriptionStatus()
+        TokenManager.init()
       }
       setCheckingAuth(false)
     })
     return unsubscribe
   }, [])
 
-  if (checkingAuth || !initialRoute && user) {
+  if (checkingAuth || (!initialRoute && user)) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: theme.colors.background }}>
         <ActivityIndicator size="large" color={theme.colors.primary} />
@@ -80,6 +90,8 @@ export default function App() {
             <Stack.Screen name="BuyTokens" component={BuyTokensScreen} options={{ title: 'Buy Tokens' }} />
             <Stack.Screen name="Upgrade" component={UpgradeScreen} options={{ title: 'Upgrade to WWJD+' }} />
             <Stack.Screen name="GiveBack" component={GiveBackScreen} options={{ title: 'Give Back' }} />
+            <Stack.Screen name="Profile" component={ProfileScreen} />
+            <Stack.Screen name="Settings" component={SettingsScreen} />
           </>
         )}
       </Stack.Navigator>

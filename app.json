@@ -12,7 +12,9 @@
     "updates": {
       "url": "https://u.expo.dev/4e9fc79d-ed33-4fc3-8e71-5533c8872160"
     },
-    "android": {},
+    "android": {
+      "package": "com.whippybuckle.wwjdapp"
+    },
     "ios": {}
   }
 }
