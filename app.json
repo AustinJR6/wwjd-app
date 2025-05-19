@@ -1,20 +1,19 @@
 {
   "expo": {
-    "extra": {
-      "eas": {
-        "projectId": "4e9fc79d-ed33-4fc3-8e71-5533c8872160"
-      }
-    },
+    "sdkVersion": "53.0.0",
     "owner": "whippybuckle",
-    "runtimeVersion": {
-      "policy": "appVersion"
-    },
+    "runtimeVersion": "1.0.0",
     "updates": {
       "url": "https://u.expo.dev/4e9fc79d-ed33-4fc3-8e71-5533c8872160"
     },
     "android": {
       "package": "com.whippybuckle.wwjdapp"
     },
-    "ios": {}
+    "ios": {},
+    "extra": {
+      "eas": {
+        "projectId": "4e9fc79d-ed33-4fc3-8e71-5533c8872160"
+      }
+    }
   }
 }

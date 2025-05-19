@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -7,51 +7,51 @@ import {
   ActivityIndicator,
   StyleSheet,
   Alert,
-  ScrollView
-} from 'react-native'
-import { auth } from '../config/firebaseConfig'
-import ScreenContainer from '../components/theme/ScreenContainer'
-import { theme } from '../components/theme/theme'
-import { ASK_GEMINI_SIMPLE } from '../utils/constants'
+  ScrollView,
+} from 'react-native';
+import ScreenContainer from '../components/theme/ScreenContainer';
+import { theme } from '../components/theme/theme';
+import { ASK_GEMINI_SIMPLE } from '../utils/constants';
 
 export default function ConfessionalScreen() {
-  const [confession, setConfession] = useState('')
-  const [response, setResponse] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [confession, setConfession] = useState('');
+  const [response, setResponse] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleConfess = async () => {
     if (!confession.trim()) {
-      Alert.alert('Please enter your confession.')
-      return
+      Alert.alert('Please enter your confession.');
+      return;
     }
 
-    const user = auth.currentUser
-    if (!user) return
-
-    setLoading(true)
+    setLoading(true);
     try {
-      const idToken = await user.getIdToken()
+      const { auth } = await import('../config/firebaseConfig');
+      const user = auth.currentUser;
+      if (!user) return;
+
+      const idToken = await user.getIdToken();
       const res = await fetch(ASK_GEMINI_SIMPLE, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${idToken}`
+          Authorization: `Bearer ${idToken}`,
         },
         body: JSON.stringify({
-          prompt: `User confession: ${confession}\nJesus:`
-        })
-      })
+          prompt: `User confession: ${confession}\nJesus:`,
+        }),
+      });
 
-      const data = await res.json()
-      const answer = data.response || 'You are forgiven. Walk in peace.'
-      setResponse(answer)
+      const data = await res.json();
+      const answer = data.response || 'You are forgiven. Walk in peace.';
+      setResponse(answer);
     } catch (err) {
-      console.error('❌ Confession error:', err)
-      Alert.alert('Error', 'Could not process your confession. Please try again later.')
+      console.error('❌ Confession error:', err);
+      Alert.alert('Error', 'Could not process your confession. Please try again later.');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <ScreenContainer>
@@ -71,20 +71,20 @@ export default function ConfessionalScreen() {
         {response && <Text style={styles.response}>{response}</Text>}
       </ScrollView>
     </ScreenContainer>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
   container: {
     padding: 24,
     justifyContent: 'center',
-    alignItems: 'center'
+    alignItems: 'center',
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
     color: theme.colors.primary,
-    marginBottom: 16
+    marginBottom: 16,
   },
   input: {
     borderWidth: 1,
@@ -95,17 +95,17 @@ const styles = StyleSheet.create({
     minHeight: 100,
     marginBottom: 16,
     textAlignVertical: 'top',
-    backgroundColor: '#fff'
+    backgroundColor: '#fff',
   },
   buttonWrap: {
     marginVertical: 12,
-    width: '100%'
+    width: '100%',
   },
   response: {
     marginTop: 16,
     fontSize: 16,
     color: theme.colors.text,
     textAlign: 'left',
-    width: '100%'
-  }
-})
+    width: '100%',
+  },
+});

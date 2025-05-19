@@ -1,47 +1,47 @@
-import React, { useState } from 'react'
-import { View, Text, Button, StyleSheet, Alert, Linking } from 'react-native'
-import ScreenContainer from '../components/theme/ScreenContainer'
-import { theme } from '../components/theme/theme'
-import { useUser } from '../hooks/useUser'
+import React, { useState } from 'react';
+import { View, Text, Button, StyleSheet, Alert, Linking } from 'react-native';
+import ScreenContainer from '../components/theme/ScreenContainer';
+import { theme } from '../components/theme/theme';
 
 export default function GiveBackScreen({ navigation }) {
-  const [donating, setDonating] = useState(false)
-  const { user } = useUser()
+  const [donating, setDonating] = useState(false);
 
   const handleDonation = async (amount: number) => {
-    if (!user) return
-
-    setDonating(true)
+    setDonating(true);
 
     try {
+      const { auth } = await import('../config/firebaseConfig');
+      const user = auth.currentUser;
+      if (!user) return;
+
       const res = await fetch('https://us-central1-wwjd-app.cloudfunctions.net/createCheckoutSession', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           uid: user.uid,
           type: 'one-time',
-          amount
-        })
-      })
+          amount,
+        }),
+      });
 
-      const rawText = await res.text()
-      console.log('🔥 Raw response:', rawText)
-      const data = JSON.parse(rawText)
+      const rawText = await res.text();
+      console.log('🔥 Raw response:', rawText);
+      const data = JSON.parse(rawText);
 
       if (data.url) {
-        Linking.openURL(data.url)
+        Linking.openURL(data.url);
       } else {
-        Alert.alert('Error', 'Something went wrong. Please try again.')
+        Alert.alert('Error', 'Something went wrong. Please try again.');
       }
     } catch (err) {
-      console.error('Payment error:', err)
-      Alert.alert('Payment Failed', 'Unable to initiate donation.')
+      console.error('Payment error:', err);
+      Alert.alert('Payment Failed', 'Unable to initiate donation.');
     } finally {
-      setDonating(false)
+      setDonating(false);
     }
-  }
+  };
 
   return (
     <ScreenContainer>
@@ -68,27 +68,27 @@ export default function GiveBackScreen({ navigation }) {
         </View>
       </View>
     </ScreenContainer>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
   content: {
     flex: 1,
-    justifyContent: 'center'
+    justifyContent: 'center',
   },
   title: {
     fontSize: 26,
     fontWeight: 'bold',
     textAlign: 'center',
     marginBottom: 8,
-    color: theme.colors.primary
+    color: theme.colors.primary,
   },
   subtitle: {
     fontSize: 16,
     textAlign: 'center',
     color: theme.colors.text,
     marginBottom: 24,
-    paddingHorizontal: 20
+    paddingHorizontal: 20,
   },
   section: {
     fontSize: 18,
@@ -96,22 +96,22 @@ const styles = StyleSheet.create({
     marginTop: 16,
     marginBottom: 8,
     textAlign: 'center',
-    color: theme.colors.accent
+    color: theme.colors.accent,
   },
   buttonGroup: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    marginBottom: 16
+    marginBottom: 16,
   },
   note: {
     fontSize: 14,
     color: theme.colors.fadedText,
     textAlign: 'center',
     paddingHorizontal: 24,
-    marginTop: 12
+    marginTop: 12,
   },
   backWrap: {
     marginTop: 32,
-    alignItems: 'center'
-  }
-})
+    alignItems: 'center',
+  },
+});

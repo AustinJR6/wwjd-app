@@ -1,11 +1,14 @@
-import React, { useEffect, useState } from 'react'
-import { View, Text, Button, StyleSheet, ActivityIndicator } from 'react-native'
-import ScreenContainer from '../components/theme/ScreenContainer'
-import { theme } from '../components/theme/theme'
+import React, { useEffect, useState } from 'react';
+import { View, Text, Button, StyleSheet, ActivityIndicator } from 'react-native';
+import ScreenContainer from '../components/theme/ScreenContainer';
+import { theme } from '../components/theme/theme';
 
 export default function QuoteScreen({ navigation }) {
-  const [quote, setQuote] = useState<{ text: string; reference: string }>({ text: '', reference: '' })
-  const [loading, setLoading] = useState(true)
+  const [quote, setQuote] = useState<{ text: string; reference: string }>({
+    text: '',
+    reference: '',
+  });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function fetchQuote() {
@@ -16,27 +19,27 @@ export default function QuoteScreen({ navigation }) {
         'Mark 10:14',
         'John 13:34',
         'Matthew 11:28',
-        'Luke 12:15'
-      ]
-      const randomRef = refs[Math.floor(Math.random() * refs.length)]
+        'Luke 12:15',
+      ];
+      const randomRef = refs[Math.floor(Math.random() * refs.length)];
+
       try {
-        const res = await fetch(
-          `https://bible-api.com/${encodeURIComponent(randomRef)}?translation=kjv`
-        )
-        const data = await res.json()
-        setQuote({ text: data.text.trim(), reference: data.reference })
+        const res = await fetch(`https://bible-api.com/${encodeURIComponent(randomRef)}?translation=kjv`);
+        const data = await res.json();
+        setQuote({ text: data.text.trim(), reference: data.reference });
       } catch (err) {
-        console.error('Error fetching verse:', err)
+        console.error('Error fetching verse:', err);
         setQuote({
           text: 'Love one another as I have loved you.',
-          reference: 'John 13:34'
-        })
+          reference: 'John 13:34',
+        });
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
     }
-    fetchQuote()
-  }, [])
+
+    fetchQuote();
+  }, []);
 
   if (loading) {
     return (
@@ -45,7 +48,7 @@ export default function QuoteScreen({ navigation }) {
           <ActivityIndicator size="large" color={theme.colors.primary} />
         </View>
       </ScreenContainer>
-    )
+    );
   }
 
   return (
@@ -58,34 +61,34 @@ export default function QuoteScreen({ navigation }) {
         </View>
       </View>
     </ScreenContainer>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
   content: {
     flex: 1,
     justifyContent: 'center',
-    alignItems: 'center'
+    alignItems: 'center',
   },
   quote: {
     fontSize: 22,
     fontStyle: 'italic',
     color: theme.colors.text,
     textAlign: 'center',
-    marginBottom: 16
+    marginBottom: 16,
   },
   reference: {
     fontSize: 16,
     color: theme.colors.fadedText,
     marginBottom: 32,
-    textAlign: 'center'
+    textAlign: 'center',
   },
   buttonWrap: {
-    width: 160
+    width: 160,
   },
   center: {
     flex: 1,
     justifyContent: 'center',
-    alignItems: 'center'
-  }
-})
+    alignItems: 'center',
+  },
+});

@@ -1,39 +1,40 @@
-import React, { useState } from 'react'
-import { View, Text, StyleSheet, Alert } from 'react-native'
-import ScreenContainer from '../../components/theme/ScreenContainer'
-import Button from '../../components/common/Button'
-import { useNavigation } from '@react-navigation/native'
-import { completeOnboarding, updateUserFields } from '../../services/userService'
-import { useUserStore } from '../../state/userStore'
-import { SCREENS } from '../../navigation/screens'
-import { theme } from '../../components/theme/theme'
-import { Picker } from '@react-native-picker/picker'
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, Alert } from 'react-native';
+import ScreenContainer from '../../components/theme/ScreenContainer';
+import Button from '../../components/common/Button';
+import { useNavigation } from '@react-navigation/native';
+import { completeOnboarding, updateUserFields } from '../../services/userService';
+import { useUserStore } from '../../state/userStore';
+import { SCREENS } from '../../navigation/screens';
+import { theme } from '../../components/theme/theme';
+import { Picker } from '@react-native-picker/picker';
 
-const religions = ['Christian', 'Muslim', 'Jewish', 'Hindu', 'Buddhist']
+const religions = ['Christian', 'Muslim', 'Jewish', 'Hindu', 'Buddhist'];
 
 export default function OnboardingScreen() {
-  const user = useUserStore((state) => state.user)
-  const navigation = useNavigation()
-  const [religion, setReligion] = useState(user?.religion ?? 'Christian')
-  const [loading, setLoading] = useState(false)
+  const user = useUserStore((state) => state.user);
+  const navigation = useNavigation();
+  const [religion, setReligion] = useState(user?.religion ?? 'Christian');
+  const [loading, setLoading] = useState(false);
 
   const handleContinue = async () => {
-    if (!user) return
+    if (!user) return;
 
-    setLoading(true)
+    setLoading(true);
     try {
-      await updateUserFields(user.uid, { religion })
-      await completeOnboarding(user.uid)
+      await updateUserFields(user.uid, { religion });
+      await completeOnboarding(user.uid);
+
       navigation.reset({
         index: 0,
-        routes: [{ name: SCREENS.MAIN.HOME }]
-      })
+        routes: [{ name: SCREENS.MAIN.HOME }],
+      });
     } catch (err: any) {
-      Alert.alert('Error', err.message)
+      Alert.alert('Error', err.message);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <ScreenContainer>
@@ -54,7 +55,7 @@ export default function OnboardingScreen() {
 
       <Button title="Continue" onPress={handleContinue} loading={loading} />
     </ScreenContainer>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
@@ -62,21 +63,21 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '700',
     color: theme.colors.text,
-    marginBottom: 10
+    marginBottom: 10,
   },
   subtitle: {
     fontSize: 16,
     color: theme.colors.gray,
-    marginBottom: 20
+    marginBottom: 20,
   },
   pickerWrapper: {
     borderWidth: 1,
     borderColor: theme.colors.border,
     borderRadius: 10,
-    marginBottom: 20
+    marginBottom: 20,
   },
   picker: {
     height: 50,
-    color: theme.colors.text
-  }
-})
+    color: theme.colors.text,
+  },
+});

@@ -12,6 +12,8 @@ import ChallengeScreen from '../screens/dashboard/ChallengeScreen'
 import ConfessionalScreen from '../screens/dashboard/ConfessionalScreen'
 import ProfileScreen from '../screens/profile/ProfileScreen'
 import SettingsScreen from '../screens/profile/SettingsScreen'
+import TriviaScreen from '../screens/TriviaScreen'
+import LeaderboardsScreen from '../screens/LeaderboardsScreen'
 
 const Tab = createBottomTabNavigator()
 
@@ -44,6 +46,10 @@ export default function MainTabNavigator() {
               return <Ionicons name="person-circle-outline" size={size} color={color} />
             case SCREENS.MAIN.SETTINGS:
               return <Ionicons name="settings-outline" size={size} color={color} />
+            case SCREENS.MAIN.TRIVIA:
+              return <MaterialCommunityIcons name="book-search-outline" size={size} color={color} />
+            case SCREENS.MAIN.LEADERBOARDS:
+              return <Ionicons name="trophy-outline" size={size} color={color} />
             default:
               return null
           }
@@ -55,6 +61,8 @@ export default function MainTabNavigator() {
       <Tab.Screen name={SCREENS.MAIN.JOURNAL} component={JournalScreen} />
       <Tab.Screen name={SCREENS.MAIN.CHALLENGE} component={ChallengeScreen} />
       <Tab.Screen name={SCREENS.MAIN.CONFESSIONAL} component={ConfessionalScreen} />
+      <Tab.Screen name={SCREENS.MAIN.TRIVIA} component={TriviaScreen} />
+      <Tab.Screen name={SCREENS.MAIN.LEADERBOARDS} component={LeaderboardsScreen} />
       <Tab.Screen name={SCREENS.MAIN.PROFILE} component={ProfileScreen} />
       <Tab.Screen name={SCREENS.MAIN.SETTINGS} component={SettingsScreen} />
     </Tab.Navigator>

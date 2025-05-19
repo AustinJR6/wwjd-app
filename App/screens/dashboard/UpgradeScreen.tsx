@@ -1,46 +1,53 @@
-import React, { useState } from 'react'
-import { View, Text, Button, StyleSheet, Alert, Linking } from 'react-native'
-import { useUser } from '../../hooks/useUser'
-import ScreenContainer from '../../components/theme/ScreenContainer'
-import { theme } from '../../components/theme/theme'
+import React, { useState } from 'react';
+import { View, Text, Button, StyleSheet, Alert, Linking } from 'react-native';
+import ScreenContainer from '../../components/theme/ScreenContainer';
+import { theme } from '../../components/theme/theme';
 
 export default function UpgradeScreen({ navigation }) {
-  const [loading, setLoading] = useState(false)
-  const { user } = useUser()
+  const [loading, setLoading] = useState(false);
 
   const handleUpgrade = async () => {
-    if (!user) return
-
-    setLoading(true)
+    setLoading(true);
 
     try {
-      const res = await fetch('https://us-central1-wwjd-app.cloudfunctions.net/createCheckoutSession', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          uid: user.uid,
-          type: 'subscription'
-        })
-      })
+      const { auth } = await import('../../config/firebaseConfig');
+      const user = auth.currentUser;
 
-      const rawText = await res.text()
-      console.log('🔥 WWJD+ raw response:', rawText)
-      const data = JSON.parse(rawText)
+      if (!user) {
+        Alert.alert('Error', 'User not logged in.');
+        return;
+      }
+
+      const res = await fetch(
+        'https://us-central1-wwjd-app.cloudfunctions.net/createCheckoutSession',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            uid: user.uid,
+            type: 'subscription',
+          }),
+        }
+      );
+
+      const rawText = await res.text();
+      console.log('🔥 WWJD+ raw response:', rawText);
+      const data = JSON.parse(rawText);
 
       if (data.url) {
-        Linking.openURL(data.url)
+        Linking.openURL(data.url);
       } else {
-        Alert.alert('Error', 'Something went wrong. Please try again.')
+        Alert.alert('Error', 'Something went wrong. Please try again.');
       }
     } catch (err) {
-      console.error('WWJD+ Subscription Error:', err)
-      Alert.alert('Subscription Failed', 'We could not start the upgrade. Please try again.')
+      console.error('WWJD+ Subscription Error:', err);
+      Alert.alert('Subscription Failed', 'We could not start the upgrade. Please try again.');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <ScreenContainer>
@@ -66,45 +73,45 @@ export default function UpgradeScreen({ navigation }) {
         </View>
       </View>
     </ScreenContainer>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
   content: {
     flex: 1,
-    justifyContent: 'center'
+    justifyContent: 'center',
   },
   title: {
     fontSize: 26,
     fontWeight: 'bold',
     textAlign: 'center',
     color: theme.colors.primary,
-    marginBottom: 8
+    marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
     textAlign: 'center',
     marginBottom: 24,
-    color: theme.colors.text
+    color: theme.colors.text,
   },
   benefitsBox: {
     marginBottom: 24,
-    paddingHorizontal: 8
+    paddingHorizontal: 8,
   },
   benefit: {
     fontSize: 16,
     marginBottom: 8,
-    color: theme.colors.text
+    color: theme.colors.text,
   },
   price: {
     fontSize: 20,
     fontWeight: '600',
     textAlign: 'center',
     marginBottom: 24,
-    color: theme.colors.accent
+    color: theme.colors.accent,
   },
   buttonWrap: {
     marginVertical: 12,
-    alignItems: 'center'
-  }
-})
+    alignItems: 'center',
+  },
+});

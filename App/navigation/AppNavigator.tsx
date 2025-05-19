@@ -1,65 +1,73 @@
-// App/navigation/AppNavigator.tsx
-import React, { useState, useEffect } from 'react'
-import { NavigationContainer } from '@react-navigation/native'
-import { createNativeStackNavigator } from '@react-navigation/native-stack'
-import { ActivityIndicator, View } from 'react-native'
-import AsyncStorage from '@react-native-async-storage/async-storage'
+import React, { useEffect, useState } from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { ActivityIndicator, View } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import AuthNavigator from './AuthNavigator'
-import MainTabNavigator from './MainTabNavigator'
-import OnboardingScreen from '../screens/auth/OnboardingScreen'
-import useAuth from '../hooks/useAuth'
-import { theme } from '../components/theme/theme'
+import AuthNavigator from './AuthNavigator';
+import MainTabNavigator from './MainTabNavigator';
+import OnboardingScreen from '../screens/auth/OnboardingScreen';
+import { theme } from '../components/theme/theme';
 
-const Stack = createNativeStackNavigator()
+const Stack = createNativeStackNavigator();
 
 export default function AppNavigator() {
-  const { user } = useAuth()
-  const [loading, setLoading] = useState(true)
-  const [hasSeenOnboarding, setHasSeenOnboarding] = useState(false)
+  const [user, setUser] = useState(null);
+  const [hasSeenOnboarding, setHasSeenOnboarding] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  // When auth state changes, check if they've done onboarding
   useEffect(() => {
-    async function checkOnboarding() {
-      if (user) {
-        const seen = await AsyncStorage.getItem(`hasSeenOnboarding-${user.uid}`)
-        setHasSeenOnboarding(seen === 'true')
-      }
-      setLoading(false)
-    }
-    checkOnboarding()
-  }, [user])
+    let unsubscribe: any;
 
-  // Show a spinner while we're waiting on auth + onboarding
+    const initialize = async () => {
+      try {
+        const [{ auth }, { onAuthStateChanged }] = await Promise.all([
+          import('../config/firebaseConfig'),
+          import('firebase/auth')
+        ]);
+
+        unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+          setUser(firebaseUser);
+
+          if (firebaseUser) {
+            const seen = await AsyncStorage.getItem(`hasSeenOnboarding-${firebaseUser.uid}`);
+            setHasSeenOnboarding(seen === 'true');
+          }
+
+          setLoading(false);
+        });
+      } catch (err) {
+        console.error('❌ Auth load error in AppNavigator:', err);
+        setLoading(false);
+      }
+    };
+
+    initialize();
+
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
+  }, []);
+
   if (loading) {
     return (
-      <View
-        style={{
-          flex: 1,
-          justifyContent: 'center',
-          alignItems: 'center',
-          backgroundColor: theme.colors.background
-        }}
-      >
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: theme.colors.background }}>
         <ActivityIndicator size="large" color={theme.colors.primary} />
       </View>
-    )
+    );
   }
 
   return (
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {!user ? (
-          // Not logged in
           <Stack.Screen name="Auth" component={AuthNavigator} />
         ) : !hasSeenOnboarding ? (
-          // First login, show onboarding
           <Stack.Screen name="Onboarding" component={OnboardingScreen} />
         ) : (
-          // Authenticated & onboarded
           <Stack.Screen name="Main" component={MainTabNavigator} />
         )}
       </Stack.Navigator>
     </NavigationContainer>
-  )
+  );
 }

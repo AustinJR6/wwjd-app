@@ -1,18 +1,18 @@
-import React from 'react'
-import { View, Text, Button, StyleSheet, Alert } from 'react-native'
-import { setTokenCount, getTokenCount } from '../utils/TokenManager'
-import ScreenContainer from '../components/theme/ScreenContainer'
-import { theme } from '../components/theme/theme'
+import React from 'react';
+import { View, Text, Button, StyleSheet, Alert } from 'react-native';
+import { setTokenCount, getTokenCount } from '../utils/TokenManager';
+import ScreenContainer from '../components/theme/ScreenContainer';
+import { theme } from '../components/theme/theme';
 
 export default function BuyTokensScreen({ navigation }) {
   const purchase = async (amount: number) => {
-    const current = await getTokenCount()
-    const newTotal = current + amount
-    await setTokenCount(newTotal)
+    const current = await getTokenCount();
+    const newTotal = current + amount;
+    await setTokenCount(newTotal);
 
-    Alert.alert('Purchase Complete', `You now have ${newTotal} tokens.`)
-    navigation.navigate('Home')
-  }
+    Alert.alert('Purchase Complete', `You now have ${newTotal} tokens.`);
+    navigation.navigate('Home');
+  };
 
   return (
     <ScreenContainer>
@@ -46,45 +46,46 @@ export default function BuyTokensScreen({ navigation }) {
         </View>
       </View>
     </ScreenContainer>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
   content: {
     flex: 1,
-    justifyContent: 'center'
+    justifyContent: 'center',
   },
   title: {
     fontSize: 26,
     fontWeight: 'bold',
     textAlign: 'center',
     marginBottom: 8,
-    color: theme.colors.primary
+    color: theme.colors.primary,
   },
   subtitle: {
     fontSize: 16,
     textAlign: 'center',
     color: theme.colors.text,
-    marginBottom: 32
+    marginBottom: 32,
   },
   pack: {
     marginBottom: 24,
     padding: 16,
     backgroundColor: theme.colors.surface,
-    borderRadius: 10
+    borderRadius: 10,
   },
   amount: {
     fontSize: 18,
     marginBottom: 8,
     textAlign: 'center',
-    color: theme.colors.text
+    color: theme.colors.text,
   },
   price: {
     color: theme.colors.accent,
-    fontWeight: '600'
+    fontWeight: '600',
   },
   buttonWrap: {
     marginTop: 32,
-    alignItems: 'center'
-  }
-})
+    alignItems: 'center',
+  },
+});
+

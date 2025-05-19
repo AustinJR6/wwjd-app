@@ -2,32 +2,51 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // 🌞 Daily challenges (read-only to all, write only for authenticated users)
+    // 🌞 Daily challenges (read for all, write only for admins)
     match /dailyChallenges/{docId} {
-      allow read, write: if request.auth != null;
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.token.admin == true;
     }
 
-    // 📓 Journal entries (open to authenticated users for now)
+    // 📓 Journal entries (user-specific)
     match /journalEntries/{docId} {
       allow read, write: if request.auth != null;
     }
 
-    // 🔥 Completed challenges (used for streak tracking)
+    // 🔥 Completed challenges (user-specific tracking)
     match /completedChallenges/{docId} {
       allow read, write: if request.auth != null;
     }
 
-    // 🧪 Test messages & onboarding
+    // 💬 Onboarding & misc test data
     match /testCollection/{uid} {
       allow read, write: if request.auth != null && request.auth.uid == uid;
     }
 
-    // 💳 Token & subscription data
+    // 👤 User profiles
     match /users/{uid} {
       allow read, write: if request.auth != null && request.auth.uid == uid;
     }
 
-    // 🚫 Default: deny everything else
+    // 💳 Proof submissions (token-based actions)
+    match /proofSubmissions/{docId} {
+      allow create: if request.auth != null;
+      allow read, update, delete: if request.auth != null && resource.data.uid == request.auth.uid;
+    }
+
+    // 🏛️ Organization data (public read, authenticated write)
+    match /organizations/{orgId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // 🌍 Religion leaderboard scores (public view)
+    match /religions/{name} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.token.admin == true;
+    }
+
+    // 🚫 Deny all others
     match /{document=**} {
       allow read, write: if false;
     }

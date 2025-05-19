@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -6,79 +6,79 @@ import {
   ActivityIndicator,
   StyleSheet,
   Alert,
-  ScrollView
-} from 'react-native'
-import { auth, db } from '../../config/firebaseConfig'
-import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore'
-import ScreenContainer from '../../components/theme/ScreenContainer'
-import { theme } from '../../components/theme/theme'
-import { getTokenCount, setTokenCount } from '../../utils/TokenManager'
-import { ASK_GEMINI_SIMPLE } from '../../utils/constants'
+  ScrollView,
+} from 'react-native';
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import ScreenContainer from '../../components/theme/ScreenContainer';
+import { theme } from '../../components/theme/theme';
+import { getTokenCount, setTokenCount } from '../../utils/TokenManager';
+import { ASK_GEMINI_SIMPLE } from '../../utils/constants';
 
 export default function ChallengeScreen() {
-  const [challenge, setChallenge] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [canSkip, setCanSkip] = useState(true)
+  const [challenge, setChallenge] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [canSkip, setCanSkip] = useState(true);
 
   const fetchChallenge = async () => {
-    const user = auth.currentUser
-    if (!user) return
-
-    setLoading(true)
-
-    const userRef = doc(db, 'users', user.uid)
-    const userSnap = await getDoc(userRef)
-    const userData = userSnap.data() || {}
-    const lastChallenge = userData.lastChallenge?.toDate?.()
-    const now = new Date()
-    const oneDay = 24 * 60 * 60 * 1000
-
-    if (lastChallenge && now.getTime() - lastChallenge.getTime() < oneDay) {
-      setChallenge(userData.lastChallengeText || '')
-      setCanSkip(false)
-      setLoading(false)
-      return
-    }
-
     try {
-      const idToken = await user.getIdToken()
+      const { auth, db } = await import('../../config/firebaseConfig');
+      const user = auth.currentUser;
+      if (!user) return;
+
+      setLoading(true);
+
+      const userRef = doc(db, 'users', user.uid);
+      const userSnap = await getDoc(userRef);
+      const userData = userSnap.data() || {};
+      const lastChallenge = userData.lastChallenge?.toDate?.();
+      const now = new Date();
+      const oneDay = 24 * 60 * 60 * 1000;
+
+      if (lastChallenge && now.getTime() - lastChallenge.getTime() < oneDay) {
+        setChallenge(userData.lastChallengeText || '');
+        setCanSkip(false);
+        setLoading(false);
+        return;
+      }
+
+      const idToken = await user.getIdToken();
       const response = await fetch(ASK_GEMINI_SIMPLE, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${idToken}`
+          Authorization: `Bearer ${idToken}`,
         },
         body: JSON.stringify({
-          prompt: 'Give me a daily spiritual or moral challenge for self-reflection.'
-        })
-      })
+          prompt: 'Give me a daily spiritual or moral challenge for self-reflection.',
+        }),
+      });
 
-      const data = await response.json()
-      const newChallenge = data.response || 'Reflect in silence for five minutes today.'
-      setChallenge(newChallenge)
+      const data = await response.json();
+      const newChallenge = data.response || 'Reflect in silence for five minutes today.';
+      setChallenge(newChallenge);
 
       await setDoc(
         userRef,
         {
           lastChallenge: serverTimestamp(),
-          lastChallengeText: newChallenge
+          lastChallengeText: newChallenge,
         },
         { merge: true }
-      )
+      );
     } catch (err) {
-      console.error('❌ Challenge fetch error:', err)
-      Alert.alert('Error', 'Could not load challenge. Try again later.')
+      console.error('❌ Challenge fetch error:', err);
+      Alert.alert('Error', 'Could not load challenge. Try again later.');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleSkip = async () => {
-    const cost = 3
-    const tokens = await getTokenCount()
+    const cost = 3;
+    const tokens = await getTokenCount();
     if (tokens < cost) {
-      Alert.alert('Not Enough Tokens', `You need ${cost} tokens to skip.`)
-      return
+      Alert.alert('Not Enough Tokens', `You need ${cost} tokens to skip.`);
+      return;
     }
 
     const confirmed = await new Promise((resolve) => {
@@ -87,21 +87,21 @@ export default function ChallengeScreen() {
         'Are you sure you want to skip the current challenge?',
         [
           { text: 'Cancel', onPress: () => resolve(false), style: 'cancel' },
-          { text: 'Yes', onPress: () => resolve(true) }
+          { text: 'Yes', onPress: () => resolve(true) },
         ]
-      )
-    })
+      );
+    });
 
-    if (!confirmed) return
+    if (!confirmed) return;
 
-    await setTokenCount(tokens - cost)
-    setCanSkip(true)
-    fetchChallenge()
-  }
+    await setTokenCount(tokens - cost);
+    setCanSkip(true);
+    fetchChallenge();
+  };
 
   useEffect(() => {
-    fetchChallenge()
-  }, [])
+    fetchChallenge();
+  }, []);
 
   return (
     <ScreenContainer>
@@ -117,28 +117,28 @@ export default function ChallengeScreen() {
         </View>
       </ScrollView>
     </ScreenContainer>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
   container: {
     padding: 24,
     justifyContent: 'center',
-    alignItems: 'center'
+    alignItems: 'center',
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
     color: theme.colors.primary,
-    marginBottom: 16
+    marginBottom: 16,
   },
   challenge: {
     fontSize: 18,
     color: theme.colors.text,
     textAlign: 'center',
-    marginBottom: 20
+    marginBottom: 20,
   },
   buttonWrap: {
-    marginTop: 20
-  }
-})
+    marginTop: 20,
+  },
+});
