@@ -30,3 +30,5 @@ Thumbs.db
 # Expo/React Native stuff
 *.hbc
 *.map
+/android
+/ios

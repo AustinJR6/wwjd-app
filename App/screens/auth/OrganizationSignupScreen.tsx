@@ -1,32 +1,36 @@
-import React, { useState } from 'react'
+import React, { useState } from 'react';
 import {
   View,
-  Text,
   TextInput,
+  Text,
   Button,
   StyleSheet,
   Alert
-} from 'react-native'
-import { addDoc, collection } from 'firebase/firestore'
-import { db } from '../firebaseConfig'
-import ScreenContainer from '../components/theme/ScreenContainer'
-import { theme } from '../components/theme/theme'
+} from 'react-native';
+import { addDoc, collection } from 'firebase/firestore';
+import { db } from '../../config/firebaseConfig';
+import ScreenContainer from '../../components/theme/ScreenContainer';
+import { theme } from '../../components/theme/theme';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../../navigation/RootStackParamList';
 
-export default function OrganizationSignupScreen({ navigation }) {
-  const [name, setName] = useState('')
-  const [tier, setTier] = useState<'enterprise' | 'enterprise-plus'>('enterprise')
-  const [submitting, setSubmitting] = useState(false)
+type Props = NativeStackScreenProps<RootStackParamList, 'OrganizationSignup'>;
+
+export default function OrganizationSignupScreen({ navigation }: Props) {
+  const [name, setName] = useState('');
+  const [tier, setTier] = useState<'enterprise' | 'enterprise-plus'>('enterprise');
+  const [submitting, setSubmitting] = useState(false);
 
   const handleSignup = async () => {
     if (!name.trim()) {
-      Alert.alert('Missing Name', 'Please enter your organization’s name.')
-      return
+      Alert.alert('Missing Name', 'Please enter your organization’s name.');
+      return;
     }
 
-    setSubmitting(true)
+    setSubmitting(true);
     try {
-      const seatLimit = tier === 'enterprise-plus' ? 50 : 50
-      const subscribedSeats = tier === 'enterprise-plus' ? 50 : 0
+      const seatLimit = tier === 'enterprise-plus' ? 50 : 25;
+      const subscribedSeats = tier === 'enterprise-plus' ? 50 : 0;
 
       await addDoc(collection(db, 'organizations'), {
         name,
@@ -35,18 +39,18 @@ export default function OrganizationSignupScreen({ navigation }) {
         subscribedSeats,
         members: [],
         totalPoints: 0
-      })
+      });
 
-      Alert.alert('Success', 'Organization created successfully.')
-      setName('')
-      navigation.navigate('Login')
-    } catch (err) {
-      console.error('❌ Organization signup error:', err)
-      Alert.alert('Error', 'Could not create organization. Please try again.')
+      Alert.alert('Success', 'Organization created successfully.');
+      setName('');
+      navigation.navigate('Login');
+    } catch (err: any) {
+      console.error('❌ Organization signup error:', err);
+      Alert.alert('Error', 'Could not create organization. Please try again.');
     } finally {
-      setSubmitting(false)
+      setSubmitting(false);
     }
-  }
+  };
 
   return (
     <ScreenContainer>
@@ -77,7 +81,7 @@ export default function OrganizationSignupScreen({ navigation }) {
         <Button title="Create" onPress={handleSignup} disabled={submitting} />
       </View>
     </ScreenContainer>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
@@ -94,7 +98,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 12,
     marginBottom: 16,
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.surface,
     color: theme.colors.text
   },
   label: {
@@ -110,4 +114,4 @@ const styles = StyleSheet.create({
   submitWrap: {
     marginTop: 16
   }
-})
+});

@@ -2,8 +2,12 @@ import React, { useState } from 'react';
 import { View, Text, Button, StyleSheet, Alert, Linking } from 'react-native';
 import ScreenContainer from '../components/theme/ScreenContainer';
 import { theme } from '../components/theme/theme';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../navigation/RootStackParamList';
 
-export default function GiveBackScreen({ navigation }) {
+type Props = NativeStackScreenProps<RootStackParamList, 'GiveBack'>;
+
+export default function GiveBackScreen({ navigation }: Props) {
   const [donating, setDonating] = useState(false);
 
   const handleDonation = async (amount: number) => {

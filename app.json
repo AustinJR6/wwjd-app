@@ -7,13 +7,17 @@
       "url": "https://u.expo.dev/4e9fc79d-ed33-4fc3-8e71-5533c8872160"
     },
     "android": {
-      "package": "com.whippybuckle.wwjdapp"
+      "package": "com.whippybuckle.wwjdapp",
+      "googleServicesFile": "./android/app/google-services.json"
     },
     "ios": {},
     "extra": {
       "eas": {
         "projectId": "4e9fc79d-ed33-4fc3-8e71-5533c8872160"
       }
-    }
+    },
+    "plugins": [
+      "expo-secure-store"
+    ]
   }
 }

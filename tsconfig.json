@@ -1,4 +1,5 @@
 {
+  "extends": "expo/tsconfig.base",
   "compilerOptions": {
     "strict": true,
     "baseUrl": ".",
@@ -7,7 +8,15 @@
     },
     "noImplicitAny": true,
     "esModuleInterop": true,
-    "jsx": "react-native"
-  },
-  "extends": "expo/tsconfig.base"
+    "module": "Node16",
+    "moduleResolution": "node16",
+    "target": "ES2020",
+    "jsx": "react-native",
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "allowImportingTsExtensions": true,
+
+    "skipLibCheck": true
+  }
 }

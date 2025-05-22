@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -7,12 +7,16 @@ import {
   StyleSheet,
   Button,
   Alert
-} from 'react-native'
-import { theme } from '../components/theme/theme'
-import ScreenContainer from '../components/theme/ScreenContainer'
-import { useUser } from '../hooks/useUser'
-import { db } from '../firebaseConfig'
-import { doc, setDoc } from 'firebase/firestore'
+} from 'react-native';
+import { theme } from '../../components/theme/theme';
+import ScreenContainer from '../../components/theme/ScreenContainer';
+import { useUser } from '../../hooks/useUser';
+import { db } from '../../config/firebaseConfig';
+import { doc, setDoc } from 'firebase/firestore';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../../navigation/RootStackParamList'; // ✅
+
+type Props = NativeStackScreenProps<RootStackParamList, 'SelectReligion'>; // ✅
 
 const RELIGIONS = [
   'Christianity',
@@ -21,32 +25,33 @@ const RELIGIONS = [
   'Hinduism',
   'Buddhism',
   'Spiritual / Other'
-]
+];
 
-export default function SelectReligionScreen({ navigation }) {
-  const [selected, setSelected] = useState<string | null>(null)
-  const { user } = useUser()
+export default function SelectReligionScreen({ navigation }: Props) {
+  const [selected, setSelected] = useState<string | null>(null);
+  const { user } = useUser();
 
   const handleContinue = async () => {
     if (!selected) {
-      Alert.alert('Please select a religion to continue.')
-      return
+      Alert.alert('Please select a religion to continue.');
+      return;
     }
 
-    if (!user) return
+    if (!user) return;
 
     try {
       await setDoc(
         doc(db, 'users', user.uid),
         { religion: selected },
         { merge: true }
-      )
-      navigation.replace('Quote') // continue onboarding
+      );
+
+      navigation.replace('Quote'); // ✅ Navigates forward
     } catch (err) {
-      console.error('❌ Religion selection error:', err)
-      Alert.alert('Error', 'Could not save your selection. Please try again.')
+      console.error('❌ Religion selection error:', err);
+      Alert.alert('Error', 'Could not save your selection. Please try again.');
     }
-  }
+  };
 
   return (
     <ScreenContainer>
@@ -78,7 +83,7 @@ export default function SelectReligionScreen({ navigation }) {
         <Button title="Continue" onPress={handleContinue} />
       </View>
     </ScreenContainer>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
@@ -95,7 +100,7 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.border,
     borderRadius: 8,
     marginBottom: 12,
-    backgroundColor: '#fff'
+    backgroundColor: theme.colors.surface
   },
   selectedItem: {
     backgroundColor: theme.colors.accent,
@@ -112,4 +117,5 @@ const styles = StyleSheet.create({
   buttonWrap: {
     marginTop: 24
   }
-})
+});
+

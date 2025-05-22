@@ -3,8 +3,12 @@ import { View, Text, Button, StyleSheet, Alert } from 'react-native';
 import { setTokenCount, getTokenCount } from '../utils/TokenManager';
 import ScreenContainer from '../components/theme/ScreenContainer';
 import { theme } from '../components/theme/theme';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../navigation/RootStackParamList';
 
-export default function BuyTokensScreen({ navigation }) {
+type Props = NativeStackScreenProps<RootStackParamList, 'BuyTokens'>;
+
+export default function BuyTokensScreen({ navigation }: Props) {
   const purchase = async (amount: number) => {
     const current = await getTokenCount();
     const newTotal = current + amount;
@@ -88,4 +92,3 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 });
-

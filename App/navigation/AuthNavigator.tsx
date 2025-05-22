@@ -1,29 +1,22 @@
-import React from 'react'
-import { createNativeStackNavigator } from '@react-navigation/native-stack'
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { RootStackParamList } from './RootStackParamList';
+import LoginScreen from '../screens/auth/LoginScreen';
+import SignupScreen from '../screens/auth/SignupScreen';
+import OnboardingScreen from '../screens/auth/OnboardingScreen';
+import OrganizationSignupScreen from '../screens/auth/OrganizationSignupScreen';
 
-import LoginScreen from '../screens/auth/LoginScreen'
-import SignupScreen from '../screens/auth/SignupScreen'
-import OnboardingScreen from '../screens/auth/OnboardingScreen' // Optional: used in AppNavigator
-import OrganizationSignupScreen from '../screens/auth/OrganizationSignupScreen'
-
-// import ForgotPasswordScreen from '../screens/auth/ForgotPasswordScreen' // If/when added
-
-const Stack = createNativeStackNavigator()
+const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function AuthNavigator() {
   return (
-    <Stack.Navigator
-      screenOptions={{
-        headerShown: false,
-        animation: 'slide_from_right'
-      }}
-    >
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="Signup" component={SignupScreen} />
-      <Stack.Screen name="OrganizationSignup" component={OrganizationSignupScreen} />
-      {/* Optional onboarding route if you ever use it inside Auth instead of AppNavigator */}
-      {/* <Stack.Screen name="Onboarding" component={OnboardingScreen} /> */}
-      {/* <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} /> */}
+      <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+      <Stack.Screen
+        name="OrganizationSignup"
+        component={OrganizationSignupScreen as React.ComponentType<any>} // ✅ Type patch
+      />
     </Stack.Navigator>
-  )
+  );
 }

@@ -10,18 +10,19 @@ export const getTokenCount = async () => {
   return tokenSnap.exists() ? tokenSnap.data().count || 0 : 0;
 };
 
-export const consumeToken = async () => {
+export const setTokenCount = async (count: number) => {
   const { auth, db } = await import('../config/firebaseConfig');
   const user = auth.currentUser;
   if (!user) return;
 
   const tokenRef = doc(db, 'tokens', user.uid);
-  const tokenSnap = await getDoc(tokenRef);
-  if (!tokenSnap.exists()) return;
+  await setDoc(tokenRef, { count }, { merge: true });
+};
 
-  const current = tokenSnap.data().count || 0;
-  if (current > 0) {
-    await updateDoc(tokenRef, { count: current - 1 });
+export const consumeToken = async () => {
+  const tokens = await getTokenCount();
+  if (tokens > 0) {
+    await setTokenCount(tokens - 1);
   }
 };
 
@@ -69,3 +70,9 @@ export const syncSubscriptionStatus = async () => {
     await setDoc(tokenRef, { count: 9999 }, { merge: true }); // Give essentially unlimited tokens
   }
 };
+
+// ✅ Named export for App.tsx usage
+export function init() {
+  console.log('✅ TokenManager initialized');
+  // You could preload or sync tokens here if needed
+}

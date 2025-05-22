@@ -6,19 +6,21 @@ import Button from '../../components/common/Button';
 import { signup } from '../../services/authService';
 import { createUserProfile } from '../../services/userService';
 import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { theme } from '../../components/theme/theme';
-import { SCREENS } from '../../navigation/screens';
+import { RootStackParamList } from '../../navigation/RootStackParamList'; // ✅
+
+type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 export default function SignupScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const navigation = useNavigation();
+  const navigation = useNavigation<NavigationProp>(); // ✅ Typed navigation
 
   const handleSignup = async () => {
     setLoading(true);
     try {
-      // ✅ Dynamically import auth at runtime
       const { auth } = await import('../../config/firebaseConfig');
 
       await signup(email, password);
@@ -43,12 +45,14 @@ export default function SignupScreen() {
   return (
     <ScreenContainer>
       <Text style={styles.title}>Create an Account</Text>
+
       <TextField
         label="Email"
         value={email}
         onChangeText={setEmail}
         placeholder="you@example.com"
       />
+
       <TextField
         label="Password"
         value={password}
@@ -56,16 +60,19 @@ export default function SignupScreen() {
         placeholder="••••••"
         secureTextEntry
       />
+
       <Button title="Sign Up" onPress={handleSignup} loading={loading} />
+
       <Text
         style={styles.link}
-        onPress={() => navigation.navigate(SCREENS.AUTH.LOGIN)}
+        onPress={() => navigation.navigate('Login')} // ✅ use literal
       >
         Already have an account? Log in
       </Text>
+
       <Text
         style={styles.link}
-        onPress={() => navigation.navigate(SCREENS.AUTH.ORGANIZATION_SIGNUP)}
+        onPress={() => navigation.navigate('OrganizationSignup')} // ✅ use literal
       >
         Want to register your organization? Click here
       </Text>

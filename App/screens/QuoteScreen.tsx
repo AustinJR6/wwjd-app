@@ -2,8 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, Button, StyleSheet, ActivityIndicator } from 'react-native';
 import ScreenContainer from '../components/theme/ScreenContainer';
 import { theme } from '../components/theme/theme';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../navigation/RootStackParamList';
 
-export default function QuoteScreen({ navigation }) {
+type Props = NativeStackScreenProps<RootStackParamList, 'Quote'>;
+
+export default function QuoteScreen({ navigation }: Props) {
   const [quote, setQuote] = useState<{ text: string; reference: string }>({
     text: '',
     reference: '',

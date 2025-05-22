@@ -2,18 +2,22 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, Button, StyleSheet, ScrollView } from 'react-native';
 import ScreenContainer from '../../components/theme/ScreenContainer';
 import { theme } from '../../components/theme/theme';
-import { getTokenCount, getSubscriptionStatus } from '../../utils/TokenManager';
+import { getTokenCount, syncSubscriptionStatus } from '../../utils/TokenManager';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../../navigation/RootStackParamList'; // ✅ Make sure this exists
 
-export default function HomeScreen({ navigation }) {
+type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
+
+export default function HomeScreen({ navigation }: Props) {
   const [tokens, setTokens] = useState<number>(0);
   const [subscribed, setSubscribed] = useState<boolean>(false);
 
   useEffect(() => {
     const loadData = async () => {
       const t = await getTokenCount();
-      const sub = await getSubscriptionStatus();
+      await syncSubscriptionStatus(); // This updates tokens, but doesn’t return a value
       setTokens(t);
-      setSubscribed(sub);
+      setSubscribed(t >= 9999); // Assuming 9999 means subscribed
     };
     loadData();
   }, []);
@@ -66,7 +70,7 @@ export default function HomeScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   scrollContent: {
-    paddingBottom: 48
+    paddingBottom: 48,
   },
   title: {
     fontSize: 28,

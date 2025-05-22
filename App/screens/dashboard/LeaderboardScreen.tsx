@@ -7,9 +7,9 @@ import {
   ScrollView
 } from 'react-native'
 import { collection, getDocs, orderBy, query } from 'firebase/firestore'
-import { db } from '../firebaseConfig'
-import ScreenContainer from '../components/theme/ScreenContainer'
-import { theme } from '../components/theme/theme'
+import { db } from '../../config/firebaseConfig'
+import ScreenContainer from '../../components/theme/ScreenContainer'
+import { theme } from '../../components/theme/theme'
 
 export default function LeaderboardsScreen() {
   const [individuals, setIndividuals] = useState<any[]>([])

@@ -9,12 +9,12 @@ import {
   ActivityIndicator,
   ScrollView
 } from 'react-native'
-import { auth } from '../firebaseConfig'
-import { db } from '../firebaseConfig'
+import { auth } from '../../config/firebaseConfig'
+import { db } from '../../config/firebaseConfig'
 import { doc, updateDoc, increment } from 'firebase/firestore'
-import ScreenContainer from '../components/theme/ScreenContainer'
-import { theme } from '../components/theme/theme'
-import { ASK_GEMINI_SIMPLE } from '../utils/constants'
+import ScreenContainer from '../../components/theme/ScreenContainer'
+import { theme } from '../../components/theme/theme'
+import { ASK_GEMINI_SIMPLE } from '../../utils/constants'
 
 export default function TriviaScreen() {
   const [story, setStory] = useState('')

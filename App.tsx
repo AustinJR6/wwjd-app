@@ -1,83 +1,69 @@
 import React, { useEffect, useState } from 'react';
 import { View, ActivityIndicator } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { firebase } from '@react-native-firebase/auth'; // ✅ Correct Firebase module instance
+import type { FirebaseAuthTypes } from '@react-native-firebase/auth';
+
+import { RootStackParamList } from './App/navigation/RootStackParamList.ts';
+import { theme } from './App/components/theme/theme.ts';
 
 // Auth Screens
-import LoginScreen from './App/screens/auth/LoginScreen';
-import SignupScreen from './App/screens/auth/SignupScreen';
-import OnboardingScreen from './App/screens/auth/OnboardingScreen';
-import SelectReligionScreen from './App/screens/auth/SelectReligionScreen';
-import OrganizationSignupScreen from './App/screens/auth/OrganizationSignupScreen'
+import LoginScreen from './App/screens/auth/LoginScreen.tsx';
+import SignupScreen from './App/screens/auth/SignupScreen.tsx';
+import OnboardingScreen from './App/screens/auth/OnboardingScreen.tsx';
+import SelectReligionScreen from './App/screens/auth/SelectReligionScreen.tsx';
+import OrganizationSignupScreen from './App/screens/auth/OrganizationSignupScreen.tsx';
 
 // Dashboard Screens
-import HomeScreen from './App/screens/dashboard/HomeScreen';
-import ChallengeScreen from './App/screens/dashboard/ChallengeScreen';
-import StreakScreen from './App/screens/dashboard/StreakScreen';
-import UpgradeScreen from './App/screens/dashboard/UpgradeScreen';
-import LeaderboardsScreen from './App/screens/LeaderboardsScreen';
+import HomeScreen from './App/screens/dashboard/HomeScreen.tsx';
+import ChallengeScreen from './App/screens/dashboard/ChallengeScreen.tsx';
+import StreakScreen from './App/screens/dashboard/StreakScreen.tsx';
+import UpgradeScreen from './App/screens/dashboard/UpgradeScreen.tsx';
+import LeaderboardsScreen from './App/screens/dashboard/LeaderboardScreen.tsx';
+import TriviaScreen from './App/screens/dashboard/TriviaScreen.tsx';
+import SubmitProofScreen from './App/screens/dashboard/SubmitProofScreen.tsx';
 
 // Profile Screens
-import ProfileScreen from './App/screens/profile/ProfileScreen';
-import SettingsScreen from './App/screens/profile/SettingsScreen';
-import OrganizationManagementScreen from './App/screens/profile/OrganizationManagementScreen';
-import JoinOrganizationScreen from './App/screens/profile/JoinOrganizationScreen';
+import ProfileScreen from './App/screens/profile/ProfileScreen.tsx';
+import SettingsScreen from './App/screens/profile/SettingsScreen.tsx';
+import OrganizationManagementScreen from './App/screens/profile/OrganizationManagmentScreen.tsx';
+import JoinOrganizationScreen from './App/screens/profile/JoinOrganizationScreen.tsx';
 
 // Root-Level Screens
-import QuoteScreen from './App/screens/QuoteScreen';
-import AskJesusScreen from './App/screens/AskJesusScreen';
-import JournalScreen from './App/screens/JournalScreen';
-import ConfessionalScreen from './App/screens/ConfessionalScreen';
-import BuyTokensScreen from './App/screens/BuyTokensScreen';
-import GiveBackScreen from './App/screens/GiveBackScreen';
-import TriviaScreen from './App/screens/TriviaScreen';
-import SubmitProofScreen from './App/screens/SubmitProofScreen';
+import QuoteScreen from './App/screens/QuoteScreen.tsx';
+import AskJesusScreen from './App/screens/AskJesusScreen.tsx';
+import JournalScreen from './App/screens/JournalScreen.tsx';
+import ConfessionalScreen from './App/screens/ConfessionalScreen.tsx';
+import BuyTokensScreen from './App/screens/BuyTokensScreen.tsx';
+import GiveBackScreen from './App/screens/GiveBackScreen.tsx';
 
-import { theme } from './App/components/theme/theme';
-
-const Stack = createNativeStackNavigator();
+const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function App() {
-  const [user, setUser] = useState(null);
-  const [initialRoute, setInitialRoute] = useState<string | null>(null);
+  const [user, setUser] = useState<FirebaseAuthTypes.User | null>(null);
+  const [initialRoute, setInitialRoute] = useState<keyof RootStackParamList | undefined>();
   const [checkingAuth, setCheckingAuth] = useState(true);
 
   useEffect(() => {
-    let unsubscribe: any;
+    const unsubscribe = firebase.auth().onAuthStateChanged(
+      async (firebaseUser: FirebaseAuthTypes.User | null) => {
+        setUser(firebaseUser);
 
-    const bindAuth = async () => {
-      try {
-        const [{ auth }, { onAuthStateChanged }] = await Promise.all([
-          import('./App/config/firebaseConfig'),
-          import('firebase/auth'),
-        ]);
+        if (firebaseUser) {
+          const hasSeen = await SecureStore.getItemAsync(`hasSeenOnboarding-${firebaseUser.uid}`);
+          setInitialRoute(hasSeen === 'true' ? 'Quote' : 'Onboarding');
 
-        unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-          setUser(firebaseUser);
+          const { init } = await import('./App/utils/TokenManager.ts');
+          init?.();
+        }
 
-          if (firebaseUser) {
-            const hasSeen = await AsyncStorage.getItem(`hasSeenOnboarding-${firebaseUser.uid}`);
-            setInitialRoute(hasSeen === 'true' ? 'Quote' : 'Onboarding');
-
-            const TokenManager = await import('./App/utils/TokenManager');
-            if (TokenManager?.default?.init) {
-              TokenManager.default.init();
-            }
-          }
-
-          setCheckingAuth(false);
-        });
-      } catch (err) {
-        console.error('❌ Error during auth binding:', err);
         setCheckingAuth(false);
       }
-    };
-
-    const timeout = setTimeout(bindAuth, 0);
+    );
 
     return () => {
-      clearTimeout(timeout);
       if (unsubscribe) unsubscribe();
     };
   }, []);

@@ -6,22 +6,23 @@ import Button from '../../components/common/Button';
 import { login } from '../../services/authService';
 import { loadUser } from '../../services/userService';
 import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { theme } from '../../components/theme/theme';
-import { SCREENS } from '../../navigation/screens';
 import { useUserStore } from '../../state/userStore';
+import { RootStackParamList } from '../../navigation/RootStackParamList'; // ✅ Type-safe screens
+
+type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const navigation = useNavigation();
+  const navigation = useNavigation<NavigationProp>();
 
   const handleLogin = async () => {
     setLoading(true);
     try {
-      // 🧠 Dynamically load auth at runtime
       const { auth } = await import('../../config/firebaseConfig');
-
       await login(email, password);
 
       const user = auth.currentUser;
@@ -38,12 +39,14 @@ export default function LoginScreen() {
   return (
     <ScreenContainer>
       <Text style={styles.title}>Welcome Back</Text>
+
       <TextField
         label="Email"
         value={email}
         onChangeText={setEmail}
         placeholder="you@example.com"
       />
+
       <TextField
         label="Password"
         value={password}
@@ -51,16 +54,19 @@ export default function LoginScreen() {
         placeholder="••••••"
         secureTextEntry
       />
+
       <Button title="Log In" onPress={handleLogin} loading={loading} />
+
       <Text
         style={styles.link}
-        onPress={() => navigation.navigate(SCREENS.AUTH.SIGNUP)}
+        onPress={() => navigation.navigate('Signup')}
       >
         Don’t have an account? Sign up
       </Text>
+
       <Text
         style={styles.link}
-        onPress={() => navigation.navigate(SCREENS.AUTH.ORGANIZATION_SIGNUP)}
+        onPress={() => navigation.navigate('OrganizationSignup')}
       >
         Want to register your organization? Click here
       </Text>
@@ -81,3 +87,4 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 });
+

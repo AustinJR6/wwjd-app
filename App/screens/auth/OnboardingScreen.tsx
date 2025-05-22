@@ -2,18 +2,19 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, Alert } from 'react-native';
 import ScreenContainer from '../../components/theme/ScreenContainer';
 import Button from '../../components/common/Button';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, CommonActions, NavigationProp } from '@react-navigation/native';
 import { completeOnboarding, updateUserFields } from '../../services/userService';
 import { useUserStore } from '../../state/userStore';
 import { SCREENS } from '../../navigation/screens';
 import { theme } from '../../components/theme/theme';
 import { Picker } from '@react-native-picker/picker';
+import type { RootStackParamList } from '../../navigation/RootStackParamList'; // ✅ Typed navigation
 
 const religions = ['Christian', 'Muslim', 'Jewish', 'Hindu', 'Buddhist'];
 
 export default function OnboardingScreen() {
-  const user = useUserStore((state) => state.user);
-  const navigation = useNavigation();
+  const user = useUserStore((state: any) => state.user); // ✅ suppress implicit any
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>(); // ✅ typed navigation
   const [religion, setReligion] = useState(user?.religion ?? 'Christian');
   const [loading, setLoading] = useState(false);
 
@@ -27,7 +28,7 @@ export default function OnboardingScreen() {
 
       navigation.reset({
         index: 0,
-        routes: [{ name: SCREENS.MAIN.HOME }],
+        routes: [{ name: 'Home' }], // ✅ match literal from MainStackParamList
       });
     } catch (err: any) {
       Alert.alert('Error', err.message);
@@ -64,20 +65,24 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: theme.colors.text,
     marginBottom: 10,
+    textAlign: 'center',
   },
   subtitle: {
     fontSize: 16,
-    color: theme.colors.gray,
+    color: theme.colors.fadedText,
     marginBottom: 20,
+    textAlign: 'center',
   },
   pickerWrapper: {
     borderWidth: 1,
     borderColor: theme.colors.border,
-    borderRadius: 10,
+    borderRadius: 8,
     marginBottom: 20,
+    overflow: 'hidden',
   },
   picker: {
     height: 50,
     color: theme.colors.text,
+    backgroundColor: theme.colors.inputBackground || theme.colors.surface,
   },
 });
