@@ -8,7 +8,8 @@
     },
     "android": {
       "package": "com.whippybuckle.wwjdapp",
-      "googleServicesFile": "./android/app/google-services.json"
+      "googleServicesFile": "./google-services.json"
+
     },
     "ios": {},
     "extra": {
