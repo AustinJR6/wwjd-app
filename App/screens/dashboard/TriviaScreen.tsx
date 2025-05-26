@@ -9,13 +9,11 @@ import {
   ActivityIndicator,
   ScrollView
 } from 'react-native';
+import firestore from '@react-native-firebase/firestore';
 import ScreenContainer from '@/components/theme/ScreenContainer';
 import { theme } from '@/components/theme/theme';
 import { ASK_GEMINI_SIMPLE } from '@/utils/constants';
 import { firebaseAuth } from '@/config/firebaseConfig';
-import { getFirestore, doc, updateDoc, increment, setDoc } from 'firebase/firestore'; // ✅ direct Firestore access
-
-const db = getFirestore(); // ✅ typed Firestore instance
 
 export default function TriviaScreen() {
   const [story, setStory] = useState('');
@@ -74,21 +72,23 @@ export default function TriviaScreen() {
       correctReligion && answer.toLowerCase().includes(correctReligion.toLowerCase());
 
     try {
-      const userRef = doc(db, 'users', user.uid);
+      const userRef = firestore().collection('users').doc(user.uid);
 
       if (isCorrect) {
-        await updateDoc(userRef, {
-          individualPoints: increment(10), // 🎯 10-point reward
+        await userRef.update({
+          individualPoints: firestore.FieldValue.increment(10) // ✅ React Native Firebase version
         });
 
-        await setDoc(
-          doc(db, 'completedChallenges', user.uid),
-          {
-            lastTrivia: new Date().toISOString(),
-            triviaCompleted: true
-          },
-          { merge: true }
-        );
+        await firestore()
+          .collection('completedChallenges')
+          .doc(user.uid)
+          .set(
+            {
+              lastTrivia: new Date().toISOString(),
+              triviaCompleted: true
+            },
+            { merge: true }
+          );
       }
 
       Alert.alert(

@@ -7,7 +7,7 @@ export default function useAuth() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = firebaseAuth().onAuthStateChanged((firebaseUser) => {
+    const unsubscribe = firebaseAuth.onAuthStateChanged((firebaseUser) => {
       setUser(firebaseUser);
       setLoading(false);
     });

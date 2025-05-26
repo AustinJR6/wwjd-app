@@ -7,7 +7,7 @@ export const getTokenCount = async () => {
   const tokenRef = db.collection('tokens').doc(user.uid);
   const tokenSnap = await tokenRef.get();
 
-  if (tokenSnap.exists()) {
+  if (tokenSnap.exists) {
     const data = tokenSnap.data()!;
     return data.count || 0;
   } else {
@@ -65,7 +65,7 @@ export const syncSubscriptionStatus = async () => {
   const subRef = db.collection('subscriptions').doc(user.uid);
   const subSnap = await subRef.get();
 
-  const isSubscribed = subSnap.exists() && subSnap.data()!.active === true;
+  const isSubscribed = subSnap.exists && subSnap.data()!.active === true;
 
   const tokenRef = db.collection('tokens').doc(user.uid);
   if (isSubscribed) {
