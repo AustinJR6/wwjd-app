@@ -8,18 +8,10 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
+import firestore from '@react-native-firebase/firestore';
+import { useUser } from '@/hooks/useUser';
 import ScreenContainer from '@/components/theme/ScreenContainer';
 import { theme } from '@/components/theme/theme';
-import { useUser } from '@/hooks/useUser';
-import {
-  getFirestore,
-  doc,
-  getDoc,
-  updateDoc,
-  arrayRemove
-} from 'firebase/firestore';
-
-const db = getFirestore();
 
 export default function OrganizationManagementScreen() {
   const { user } = useUser();
@@ -34,13 +26,11 @@ export default function OrganizationManagementScreen() {
     if (!user) return;
     setLoading(true);
     try {
-      const userRef = doc(db, 'users', user.uid);
-      const userSnap = await getDoc(userRef);
+      const userSnap = await firestore().collection('users').doc(user.uid).get();
       const orgId = userSnap.data()?.organizationId;
       if (!orgId) throw new Error('No organization found');
 
-      const orgRef = doc(db, 'organizations', orgId);
-      const orgSnap = await getDoc(orgRef);
+      const orgSnap = await firestore().collection('organizations').doc(orgId).get();
       setOrg({ id: orgId, ...orgSnap.data() });
     } catch (err) {
       console.error('❌ Failed to load org:', err);
@@ -51,15 +41,21 @@ export default function OrganizationManagementScreen() {
   };
 
   const removeMember = async (uid: string) => {
+    if (!org?.id) return;
+
     try {
-      const orgRef = doc(db, 'organizations', org.id);
-      await updateDoc(orgRef, {
-        members: arrayRemove(uid),
-      });
+      await firestore()
+        .collection('organizations')
+        .doc(org.id)
+        .update({
+          members: firestore.FieldValue.arrayRemove(uid),
+        });
+
       Alert.alert('Removed', 'Member removed from organization.');
       loadOrg();
     } catch (err) {
       console.error('❌ Remove member error:', err);
+      Alert.alert('Error', 'Failed to remove member.');
     }
   };
 
@@ -137,4 +133,3 @@ const styles = StyleSheet.create({
     color: theme.colors.text,
   },
 });
-
