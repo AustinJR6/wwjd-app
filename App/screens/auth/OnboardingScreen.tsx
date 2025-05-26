@@ -2,36 +2,49 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, Alert } from 'react-native';
 import ScreenContainer from '../../components/theme/ScreenContainer.tsx';
 import Button from '../../components/common/Button.tsx';
-import { useNavigation, CommonActions, NavigationProp } from '@react-navigation/native';
+import { useNavigation, CommonActions } from '@react-navigation/native';
+import { NativeStackScreenProps } from '@react-navigation/native-stack'; // Import NativeStackScreenProps
 import { completeOnboarding, updateUserFields } from '../../services/userService.ts';
 import { useUserStore } from '../../state/userStore.ts';
 import { SCREENS } from '../../navigation/screens.ts';
 import { theme } from '../../components/theme/theme.ts';
 import { Picker } from '@react-native-picker/picker';
-import type { RootStackParamList } from '../../navigation/RootStackParamList.ts'; // ✅ Typed navigation
+import type { RootStackParamList } from '../../navigation/RootStackParamList.ts';
+
+// Define Props type for OnboardingScreen using NativeStackScreenProps
+type OnboardingScreenProps = NativeStackScreenProps<RootStackParamList, 'Onboarding'>;
 
 const religions = ['Christian', 'Muslim', 'Jewish', 'Hindu', 'Buddhist'];
 
 export default function OnboardingScreen() {
-  const user = useUserStore((state: any) => state.user); // ✅ suppress implicit any
-  const navigation = useNavigation<NavigationProp<RootStackParamList>>(); // ✅ typed navigation
+  const user = useUserStore((state: any) => state.user);
+  // Use the NativeStackScreenProps type for the navigation hook
+  const navigation = useNavigation<OnboardingScreenProps['navigation']>();
   const [religion, setReligion] = useState(user?.religion ?? 'Christian');
   const [loading, setLoading] = useState(false);
 
   const handleContinue = async () => {
-    if (!user) return;
+    if (!user) {
+      Alert.alert('Error', 'User not found. Please log in again.');
+      return;
+    }
 
     setLoading(true);
     try {
-      await updateUserFields(user.uid, { religion });
-      await completeOnboarding(user.uid);
+      if (user.uid) {
+        await updateUserFields(user.uid, { religion });
+        await completeOnboarding(user.uid);
 
-      navigation.reset({
-        index: 0,
-        routes: [{ name: 'Home' }], // ✅ match literal from MainStackParamList
-      });
+        navigation.reset({
+          index: 0,
+          // FIX: Changed 'Home' to 'HOME' to match your SCREENS.ts definition
+          routes: [{ name: SCREENS.MAIN.HOME }],
+        });
+      } else {
+        Alert.alert('Error', 'User ID is missing.');
+      }
     } catch (err: any) {
-      Alert.alert('Error', err.message);
+      Alert.alert('Error completing onboarding', err.message || 'An unknown error occurred.');
     } finally {
       setLoading(false);
     }

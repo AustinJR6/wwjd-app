@@ -1,3 +1,15 @@
+// RootStackParamList.ts
+
+// This declares a global namespace for React Navigation.
+// By extending `ReactNavigation.RootParamList`, you tell TypeScript
+// that your `RootStackParamList` defines the complete set of routes
+// for your application's root navigator.
+declare global {
+  namespace ReactNavigation {
+    interface RootParamList extends RootStackParamList {}
+  }
+}
+
 export type RootStackParamList = {
   // Auth stack screens
   Login: undefined;

@@ -23,7 +23,7 @@ export default function AppNavigator() {
     const initialize = async () => {
       try {
         const [{ auth }, { onAuthStateChanged }] = await Promise.all([
-          import('../config/firebaseConfig'),
+          import('../config/firebaseConfig.ts'),
           import('firebase/auth')
         ]);
 
