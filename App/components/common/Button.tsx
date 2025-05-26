@@ -1,12 +1,12 @@
-import React from 'react'
-import { Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native'
-import { theme } from '@/theme/theme'
+import React from 'react';
+import { Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import { theme } from '@/components/theme/theme'; // ✅ Fixed path
 
 interface ButtonProps {
-  title: string
-  onPress: () => void
-  disabled?: boolean
-  loading?: boolean
+  title: string;
+  onPress: () => void;
+  disabled?: boolean;
+  loading?: boolean;
 }
 
 export default function Button({ title, onPress, disabled, loading }: ButtonProps) {
@@ -22,7 +22,7 @@ export default function Button({ title, onPress, disabled, loading }: ButtonProp
         <Text style={styles.text}>{title}</Text>
       )}
     </TouchableOpacity>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
@@ -31,15 +31,14 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: 10,
     alignItems: 'center',
-    marginVertical: 10
+    marginVertical: 10,
   },
   text: {
     color: 'white',
     fontSize: 16,
-    fontWeight: '600'
+    fontWeight: '600',
   },
   disabled: {
-    backgroundColor: theme.colors.gray
-  }
-})
-
+    backgroundColor: theme.colors.gray,
+  },
+});

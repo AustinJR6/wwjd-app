@@ -9,10 +9,13 @@ import {
   ActivityIndicator,
   ScrollView
 } from 'react-native';
-import ScreenContainer from "@/components/theme/ScreenContainer";
-import { theme } from "@/components/theme/theme";
-import { ASK_GEMINI_SIMPLE } from "@/utils/constants";
-import { firebaseAuth, db } from "@/config/firebaseConfig";
+import ScreenContainer from '@/components/theme/ScreenContainer';
+import { theme } from '@/components/theme/theme';
+import { ASK_GEMINI_SIMPLE } from '@/utils/constants';
+import { firebaseAuth } from '@/config/firebaseConfig';
+import { getFirestore, doc, updateDoc, increment, setDoc } from 'firebase/firestore'; // ✅ direct Firestore access
+
+const db = getFirestore(); // ✅ typed Firestore instance
 
 export default function TriviaScreen() {
   const [story, setStory] = useState('');
@@ -70,23 +73,32 @@ export default function TriviaScreen() {
     const isCorrect =
       correctReligion && answer.toLowerCase().includes(correctReligion.toLowerCase());
 
-    if (isCorrect) {
-      try {
-        await db
-          .collection('users')
-          .doc(user.uid)
-          .update({
-            individualPoints: db.FieldValue.increment(5) // ✅ equivalent to `increment(5)`
-          });
-      } catch (err) {
-        console.error('❌ Point update failed:', err);
-      }
-    }
+    try {
+      const userRef = doc(db, 'users', user.uid);
 
-    Alert.alert(
-      isCorrect ? 'Correct!' : 'Not quite',
-      `The story was from: ${correctReligion}`
-    );
+      if (isCorrect) {
+        await updateDoc(userRef, {
+          individualPoints: increment(10), // 🎯 10-point reward
+        });
+
+        await setDoc(
+          doc(db, 'completedChallenges', user.uid),
+          {
+            lastTrivia: new Date().toISOString(),
+            triviaCompleted: true
+          },
+          { merge: true }
+        );
+      }
+
+      Alert.alert(
+        isCorrect ? 'Correct!' : 'Not quite',
+        `The story was from: ${correctReligion}`
+      );
+    } catch (err) {
+      console.error('❌ Point update or challenge log failed:', err);
+      Alert.alert('Error', 'Could not update your progress. Try again.');
+    }
   };
 
   return (
@@ -143,4 +155,3 @@ const styles = StyleSheet.create({
     color: theme.colors.text
   }
 });
-

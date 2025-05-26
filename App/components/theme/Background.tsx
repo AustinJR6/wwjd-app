@@ -1,8 +1,7 @@
-// Background.tsx
-import React from 'react'
-import { View, StyleSheet } from 'react-native'
-import { LinearGradient } from 'expo-linear-gradient'
-import { theme } from "./theme.ts'
+import React from 'react';
+import { View, StyleSheet } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { theme } from '@/components/theme/theme'; // ✅ Fixed alias and removed extension
 
 export default function Background({ children }: { children: React.ReactNode }) {
   return (
@@ -15,15 +14,15 @@ export default function Background({ children }: { children: React.ReactNode }) 
         {children}
       </View>
     </View>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
   wrapper: {
-    flex: 1
+    flex: 1,
   },
   content: {
     flex: 1,
-    padding: theme.spacing.lg
-  }
-})
+    padding: theme.spacing.lg,
+  },
+});

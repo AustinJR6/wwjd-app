@@ -8,10 +8,19 @@ import {
   StyleSheet,
   Alert
 } from 'react-native';
-import { db } from "@/config/firebaseConfig";
-import { useUser } from "@/hooks/useUser";
-import ScreenContainer from "@/components/theme/ScreenContainer";
-import { theme } from "@/components/theme/theme";
+import { useUser } from '@/hooks/useUser';
+import ScreenContainer from '@/components/theme/ScreenContainer';
+import { theme } from '@/components/theme/theme';
+import {
+  getFirestore,
+  collection,
+  getDocs,
+  updateDoc,
+  doc,
+  arrayUnion
+} from 'firebase/firestore';
+
+const db = getFirestore();
 
 export default function JoinOrganizationScreen() {
   const { user } = useUser();
@@ -25,8 +34,8 @@ export default function JoinOrganizationScreen() {
 
   const fetchOrgs = async () => {
     try {
-      const snap = await db.collection('organizations').get();
-      const all = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      const snap = await getDocs(collection(db, 'organizations'));
+      const all = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
       setOrgs(all);
       setFiltered(all);
     } catch (err) {
@@ -37,7 +46,9 @@ export default function JoinOrganizationScreen() {
   const handleSearch = (text: string) => {
     setQuery(text);
     setFiltered(
-      orgs.filter(o => o.name.toLowerCase().includes(text.toLowerCase()))
+      orgs.filter((o) =>
+        o.name.toLowerCase().includes(text.toLowerCase())
+      )
     );
   };
 
@@ -49,12 +60,15 @@ export default function JoinOrganizationScreen() {
     }
 
     try {
-      await db.collection('users').doc(user.uid).update({
+      const userRef = doc(db, 'users', user.uid);
+      const orgRef = doc(db, 'organizations', org.id);
+
+      await updateDoc(userRef, {
         organizationId: org.id
       });
 
-      await db.collection('organizations').doc(org.id).update({
-        members: db.FieldValue.arrayUnion(user.uid)
+      await updateDoc(orgRef, {
+        members: arrayUnion(user.uid)
       });
 
       Alert.alert('Joined', `You’ve joined ${org.name}.`);
@@ -76,13 +90,15 @@ export default function JoinOrganizationScreen() {
 
       <FlatList
         data={filtered}
-        keyExtractor={item => item.id}
+        keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <View style={styles.row}>
             <View style={styles.infoWrap}>
               <Text style={styles.name}>{item.name}</Text>
               <Text style={styles.meta}>Tier: {item.tier}</Text>
-              <Text style={styles.meta}>Seats: {(item.members?.length || 0)} / {item.seatLimit}</Text>
+              <Text style={styles.meta}>
+                Seats: {item.members?.length || 0} / {item.seatLimit}
+              </Text>
             </View>
             <Button title="Join" onPress={() => joinOrg(item)} />
           </View>
@@ -131,4 +147,3 @@ const styles = StyleSheet.create({
     color: theme.colors.fadedText
   }
 });
-

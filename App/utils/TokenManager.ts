@@ -1,10 +1,10 @@
 import { firebaseAuth, db } from "@/config/firebaseConfig"
 
 export const getTokenCount = async () => {
-  const user = firebaseAuth().currentUser;
+  const user = firebaseAuth.currentUser;
   if (!user) return 0;
 
-  const tokenRef = db().collection('tokens').doc(user.uid);
+  const tokenRef = db.collection('tokens').doc(user.uid);
   const tokenSnap = await tokenRef.get();
 
   if (tokenSnap.exists()) {
@@ -16,10 +16,10 @@ export const getTokenCount = async () => {
 };
 
 export const setTokenCount = async (count: number) => {
-  const user = firebaseAuth().currentUser;
+  const user = firebaseAuth.currentUser;
   if (!user) return;
 
-  const tokenRef = db().collection('tokens').doc(user.uid);
+  const tokenRef = db.collection('tokens').doc(user.uid);
   await tokenRef.set({ count }, { merge: true });
 };
 
@@ -31,10 +31,10 @@ export const consumeToken = async () => {
 };
 
 export const canUseFreeAsk = async () => {
-  const user = firebaseAuth().currentUser;
+  const user = firebaseAuth.currentUser;
   if (!user) return false;
 
-  const docRef = db().collection('freeAsk').doc(user.uid);
+  const docRef = db.collection('freeAsk').doc(user.uid);
   const docSnap = await docRef.get();
 
   if (!docSnap.exists) return true;
@@ -51,23 +51,23 @@ export const canUseFreeAsk = async () => {
 };
 
 export const useFreeAsk = async () => {
-  const user = firebaseAuth().currentUser;
+  const user = firebaseAuth.currentUser;
   if (!user) return;
 
-  const docRef = db().collection('freeAsk').doc(user.uid);
+  const docRef = db.collection('freeAsk').doc(user.uid);
   await docRef.set({ date: new Date() });
 };
 
 export const syncSubscriptionStatus = async () => {
-  const user = firebaseAuth().currentUser;
+  const user = firebaseAuth.currentUser;
   if (!user) return;
 
-  const subRef = db().collection('subscriptions').doc(user.uid);
+  const subRef = db.collection('subscriptions').doc(user.uid);
   const subSnap = await subRef.get();
 
   const isSubscribed = subSnap.exists() && subSnap.data()!.active === true;
 
-  const tokenRef = db().collection('tokens').doc(user.uid);
+  const tokenRef = db.collection('tokens').doc(user.uid);
   if (isSubscribed) {
     await tokenRef.set({ count: 9999 }, { merge: true });
   }

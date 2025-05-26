@@ -1,14 +1,13 @@
-import React from 'react'
-import { TextInput, StyleSheet, View, Text } from 'react-native'
-import { theme } from "./theme/theme'
-
+import React from 'react';
+import { TextInput, StyleSheet, View, Text } from 'react-native';
+import { theme } from '@/components/theme/theme'; // ✅ Fixed alias and removed invalid quote
 
 interface TextFieldProps {
-  value: string
-  onChangeText: (text: string) => void
-  placeholder?: string
-  secureTextEntry?: boolean
-  label?: string
+  value: string;
+  onChangeText: (text: string) => void;
+  placeholder?: string;
+  secureTextEntry?: boolean;
+  label?: string;
 }
 
 export default function TextField({
@@ -16,7 +15,7 @@ export default function TextField({
   onChangeText,
   placeholder,
   secureTextEntry = false,
-  label
+  label,
 }: TextFieldProps) {
   return (
     <View style={styles.wrapper}>
@@ -30,17 +29,17 @@ export default function TextField({
         secureTextEntry={secureTextEntry}
       />
     </View>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
   wrapper: {
-    marginVertical: 10
+    marginVertical: 10,
   },
   label: {
     color: theme.colors.text,
     marginBottom: 5,
-    fontWeight: '600'
+    fontWeight: '600',
   },
   input: {
     borderWidth: 1,
@@ -48,6 +47,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 12,
     color: theme.colors.text,
-    backgroundColor: theme.colors.inputBackground
-  }
-})
+    backgroundColor: theme.colors.inputBackground,
+  },
+});

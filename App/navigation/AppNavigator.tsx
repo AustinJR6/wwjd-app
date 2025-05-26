@@ -3,56 +3,46 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { ActivityIndicator, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { User } from 'firebase/auth'; // ✅ Fix: Import User type
+import { FirebaseAuthTypes } from '@react-native-firebase/auth';
 
 import AuthNavigator from './AuthNavigator';
 import MainTabNavigator from './MainTabNavigator';
-import OnboardingScreen from "@/screens/auth/OnboardingScreen";
-import { theme } from "@/components/theme/theme";
+import OnboardingScreen from '@/screens/auth/OnboardingScreen';
+import { theme } from '@/components/theme/theme';
+import { firebaseAuth } from '@/config/firebaseConfig';
 
 const Stack = createNativeStackNavigator();
 
 export default function AppNavigator() {
-  const [user, setUser] = useState<User | null>(null); // ✅ Fix: Add User type here
+  const [user, setUser] = useState<FirebaseAuthTypes.User | null>(null);
   const [hasSeenOnboarding, setHasSeenOnboarding] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    let unsubscribe: any;
+    const unsubscribe = firebaseAuth.onAuthStateChanged(async (firebaseUser) => {
+      setUser(firebaseUser);
 
-    const initialize = async () => {
-      try {
-        const [{ auth }, { onAuthStateChanged }] = await Promise.all([
-          import('@/config/firebaseConfig'),
-          import('firebase/auth')
-        ]);
-
-        unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-          setUser(firebaseUser);
-
-          if (firebaseUser) {
-            const seen = await AsyncStorage.getItem(`hasSeenOnboarding-${firebaseUser.uid}`);
-            setHasSeenOnboarding(seen === 'true');
-          }
-
-          setLoading(false);
-        });
-      } catch (err) {
-        console.error('❌ Auth load error in AppNavigator:', err);
-        setLoading(false);
+      if (firebaseUser) {
+        const seen = await AsyncStorage.getItem(`hasSeenOnboarding-${firebaseUser.uid}`);
+        setHasSeenOnboarding(seen === 'true');
       }
-    };
 
-    initialize();
+      setLoading(false);
+    });
 
-    return () => {
-      if (unsubscribe) unsubscribe();
-    };
+    return () => unsubscribe();
   }, []);
 
   if (loading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: theme.colors.background }}>
+      <View
+        style={{
+          flex: 1,
+          justifyContent: 'center',
+          alignItems: 'center',
+          backgroundColor: theme.colors.background,
+        }}
+      >
         <ActivityIndicator size="large" color={theme.colors.primary} />
       </View>
     );
@@ -72,4 +62,3 @@ export default function AppNavigator() {
     </NavigationContainer>
   );
 }
-

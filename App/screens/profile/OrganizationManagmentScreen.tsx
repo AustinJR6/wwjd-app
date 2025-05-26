@@ -8,10 +8,18 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
-import { db } from '@/config/firebaseConfig';
-import { useUser } from '@/hooks/useUser';
 import ScreenContainer from '@/components/theme/ScreenContainer';
 import { theme } from '@/components/theme/theme';
+import { useUser } from '@/hooks/useUser';
+import {
+  getFirestore,
+  doc,
+  getDoc,
+  updateDoc,
+  arrayRemove
+} from 'firebase/firestore';
+
+const db = getFirestore();
 
 export default function OrganizationManagementScreen() {
   const { user } = useUser();
@@ -26,11 +34,13 @@ export default function OrganizationManagementScreen() {
     if (!user) return;
     setLoading(true);
     try {
-      const userSnap = await db.collection('users').doc(user.uid).get();
+      const userRef = doc(db, 'users', user.uid);
+      const userSnap = await getDoc(userRef);
       const orgId = userSnap.data()?.organizationId;
       if (!orgId) throw new Error('No organization found');
 
-      const orgSnap = await db.collection('organizations').doc(orgId).get();
+      const orgRef = doc(db, 'organizations', orgId);
+      const orgSnap = await getDoc(orgRef);
       setOrg({ id: orgId, ...orgSnap.data() });
     } catch (err) {
       console.error('❌ Failed to load org:', err);
@@ -42,8 +52,9 @@ export default function OrganizationManagementScreen() {
 
   const removeMember = async (uid: string) => {
     try {
-      await db.collection('organizations').doc(org.id).update({
-        members: db.FieldValue.arrayRemove(uid),
+      const orgRef = doc(db, 'organizations', org.id);
+      await updateDoc(orgRef, {
+        members: arrayRemove(uid),
       });
       Alert.alert('Removed', 'Member removed from organization.');
       loadOrg();
@@ -126,3 +137,4 @@ const styles = StyleSheet.create({
     color: theme.colors.text,
   },
 });
+

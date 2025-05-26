@@ -1,6 +1,6 @@
 import { create } from 'zustand';
-import { firebaseAuth, db } from "@/config/firebaseConfig";
-import { doc, getDoc, setDoc, updateDoc, serverTimestamp } from '@react-native-firebase/firestore';
+import { firebaseAuth } from "@/config/firebaseConfig";
+import firestore from '@react-native-firebase/firestore';
 
 interface ChallengeStore {
   lastCompleted: number | null;
@@ -33,14 +33,14 @@ export const useChallengeStore = create<ChallengeStore>((set, get) => ({
     const user = firebaseAuth.currentUser;
     if (!user) return;
 
-    const ref = doc(db, 'completedChallenges', user.uid);
-    const snap = await getDoc(ref);
+    const ref = firestore().collection('completedChallenges').doc(user.uid);
+    const snap = await ref.get();
 
     if (snap.exists()) {
       const data = snap.data();
       set({
-        lastCompleted: data.lastCompleted?.toMillis?.() || null,
-        streak: data.streak || 0,
+        lastCompleted: data?.lastCompleted?.toDate?.().getTime() || null,
+        streak: data?.streak || 0,
       });
     }
   },
@@ -50,11 +50,11 @@ export const useChallengeStore = create<ChallengeStore>((set, get) => ({
     if (!user) return;
 
     const { lastCompleted, streak } = get();
-    const ref = doc(db, 'completedChallenges', user.uid);
-    await setDoc(ref, {
-      lastCompleted: lastCompleted ? new Date(lastCompleted) : serverTimestamp(),
+    const ref = firestore().collection('completedChallenges').doc(user.uid);
+
+    await ref.set({
+      lastCompleted: lastCompleted ? new Date(lastCompleted) : firestore.FieldValue.serverTimestamp(),
       streak,
     }, { merge: true });
   },
 }));
-
