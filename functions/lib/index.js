@@ -1,47 +1,15 @@
 "use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.handleStripeWebhookV2 = exports.askGeminiV2 = void 0;
 require("dotenv/config");
 const https_1 = require("firebase-functions/v2/https");
 const v2_1 = require("firebase-functions/v2");
-const admin = __importStar(require("firebase-admin"));
 const generative_ai_1 = require("@google/generative-ai");
 const stripe_1 = __importDefault(require("stripe"));
+const firebase_1 = require("./firebase"); // ✅ use centralized firebase.ts (admin)
 // 🔐 Environment Variables
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
@@ -52,11 +20,6 @@ if (!GEMINI_API_KEY || !STRIPE_SECRET_KEY || !STRIPE_WEBHOOK_SECRET) {
 }
 // 📍 Set default Firebase region
 (0, v2_1.setGlobalOptions)({ region: "us-central1" });
-// 🔥 Initialize Firebase Admin SDK
-if (!admin.apps.length) {
-    admin.initializeApp();
-}
-const db = admin.firestore();
 /**
  * 🌟 askGeminiV2: Secure Gemini Chat endpoint
  */
@@ -68,7 +31,7 @@ exports.askGeminiV2 = (0, https_1.onRequest)(async (req, res) => {
         return;
     }
     try {
-        await admin.auth().verifyIdToken(idToken);
+        await firebase_1.auth.verifyIdToken(idToken);
         const genAI = new generative_ai_1.GoogleGenerativeAI(GEMINI_API_KEY);
         const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
         const chat = await model.startChat({
@@ -109,7 +72,7 @@ exports.handleStripeWebhookV2 = (0, https_1.onRequest)({ cors: true }, async (re
     if (event.type === "checkout.session.completed") {
         const userId = data.metadata?.userId;
         if (userId) {
-            await db.collection("subscriptions").doc(userId).set({ active: true });
+            await firebase_1.db.collection("subscriptions").doc(userId).set({ active: true });
             console.log(`✅ Subscription activated for user ${userId}`);
         }
     }

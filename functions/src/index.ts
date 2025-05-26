@@ -1,9 +1,10 @@
 import "dotenv/config";
 import { onRequest } from "firebase-functions/v2/https";
 import { setGlobalOptions } from "firebase-functions/v2";
-import * as admin from "firebase-admin";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import Stripe from "stripe";
+
+import { auth, db } from "./firebase"; // ✅ use centralized firebase.ts (admin)
 
 // 🔐 Environment Variables
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY!;
@@ -18,16 +19,10 @@ if (!GEMINI_API_KEY || !STRIPE_SECRET_KEY || !STRIPE_WEBHOOK_SECRET) {
 // 📍 Set default Firebase region
 setGlobalOptions({ region: "us-central1" });
 
-// 🔥 Initialize Firebase Admin SDK
-if (!admin.apps.length) {
-  admin.initializeApp();
-}
-const db = admin.firestore();
-
 /**
  * 🌟 askGeminiV2: Secure Gemini Chat endpoint
  */
-exports.askGeminiV2 = onRequest(async (req, res) => {
+export const askGeminiV2 = onRequest(async (req, res) => {
   const { prompt, history = [] } = req.body;
   const idToken = req.headers.authorization?.split("Bearer ")[1];
 
@@ -37,7 +32,7 @@ exports.askGeminiV2 = onRequest(async (req, res) => {
   }
 
   try {
-    await admin.auth().verifyIdToken(idToken);
+    await auth.verifyIdToken(idToken);
 
     const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
@@ -62,7 +57,7 @@ exports.askGeminiV2 = onRequest(async (req, res) => {
 /**
  * 💳 handleStripeWebhookV2: Activates subscriptions post-checkout
  */
-exports.handleStripeWebhookV2 = onRequest({ cors: true }, async (req, res) => {
+export const handleStripeWebhookV2 = onRequest({ cors: true }, async (req, res) => {
   const stripe = new Stripe(STRIPE_SECRET_KEY, { apiVersion: "2022-11-15" });
 
   const sig = req.headers["stripe-signature"];

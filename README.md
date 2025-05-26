@@ -1,143 +1,170 @@
-# WWJD App
+# 🌿 OneVine App
 
-Hey here is where I'll spell out the overview of the architecutre, samples of app flow, setup process and links to other docs I'll get in here too for document structures, sample calls, etc. 
-If you feel something is not right, speak up. I check my ego at the door and you should too, we get much better when we learn from our mistakes or oversights instead of ignoring them, and you'll gain trust and respect from the folks you lead too. 
-Then we all know that everyone can trust we're out to get the best product to market and not just get credit for building something, give credit where it's due and go with the best code, and you'll be shocked how often it's not mine. 
----
-
-## App Flow Overview
-
-This application is structured with scalability and best practices in mind. Below is a high-level flow of how the app initializes and processes user interactions:
-
-### 1. `App.tsx`
-> Entry point of the application. Wraps the app in providers and initializes navigation.
-
-**Sample:**
-```tsx
-return (
-  <NavigationContainer>
-    <RootNavigator />
-  </NavigationContainer>
-);
-```
-
-### 2. `NavigationContainer`
-> Provides the navigation context and routes between screens.
-
-**Sample:**
-```tsx
-<Stack.Navigator>
-  <Stack.Screen name="Login" component={LoginScreen} />
-  <Stack.Screen name="Home" component={HomeScreen} />
-</Stack.Navigator>
-```
-
-### 3. State Management + Context (e.g., `AuthProvider.tsx`)
-> Handles user session, roles, and provides global access to auth state.
-
-**Sample:**
-```tsx
-<AuthProvider>
-  <NavigationContainer>{/* screens */}</NavigationContainer>
-</AuthProvider>
-```
-
-### 4. Initial Screen (based on auth)
-> Routes to the appropriate stack (`AppStack` or `AuthStack`) based on login status.
-
-**Sample:**
-```tsx
-return user ? <AppStack /> : <AuthStack />;
-```
-
-### 5. Screens use Hooks
-> Each screen leverages custom hooks to subscribe to data or manage internal state.
-
-**Sample:**
-```tsx
-const user = useUser();
-```
-
-### 6. Hooks call Services
-> Encapsulate Firebase logic and business rules inside reusable service functions.
-
-**Sample:**
-```ts
-const result = await askJesus(question);
-```
-
-### 7. Services wrap Firebase APIs
-> All backend interactions are funneled through the services layer, making testing and refactoring easier.
-
-**Sample:**
-```ts
-export const askJesus = async (text) => {
-  const fn = httpsCallable(functions, 'addMessage');
-  return await fn({ text });
-};
-```
+> “We are all leaves of the same vine.”  
+> A spiritually-centered reflection and journaling platform for people of all faiths.
 
 ---
 
-## Folder Structure
+## 📖 Overview
 
-See the `Project Structure Review` document for a detailed and annotated breakdown of the directory layout.
+**OneVine** is a mobile app built to guide users through daily moral and spiritual reflection based on their faith. Originally launched as **WWJD**, the app has grown to support **multi-religious guidance**, **token-based engagement**, **journaling**, and **faith-based leaderboards**.
+
+This project uses **React Native (via Expo)** and is powered by **Firebase** for authentication, Firestore storage, and Stripe integration for premium features.
 
 ---
 
-## Getting Started
+## 🧰 Tech Stack
 
-Follow these steps to set up your development environment and run the app locally.
+- **React Native** (with Expo)
+- **React Native Firebase SDK**
+  - `@react-native-firebase/app`
+  - `@react-native-firebase/auth`
+  - `@react-native-firebase/firestore`
+- **Firebase**
+  - Anonymous Auth for guest use
+  - Firestore for user journals and token tracking
+- **Google Gemini / OpenAI GPT**
+  - Faith-aligned reflection prompts
+- **Stripe**
+  - WWJD+ / OneVine+ subscription handling
+- **Firebase Cloud Functions**
+  - (Planned) server-side token logic and analytics
+
+---
+
+## 🚀 Getting Started
 
 ### 1. Clone the Repository
-```bash
-git clone https://github.com/your-org/wwjd-app-main.git
-cd wwjd-app-main
-```
 
-### 2. Install Dependencies
 ```bash
-yarn install
-# or
+git clone https://github.com/AustinJR6/wwjd-app.git
+cd wwjd-app
+2. Install Dependencies
+bash
+Copy
+Edit
 npm install
-```
+npx expo install
+3. Firebase Setup
+Create a Firebase project
 
-### 3. Configure Environment Variables
-Create a `.env` file in the root with your Firebase credentials:
+Enable Anonymous Authentication
 
-```env
-API_KEY=your_api_key
-AUTH_DOMAIN=your_project.firebaseapp.com
-PROJECT_ID=your_project_id
-STORAGE_BUCKET=your_project.appspot.com
-MESSAGING_SENDER_ID=your_sender_id
-APP_ID=your_app_id
-```
+Set up Firestore
 
-### 4. Run the App (Expo)
-```bash
-npx expo start
-```
+Download:
 
-Or if you're using React Native CLI:
-```bash
-npx react-native run-android
-# or
-npx react-native run-ios
-```
+google-services.json → android/app/
 
-### 5. Firebase Setup
-Ensure you:
-- Have enabled Authentication (Email/Password or other providers)
-- Configured Firestore and Functions in your Firebase Console
-- Deployed your Cloud Functions via:
-```bash
-cd functions
-firebase deploy --only functions
-```
+GoogleService-Info.plist → ios/
 
----
+Update app.config.js:
 
-This README will grow to include testing strategies, deployment steps, contribution guidelines, and more as the app evolves, but also we'll want a good place for centralizing our keys and things either with managemnet here, AWS whatever doesn't matter. 
-My changes are in a new branch, and we can review that as I get this all working with the new structure but just toggle the branches to see what I've got going if you're curious. 
+js
+Copy
+Edit
+plugins: [
+  [
+    "expo-build-properties",
+    {
+      android: {
+        googleServicesFile: "./android/app/google-services.json"
+      },
+      ios: {
+        googleServicesFile: "./ios/GoogleService-Info.plist"
+      }
+    }
+  ]
+]
+4. Firebase SDK Use ✅
+We use React Native Firebase, not the Web SDK.
 
+Correct:
+js
+Copy
+Edit
+import auth from '@react-native-firebase/auth';
+import firestore from '@react-native-firebase/firestore';
+Avoid:
+js
+Copy
+Edit
+// ❌ Web SDK not compatible with React Native
+import firebase from 'firebase/app';
+📱 Key Features
+✝️ 🕉️ ☪️ 🕎 Multi-Faith Reflection AI
+Dynamic prompts based on selected religion
+
+📝 Journaling System
+Private, secure journaling with optional cloud sync
+
+🔥 Token System
+
+1 free reflection/day
+
+Additional uses cost tokens
+
+Daily streak bonuses
+
+💳 OneVine+ (WWJD+) Subscription
+Unlimited access + priority reflections
+
+🏆 Leaderboards
+
+Global rankings
+
+Religion-specific rankings
+
+Organization leaderboards (e.g., churches, mosques, temples)
+
+🗂 Folder Structure
+bash
+Copy
+Edit
+wwjd-app/
+├── app/                  # App entry points and routing
+├── components/           # Shared UI components
+├── screens/              # Major app pages (Ask, Journal, Trivia)
+├── config/               # Firebase and environment setup
+├── utils/                # Constants, prompt logic, helpers
+├── navigation/           # Stack navigation
+└── firebaseConfig.ts     # Firebase initialization (React Native SDK)
+✨ Future Features
+✨ Faith-specific AI tone customization
+
+📊 Admin dashboard (web-based)
+
+🎙️ Voice journaling + feedback
+
+📅 Personalized faith calendars
+
+🧑‍🤝‍🧑 Enterprise plan for spiritual organizations
+
+❤️ Charity integration for subscription revenue
+
+🪶 Quotes, scriptures, and meditation tools
+
+🧠 Philosophy
+OneVine is rooted in the belief that truth and love transcend labels. Whether Christian, Muslim, Buddhist, Jewish, Hindu, agnostic, or other — we are united by the shared desire to grow, reflect, and become better. This app is a step toward that future.
+
+✍️ Authors
+Austin Rittenhouse – Founder, developer
+
+🛠 Development Notes
+All Firebase integrations use the React Native Firebase SDK
+
+We do not use firebase.initializeApp() or Web SDK
+
+Stripe subscription flow is being integrated with Firebase webhook handling
+
+Onboarding uses anonymous login, upgraded to email if subscribed
+
+🙏 Contributing
+We welcome faith leaders, engineers, designers, and visionaries to collaborate.
+
+To join, reach out via the Issues tab or contact Austin Rittenhouse
+
+📜 License
+MIT License – See LICENSE file.
+
+Made with love. And faith. And curiosity.
