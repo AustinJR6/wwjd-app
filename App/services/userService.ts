@@ -1,4 +1,5 @@
-import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
+import { db } from '../config/firebaseConfig.ts'; // Import aligned db instance
+import { doc, getDoc, setDoc, updateDoc } from '@react-native-firebase/firestore'; // Import functions from @react-native-firebase/firestore
 import { useUserStore } from '../state/userStore.ts';
 
 /**
@@ -18,8 +19,7 @@ export interface FirestoreUser {
  * Get user from Firestore and set into userStore
  */
 export async function loadUser(uid: string): Promise<void> {
-  const { db } = await import('../config/firebaseConfig.ts');
-  const ref = doc(db, 'users', uid);
+  const ref = doc(db, 'users', uid); // Use db instance
   const snapshot = await getDoc(ref);
 
   if (snapshot.exists()) {
@@ -51,8 +51,7 @@ export async function createUserProfile({
   displayName?: string;
   religion?: string;
 }) {
-  const { db } = await import('../config/firebaseConfig.ts');
-  const ref = doc(db, 'users', uid);
+  const ref = doc(db, 'users', uid); // Use db instance
   const now = Date.now();
 
   const userData: FirestoreUser = {
@@ -72,8 +71,7 @@ export async function createUserProfile({
  * Mark onboarding complete
  */
 export async function completeOnboarding(uid: string) {
-  const { db } = await import('../config/firebaseConfig.ts');
-  const ref = doc(db, 'users', uid);
+  const ref = doc(db, 'users', uid); // Use db instance
   await updateDoc(ref, { onboardingComplete: true });
 }
 
@@ -84,7 +82,6 @@ export async function updateUserFields(
   uid: string,
   updates: Partial<Pick<FirestoreUser, 'religion' | 'isSubscribed'>>
 ) {
-  const { db } = await import('../config/firebaseConfig.ts');
-  const ref = doc(db, 'users', uid);
+  const ref = doc(db, 'users', uid); // Use db instance
   await updateDoc(ref, updates);
 }

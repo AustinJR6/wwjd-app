@@ -1,30 +1,32 @@
-import { useEffect, useState } from 'react'
-import { onAuthStateChanged, signInAnonymously, User } from 'firebase/auth'
-import { auth } from '../config/firebaseConfig.ts'
+import { useEffect, useState } from 'react';
+import type { FirebaseAuthTypes } from '@react-native-firebase/auth'; // Correct User type import
+import auth from '@react-native-firebase/auth'; // Import for signInAnonymously if not exporting from config
+import { firebaseAuth } from '../config/firebaseConfig.ts'; // Import aligned auth instance
 
-export function useUser(): { user: User | null; loading: boolean } {
-  const [user, setUser] = useState<User | null>(null)
-  const [loading, setLoading] = useState(true)
+export function useUser(): { user: FirebaseAuthTypes.User | null; loading: boolean } {
+  const [user, setUser] = useState<FirebaseAuthTypes.User | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+    const unsubscribe = firebaseAuth.onAuthStateChanged(async (firebaseUser) => { // Use firebaseAuth instance
       if (firebaseUser) {
-        setUser(firebaseUser)
-        setLoading(false)
+        setUser(firebaseUser);
+        setLoading(false);
       } else {
         try {
-          const result = await signInAnonymously(auth)
-          setUser(result.user)
+          // Use the auth instance from @react-native-firebase for anonymous sign-in
+          const result = await auth().signInAnonymously();
+          setUser(result.user);
         } catch (err) {
-          console.error('🔥 Anonymous sign-in failed:', err)
+          console.error('🔥 Anonymous sign-in failed:', err);
         } finally {
-          setLoading(false)
+          setLoading(false);
         }
       }
-    })
+    });
 
-    return () => unsubscribe()
-  }, [])
+    return () => unsubscribe();
+  }, []);
 
-  return { user, loading }
+  return { user, loading };
 }

@@ -3,8 +3,10 @@ import { View, ActivityIndicator } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { firebase } from '@react-native-firebase/auth'; // ✅ Correct Firebase module instance
+// Correct import for @react-native-firebase User type
 import type { FirebaseAuthTypes } from '@react-native-firebase/auth';
+// Import the aligned Firebase instances from your config file
+import { firebaseAuth } from './App/config/firebaseConfig.ts'; // Use the exported instance
 
 import { RootStackParamList } from './App/navigation/RootStackParamList.ts';
 import { theme } from './App/components/theme/theme.ts';
@@ -47,28 +49,48 @@ export default function App() {
   const [checkingAuth, setCheckingAuth] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = firebase.auth().onAuthStateChanged(
-      async (firebaseUser: FirebaseAuthTypes.User | null) => {
-        setUser(firebaseUser);
+    let unsubscribe: () => void;
 
-        if (firebaseUser) {
-          const hasSeen = await SecureStore.getItemAsync(`hasSeenOnboarding-${firebaseUser.uid}`);
-          setInitialRoute(hasSeen === 'true' ? 'Quote' : 'Onboarding');
+    const initialize = async () => {
+      try {
+        // Use the firebaseAuth instance directly from your config
+        unsubscribe = firebaseAuth.onAuthStateChanged(
+          async (firebaseUser: FirebaseAuthTypes.User | null) => {
+            setUser(firebaseUser);
 
-          const { init } = await import('./App/utils/TokenManager.ts');
-          init?.();
-        }
+            if (firebaseUser) {
+              const hasSeen = await SecureStore.getItemAsync(`hasSeenOnboarding-${firebaseUser.uid}`);
+              // If user is authenticated, decide initial route based on onboarding status
+              setInitialRoute(hasSeen === 'true' ? 'Quote' : 'Onboarding');
 
+              // Dynamically import TokenManager if needed, but consider importing at top
+              // if it's always used.
+              const { init } = await import('./App/utils/TokenManager.ts');
+              init?.();
+            } else {
+              // If no user, default to Login
+              setInitialRoute('Login');
+            }
+
+            setCheckingAuth(false);
+          }
+        );
+      } catch (err) {
+        console.error('❌ Auth load error in AppNavigator:', err);
         setCheckingAuth(false);
+        // Fallback to Login route on error
+        setInitialRoute('Login');
       }
-    );
+    };
+
+    initialize();
 
     return () => {
       if (unsubscribe) unsubscribe();
     };
   }, []);
 
-  if (checkingAuth || (!initialRoute && user)) {
+  if (checkingAuth || (!initialRoute && user)) { // Added !initialRoute && user to handle race condition where user exists but initialRoute isn't set yet
     return (
       <View
         style={{
@@ -86,7 +108,7 @@ export default function App() {
   return (
     <NavigationContainer>
       <Stack.Navigator
-        initialRouteName={user ? initialRoute : 'Login'}
+        initialRouteName={user ? initialRoute : 'Login'} // Ensure initialRoute is defined before using it here
         screenOptions={{
           headerStyle: { backgroundColor: theme.colors.background },
           headerTintColor: theme.colors.text,
@@ -100,6 +122,7 @@ export default function App() {
             <Stack.Screen name="OrganizationSignup" component={OrganizationSignupScreen} options={{ title: 'Create Organization' }} />
           </>
         ) : (
+          // If user is authenticated, render all main app screens
           <>
             <Stack.Screen name="Onboarding" component={OnboardingScreen} options={{ headerShown: false }} />
             <Stack.Screen name="Quote" component={QuoteScreen} options={{ headerShown: false }} />

@@ -1,17 +1,17 @@
+import { firebaseAuth } from '../config/firebaseConfig.ts'; // Import aligned auth instance
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut,
   sendPasswordResetEmail,
-} from 'firebase/auth';
+} from '@react-native-firebase/auth'; // Import functions from @react-native-firebase/auth
 
 /**
  * Sign up a new user with email and password
  */
 export async function signup(email: string, password: string): Promise<void> {
   try {
-    const { auth } = await import('../config/firebaseConfig.ts');
-    await createUserWithEmailAndPassword(auth, email, password);
+    await createUserWithEmailAndPassword(firebaseAuth, email, password); // Use firebaseAuth instance
   } catch (error: any) {
     throw new Error(error.message);
   }
@@ -22,8 +22,7 @@ export async function signup(email: string, password: string): Promise<void> {
  */
 export async function login(email: string, password: string): Promise<void> {
   try {
-    const { auth } = await import('../config/firebaseConfig.ts');
-    await signInWithEmailAndPassword(auth, email, password);
+    await signInWithEmailAndPassword(firebaseAuth, email, password); // Use firebaseAuth instance
   } catch (error: any) {
     throw new Error(error.message);
   }
@@ -34,8 +33,7 @@ export async function login(email: string, password: string): Promise<void> {
  */
 export async function logout(): Promise<void> {
   try {
-    const { auth } = await import('../config/firebaseConfig.ts');
-    await signOut(auth);
+    await signOut(firebaseAuth); // Use firebaseAuth instance
   } catch (error: any) {
     throw new Error(error.message);
   }
@@ -46,8 +44,7 @@ export async function logout(): Promise<void> {
  */
 export async function resetPassword(email: string): Promise<void> {
   try {
-    const { auth } = await import('../config/firebaseConfig.ts');
-    await sendPasswordResetEmail(auth, email);
+    await sendPasswordResetEmail(firebaseAuth, email); // Use firebaseAuth instance
   } catch (error: any) {
     throw new Error(error.message);
   }

@@ -1,19 +1,22 @@
-// App/config/firebaseConfig.ts (for @react-native-firebase)
-// Removed initializeApp and firebaseConfig object, as @react-native-firebase handles this
-// using native config files (google-services.json, GoogleService-Info.plist).
+// App/config/firebaseConfig.ts (Aligned for @react-native-firebase)
+// ALL OLD CODE HAS BEEN REMOVED. Only @react-native-firebase imports remain.
 
-// Import specific @react-native-firebase modules
-import auth from '@react-native-firebase/auth'; // Import auth from @react-native-firebase
-import firestore from '@react-native-firebase/firestore'; // Import firestore from @react-native-firebase
-import storage from '@react-native-firebase/storage'; // Import storage from @react-native-firebase
+// Import specific @react-native-firebase modules.
+// Note: These imports automatically represent the initialized Firebase services
+// because @react-native-firebase picks up configuration from native files (google-services.json).
+import auth from '@react-native-firebase/auth';
+import firestore from '@react-native-firebase/firestore';
+import storage from '@react-native-firebase/storage';
 
 // Export the instances of the services.
-// Note: You call the imported module as a function to get the instance.
+// You call the imported module (e.g., 'auth') as a function to get its specific instance.
 export const firebaseAuth = auth();
 export const db = firestore();
-export const storageRef = storage(); // Renamed to avoid conflict with `storage` variable in function scope
+export const storageRef = storage();
 
-// If you need to explicitly enable persistence for Firestore (optional, but good practice):
+// Optional: Enable offline persistence for Firestore (for bare workflow)
+// This should be called once, typically early in your app lifecycle.
+// For Expo managed workflow, persistence might be handled by Expo's build process or a plugin.
 // db.settings({ cacheSizeBytes: firestore.CACHE_SIZE_UNLIMITED });
 // db.enablePersistence().catch((err) => {
 //   if (err.code === 'failed-precondition') {
@@ -24,5 +27,3 @@ export const storageRef = storage(); // Renamed to avoid conflict with `storage`
 //     console.error('Firestore persistence failed:', err);
 //   }
 // });
-
-// You may also want to export other configurations or functions related to Firebase setup here.

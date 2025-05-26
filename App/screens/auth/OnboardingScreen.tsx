@@ -11,13 +11,14 @@ import { theme } from '../../components/theme/theme.ts';
 import { Picker } from '@react-native-picker/picker';
 import type { RootStackParamList } from '../../navigation/RootStackParamList.ts';
 
-// Define Props type for OnboardingScreen using NativeStackScreenProps
+// Define Props type for OnboardingScreen using NativeStackScreenProps for type safety
 type OnboardingScreenProps = NativeStackScreenProps<RootStackParamList, 'Onboarding'>;
+
 
 const religions = ['Christian', 'Muslim', 'Jewish', 'Hindu', 'Buddhist'];
 
 export default function OnboardingScreen() {
-  const user = useUserStore((state: any) => state.user);
+  const user = useUserStore((state: any) => state.user); // Suppress implicit any
   // Use the NativeStackScreenProps type for the navigation hook
   const navigation = useNavigation<OnboardingScreenProps['navigation']>();
   const [religion, setReligion] = useState(user?.religion ?? 'Christian');
@@ -37,7 +38,7 @@ export default function OnboardingScreen() {
 
         navigation.reset({
           index: 0,
-          // FIX: Changed 'Home' to 'HOME' to match your SCREENS.ts definition
+          // FIX: Changed 'Home' to 'HOME' to match SCREENS.ts definition
           routes: [{ name: SCREENS.MAIN.HOME }],
         });
       } else {

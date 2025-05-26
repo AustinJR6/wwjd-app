@@ -1,23 +1,13 @@
-// App/hooks/useNotifications.ts (or wherever you schedule notifications)
 import * as Notifications from 'expo-notifications';
 
-// ... other code ...
-
-const scheduleDailyNotification = async (hour: number, minute: number) => {
+export async function scheduleDailyNotification(title: string, body: string) {
   await Notifications.scheduleNotificationAsync({
-    content: {
-      title: 'Your daily reminder!',
-      body: 'Time to check in with WWJD.',
-      // Add other content options like data, sound etc.
-    },
+    content: { title, body },
     trigger: {
-      // FIX: Add 'type: 'calendar'' to specify it's a calendar-based trigger
-      type: 'calendar',
-      hour: hour,
-      minute: minute,
-      repeats: true,
-    },
+      type: 'calendar', // FIX: Added the required 'type' property
+      hour: 8,
+      minute: 0,
+      repeats: true
+    }
   });
-};
-
-// ... rest of your file ...
+}
