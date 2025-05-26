@@ -1,15 +1,15 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Alert } from 'react-native';
-import ScreenContainer from '../../components/theme/ScreenContainer.js';
-import TextField from '../../components/TextField';
-import Button from '../../components/common/Button';
-import { signup } from '../../services/authService';
-import { createUserProfile } from '../../services/userService';
+import ScreenContainer from "@/components/theme/ScreenContainer";
+import TextField from "@/components/TextField";
+import Button from "@/components/common/Button";
+import { signup } from "@/services/authService";
+import { createUserProfile } from "@/services/userService";
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { theme } from '../../components/theme/theme.js';
-import { RootStackParamList } from '../../navigation/RootStackParamList.js';
-import { firebaseAuth } from '../../config/firebaseConfig.js'; // ✅ corrected
+import { theme } from "@/components/theme/theme";
+import { RootStackParamList } from "@/navigation/RootStackParamList";
+import { firebaseAuth } from "@/config/firebaseConfig"; // ✅ corrected
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -24,7 +24,7 @@ export default function SignupScreen() {
     try {
       await signup(email, password);
 
-      const firebaseUser = firebaseAuth().currentUser; // ✅ updated access
+      const firebaseUser = firebaseAuth.currentUser; // ✅ updated access
       if (!firebaseUser) throw new Error('User creation failed.');
 
       await createUserProfile({
@@ -92,3 +92,4 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 });
+

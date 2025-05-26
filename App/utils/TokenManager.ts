@@ -1,4 +1,4 @@
-import { firebaseAuth, db } from '../config/firebaseConfig'; // ✅ no .ts
+import { firebaseAuth, db } from "@/config/firebaseConfig"
 
 export const getTokenCount = async () => {
   const user = firebaseAuth().currentUser;
@@ -76,3 +76,4 @@ export const syncSubscriptionStatus = async () => {
 export function init() {
   console.log('✅ TokenManager initialized');
 }
+

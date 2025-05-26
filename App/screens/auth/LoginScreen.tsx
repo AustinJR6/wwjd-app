@@ -1,16 +1,16 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Alert } from 'react-native';
-import ScreenContainer from '../../components/theme/ScreenContainer.js';
-import TextField from '../../components/TextField';
-import Button from '../../components/common/Button';
-import { login } from '../../services/authService';
-import { loadUser } from '../../services/userService';
+import ScreenContainer from "@/components/theme/ScreenContainer";
+import TextField from "@/components/TextField";
+import Button from "@/components/common/Button";
+import { login } from "@/services/authService";
+import { loadUser } from "@/services/userService";
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { theme } from '../../components/theme/theme.js';
-import { useUserStore } from '../../state/userStore';
-import { RootStackParamList } from '../../navigation/RootStackParamList.js';
-import { firebaseAuth } from '../../config/firebaseConfig.js'; // ✅ correct import
+import { theme } from "@/components/theme/theme";
+import { useUserStore } from "@/state/userStore";
+import { RootStackParamList } from "@/navigation/RootStackParamList";
+import { firebaseAuth } from "@/config/firebaseConfig"; // ✅ correct import
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -25,7 +25,7 @@ export default function LoginScreen() {
     try {
       await login(email, password);
 
-      const user = firebaseAuth().currentUser; // ✅ use callable instance
+      const user = firebaseAuth.currentUser; // ✅ use callable instance
       if (user) {
         await loadUser(user.uid);
       }
@@ -87,3 +87,4 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 });
+

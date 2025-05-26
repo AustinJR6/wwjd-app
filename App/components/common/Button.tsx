@@ -1,6 +1,6 @@
 import React from 'react'
 import { Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native'
-import { theme } from '../theme/theme'
+import { theme } from '@/theme/theme'
 
 interface ButtonProps {
   title: string
@@ -42,3 +42,4 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.gray
   }
 })
+

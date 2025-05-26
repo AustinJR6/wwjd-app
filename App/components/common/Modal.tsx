@@ -1,6 +1,6 @@
 import React from 'react'
 import { Modal as RNModal, View, Text, StyleSheet, TouchableOpacity } from 'react-native'
-import { theme } from '../theme/theme'
+import { theme } from "@/theme/theme"
 
 interface ModalProps {
   visible: boolean
@@ -56,3 +56,4 @@ const styles = StyleSheet.create({
     fontWeight: '600'
   }
 })
+

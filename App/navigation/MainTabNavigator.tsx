@@ -1,18 +1,18 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { theme } from '../components/theme/theme.ts';
+import { theme } from "@/components/theme/theme.ts";
 
 // Screens
-import HomeScreen from '../screens/dashboard/HomeScreen.tsx';
-import AskJesusScreen from '../screens/AskJesusScreen.tsx';
-import JournalScreen from '../screens/JournalScreen.tsx';
-import ChallengeScreen from '../screens/dashboard/ChallengeScreen.tsx';
-import ConfessionalScreen from '../screens/ConfessionalScreen.tsx';
-import ProfileScreen from '../screens/profile/ProfileScreen.tsx';
-import SettingsScreen from '../screens/profile/SettingsScreen.tsx';
-import TriviaScreen from '../screens/dashboard/TriviaScreen.tsx';
-import LeaderboardsScreen from '../screens/dashboard/LeaderboardScreen.tsx';
+import HomeScreen from "@/screens/dashboard/HomeScreen.tsx";
+import AskJesusScreen from "@/screens/AskJesusScreen.tsx";
+import JournalScreen from "@/screens/JournalScreen.tsx";
+import ChallengeScreen from "@/screens/dashboard/ChallengeScreen.tsx";
+import ConfessionalScreen from "@/screens/ConfessionalScreen.tsx";
+import ProfileScreen from "@/screens/profile/ProfileScreen.tsx";
+import SettingsScreen from "@/screens/profile/SettingsScreen.tsx";
+import TriviaScreen from "@/screens/dashboard/TriviaScreen.tsx";
+import LeaderboardsScreen from "@/screens/dashboard/LeaderboardScreen.tsx";
 
 const Tab = createBottomTabNavigator();
 
@@ -67,3 +67,4 @@ export default function MainTabNavigator() {
     </Tab.Navigator>
   );
 }
+

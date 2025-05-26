@@ -8,10 +8,10 @@ import {
   Alert
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { firebaseAuth, db, storageRef } from '../../config/firebaseConfig.js';
-import { useUser } from '../../hooks/useUser.js';
-import ScreenContainer from '../../components/theme/ScreenContainer.js';
-import { theme } from '../../components/theme/theme.js';
+import { firebaseAuth, db, storageRef } from "@/config/firebaseConfig";
+import { useUser } from "@/hooks/useUser";
+import ScreenContainer from "@/components/theme/ScreenContainer";
+import { theme } from "@/components/theme/theme";
 
 export default function SubmitProofScreen() {
   const { user } = useUser();
@@ -40,13 +40,13 @@ export default function SubmitProofScreen() {
     setUploading(true);
     try {
       const refPath = `proofs/${user.uid}/${Date.now()}`;
-      const imgRef = storageRef().ref(refPath);
+      const imgRef = storageRef.ref(refPath);
       const imgBlob = await fetch(image.uri).then(r => r.blob());
 
       await imgRef.put(imgBlob);
       const imgUrl = await imgRef.getDownloadURL();
 
-      await db()
+      await db
         .collection('challengeProofs')
         .add({
           uid: user.uid,
@@ -123,3 +123,4 @@ const styles = StyleSheet.create({
     marginTop: 20
   }
 });
+

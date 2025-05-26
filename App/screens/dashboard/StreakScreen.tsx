@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -8,10 +8,10 @@ import {
   StyleSheet,
   Alert,
 } from 'react-native';
-import ScreenContainer from '../../components/theme/ScreenContainer.js';
-import { theme } from '../../components/theme/theme.js';
-import { ASK_GEMINI_SIMPLE } from '../../utils/constants';
-import { firebaseAuth, db } from '../../config/firebaseConfig.js';
+import ScreenContainer from "@/components/theme/ScreenContainer";
+import { theme } from "@/components/theme/theme";
+import { ASK_GEMINI_SIMPLE } from "@/utils/constants";
+import { firebaseAuth, db } from "@/config/firebaseConfig";
 
 export default function StreakScreen() {
   const [message, setMessage] = useState('');
@@ -24,12 +24,12 @@ export default function StreakScreen() {
 
   const fetchStreakMessage = async () => {
     try {
-      const user = firebaseAuth().currentUser;
+      const user = firebaseAuth.currentUser;
       if (!user) return;
 
       setLoading(true);
 
-      const streakRef = db().collection('completedChallenges').doc(user.uid);
+      const streakRef = db.collection('completedChallenges').doc(user.uid);
       const streakSnap = await streakRef.get();
       const streakData = streakSnap.data();
 
@@ -69,7 +69,7 @@ export default function StreakScreen() {
         { merge: true }
       );
     } catch (err) {
-      console.error('🔥 Streak message fetch error:', err);
+      console.error('?? Streak message fetch error:', err);
       Alert.alert('Error', 'Could not load your encouragement. Try again later.');
     } finally {
       setLoading(false);
@@ -80,7 +80,7 @@ export default function StreakScreen() {
     <ScreenContainer>
       <ScrollView contentContainerStyle={styles.container}>
         <Text style={styles.title}>Your Current Streak</Text>
-        <Text style={styles.streak}>{streak} Days 🔥</Text>
+        <Text style={styles.streak}>{streak} Days ??</Text>
 
         {loading ? (
           <ActivityIndicator size="large" color={theme.colors.primary} />
@@ -124,3 +124,4 @@ const styles = StyleSheet.create({
     width: '100%',
   },
 });
+

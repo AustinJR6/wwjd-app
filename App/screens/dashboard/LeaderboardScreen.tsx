@@ -6,9 +6,9 @@ import {
   ActivityIndicator,
   ScrollView
 } from 'react-native';
-import { db } from '../../config/firebaseConfig.js';
-import ScreenContainer from '../../components/theme/ScreenContainer.js';
-import { theme } from '../../components/theme/theme.js';
+import { db } from "@/config/firebaseConfig";
+import ScreenContainer from "@/components/theme/ScreenContainer";
+import { theme } from "@/components/theme/theme";
 
 export default function LeaderboardsScreen() {
   const [individuals, setIndividuals] = useState<any[]>([]);
@@ -23,17 +23,17 @@ export default function LeaderboardsScreen() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const userSnap = await db()
+      const userSnap = await db
         .collection('users')
         .orderBy('individualPoints', 'desc')
         .get();
 
-      const religionSnap = await db()
+      const religionSnap = await db
         .collection('religions')
         .orderBy('totalPoints', 'desc')
         .get();
 
-      const orgSnap = await db()
+      const orgSnap = await db
         .collection('organizations')
         .orderBy('totalPoints', 'desc')
         .get();
@@ -118,3 +118,4 @@ const styles = StyleSheet.create({
     fontWeight: '600'
   }
 });
+

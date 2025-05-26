@@ -1,7 +1,6 @@
 {
   "name": "wwjd-app",
   "version": "1.0.0",
-  "type": "module",
   "main": "node_modules/expo/AppEntry.js",
   "scripts": {
     "start": "expo start",
@@ -46,7 +45,8 @@
     "react-native-screens": "~4.10.0",
     "react-native-vector-icons": "^10.2.0",
     "react-native-web": "^0.20.0",
-    "zustand": "^5.0.4"
+    "zustand": "^5.0.4",
+    "expo-build-properties": "~0.14.6"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",

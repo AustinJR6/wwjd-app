@@ -8,11 +8,11 @@ import {
   Alert,
   ScrollView,
 } from 'react-native';
-import ScreenContainer from '../../components/theme/ScreenContainer.js';
-import { theme } from '../../components/theme/theme.js';
-import { getTokenCount, setTokenCount } from '../../utils/TokenManager';
-import { ASK_GEMINI_SIMPLE } from '../../utils/constants';
-import { firebaseAuth, db } from '../../config/firebaseConfig.js';
+import ScreenContainer from "@/components/theme/ScreenContainer";
+import { theme } from "@/components/theme/theme";
+import { getTokenCount, setTokenCount } from "@/utils/TokenManager";
+import { ASK_GEMINI_SIMPLE } from "@/utils/constants";
+import { firebaseAuth, db } from "@/config/firebaseConfig";
 
 export default function ChallengeScreen() {
   const [challenge, setChallenge] = useState('');
@@ -21,12 +21,12 @@ export default function ChallengeScreen() {
 
   const fetchChallenge = async () => {
     try {
-      const user = firebaseAuth().currentUser;
+      const user = firebaseAuth.currentUser;
       if (!user) return;
 
       setLoading(true);
 
-      const userRef = db().collection('users').doc(user.uid);
+      const userRef = db.collection('users').doc(user.uid);
       const userSnap = await userRef.get();
       const userData = userSnap.data() || {};
       const lastChallenge = userData.lastChallenge?.toDate?.();
@@ -140,3 +140,4 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
 });
+

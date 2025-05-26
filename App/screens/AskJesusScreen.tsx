@@ -9,11 +9,11 @@ import {
   Alert,
   ScrollView,
 } from 'react-native';
-import ScreenContainer from '../components/theme/ScreenContainer';
-import { theme } from '../components/theme/theme';
-import { getTokenCount, setTokenCount } from '../utils/TokenManager';
-import { ASK_GEMINI_V2 } from '../utils/constants';
-import { firebaseAuth, db } from '../config/firebaseConfig';
+import ScreenContainer from "@/components/theme/ScreenContainer";
+import { theme } from "@/components/theme/theme";
+import { getTokenCount, setTokenCount } from "@/utils/TokenManager";
+import { ASK_GEMINI_V2 } from "@/utils/constants";
+import { firebaseAuth, db } from "@/config/firebaseConfig";
 
 export default function AskJesusScreen() {
   const [question, setQuestion] = useState('');
@@ -30,10 +30,10 @@ export default function AskJesusScreen() {
     setLoading(true);
 
     try {
-      const user = firebaseAuth().currentUser;
+      const user = firebaseAuth.currentUser;
       if (!user) return;
 
-      const userRef = db().collection('users').doc(user.uid);
+      const userRef = db.collection('users').doc(user.uid);
       const userSnap = await userRef.get();
       const userData = userSnap.data() || {};
       const lastAsk = userData.lastFreeAsk?.toDate?.();
@@ -210,3 +210,4 @@ const styles = StyleSheet.create({
     width: '100%',
   },
 });
+

@@ -7,11 +7,11 @@ import {
   StyleSheet,
   Alert
 } from 'react-native';
-import { db } from '../../config/firebaseConfig.js';
-import ScreenContainer from '../../components/theme/ScreenContainer.js';
-import { theme } from '../../components/theme/theme.js';
+import { db } from "@/config/firebaseConfig";
+import ScreenContainer from "@/components/theme/ScreenContainer";
+import { theme } from "@/components/theme/theme";
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../../navigation/RootStackParamList.js';
+import { RootStackParamList } from "@/navigation/RootStackParamList";
 
 type Props = NativeStackScreenProps<RootStackParamList, 'OrganizationSignup'>;
 
@@ -31,7 +31,7 @@ export default function OrganizationSignupScreen({ navigation }: Props) {
       const seatLimit = tier === 'enterprise-plus' ? 50 : 25;
       const subscribedSeats = tier === 'enterprise-plus' ? 50 : 0;
 
-      await db().collection('organizations').add({
+      await db.collection('organizations').add({
         name,
         tier,
         seatLimit,
@@ -114,3 +114,4 @@ const styles = StyleSheet.create({
     marginTop: 16
   }
 });
+

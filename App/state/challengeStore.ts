@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { firebaseAuth, db } from '../config/firebaseConfig';
+import { firebaseAuth, db } from "@/config/firebaseConfig";
 import { doc, getDoc, setDoc, updateDoc, serverTimestamp } from '@react-native-firebase/firestore';
 
 interface ChallengeStore {
@@ -57,3 +57,4 @@ export const useChallengeStore = create<ChallengeStore>((set, get) => ({
     }, { merge: true });
   },
 }));
+

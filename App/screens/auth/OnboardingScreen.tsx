@@ -1,15 +1,15 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Alert } from 'react-native';
-import ScreenContainer from '../../components/theme/ScreenContainer.js';
-import Button from '../../components/common/Button';
+import ScreenContainer from "@/components/theme/ScreenContainer";
+import Button from "@/components/common/Button";
 import { useNavigation, CommonActions } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { completeOnboarding, updateUserFields } from '../../services/userService';
-import { useUserStore } from '../../state/userStore';
-import { SCREENS } from '../../navigation/screens';
-import { theme } from '../../components/theme/theme.js';
+import { completeOnboarding, updateUserFields } from "@/services/userService";
+import { useUserStore } from "@/state/userStore";
+import { SCREENS } from "@/navigation/screens";
+import { theme } from "@/components/theme/theme";
 import { Picker } from '@react-native-picker/picker';
-import type { RootStackParamList } from '../../navigation/RootStackParamList.js';
+import type { RootStackParamList } from "@/navigation/RootStackParamList";
 
 type OnboardingScreenProps = NativeStackScreenProps<RootStackParamList, 'Onboarding'>;
 
@@ -97,3 +97,4 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.inputBackground || theme.colors.surface,
   },
 });
+

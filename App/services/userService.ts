@@ -1,5 +1,5 @@
-import { db } from '../config/firebaseConfig'; // Use aligned db instance
-import { useUserStore } from '../state/userStore';
+import { db } from "@/config/firebaseConfig"; // Use aligned db instance
+import { useUserStore } from "@/state/userStore";
 
 /**
  * Firestore user document structure
@@ -84,3 +84,4 @@ export async function updateUserFields(
   const ref = db().collection('users').doc(uid);
   await ref.update(updates);
 }
+

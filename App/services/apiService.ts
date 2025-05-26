@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { GEMINI_API_URL, STRIPE_API_URL } from '../config/apiConfig';
+import { GEMINI_API_URL, STRIPE_API_URL } from "@/config/apiConfig";
 
 type AskGeminiResponse = {
   reply: string;
@@ -31,3 +31,4 @@ export async function createStripeCheckout(userId: string): Promise<string> {
     throw new Error('Unable to start checkout.');
   }
 }
+

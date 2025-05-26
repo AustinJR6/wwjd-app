@@ -9,10 +9,10 @@ import {
   ActivityIndicator,
   ScrollView
 } from 'react-native';
-import ScreenContainer from '../../components/theme/ScreenContainer.js';
-import { theme } from '../../components/theme/theme.js';
-import { ASK_GEMINI_SIMPLE } from '../../utils/constants';
-import { firebaseAuth, db } from '../../config/firebaseConfig.js';
+import ScreenContainer from "@/components/theme/ScreenContainer";
+import { theme } from "@/components/theme/theme";
+import { ASK_GEMINI_SIMPLE } from "@/utils/constants";
+import { firebaseAuth, db } from "@/config/firebaseConfig";
 
 export default function TriviaScreen() {
   const [story, setStory] = useState('');
@@ -26,7 +26,7 @@ export default function TriviaScreen() {
   }, []);
 
   const fetchTrivia = async () => {
-    const user = firebaseAuth().currentUser;
+    const user = firebaseAuth.currentUser;
     if (!user) return;
 
     setLoading(true);
@@ -62,7 +62,7 @@ export default function TriviaScreen() {
   const submitAnswer = async () => {
     if (!answer) return;
 
-    const user = firebaseAuth().currentUser;
+    const user = firebaseAuth.currentUser;
     if (!user) return;
 
     setRevealed(true);
@@ -72,7 +72,7 @@ export default function TriviaScreen() {
 
     if (isCorrect) {
       try {
-        await db()
+        await db
           .collection('users')
           .doc(user.uid)
           .update({
@@ -143,3 +143,4 @@ const styles = StyleSheet.create({
     color: theme.colors.text
   }
 });
+

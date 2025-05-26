@@ -2,7 +2,7 @@
 import React from 'react'
 import { View, StyleSheet } from 'react-native'
 import { LinearGradient } from 'expo-linear-gradient'
-import { theme } from './theme.ts'
+import { theme } from "./theme.ts'
 
 export default function Background({ children }: { children: React.ReactNode }) {
   return (

@@ -1,4 +1,4 @@
-import { firebaseAuth } from '../config/firebaseConfig'; // no .ts extension
+import { firebaseAuth } from "@/config/firebaseConfig"; // no .ts extension
 
 /**
  * Sign up a new user with email and password
@@ -43,3 +43,4 @@ export async function resetPassword(email: string): Promise<void> {
     throw new Error(error.message);
   }
 }
+

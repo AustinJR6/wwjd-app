@@ -8,10 +8,10 @@ import {
   StyleSheet,
   Alert
 } from 'react-native';
-import { db } from '../../config/firebaseConfig.js';
-import { useUser } from '../../hooks/useUser.js';
-import ScreenContainer from '../../components/theme/ScreenContainer.js';
-import { theme } from '../../components/theme/theme.js';
+import { db } from "@/config/firebaseConfig";
+import { useUser } from "@/hooks/useUser";
+import ScreenContainer from "@/components/theme/ScreenContainer";
+import { theme } from "@/components/theme/theme";
 
 export default function JoinOrganizationScreen() {
   const { user } = useUser();
@@ -25,7 +25,7 @@ export default function JoinOrganizationScreen() {
 
   const fetchOrgs = async () => {
     try {
-      const snap = await db().collection('organizations').get();
+      const snap = await db.collection('organizations').get();
       const all = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       setOrgs(all);
       setFiltered(all);
@@ -49,11 +49,11 @@ export default function JoinOrganizationScreen() {
     }
 
     try {
-      await db().collection('users').doc(user.uid).update({
+      await db.collection('users').doc(user.uid).update({
         organizationId: org.id
       });
 
-      await db().collection('organizations').doc(org.id).update({
+      await db.collection('organizations').doc(org.id).update({
         members: db.FieldValue.arrayUnion(user.uid)
       });
 
@@ -131,3 +131,4 @@ const styles = StyleSheet.create({
     color: theme.colors.fadedText
   }
 });
+

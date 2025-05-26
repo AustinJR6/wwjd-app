@@ -8,12 +8,12 @@ import {
   Button,
   Alert
 } from 'react-native';
-import { theme } from '../../components/theme/theme.js';
-import ScreenContainer from '../../components/theme/ScreenContainer.js';
-import { useUser } from '../../hooks/useUser.js';
-import { db } from '../../config/firebaseConfig.js';
+import { theme } from "@/components/theme/theme";
+import ScreenContainer from "@/components/theme/ScreenContainer";
+import { useUser } from "@/hooks/useUser";
+import { db } from "@/config/firebaseConfig";
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../../navigation/RootStackParamList.js';
+import { RootStackParamList } from "@/navigation/RootStackParamList";
 
 type Props = NativeStackScreenProps<RootStackParamList, 'SelectReligion'>;
 
@@ -39,7 +39,7 @@ export default function SelectReligionScreen({ navigation }: Props) {
     if (!user) return;
 
     try {
-      await db()
+      await db
         .collection('users')
         .doc(user.uid)
         .set({ religion: selected }, { merge: true });
@@ -116,4 +116,5 @@ const styles = StyleSheet.create({
     marginTop: 24
   }
 });
+
 

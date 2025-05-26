@@ -1,9 +1,9 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { RootStackParamList } from './RootStackParamList';
-import LoginScreen from '../screens/auth/LoginScreen';
-import SignupScreen from '../screens/auth/SignupScreen';
-import OnboardingScreen from '../screens/auth/OnboardingScreen';
-import OrganizationSignupScreen from '../screens/auth/OrganizationSignupScreen';
+import LoginScreen from "@/screens/auth/LoginScreen";
+import SignupScreen from "@/screens/auth/SignupScreen";
+import OnboardingScreen from "@/screens/auth/OnboardingScreen";
+import OrganizationSignupScreen from "@/screens/auth/OrganizationSignupScreen";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -20,3 +20,4 @@ export default function AuthNavigator() {
     </Stack.Navigator>
   );
 }
+

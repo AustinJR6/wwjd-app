@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { FirebaseAuthTypes } from '@react-native-firebase/auth';
-import { firebaseAuth } from '../config/firebaseConfig'; // ✅ no .ts extension
+import { firebaseAuth } from "@/config/firebaseConfig"; // ✅ no .ts extension
 
 export function useUser(): { user: FirebaseAuthTypes.User | null; loading: boolean } {
   const [user, setUser] = useState<FirebaseAuthTypes.User | null>(null);
@@ -28,3 +28,4 @@ export function useUser(): { user: FirebaseAuthTypes.User | null; loading: boole
 
   return { user, loading };
 }
+

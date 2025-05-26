@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { View, Text, Button, StyleSheet, Alert, Linking } from 'react-native';
-import ScreenContainer from '../../components/theme/ScreenContainer.js';
-import { theme } from '../../components/theme/theme.js';
+import ScreenContainer from "@/components/theme/ScreenContainer";
+import { theme } from "@/components/theme/theme";
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../../navigation/RootStackParamList.js';
-import { firebaseAuth } from '../../config/firebaseConfig.js'; // ✅ aligned import
+import { RootStackParamList } from "@/navigation/RootStackParamList";
+import { firebaseAuth } from "@/config/firebaseConfig"; // ✅ aligned import
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Upgrade'>;
 
@@ -15,7 +15,7 @@ export default function UpgradeScreen({ navigation }: Props) {
     setLoading(true);
 
     try {
-      const user = firebaseAuth().currentUser;
+      const user = firebaseAuth.currentUser;
       if (!user) {
         Alert.alert('Error', 'User not logged in.');
         return;
@@ -118,3 +118,4 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 });
+

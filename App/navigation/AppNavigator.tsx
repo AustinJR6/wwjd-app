@@ -5,10 +5,10 @@ import { ActivityIndicator, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { User } from 'firebase/auth'; // ✅ Fix: Import User type
 
-import AuthNavigator from './AuthNavigator.tsx';
-import MainTabNavigator from './MainTabNavigator.tsx';
-import OnboardingScreen from '../screens/auth/OnboardingScreen.tsx';
-import { theme } from '../components/theme/theme.ts';
+import AuthNavigator from './AuthNavigator';
+import MainTabNavigator from './MainTabNavigator';
+import OnboardingScreen from "@/screens/auth/OnboardingScreen";
+import { theme } from "@/components/theme/theme";
 
 const Stack = createNativeStackNavigator();
 
@@ -23,7 +23,7 @@ export default function AppNavigator() {
     const initialize = async () => {
       try {
         const [{ auth }, { onAuthStateChanged }] = await Promise.all([
-          import('../config/firebaseConfig.ts'),
+          import('@/config/firebaseConfig'),
           import('firebase/auth')
         ]);
 
@@ -72,3 +72,4 @@ export default function AppNavigator() {
     </NavigationContainer>
   );
 }
+

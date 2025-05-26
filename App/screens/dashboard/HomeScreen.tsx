@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, Button, StyleSheet, ScrollView } from 'react-native';
-import ScreenContainer from '../../components/theme/ScreenContainer.js';
-import { theme } from '../../components/theme/theme.js';
-import { getTokenCount, syncSubscriptionStatus } from '../../utils/TokenManager';
+import ScreenContainer from "@/components/theme/ScreenContainer";
+import { theme } from "@/components/theme/theme";
+import { getTokenCount, syncSubscriptionStatus } from "@/utils/TokenManager";
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../../navigation/RootStackParamList.js';
+import { RootStackParamList } from "@/navigation/RootStackParamList";
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
 
@@ -108,3 +108,4 @@ const styles = StyleSheet.create({
     height: theme.spacing.md,
   },
 });
+
