@@ -9,16 +9,24 @@
     "android": {
       "package": "com.whippybuckle.wwjdapp",
       "googleServicesFile": "./google-services.json"
-
     },
-    "ios": {},
+    "ios": {
+      "bundleIdentifier": "com.whippybuckle.wwjdapp",
+      "googleServicesFile": "./GoogleService-Info.plist"
+    },
     "extra": {
       "eas": {
         "projectId": "4e9fc79d-ed33-4fc3-8e71-5533c8872160"
       }
     },
     "plugins": [
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-build-properties",
+      "@react-native-firebase/app",
+      "@react-native-firebase/auth",
+      "@react-native-firebase/firestore",
+      "@react-native-firebase/storage",
+      "@stripe/stripe-react-native"
     ]
   }
 }

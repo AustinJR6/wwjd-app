@@ -1,25 +1,22 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Alert } from 'react-native';
-import ScreenContainer from '../../components/theme/ScreenContainer.tsx';
-import Button from '../../components/common/Button.tsx';
+import ScreenContainer from '../../components/theme/ScreenContainer.js';
+import Button from '../../components/common/Button';
 import { useNavigation, CommonActions } from '@react-navigation/native';
-import { NativeStackScreenProps } from '@react-navigation/native-stack'; // Import NativeStackScreenProps
-import { completeOnboarding, updateUserFields } from '../../services/userService.ts';
-import { useUserStore } from '../../state/userStore.ts';
-import { SCREENS } from '../../navigation/screens.ts';
-import { theme } from '../../components/theme/theme.ts';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { completeOnboarding, updateUserFields } from '../../services/userService';
+import { useUserStore } from '../../state/userStore';
+import { SCREENS } from '../../navigation/screens';
+import { theme } from '../../components/theme/theme.js';
 import { Picker } from '@react-native-picker/picker';
-import type { RootStackParamList } from '../../navigation/RootStackParamList.ts';
+import type { RootStackParamList } from '../../navigation/RootStackParamList.js';
 
-// Define Props type for OnboardingScreen using NativeStackScreenProps for type safety
 type OnboardingScreenProps = NativeStackScreenProps<RootStackParamList, 'Onboarding'>;
-
 
 const religions = ['Christian', 'Muslim', 'Jewish', 'Hindu', 'Buddhist'];
 
 export default function OnboardingScreen() {
-  const user = useUserStore((state: any) => state.user); // Suppress implicit any
-  // Use the NativeStackScreenProps type for the navigation hook
+  const user = useUserStore((state: any) => state.user);
   const navigation = useNavigation<OnboardingScreenProps['navigation']>();
   const [religion, setReligion] = useState(user?.religion ?? 'Christian');
   const [loading, setLoading] = useState(false);
@@ -38,8 +35,8 @@ export default function OnboardingScreen() {
 
         navigation.reset({
           index: 0,
-          // FIX: Changed 'Home' to 'HOME' to match SCREENS.ts definition
-          routes: [{ name: SCREENS.MAIN.HOME }],
+          routes: [{ name: SCREENS.MAIN.HOME as keyof RootStackParamList }],
+
         });
       } else {
         Alert.alert('Error', 'User ID is missing.');

@@ -8,11 +8,11 @@ import {
   Alert,
   ScrollView,
 } from 'react-native';
-import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
-import ScreenContainer from '../../components/theme/ScreenContainer.tsx';
-import { theme } from '../../components/theme/theme.ts';
-import { getTokenCount, setTokenCount } from '../../utils/TokenManager.ts';
-import { ASK_GEMINI_SIMPLE } from '../../utils/constants.ts';
+import ScreenContainer from '../../components/theme/ScreenContainer.js';
+import { theme } from '../../components/theme/theme.js';
+import { getTokenCount, setTokenCount } from '../../utils/TokenManager';
+import { ASK_GEMINI_SIMPLE } from '../../utils/constants';
+import { firebaseAuth, db } from '../../config/firebaseConfig.js';
 
 export default function ChallengeScreen() {
   const [challenge, setChallenge] = useState('');
@@ -21,14 +21,13 @@ export default function ChallengeScreen() {
 
   const fetchChallenge = async () => {
     try {
-      const { auth, db } = await import('../../config/firebaseConfig.ts');
-      const user = auth.currentUser;
+      const user = firebaseAuth().currentUser;
       if (!user) return;
 
       setLoading(true);
 
-      const userRef = doc(db, 'users', user.uid);
-      const userSnap = await getDoc(userRef);
+      const userRef = db().collection('users').doc(user.uid);
+      const userSnap = await userRef.get();
       const userData = userSnap.data() || {};
       const lastChallenge = userData.lastChallenge?.toDate?.();
       const now = new Date();
@@ -57,10 +56,9 @@ export default function ChallengeScreen() {
       const newChallenge = data.response || 'Reflect in silence for five minutes today.';
       setChallenge(newChallenge);
 
-      await setDoc(
-        userRef,
+      await userRef.set(
         {
-          lastChallenge: serverTimestamp(),
+          lastChallenge: new Date(), // ✅ replaces serverTimestamp()
           lastChallengeText: newChallenge,
         },
         { merge: true }

@@ -9,11 +9,11 @@ import {
   Alert,
   ScrollView,
 } from 'react-native';
-import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
-import ScreenContainer from '../components/theme/ScreenContainer.tsx';
-import { theme } from '../components/theme/theme.ts';
-import { getTokenCount, setTokenCount } from '../utils/TokenManager.ts';
-import { ASK_GEMINI_CONVERSATION } from '../utils/constants.ts';
+import ScreenContainer from '../components/theme/ScreenContainer';
+import { theme } from '../components/theme/theme';
+import { getTokenCount, setTokenCount } from '../utils/TokenManager';
+import { ASK_GEMINI_V2 } from '../utils/constants';
+import { firebaseAuth, db } from '../config/firebaseConfig';
 
 export default function AskJesusScreen() {
   const [question, setQuestion] = useState('');
@@ -30,12 +30,11 @@ export default function AskJesusScreen() {
     setLoading(true);
 
     try {
-      const { auth, db } = await import('../config/firebaseConfig.ts');
-      const user = auth.currentUser;
+      const user = firebaseAuth().currentUser;
       if (!user) return;
 
-      const userRef = doc(db, 'users', user.uid);
-      const userSnap = await getDoc(userRef);
+      const userRef = db().collection('users').doc(user.uid);
+      const userSnap = await userRef.get();
       const userData = userSnap.data() || {};
       const lastAsk = userData.lastFreeAsk?.toDate?.();
       const now = new Date();
@@ -80,7 +79,7 @@ export default function AskJesusScreen() {
 
           await setTokenCount(tokens - cost);
         } else {
-          await setDoc(userRef, { lastFreeAsk: serverTimestamp() }, { merge: true });
+          await userRef.set({ lastFreeAsk: new Date() }, { merge: true });
         }
       }
 
@@ -90,7 +89,7 @@ export default function AskJesusScreen() {
       }
 
       const idToken = await user.getIdToken();
-      const response = await fetch(ASK_GEMINI_CONVERSATION, {
+      const response = await fetch(ASK_GEMINI_V2, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

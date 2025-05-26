@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -6,63 +6,65 @@ import {
   Button,
   StyleSheet,
   Alert
-} from 'react-native'
-import * as ImagePicker from 'expo-image-picker'
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
-import { db, storage } from '../../config/firebaseConfig.ts'
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore'
-import { useUser } from '../../hooks/useUser.ts'
-import ScreenContainer from '../../components/theme/ScreenContainer.tsx'
-import { theme } from '../../components/theme/theme.ts'
+} from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
+import { firebaseAuth, db, storageRef } from '../../config/firebaseConfig.js';
+import { useUser } from '../../hooks/useUser.js';
+import ScreenContainer from '../../components/theme/ScreenContainer.js';
+import { theme } from '../../components/theme/theme.js';
 
 export default function SubmitProofScreen() {
-  const { user } = useUser()
-  const [caption, setCaption] = useState('')
-  const [image, setImage] = useState<any>(null)
-  const [uploading, setUploading] = useState(false)
+  const { user } = useUser();
+  const [caption, setCaption] = useState('');
+  const [image, setImage] = useState<any>(null);
+  const [uploading, setUploading] = useState(false);
 
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       quality: 0.7
-    })
+    });
 
     if (!result.canceled) {
-      setImage(result.assets[0])
+      setImage(result.assets[0]);
     }
-  }
+  };
 
   const handleSubmit = async () => {
     if (!user || !image || !caption.trim()) {
-      Alert.alert('Missing Fields', 'Please add a caption and select an image.')
-      return
+      Alert.alert('Missing Fields', 'Please add a caption and select an image.');
+      return;
     }
 
-    setUploading(true)
+    setUploading(true);
     try {
-      const imgRef = ref(storage, `proofs/${user.uid}/${Date.now()}`)
-      const imgBlob = await fetch(image.uri).then(r => r.blob())
-      await uploadBytes(imgRef, imgBlob)
-      const imgUrl = await getDownloadURL(imgRef)
+      const refPath = `proofs/${user.uid}/${Date.now()}`;
+      const imgRef = storageRef().ref(refPath);
+      const imgBlob = await fetch(image.uri).then(r => r.blob());
 
-      await addDoc(collection(db, 'challengeProofs'), {
-        uid: user.uid,
-        caption,
-        imageUrl: imgUrl,
-        createdAt: serverTimestamp()
-      })
+      await imgRef.put(imgBlob);
+      const imgUrl = await imgRef.getDownloadURL();
 
-      Alert.alert('Submitted', 'Your proof has been submitted for review.')
-      setCaption('')
-      setImage(null)
+      await db()
+        .collection('challengeProofs')
+        .add({
+          uid: user.uid,
+          caption,
+          imageUrl: imgUrl,
+          createdAt: new Date() // ✅ replacing serverTimestamp()
+        });
+
+      Alert.alert('Submitted', 'Your proof has been submitted for review.');
+      setCaption('');
+      setImage(null);
     } catch (err) {
-      console.error('❌ Upload failed:', err)
-      Alert.alert('Error', 'Could not submit proof. Try again later.')
+      console.error('❌ Upload failed:', err);
+      Alert.alert('Error', 'Could not submit proof. Try again later.');
     } finally {
-      setUploading(false)
+      setUploading(false);
     }
-  }
+  };
 
   return (
     <ScreenContainer>
@@ -77,13 +79,21 @@ export default function SubmitProofScreen() {
 
       <Button title="Pick Image" onPress={pickImage} />
 
-      {image && <Text style={styles.filename}>Selected: {image.fileName || image.uri.split('/').pop()}</Text>}
+      {image && (
+        <Text style={styles.filename}>
+          Selected: {image.fileName || image.uri.split('/').pop()}
+        </Text>
+      )}
 
       <View style={styles.buttonWrap}>
-        <Button title={uploading ? 'Submitting…' : 'Submit'} onPress={handleSubmit} disabled={uploading} />
+        <Button
+          title={uploading ? 'Submitting…' : 'Submit'}
+          onPress={handleSubmit}
+          disabled={uploading}
+        />
       </View>
     </ScreenContainer>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
@@ -112,4 +122,4 @@ const styles = StyleSheet.create({
   buttonWrap: {
     marginTop: 20
   }
-})
+});

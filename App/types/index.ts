@@ -1,3 +1,3 @@
-export * from './user.ts'
-export * from './Challenge.ts'
-export * from './Organization.ts'
+export * from './user'
+export * from './Challenge'
+export * from './Organization'

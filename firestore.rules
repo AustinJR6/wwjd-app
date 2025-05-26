@@ -28,6 +28,16 @@ service cloud.firestore {
       allow read, write: if request.auth != null && request.auth.uid == uid;
     }
 
+    // 🎟️ Token usage
+    match /tokens/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+
+    // 🪪 WWJD+ subscription status
+    match /subscriptions/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+    }
+
     // 💳 Proof submissions (token-based actions)
     match /proofSubmissions/{docId} {
       allow create: if request.auth != null;
@@ -40,7 +50,7 @@ service cloud.firestore {
       allow write: if request.auth != null;
     }
 
-    // 🌍 Religion leaderboard scores (public view)
+    // 🌍 Religion leaderboard scores (public view, admin write)
     match /religions/{name} {
       allow read: if true;
       allow write: if request.auth != null && request.auth.token.admin == true;

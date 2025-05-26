@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { GEMINI_API_URL, STRIPE_API_URL } from '../config/apiConfig.ts';
+import { GEMINI_API_URL, STRIPE_API_URL } from '../config/apiConfig';
 
 type AskGeminiResponse = {
   reply: string;
@@ -21,7 +21,10 @@ export async function askGemini(prompt: string): Promise<string> {
 
 export async function createStripeCheckout(userId: string): Promise<string> {
   try {
-    const res = await axios.post<StripeCheckoutResponse>(`${STRIPE_API_URL}/create-checkout`, { userId });
+    const res = await axios.post<StripeCheckoutResponse>(
+      `${STRIPE_API_URL}/create-checkout`,
+      { userId }
+    );
     return res.data.checkoutUrl;
   } catch (err: any) {
     console.error('Stripe API error:', err);

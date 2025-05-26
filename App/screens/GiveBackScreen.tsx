@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { View, Text, Button, StyleSheet, Alert, Linking } from 'react-native';
-import ScreenContainer from '../components/theme/ScreenContainer.tsx';
-import { theme } from '../components/theme/theme.ts';
+import ScreenContainer from '../components/theme/ScreenContainer';
+import { theme } from '../components/theme/theme';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../navigation/RootStackParamList.ts';
+import { RootStackParamList } from '../navigation/RootStackParamList';
+import { firebaseAuth } from '../config/firebaseConfig'; // ✅ static import
 
 type Props = NativeStackScreenProps<RootStackParamList, 'GiveBack'>;
 
@@ -14,8 +15,7 @@ export default function GiveBackScreen({ navigation }: Props) {
     setDonating(true);
 
     try {
-      const { auth } = await import('../config/firebaseConfig.ts');
-      const user = auth.currentUser;
+      const user = firebaseAuth().currentUser;
       if (!user) return;
 
       const res = await fetch('https://us-central1-wwjd-app.cloudfunctions.net/createCheckoutSession', {

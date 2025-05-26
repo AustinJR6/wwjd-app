@@ -1,6 +1,6 @@
 import React from 'react'
 import { Modal as RNModal, View, Text, StyleSheet, TouchableOpacity } from 'react-native'
-import { theme } from '../theme/theme.ts'
+import { theme } from '../theme/theme'
 
 interface ModalProps {
   visible: boolean

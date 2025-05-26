@@ -8,15 +8,14 @@ import {
   Button,
   Alert
 } from 'react-native';
-import { theme } from '../../components/theme/theme.ts';
-import ScreenContainer from '../../components/theme/ScreenContainer.tsx';
-import { useUser } from '../../hooks/useUser.ts';
-import { db } from '../../config/firebaseConfig.ts';
-import { doc, setDoc } from 'firebase/firestore';
+import { theme } from '../../components/theme/theme.js';
+import ScreenContainer from '../../components/theme/ScreenContainer.js';
+import { useUser } from '../../hooks/useUser.js';
+import { db } from '../../config/firebaseConfig.js';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../../navigation/RootStackParamList.ts'; // ✅
+import { RootStackParamList } from '../../navigation/RootStackParamList.js';
 
-type Props = NativeStackScreenProps<RootStackParamList, 'SelectReligion'>; // ✅
+type Props = NativeStackScreenProps<RootStackParamList, 'SelectReligion'>;
 
 const RELIGIONS = [
   'Christianity',
@@ -40,13 +39,12 @@ export default function SelectReligionScreen({ navigation }: Props) {
     if (!user) return;
 
     try {
-      await setDoc(
-        doc(db, 'users', user.uid),
-        { religion: selected },
-        { merge: true }
-      );
+      await db()
+        .collection('users')
+        .doc(user.uid)
+        .set({ religion: selected }, { merge: true });
 
-      navigation.replace('Quote'); // ✅ Navigates forward
+      navigation.replace('Quote');
     } catch (err) {
       console.error('❌ Religion selection error:', err);
       Alert.alert('Error', 'Could not save your selection. Please try again.');

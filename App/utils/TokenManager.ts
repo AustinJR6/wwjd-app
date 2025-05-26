@@ -1,29 +1,26 @@
-import { firebaseAuth, db } from '../config/firebaseConfig.ts'; // Static import of aligned Firebase instances
-import { doc, getDoc, setDoc, updateDoc } from '@react-native-firebase/firestore'; // Correct Firestore imports
+import { firebaseAuth, db } from '../config/firebaseConfig'; // ✅ no .ts
 
 export const getTokenCount = async () => {
-  const user = firebaseAuth.currentUser; // Use firebaseAuth instance
+  const user = firebaseAuth().currentUser;
   if (!user) return 0;
 
-  const tokenRef = doc(db, 'tokens', user.uid); // Use db instance
-  const tokenSnap = await getDoc(tokenRef);
+  const tokenRef = db().collection('tokens').doc(user.uid);
+  const tokenSnap = await tokenRef.get();
 
   if (tokenSnap.exists()) {
-    // FIX: Use non-null assertion operator (!) on docSnap.data()
-    const data = tokenSnap.data()!; // Assert that data is not undefined here
+    const data = tokenSnap.data()!;
     return data.count || 0;
   } else {
-    // If the document doesn't exist, count is 0
     return 0;
   }
 };
 
 export const setTokenCount = async (count: number) => {
-  const user = firebaseAuth.currentUser; // Use firebaseAuth instance
+  const user = firebaseAuth().currentUser;
   if (!user) return;
 
-  const tokenRef = doc(db, 'tokens', user.uid); // Use db instance
-  await setDoc(tokenRef, { count }, { merge: true });
+  const tokenRef = db().collection('tokens').doc(user.uid);
+  await tokenRef.set({ count }, { merge: true });
 };
 
 export const consumeToken = async () => {
@@ -34,17 +31,16 @@ export const consumeToken = async () => {
 };
 
 export const canUseFreeAsk = async () => {
-  const user = firebaseAuth.currentUser; // Use firebaseAuth instance
+  const user = firebaseAuth().currentUser;
   if (!user) return false;
 
-  const docRef = doc(db, 'freeAsk', user.uid); // Use db instance
-  const docSnap = await getDoc(docRef);
+  const docRef = db().collection('freeAsk').doc(user.uid);
+  const docSnap = await docRef.get();
 
-  if (!docSnap.exists()) return true;
+  if (!docSnap.exists) return true;
 
-  // FIX: Use non-null assertion operator (!) on docSnap.data()
-  const data = docSnap.data()!; // Assert that data is not undefined here
-  const lastUsed = data.date?.toDate?.(); // Optional chaining for 'date' and 'toDate'
+  const data = docSnap.data()!;
+  const lastUsed = data.date?.toDate?.();
   if (!lastUsed) return true;
 
   const now = new Date();
@@ -55,26 +51,25 @@ export const canUseFreeAsk = async () => {
 };
 
 export const useFreeAsk = async () => {
-  const user = firebaseAuth.currentUser; // Use firebaseAuth instance
+  const user = firebaseAuth().currentUser;
   if (!user) return;
 
-  const docRef = doc(db, 'freeAsk', user.uid); // Use db instance
-  await setDoc(docRef, { date: new Date() });
+  const docRef = db().collection('freeAsk').doc(user.uid);
+  await docRef.set({ date: new Date() });
 };
 
 export const syncSubscriptionStatus = async () => {
-  const user = firebaseAuth.currentUser; // Use firebaseAuth instance
+  const user = firebaseAuth().currentUser;
   if (!user) return;
 
-  const subRef = doc(db, 'subscriptions', user.uid); // Use db instance
-  const subSnap = await getDoc(subRef);
+  const subRef = db().collection('subscriptions').doc(user.uid);
+  const subSnap = await subRef.get();
 
-  // FIX: Use non-null assertion operator (!) on subSnap.data()
-  const isSubscribed = subSnap.exists() && subSnap.data()!.active === true; // Assert data is not undefined
+  const isSubscribed = subSnap.exists() && subSnap.data()!.active === true;
 
-  const tokenRef = doc(db, 'tokens', user.uid); // Use db instance
+  const tokenRef = db().collection('tokens').doc(user.uid);
   if (isSubscribed) {
-    await setDoc(tokenRef, { count: 9999 }, { merge: true }); // Give essentially unlimited tokens
+    await tokenRef.set({ count: 9999 }, { merge: true });
   }
 };
 

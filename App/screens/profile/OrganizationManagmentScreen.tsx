@@ -8,17 +8,10 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
-import { db } from '../../config/firebaseConfig.ts';
-import {
-  doc,
-  getDoc,
-  updateDoc,
-  arrayRemove,
-  arrayUnion,
-} from 'firebase/firestore';
-import { useUser } from '../../hooks/useUser.ts';
-import ScreenContainer from '../../components/theme/ScreenContainer.tsx';
-import { theme } from '../../components/theme/theme.ts';
+import { db } from '../../config/firebaseConfig.js';
+import { useUser } from '../../hooks/useUser.js';
+import ScreenContainer from '../../components/theme/ScreenContainer.js';
+import { theme } from '../../components/theme/theme.js';
 
 export default function OrganizationManagementScreen() {
   const { user } = useUser();
@@ -30,14 +23,14 @@ export default function OrganizationManagementScreen() {
   }, [user]);
 
   const loadOrg = async () => {
-    if (!user) return; // ✅ FIX: Ensure user is not null
+    if (!user) return;
     setLoading(true);
     try {
-      const userSnap = await getDoc(doc(db, 'users', user.uid));
+      const userSnap = await db().collection('users').doc(user.uid).get();
       const orgId = userSnap.data()?.organizationId;
       if (!orgId) throw new Error('No organization found');
 
-      const orgSnap = await getDoc(doc(db, 'organizations', orgId));
+      const orgSnap = await db().collection('organizations').doc(orgId).get();
       setOrg({ id: orgId, ...orgSnap.data() });
     } catch (err) {
       console.error('❌ Failed to load org:', err);
@@ -49,8 +42,8 @@ export default function OrganizationManagementScreen() {
 
   const removeMember = async (uid: string) => {
     try {
-      await updateDoc(doc(db, 'organizations', org.id), {
-        members: arrayRemove(uid),
+      await db().collection('organizations').doc(org.id).update({
+        members: db.FieldValue.arrayRemove(uid),
       });
       Alert.alert('Removed', 'Member removed from organization.');
       loadOrg();

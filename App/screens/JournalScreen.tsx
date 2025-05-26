@@ -13,21 +13,10 @@ import {
   Button,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import ScreenContainer from '../components/theme/ScreenContainer.tsx';
-import { theme } from '../components/theme/theme.ts';
-import {
-  doc,
-  getDoc,
-  setDoc,
-  updateDoc,
-  serverTimestamp,
-  collection,
-  query,
-  getDocs,
-  orderBy,
-  addDoc,
-} from 'firebase/firestore';
+import ScreenContainer from '../components/theme/ScreenContainer';
+import { theme } from '../components/theme/theme';
 import * as LocalAuthentication from 'expo-local-authentication';
+import { firebaseAuth, db } from '../config/firebaseConfig'; // ✅ fixed import
 
 export default function JournalScreen() {
   const [entry, setEntry] = useState('');
@@ -52,10 +41,11 @@ export default function JournalScreen() {
           }
         }
 
-        const { db } = await import('../config/firebaseConfig.ts');
+        const q = db()
+          .collection('journalEntries')
+          .orderBy('createdAt', 'desc');
+        const snap = await q.get();
 
-        const q = query(collection(db, 'journalEntries'), orderBy('createdAt', 'desc'));
-        const snap = await getDocs(q);
         const list = snap.docs.map((d) => ({
           id: d.id,
           ...d.data(),
@@ -75,17 +65,15 @@ export default function JournalScreen() {
     if (!entry.trim()) return;
     setSaving(true);
     try {
-      const { db } = await import('../config/firebaseConfig.ts');
-
-      await addDoc(collection(db, 'journalEntries'), {
+      await db().collection('journalEntries').add({
         text: entry,
-        createdAt: serverTimestamp(),
+        createdAt: new Date(), // ✅ replaces serverTimestamp()
       });
       Alert.alert('Saved!', 'Your reflection has been saved.');
       setEntry('');
 
-      const q = query(collection(db, 'journalEntries'), orderBy('createdAt', 'desc'));
-      const snap = await getDocs(q);
+      const q = db().collection('journalEntries').orderBy('createdAt', 'desc');
+      const snap = await q.get();
       const list = snap.docs.map((d) => ({
         id: d.id,
         ...d.data(),
@@ -136,7 +124,9 @@ export default function JournalScreen() {
           <Pressable key={e.id} onPress={() => openEntry(e)}>
             <View style={styles.entryItem}>
               <Text style={styles.entryDate}>
-                {e.createdAt?.toDate ? e.createdAt.toDate().toLocaleString() : '(no date)'}
+                {e.createdAt?.toDate
+                  ? e.createdAt.toDate().toLocaleString()
+                  : '(no date)'}
               </Text>
               <Text style={styles.entryText}>
                 {e.text.length > 100 ? e.text.slice(0, 100) + '…' : e.text}

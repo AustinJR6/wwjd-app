@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Alert } from 'react-native';
-import ScreenContainer from '../../components/theme/ScreenContainer.tsx';
-import TextField from '../../components/TextField.tsx';
-import Button from '../../components/common/Button.tsx';
-import { signup } from '../../services/authService.ts';
-import { createUserProfile } from '../../services/userService.ts';
+import ScreenContainer from '../../components/theme/ScreenContainer.js';
+import TextField from '../../components/TextField';
+import Button from '../../components/common/Button';
+import { signup } from '../../services/authService';
+import { createUserProfile } from '../../services/userService';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { theme } from '../../components/theme/theme.ts';
-import { RootStackParamList } from '../../navigation/RootStackParamList.ts'; // ✅
+import { theme } from '../../components/theme/theme.js';
+import { RootStackParamList } from '../../navigation/RootStackParamList.js';
+import { firebaseAuth } from '../../config/firebaseConfig.js'; // ✅ corrected
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -16,16 +17,14 @@ export default function SignupScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const navigation = useNavigation<NavigationProp>(); // ✅ Typed navigation
+  const navigation = useNavigation<NavigationProp>();
 
   const handleSignup = async () => {
     setLoading(true);
     try {
-      const { auth } = await import('../../config/firebaseConfig.ts');
-
       await signup(email, password);
 
-      const firebaseUser = auth.currentUser;
+      const firebaseUser = firebaseAuth().currentUser; // ✅ updated access
       if (!firebaseUser) throw new Error('User creation failed.');
 
       await createUserProfile({
@@ -34,7 +33,7 @@ export default function SignupScreen() {
         displayName: firebaseUser.displayName ?? '',
       });
 
-      // Navigation will reroute via AppNavigator
+      // Navigation handled automatically after auth
     } catch (err: any) {
       Alert.alert('Signup Failed', err.message);
     } finally {
@@ -65,14 +64,14 @@ export default function SignupScreen() {
 
       <Text
         style={styles.link}
-        onPress={() => navigation.navigate('Login')} // ✅ use literal
+        onPress={() => navigation.navigate('Login')}
       >
         Already have an account? Log in
       </Text>
 
       <Text
         style={styles.link}
-        onPress={() => navigation.navigate('OrganizationSignup')} // ✅ use literal
+        onPress={() => navigation.navigate('OrganizationSignup')}
       >
         Want to register your organization? Click here
       </Text>

@@ -8,10 +8,10 @@ import {
   StyleSheet,
   Alert,
 } from 'react-native';
-import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
-import ScreenContainer from '../../components/theme/ScreenContainer.tsx';
-import { theme } from '../../components/theme/theme.ts';
-import { ASK_GEMINI_SIMPLE } from '../../utils/constants.ts';
+import ScreenContainer from '../../components/theme/ScreenContainer.js';
+import { theme } from '../../components/theme/theme.js';
+import { ASK_GEMINI_SIMPLE } from '../../utils/constants';
+import { firebaseAuth, db } from '../../config/firebaseConfig.js';
 
 export default function StreakScreen() {
   const [message, setMessage] = useState('');
@@ -24,13 +24,13 @@ export default function StreakScreen() {
 
   const fetchStreakMessage = async () => {
     try {
-      const { auth, db } = await import('../../config/firebaseConfig.ts');
-      const user = auth.currentUser;
+      const user = firebaseAuth().currentUser;
       if (!user) return;
 
       setLoading(true);
-      const streakRef = doc(db, 'completedChallenges', user.uid);
-      const streakSnap = await getDoc(streakRef);
+
+      const streakRef = db().collection('completedChallenges').doc(user.uid);
+      const streakSnap = await streakRef.get();
       const streakData = streakSnap.data();
 
       const today = new Date().toDateString();
@@ -51,21 +51,17 @@ export default function StreakScreen() {
           Authorization: `Bearer ${idToken}`,
         },
         body: JSON.stringify({
-          prompt: `The user has completed ${
-            streakData?.streakCount || 0
-          } daily challenges in a row. Give them a short motivational message from Jesus that acknowledges their consistency and encourages them to continue.`,
+          prompt: `The user has completed ${streakData?.streakCount || 0} daily challenges in a row. Give them a short motivational message from Jesus that acknowledges their consistency and encourages them to continue.`,
         }),
       });
 
       const data = await response.json();
-      const messageText =
-        data?.response || 'You are walking faithfully. Keep your eyes on Me.';
+      const messageText = data?.response || 'You are walking faithfully. Keep your eyes on Me.';
 
       setMessage(messageText);
       setStreak(streakData?.streakCount || 0);
 
-      await setDoc(
-        streakRef,
+      await streakRef.set(
         {
           lastStreakMessageDate: today,
           message: messageText,

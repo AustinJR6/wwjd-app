@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, Button, StyleSheet, ScrollView } from 'react-native';
-import ScreenContainer from '../../components/theme/ScreenContainer.tsx';
-import { theme } from '../../components/theme/theme.ts';
-import { getTokenCount, syncSubscriptionStatus } from '../../utils/TokenManager.ts';
+import ScreenContainer from '../../components/theme/ScreenContainer.js';
+import { theme } from '../../components/theme/theme.js';
+import { getTokenCount, syncSubscriptionStatus } from '../../utils/TokenManager';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../../navigation/RootStackParamList.ts'; // ✅ Make sure this exists
+import { RootStackParamList } from '../../navigation/RootStackParamList.js';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
 
@@ -15,9 +15,9 @@ export default function HomeScreen({ navigation }: Props) {
   useEffect(() => {
     const loadData = async () => {
       const t = await getTokenCount();
-      await syncSubscriptionStatus(); // This updates tokens, but doesn’t return a value
+      await syncSubscriptionStatus(); // updates Firestore token state
       setTokens(t);
-      setSubscribed(t >= 9999); // Assuming 9999 means subscribed
+      setSubscribed(t >= 9999); // 9999 token cap implies WWJD+ sub
     };
     loadData();
   }, []);

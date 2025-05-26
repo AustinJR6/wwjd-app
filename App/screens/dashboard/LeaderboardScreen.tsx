@@ -1,42 +1,52 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ActivityIndicator,
   ScrollView
-} from 'react-native'
-import { collection, getDocs, orderBy, query } from 'firebase/firestore'
-import { db } from '../../config/firebaseConfig.ts'
-import ScreenContainer from '../../components/theme/ScreenContainer.tsx'
-import { theme } from '../../components/theme/theme.ts'
+} from 'react-native';
+import { db } from '../../config/firebaseConfig.js';
+import ScreenContainer from '../../components/theme/ScreenContainer.js';
+import { theme } from '../../components/theme/theme.js';
 
 export default function LeaderboardsScreen() {
-  const [individuals, setIndividuals] = useState<any[]>([])
-  const [religions, setReligions] = useState<any[]>([])
-  const [organizations, setOrganizations] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
+  const [individuals, setIndividuals] = useState<any[]>([]);
+  const [religions, setReligions] = useState<any[]>([]);
+  const [organizations, setOrganizations] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchData()
-  }, [])
+    fetchData();
+  }, []);
 
   const fetchData = async () => {
-    setLoading(true)
+    setLoading(true);
     try {
-      const userSnap = await getDocs(query(collection(db, 'users'), orderBy('individualPoints', 'desc')))
-      const religionSnap = await getDocs(query(collection(db, 'religions'), orderBy('totalPoints', 'desc')))
-      const orgSnap = await getDocs(query(collection(db, 'organizations'), orderBy('totalPoints', 'desc')))
+      const userSnap = await db()
+        .collection('users')
+        .orderBy('individualPoints', 'desc')
+        .get();
 
-      setIndividuals(userSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })))
-      setReligions(religionSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })))
-      setOrganizations(orgSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })))
+      const religionSnap = await db()
+        .collection('religions')
+        .orderBy('totalPoints', 'desc')
+        .get();
+
+      const orgSnap = await db()
+        .collection('organizations')
+        .orderBy('totalPoints', 'desc')
+        .get();
+
+      setIndividuals(userSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      setReligions(religionSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      setOrganizations(orgSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     } catch (err) {
-      console.error('🔥 Error loading leaderboards:', err)
+      console.error('🔥 Error loading leaderboards:', err);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const renderList = (title: string, data: any[], keyName: string, valueName: string) => (
     <View style={styles.section}>
@@ -49,7 +59,7 @@ export default function LeaderboardsScreen() {
         </View>
       ))}
     </View>
-  )
+  );
 
   return (
     <ScreenContainer>
@@ -66,7 +76,7 @@ export default function LeaderboardsScreen() {
         )}
       </ScrollView>
     </ScreenContainer>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
@@ -107,4 +117,4 @@ const styles = StyleSheet.create({
   points: {
     fontWeight: '600'
   }
-})
+});

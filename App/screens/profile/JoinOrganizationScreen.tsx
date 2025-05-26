@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -7,69 +7,62 @@ import {
   FlatList,
   StyleSheet,
   Alert
-} from 'react-native'
-import { db } from '../../config/firebaseConfig.ts'
-import {
-  collection,
-  getDocs,
-  updateDoc,
-  doc,
-  arrayUnion
-} from 'firebase/firestore'
-import { useUser } from '../../hooks/useUser.ts'
-import ScreenContainer from '../../components/theme/ScreenContainer.tsx'
-import { theme } from '../../components/theme/theme.ts'
+} from 'react-native';
+import { db } from '../../config/firebaseConfig.js';
+import { useUser } from '../../hooks/useUser.js';
+import ScreenContainer from '../../components/theme/ScreenContainer.js';
+import { theme } from '../../components/theme/theme.js';
 
 export default function JoinOrganizationScreen() {
-  const { user } = useUser()
-  const [query, setQuery] = useState('')
-  const [orgs, setOrgs] = useState<any[]>([])
-  const [filtered, setFiltered] = useState<any[]>([])
+  const { user } = useUser();
+  const [query, setQuery] = useState('');
+  const [orgs, setOrgs] = useState<any[]>([]);
+  const [filtered, setFiltered] = useState<any[]>([]);
 
   useEffect(() => {
-    fetchOrgs()
-  }, [])
+    fetchOrgs();
+  }, []);
 
   const fetchOrgs = async () => {
     try {
-      const snap = await getDocs(collection(db, 'organizations'))
-      const all = snap.docs.map(d => ({ id: d.id, ...d.data() }))
-      setOrgs(all)
-      setFiltered(all)
+      const snap = await db().collection('organizations').get();
+      const all = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      setOrgs(all);
+      setFiltered(all);
     } catch (err) {
-      console.error('❌ Failed to fetch organizations:', err)
+      console.error('❌ Failed to fetch organizations:', err);
     }
-  }
+  };
 
   const handleSearch = (text: string) => {
-    setQuery(text)
+    setQuery(text);
     setFiltered(
       orgs.filter(o => o.name.toLowerCase().includes(text.toLowerCase()))
-    )
-  }
+    );
+  };
 
   const joinOrg = async (org: any) => {
-    if (!user) return
+    if (!user) return;
     if ((org.members?.length || 0) >= org.seatLimit) {
-      Alert.alert('Full', 'This organization has no available seats.')
-      return
+      Alert.alert('Full', 'This organization has no available seats.');
+      return;
     }
 
     try {
-      await updateDoc(doc(db, 'users', user.uid), {
+      await db().collection('users').doc(user.uid).update({
         organizationId: org.id
-      })
+      });
 
-      await updateDoc(doc(db, 'organizations', org.id), {
-        members: arrayUnion(user.uid)
-      })
+      await db().collection('organizations').doc(org.id).update({
+        members: db.FieldValue.arrayUnion(user.uid)
+      });
 
-      Alert.alert('Joined', `You’ve joined ${org.name}.`)
+      Alert.alert('Joined', `You’ve joined ${org.name}.`);
     } catch (err) {
-      console.error('❌ Join error:', err)
-      Alert.alert('Error', 'Could not join organization. Please try again.')
+      console.error('❌ Join error:', err);
+      Alert.alert('Error', 'Could not join organization. Please try again.');
     }
-  }
+  };
 
   return (
     <ScreenContainer>
@@ -96,7 +89,7 @@ export default function JoinOrganizationScreen() {
         )}
       />
     </ScreenContainer>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
@@ -137,4 +130,4 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: theme.colors.fadedText
   }
-})
+});

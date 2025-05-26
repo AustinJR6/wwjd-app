@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -8,35 +8,33 @@ import {
   Alert,
   ActivityIndicator,
   ScrollView
-} from 'react-native'
-import { auth } from '../../config/firebaseConfig.ts'
-import { db } from '../../config/firebaseConfig.ts'
-import { doc, updateDoc, increment } from 'firebase/firestore'
-import ScreenContainer from '../../components/theme/ScreenContainer.tsx'
-import { theme } from '../../components/theme/theme.ts'
-import { ASK_GEMINI_SIMPLE } from '../../utils/constants.ts'
+} from 'react-native';
+import ScreenContainer from '../../components/theme/ScreenContainer.js';
+import { theme } from '../../components/theme/theme.js';
+import { ASK_GEMINI_SIMPLE } from '../../utils/constants';
+import { firebaseAuth, db } from '../../config/firebaseConfig.js';
 
 export default function TriviaScreen() {
-  const [story, setStory] = useState('')
-  const [answer, setAnswer] = useState('')
-  const [correctReligion, setCorrectReligion] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [revealed, setRevealed] = useState(false)
+  const [story, setStory] = useState('');
+  const [answer, setAnswer] = useState('');
+  const [correctReligion, setCorrectReligion] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [revealed, setRevealed] = useState(false);
 
   useEffect(() => {
-    fetchTrivia()
-  }, [])
+    fetchTrivia();
+  }, []);
 
   const fetchTrivia = async () => {
-    const user = auth.currentUser
-    if (!user) return
+    const user = firebaseAuth().currentUser;
+    if (!user) return;
 
-    setLoading(true)
-    setRevealed(false)
-    setAnswer('')
+    setLoading(true);
+    setRevealed(false);
+    setAnswer('');
 
     try {
-      const idToken = await user.getIdToken()
+      const idToken = await user.getIdToken();
       const response = await fetch(ASK_GEMINI_SIMPLE, {
         method: 'POST',
         headers: {
@@ -46,47 +44,50 @@ export default function TriviaScreen() {
         body: JSON.stringify({
           prompt: `Give me a short moral story originally from any major world religion. Replace all real names and locations with fictional ones so that it seems to come from a different culture or context. Keep the meaning and lesson of the story intact. At the end, include a line that says REVEAL: followed by the actual religion.`
         })
-      })
+      });
 
-      const data = await response.json()
-      const [cleanStory, religion] = data.response.split('\nREVEAL:')
+      const data = await response.json();
+      const [cleanStory, religion] = data.response.split('\nREVEAL:');
 
-      setStory(cleanStory.trim())
-      setCorrectReligion(religion?.trim())
+      setStory(cleanStory.trim());
+      setCorrectReligion(religion?.trim());
     } catch (err) {
-      console.error('❌ Trivia fetch error:', err)
-      Alert.alert('Error', 'Could not load trivia. Please try again later.')
+      console.error('❌ Trivia fetch error:', err);
+      Alert.alert('Error', 'Could not load trivia. Please try again later.');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const submitAnswer = async () => {
-    if (!answer) return
+    if (!answer) return;
 
-    const user = auth.currentUser
-    if (!user) return
+    const user = firebaseAuth().currentUser;
+    if (!user) return;
 
-    setRevealed(true)
+    setRevealed(true);
 
     const isCorrect =
-      correctReligion && answer.toLowerCase().includes(correctReligion.toLowerCase())
+      correctReligion && answer.toLowerCase().includes(correctReligion.toLowerCase());
 
     if (isCorrect) {
       try {
-        await updateDoc(doc(db, 'users', user.uid), {
-          individualPoints: increment(5)
-        })
+        await db()
+          .collection('users')
+          .doc(user.uid)
+          .update({
+            individualPoints: db.FieldValue.increment(5) // ✅ equivalent to `increment(5)`
+          });
       } catch (err) {
-        console.error('❌ Point update failed:', err)
+        console.error('❌ Point update failed:', err);
       }
     }
 
     Alert.alert(
       isCorrect ? 'Correct!' : 'Not quite',
       `The story was from: ${correctReligion}`
-    )
-  }
+    );
+  };
 
   return (
     <ScreenContainer>
@@ -112,7 +113,7 @@ export default function TriviaScreen() {
         )}
       </ScrollView>
     </ScreenContainer>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
@@ -141,4 +142,4 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     color: theme.colors.text
   }
-})
+});

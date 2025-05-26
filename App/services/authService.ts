@@ -1,17 +1,11 @@
-import { firebaseAuth } from '../config/firebaseConfig.ts'; // Import aligned auth instance
-import {
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  signOut,
-  sendPasswordResetEmail,
-} from '@react-native-firebase/auth'; // Import functions from @react-native-firebase/auth
+import { firebaseAuth } from '../config/firebaseConfig'; // no .ts extension
 
 /**
  * Sign up a new user with email and password
  */
 export async function signup(email: string, password: string): Promise<void> {
   try {
-    await createUserWithEmailAndPassword(firebaseAuth, email, password); // Use firebaseAuth instance
+    await firebaseAuth().createUserWithEmailAndPassword(email, password);
   } catch (error: any) {
     throw new Error(error.message);
   }
@@ -22,7 +16,7 @@ export async function signup(email: string, password: string): Promise<void> {
  */
 export async function login(email: string, password: string): Promise<void> {
   try {
-    await signInWithEmailAndPassword(firebaseAuth, email, password); // Use firebaseAuth instance
+    await firebaseAuth().signInWithEmailAndPassword(email, password);
   } catch (error: any) {
     throw new Error(error.message);
   }
@@ -33,7 +27,7 @@ export async function login(email: string, password: string): Promise<void> {
  */
 export async function logout(): Promise<void> {
   try {
-    await signOut(firebaseAuth); // Use firebaseAuth instance
+    await firebaseAuth().signOut();
   } catch (error: any) {
     throw new Error(error.message);
   }
@@ -44,7 +38,7 @@ export async function logout(): Promise<void> {
  */
 export async function resetPassword(email: string): Promise<void> {
   try {
-    await sendPasswordResetEmail(firebaseAuth, email); // Use firebaseAuth instance
+    await firebaseAuth().sendPasswordResetEmail(email);
   } catch (error: any) {
     throw new Error(error.message);
   }

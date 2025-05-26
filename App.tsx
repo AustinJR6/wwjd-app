@@ -3,43 +3,41 @@ import { View, ActivityIndicator } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-// Correct import for @react-native-firebase User type
 import type { FirebaseAuthTypes } from '@react-native-firebase/auth';
-// Import the aligned Firebase instances from your config file
-import { firebaseAuth } from './App/config/firebaseConfig.ts'; // Use the exported instance
+import { firebaseAuth } from './App/config/firebaseConfig'; // ✅ FIXED: Removed .ts extension
 
-import { RootStackParamList } from './App/navigation/RootStackParamList.ts';
-import { theme } from './App/components/theme/theme.ts';
+import { RootStackParamList } from './App/navigation/RootStackParamList';
+import { theme } from './App/components/theme/theme';
 
 // Auth Screens
-import LoginScreen from './App/screens/auth/LoginScreen.tsx';
-import SignupScreen from './App/screens/auth/SignupScreen.tsx';
-import OnboardingScreen from './App/screens/auth/OnboardingScreen.tsx';
-import SelectReligionScreen from './App/screens/auth/SelectReligionScreen.tsx';
-import OrganizationSignupScreen from './App/screens/auth/OrganizationSignupScreen.tsx';
+import LoginScreen from './App/screens/auth/LoginScreen';
+import SignupScreen from './App/screens/auth/SignupScreen';
+import OnboardingScreen from './App/screens/auth/OnboardingScreen';
+import SelectReligionScreen from './App/screens/auth/SelectReligionScreen';
+import OrganizationSignupScreen from './App/screens/auth/OrganizationSignupScreen';
 
 // Dashboard Screens
-import HomeScreen from './App/screens/dashboard/HomeScreen.tsx';
-import ChallengeScreen from './App/screens/dashboard/ChallengeScreen.tsx';
-import StreakScreen from './App/screens/dashboard/StreakScreen.tsx';
-import UpgradeScreen from './App/screens/dashboard/UpgradeScreen.tsx';
-import LeaderboardsScreen from './App/screens/dashboard/LeaderboardScreen.tsx';
-import TriviaScreen from './App/screens/dashboard/TriviaScreen.tsx';
-import SubmitProofScreen from './App/screens/dashboard/SubmitProofScreen.tsx';
+import HomeScreen from './App/screens/dashboard/HomeScreen';
+import ChallengeScreen from './App/screens/dashboard/ChallengeScreen';
+import StreakScreen from './App/screens/dashboard/StreakScreen';
+import UpgradeScreen from './App/screens/dashboard/UpgradeScreen';
+import LeaderboardsScreen from './App/screens/dashboard/LeaderboardScreen';
+import TriviaScreen from './App/screens/dashboard/TriviaScreen';
+import SubmitProofScreen from './App/screens/dashboard/SubmitProofScreen';
 
 // Profile Screens
-import ProfileScreen from './App/screens/profile/ProfileScreen.tsx';
-import SettingsScreen from './App/screens/profile/SettingsScreen.tsx';
-import OrganizationManagementScreen from './App/screens/profile/OrganizationManagmentScreen.tsx';
-import JoinOrganizationScreen from './App/screens/profile/JoinOrganizationScreen.tsx';
+import ProfileScreen from './App/screens/profile/ProfileScreen';
+import SettingsScreen from './App/screens/profile/SettingsScreen';
+import OrganizationManagementScreen from './App/screens/profile/OrganizationManagmentScreen';
+import JoinOrganizationScreen from './App/screens/profile/JoinOrganizationScreen';
 
 // Root-Level Screens
-import QuoteScreen from './App/screens/QuoteScreen.tsx';
-import AskJesusScreen from './App/screens/AskJesusScreen.tsx';
-import JournalScreen from './App/screens/JournalScreen.tsx';
-import ConfessionalScreen from './App/screens/ConfessionalScreen.tsx';
-import BuyTokensScreen from './App/screens/BuyTokensScreen.tsx';
-import GiveBackScreen from './App/screens/GiveBackScreen.tsx';
+import QuoteScreen from './App/screens/QuoteScreen';
+import AskJesusScreen from './App/screens/AskJesusScreen';
+import JournalScreen from './App/screens/JournalScreen';
+import ConfessionalScreen from './App/screens/ConfessionalScreen';
+import BuyTokensScreen from './App/screens/BuyTokensScreen';
+import GiveBackScreen from './App/screens/GiveBackScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -53,22 +51,17 @@ export default function App() {
 
     const initialize = async () => {
       try {
-        // Use the firebaseAuth instance directly from your config
-        unsubscribe = firebaseAuth.onAuthStateChanged(
+        unsubscribe = firebaseAuth().onAuthStateChanged(
           async (firebaseUser: FirebaseAuthTypes.User | null) => {
             setUser(firebaseUser);
 
             if (firebaseUser) {
               const hasSeen = await SecureStore.getItemAsync(`hasSeenOnboarding-${firebaseUser.uid}`);
-              // If user is authenticated, decide initial route based on onboarding status
               setInitialRoute(hasSeen === 'true' ? 'Quote' : 'Onboarding');
 
-              // Dynamically import TokenManager if needed, but consider importing at top
-              // if it's always used.
-              const { init } = await import('./App/utils/TokenManager.ts');
+              const { init } = await import('./App/utils/TokenManager');
               init?.();
             } else {
-              // If no user, default to Login
               setInitialRoute('Login');
             }
 
@@ -78,7 +71,6 @@ export default function App() {
       } catch (err) {
         console.error('❌ Auth load error in AppNavigator:', err);
         setCheckingAuth(false);
-        // Fallback to Login route on error
         setInitialRoute('Login');
       }
     };
@@ -90,7 +82,7 @@ export default function App() {
     };
   }, []);
 
-  if (checkingAuth || (!initialRoute && user)) { // Added !initialRoute && user to handle race condition where user exists but initialRoute isn't set yet
+  if (checkingAuth || (!initialRoute && user)) {
     return (
       <View
         style={{
@@ -108,7 +100,7 @@ export default function App() {
   return (
     <NavigationContainer>
       <Stack.Navigator
-        initialRouteName={user ? initialRoute : 'Login'} // Ensure initialRoute is defined before using it here
+        initialRouteName={user ? initialRoute : 'Login'}
         screenOptions={{
           headerStyle: { backgroundColor: theme.colors.background },
           headerTintColor: theme.colors.text,
@@ -122,7 +114,6 @@ export default function App() {
             <Stack.Screen name="OrganizationSignup" component={OrganizationSignupScreen} options={{ title: 'Create Organization' }} />
           </>
         ) : (
-          // If user is authenticated, render all main app screens
           <>
             <Stack.Screen name="Onboarding" component={OnboardingScreen} options={{ headerShown: false }} />
             <Stack.Screen name="Quote" component={QuoteScreen} options={{ headerShown: false }} />

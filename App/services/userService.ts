@@ -1,6 +1,5 @@
-import { db } from '../config/firebaseConfig.ts'; // Import aligned db instance
-import { doc, getDoc, setDoc, updateDoc } from '@react-native-firebase/firestore'; // Import functions from @react-native-firebase/firestore
-import { useUserStore } from '../state/userStore.ts';
+import { db } from '../config/firebaseConfig'; // Use aligned db instance
+import { useUserStore } from '../state/userStore';
 
 /**
  * Firestore user document structure
@@ -19,8 +18,8 @@ export interface FirestoreUser {
  * Get user from Firestore and set into userStore
  */
 export async function loadUser(uid: string): Promise<void> {
-  const ref = doc(db, 'users', uid); // Use db instance
-  const snapshot = await getDoc(ref);
+  const ref = db().collection('users').doc(uid);
+  const snapshot = await ref.get();
 
   if (snapshot.exists()) {
     const user = snapshot.data() as FirestoreUser;
@@ -30,7 +29,7 @@ export async function loadUser(uid: string): Promise<void> {
       displayName: user.displayName ?? '',
       isSubscribed: user.isSubscribed,
       religion: user.religion,
-      tokens: 0, // default or ignored for now
+      tokens: 0, // placeholder
     });
   } else {
     throw new Error('User not found in Firestore.');
@@ -51,7 +50,7 @@ export async function createUserProfile({
   displayName?: string;
   religion?: string;
 }) {
-  const ref = doc(db, 'users', uid); // Use db instance
+  const ref = db().collection('users').doc(uid);
   const now = Date.now();
 
   const userData: FirestoreUser = {
@@ -64,24 +63,24 @@ export async function createUserProfile({
     createdAt: now,
   };
 
-  await setDoc(ref, userData);
+  await ref.set(userData);
 }
 
 /**
  * Mark onboarding complete
  */
 export async function completeOnboarding(uid: string) {
-  const ref = doc(db, 'users', uid); // Use db instance
-  await updateDoc(ref, { onboardingComplete: true });
+  const ref = db().collection('users').doc(uid);
+  await ref.update({ onboardingComplete: true });
 }
 
 /**
- * Update religion or subscription status (optional)
+ * Update religion or subscription status
  */
 export async function updateUserFields(
   uid: string,
   updates: Partial<Pick<FirestoreUser, 'religion' | 'isSubscribed'>>
 ) {
-  const ref = doc(db, 'users', uid); // Use db instance
-  await updateDoc(ref, updates);
+  const ref = db().collection('users').doc(uid);
+  await ref.update(updates);
 }
