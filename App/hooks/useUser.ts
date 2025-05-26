@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { onAuthStateChanged, signInAnonymously, User } from 'firebase/auth'
-import { auth } from '../config/firebaseConfig'
+import { auth } from '../config/firebaseConfig.ts'
 
 export function useUser(): { user: User | null; loading: boolean } {
   const [user, setUser] = useState<User | null>(null)

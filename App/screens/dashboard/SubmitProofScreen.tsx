@@ -9,11 +9,11 @@ import {
 } from 'react-native'
 import * as ImagePicker from 'expo-image-picker'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
-import { db, storage } from '../../config/firebaseConfig'
+import { db, storage } from '../../config/firebaseConfig.ts'
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore'
-import { useUser } from '../../hooks/useUser'
-import ScreenContainer from '../../components/theme/ScreenContainer'
-import { theme } from '../../components/theme/theme'
+import { useUser } from '../../hooks/useUser.ts'
+import ScreenContainer from '../../components/theme/ScreenContainer.tsx'
+import { theme } from '../../components/theme/theme.ts'
 
 export default function SubmitProofScreen() {
   const { user } = useUser()

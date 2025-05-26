@@ -1,5 +1,5 @@
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
-import { useUserStore } from '../state/userStore';
+import { useUserStore } from '../state/userStore.ts';
 
 /**
  * Firestore user document structure
@@ -18,7 +18,7 @@ export interface FirestoreUser {
  * Get user from Firestore and set into userStore
  */
 export async function loadUser(uid: string): Promise<void> {
-  const { db } = await import('../config/firebaseConfig');
+  const { db } = await import('../config/firebaseConfig.ts');
   const ref = doc(db, 'users', uid);
   const snapshot = await getDoc(ref);
 
@@ -51,7 +51,7 @@ export async function createUserProfile({
   displayName?: string;
   religion?: string;
 }) {
-  const { db } = await import('../config/firebaseConfig');
+  const { db } = await import('../config/firebaseConfig.ts');
   const ref = doc(db, 'users', uid);
   const now = Date.now();
 
@@ -72,7 +72,7 @@ export async function createUserProfile({
  * Mark onboarding complete
  */
 export async function completeOnboarding(uid: string) {
-  const { db } = await import('../config/firebaseConfig');
+  const { db } = await import('../config/firebaseConfig.ts');
   const ref = doc(db, 'users', uid);
   await updateDoc(ref, { onboardingComplete: true });
 }
@@ -84,7 +84,7 @@ export async function updateUserFields(
   uid: string,
   updates: Partial<Pick<FirestoreUser, 'religion' | 'isSubscribed'>>
 ) {
-  const { db } = await import('../config/firebaseConfig');
+  const { db } = await import('../config/firebaseConfig.ts');
   const ref = doc(db, 'users', uid);
   await updateDoc(ref, updates);
 }

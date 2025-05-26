@@ -8,7 +8,7 @@ import {
   StyleSheet,
   Alert
 } from 'react-native'
-import { db } from '../../config/firebaseConfig'
+import { db } from '../../config/firebaseConfig.ts'
 import {
   collection,
   getDocs,
@@ -16,9 +16,9 @@ import {
   doc,
   arrayUnion
 } from 'firebase/firestore'
-import { useUser } from '../../hooks/useUser'
-import ScreenContainer from '../../components/theme/ScreenContainer'
-import { theme } from '../../components/theme/theme'
+import { useUser } from '../../hooks/useUser.ts'
+import ScreenContainer from '../../components/theme/ScreenContainer.tsx'
+import { theme } from '../../components/theme/theme.ts'
 
 export default function JoinOrganizationScreen() {
   const { user } = useUser()

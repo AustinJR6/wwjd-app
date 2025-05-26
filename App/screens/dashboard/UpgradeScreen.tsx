@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { View, Text, Button, StyleSheet, Alert, Linking } from 'react-native';
-import ScreenContainer from '../../components/theme/ScreenContainer';
-import { theme } from '../../components/theme/theme';
+import ScreenContainer from '../../components/theme/ScreenContainer.tsx';
+import { theme } from '../../components/theme/theme.ts';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../../navigation/RootStackParamList'; // ✅ Make sure this exists
+import { RootStackParamList } from '../../navigation/RootStackParamList.ts'; // ✅ Make sure this exists
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Upgrade'>; // ✅ This matches the route name
 
@@ -14,7 +14,7 @@ export default function UpgradeScreen({ navigation }: Props) {
     setLoading(true);
 
     try {
-      const { auth } = await import('../../config/firebaseConfig');
+      const { auth } = await import('../../config/firebaseConfig.ts');
       const user = auth.currentUser;
 
       if (!user) {

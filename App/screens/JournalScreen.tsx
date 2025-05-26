@@ -13,8 +13,8 @@ import {
   Button,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import ScreenContainer from '../components/theme/ScreenContainer';
-import { theme } from '../components/theme/theme';
+import ScreenContainer from '../components/theme/ScreenContainer.tsx';
+import { theme } from '../components/theme/theme.ts';
 import {
   doc,
   getDoc,
@@ -52,7 +52,7 @@ export default function JournalScreen() {
           }
         }
 
-        const { db } = await import('../config/firebaseConfig');
+        const { db } = await import('../config/firebaseConfig.ts');
 
         const q = query(collection(db, 'journalEntries'), orderBy('createdAt', 'desc'));
         const snap = await getDocs(q);
@@ -75,7 +75,7 @@ export default function JournalScreen() {
     if (!entry.trim()) return;
     setSaving(true);
     try {
-      const { db } = await import('../config/firebaseConfig');
+      const { db } = await import('../config/firebaseConfig.ts');
 
       await addDoc(collection(db, 'journalEntries'), {
         text: entry,

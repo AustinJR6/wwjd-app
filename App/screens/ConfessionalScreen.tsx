@@ -9,9 +9,9 @@ import {
   Alert,
   ScrollView,
 } from 'react-native';
-import ScreenContainer from '../components/theme/ScreenContainer';
-import { theme } from '../components/theme/theme';
-import { ASK_GEMINI_SIMPLE } from '../utils/constants';
+import ScreenContainer from '../components/theme/ScreenContainer.tsx';
+import { theme } from '../components/theme/theme.ts';
+import { ASK_GEMINI_SIMPLE } from '../utils/constants.ts';
 
 export default function ConfessionalScreen() {
   const [confession, setConfession] = useState('');
@@ -26,7 +26,7 @@ export default function ConfessionalScreen() {
 
     setLoading(true);
     try {
-      const { auth } = await import('../config/firebaseConfig');
+      const { auth } = await import('../config/firebaseConfig.ts');
       const user = auth.currentUser;
       if (!user) return;
 

@@ -1,7 +1,7 @@
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 
 export const getTokenCount = async () => {
-  const { auth, db } = await import('../config/firebaseConfig');
+  const { auth, db } = await import('../config/firebaseConfig.ts');
   const user = auth.currentUser;
   if (!user) return 0;
 
@@ -11,7 +11,7 @@ export const getTokenCount = async () => {
 };
 
 export const setTokenCount = async (count: number) => {
-  const { auth, db } = await import('../config/firebaseConfig');
+  const { auth, db } = await import('../config/firebaseConfig.ts');
   const user = auth.currentUser;
   if (!user) return;
 
@@ -27,7 +27,7 @@ export const consumeToken = async () => {
 };
 
 export const canUseFreeAsk = async () => {
-  const { auth, db } = await import('../config/firebaseConfig');
+  const { auth, db } = await import('../config/firebaseConfig.ts');
   const user = auth.currentUser;
   if (!user) return false;
 
@@ -47,7 +47,7 @@ export const canUseFreeAsk = async () => {
 };
 
 export const useFreeAsk = async () => {
-  const { auth, db } = await import('../config/firebaseConfig');
+  const { auth, db } = await import('../config/firebaseConfig.ts');
   const user = auth.currentUser;
   if (!user) return;
 
@@ -56,7 +56,7 @@ export const useFreeAsk = async () => {
 };
 
 export const syncSubscriptionStatus = async () => {
-  const { auth, db } = await import('../config/firebaseConfig');
+  const { auth, db } = await import('../config/firebaseConfig.ts');
   const user = auth.currentUser;
   if (!user) return;
 

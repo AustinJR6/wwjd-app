@@ -1,15 +1,15 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Alert } from 'react-native';
-import ScreenContainer from '../../components/theme/ScreenContainer';
-import TextField from '../../components/TextField';
-import Button from '../../components/common/Button';
-import { login } from '../../services/authService';
-import { loadUser } from '../../services/userService';
+import ScreenContainer from '../../components/theme/ScreenContainer.tsx';
+import TextField from '../../components/TextField.tsx';
+import Button from '../../components/common/Button.tsx';
+import { login } from '../../services/authService.ts';
+import { loadUser } from '../../services/userService.ts';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { theme } from '../../components/theme/theme';
-import { useUserStore } from '../../state/userStore';
-import { RootStackParamList } from '../../navigation/RootStackParamList'; // ✅ Type-safe screens
+import { theme } from '../../components/theme/theme.ts';
+import { useUserStore } from '../../state/userStore.ts';
+import { RootStackParamList } from '../../navigation/RootStackParamList.ts'; // ✅ Type-safe screens
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -22,7 +22,7 @@ export default function LoginScreen() {
   const handleLogin = async () => {
     setLoading(true);
     try {
-      const { auth } = await import('../../config/firebaseConfig');
+      const { auth } = await import('../../config/firebaseConfig.ts');
       await login(email, password);
 
       const user = auth.currentUser;

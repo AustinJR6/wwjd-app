@@ -8,13 +8,13 @@ import {
   Button,
   Alert
 } from 'react-native';
-import { theme } from '../../components/theme/theme';
-import ScreenContainer from '../../components/theme/ScreenContainer';
-import { useUser } from '../../hooks/useUser';
-import { db } from '../../config/firebaseConfig';
+import { theme } from '../../components/theme/theme.ts';
+import ScreenContainer from '../../components/theme/ScreenContainer.tsx';
+import { useUser } from '../../hooks/useUser.ts';
+import { db } from '../../config/firebaseConfig.ts';
 import { doc, setDoc } from 'firebase/firestore';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../../navigation/RootStackParamList'; // ✅
+import { RootStackParamList } from '../../navigation/RootStackParamList.ts'; // ✅
 
 type Props = NativeStackScreenProps<RootStackParamList, 'SelectReligion'>; // ✅
 

@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, Button, StyleSheet, ScrollView } from 'react-native';
-import ScreenContainer from '../../components/theme/ScreenContainer';
-import { theme } from '../../components/theme/theme';
-import { getTokenCount, syncSubscriptionStatus } from '../../utils/TokenManager';
+import ScreenContainer from '../../components/theme/ScreenContainer.tsx';
+import { theme } from '../../components/theme/theme.ts';
+import { getTokenCount, syncSubscriptionStatus } from '../../utils/TokenManager.ts';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../../navigation/RootStackParamList'; // ✅ Make sure this exists
+import { RootStackParamList } from '../../navigation/RootStackParamList.ts'; // ✅ Make sure this exists
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
 

@@ -1,10 +1,10 @@
 import React from 'react';
 import { View, Text, Button, StyleSheet, Alert } from 'react-native';
-import { setTokenCount, getTokenCount } from '../utils/TokenManager';
-import ScreenContainer from '../components/theme/ScreenContainer';
-import { theme } from '../components/theme/theme';
+import { setTokenCount, getTokenCount } from '../utils/TokenManager.ts';
+import ScreenContainer from '../components/theme/ScreenContainer.tsx';
+import { theme } from '../components/theme/theme.ts';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../navigation/RootStackParamList';
+import { RootStackParamList } from '../navigation/RootStackParamList.ts';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'BuyTokens'>;
 

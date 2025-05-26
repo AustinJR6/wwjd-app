@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Alert } from 'react-native';
-import ScreenContainer from '../../components/theme/ScreenContainer';
-import Button from '../../components/common/Button';
+import ScreenContainer from '../../components/theme/ScreenContainer.tsx';
+import Button from '../../components/common/Button.tsx';
 import { useNavigation, CommonActions, NavigationProp } from '@react-navigation/native';
-import { completeOnboarding, updateUserFields } from '../../services/userService';
-import { useUserStore } from '../../state/userStore';
-import { SCREENS } from '../../navigation/screens';
-import { theme } from '../../components/theme/theme';
+import { completeOnboarding, updateUserFields } from '../../services/userService.ts';
+import { useUserStore } from '../../state/userStore.ts';
+import { SCREENS } from '../../navigation/screens.ts';
+import { theme } from '../../components/theme/theme.ts';
 import { Picker } from '@react-native-picker/picker';
-import type { RootStackParamList } from '../../navigation/RootStackParamList'; // ✅ Typed navigation
+import type { RootStackParamList } from '../../navigation/RootStackParamList.ts'; // ✅ Typed navigation
 
 const religions = ['Christian', 'Muslim', 'Jewish', 'Hindu', 'Buddhist'];
 

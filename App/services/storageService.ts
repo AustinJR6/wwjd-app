@@ -1,7 +1,7 @@
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 
 export async function uploadImage(fileUri: string, path: string): Promise<string> {
-  const { storage } = await import('../config/firebaseConfig'); // ✅ Safe dynamic import
+  const { storage } = await import('../config/firebaseConfig.ts'); // ✅ Safe dynamic import
 
   const response = await fetch(fileUri);
   const blob = await response.blob();

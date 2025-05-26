@@ -10,10 +10,10 @@ import {
   ScrollView,
 } from 'react-native';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
-import ScreenContainer from '../components/theme/ScreenContainer';
-import { theme } from '../components/theme/theme';
-import { getTokenCount, setTokenCount } from '../utils/TokenManager';
-import { ASK_GEMINI_CONVERSATION } from '../utils/constants';
+import ScreenContainer from '../components/theme/ScreenContainer.tsx';
+import { theme } from '../components/theme/theme.ts';
+import { getTokenCount, setTokenCount } from '../utils/TokenManager.ts';
+import { ASK_GEMINI_CONVERSATION } from '../utils/constants.ts';
 
 export default function AskJesusScreen() {
   const [question, setQuestion] = useState('');
@@ -30,7 +30,7 @@ export default function AskJesusScreen() {
     setLoading(true);
 
     try {
-      const { auth, db } = await import('../config/firebaseConfig');
+      const { auth, db } = await import('../config/firebaseConfig.ts');
       const user = auth.currentUser;
       if (!user) return;
 

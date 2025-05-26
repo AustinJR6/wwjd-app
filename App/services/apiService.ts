@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { GEMINI_API_URL, STRIPE_API_URL } from '../config/apiConfig';
+import { GEMINI_API_URL, STRIPE_API_URL } from '../config/apiConfig.ts';
 
 type AskGeminiResponse = {
   reply: string;

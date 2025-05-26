@@ -1,8 +1,8 @@
 // ScreenContainer.tsx
 import React from 'react'
 import { View, StyleSheet } from 'react-native'
-import Background from './Background'
-import { theme } from './theme'
+import Background from './Background.tsx'
+import { theme } from './theme.ts'
 
 export default function ScreenContainer({ children }: { children: React.ReactNode }) {
   return (

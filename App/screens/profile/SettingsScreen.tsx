@@ -1,6 +1,6 @@
 import React from 'react'
 import { View, Text, StyleSheet } from 'react-native'
-import ScreenContainer from '../../components/theme/ScreenContainer'
+import ScreenContainer from '../../components/theme/ScreenContainer.tsx'
 
 export default function SettingsScreen() {
   return (
