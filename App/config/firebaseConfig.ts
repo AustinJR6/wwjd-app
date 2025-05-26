@@ -1,30 +1,28 @@
-// firebaseConfig.ts
-import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth'; // Use getAuth
-import { getFirestore } from 'firebase/firestore';
-import { getStorage } from 'firebase/storage';
+// App/config/firebaseConfig.ts (for @react-native-firebase)
+// Removed initializeApp and firebaseConfig object, as @react-native-firebase handles this
+// using native config files (google-services.json, GoogleService-Info.plist).
 
-// **Remove the import of AsyncStorage and getReactNativePersistence if you're getting the error.**
-// import AsyncStorage from '@react-native-async-storage/async-storage'
-// import { getReactNativePersistence } from 'firebase/auth' // This is the problematic import
+// Import specific @react-native-firebase modules
+import auth from '@react-native-firebase/auth'; // Import auth from @react-native-firebase
+import firestore from '@react-native-firebase/firestore'; // Import firestore from @react-native-firebase
+import storage from '@react-native-firebase/storage'; // Import storage from @react-native-firebase
 
-const firebaseConfig = {
-  apiKey: "AIzaSyAeitpWVBGmPZJ540vgCNZpte_05LPx0Z8",
-  authDomain: "wwjd-app.firebaseapp.com",
-  projectId: "wwjd-app",
-  storageBucket: "wwjd-app.firebasestorage.app",
-  messagingSenderId: "402334171334",
-  appId: "1:402334171334:web:69a89d40732306572757c7",
-  measurementId: "G-20W5BML7DM"
-};
+// Export the instances of the services.
+// Note: You call the imported module as a function to get the instance.
+export const firebaseAuth = auth();
+export const db = firestore();
+export const storageRef = storage(); // Renamed to avoid conflict with `storage` variable in function scope
 
-const app = initializeApp(firebaseConfig);
+// If you need to explicitly enable persistence for Firestore (optional, but good practice):
+// db.settings({ cacheSizeBytes: firestore.CACHE_SIZE_UNLIMITED });
+// db.enablePersistence().catch((err) => {
+//   if (err.code === 'failed-precondition') {
+//     console.warn('Firestore persistence failed: Multiple tabs open, persistence already enabled.');
+//   } else if (err.code === 'unimplemented') {
+//     console.warn('Firestore persistence not available on this environment.');
+//   } else {
+//     console.error('Firestore persistence failed:', err);
+//   }
+// });
 
-// Simply get the auth instance without explicitly setting persistence
-// Firebase v9 will attempt to use the best available persistence automatically.
-const auth = getAuth(app);
-
-const db = getFirestore(app);
-const storage = getStorage(app);
-
-export { auth, db, storage };
+// You may also want to export other configurations or functions related to Firebase setup here.
