@@ -1,4 +1,3 @@
-// /tsconfig.json
 {
   "compilerOptions": {
     "target": "es2020",
@@ -12,11 +11,18 @@
     "isolatedModules": true,
     "noEmit": true,
     "skipLibCheck": true,
-    "types": ["react-native"],
+    "types": [
+      "react-native"
+    ],
     "baseUrl": ".",
     "paths": {
-      "@/*": ["App/*"]
+      "@/*": [
+        "App/*"
+      ]
     }
   },
-  "exclude": ["node_modules"]
+  "exclude": [
+    "node_modules"
+  ],
+  "extends": "expo/tsconfig.base"
 }
