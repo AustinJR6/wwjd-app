@@ -11,18 +11,11 @@
     "isolatedModules": true,
     "noEmit": true,
     "skipLibCheck": true,
-    "types": [
-      "react-native"
-    ],
+    "types": ["react-native"],
     "baseUrl": ".",
     "paths": {
-      "@/*": [
-        "App/*"
-      ]
+      "@/*": ["App/*"]
     }
   },
-  "exclude": [
-    "node_modules"
-  ],
-  "extends": "expo/tsconfig.base"
+  "exclude": ["node_modules"]
 }

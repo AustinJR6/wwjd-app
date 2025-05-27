@@ -51,7 +51,7 @@ export default function App() {
 
     const initialize = async () => {
       try {
-        unsubscribe = firebaseAuth().onAuthStateChanged(
+        unsubscribe = firebaseAuth.onAuthStateChanged(
           async (firebaseUser: FirebaseAuthTypes.User | null) => {
             setUser(firebaseUser);
 
