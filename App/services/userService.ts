@@ -21,7 +21,7 @@ export async function loadUser(uid: string): Promise<void> {
   const ref = db.collection('users').doc(uid);
   const snapshot = await ref.get();
 
-  if (snapshot.exists()) {
+  if (snapshot.exists) {
     const user = snapshot.data() as FirestoreUser;
     useUserStore.getState().setUser({
       uid: user.uid,
