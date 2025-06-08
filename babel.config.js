@@ -12,7 +12,7 @@ module.exports = function (api) {
         },
       ],
       [
-        'module:react-native-dotenv',
+        'dotenv-import',
         {
           moduleName: '@env',
           path: '.env',
@@ -22,7 +22,8 @@ module.exports = function (api) {
           allowUndefined: true,
         },
       ],
-      'react-native-reanimated/plugin', // 👈 must remain last
+      'react-native-reanimated/plugin', // must remain last
     ],
   };
 };
+

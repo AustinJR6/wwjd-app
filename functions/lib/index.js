@@ -4,7 +4,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.handleStripeWebhookV2 = exports.askGeminiV2 = void 0;
-require("dotenv/config");
+const dotenv_1 = __importDefault(require("dotenv"));
+dotenv_1.default.config({ path: ".env.functions" });
 const https_1 = require("firebase-functions/v2/https");
 const v2_1 = require("firebase-functions/v2");
 const generative_ai_1 = require("@google/generative-ai");
@@ -55,7 +56,7 @@ exports.askGeminiV2 = (0, https_1.onRequest)(async (req, res) => {
 exports.handleStripeWebhookV2 = (0, https_1.onRequest)({ cors: true }, async (req, res) => {
     const stripe = new stripe_1.default(STRIPE_SECRET_KEY, { apiVersion: "2022-11-15" });
     const sig = req.headers["stripe-signature"];
-    if (!sig) {
+    if (!sig || typeof sig !== "string") {
         res.status(400).send("Missing Stripe signature.");
         return;
     }

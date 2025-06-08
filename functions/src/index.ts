@@ -1,4 +1,5 @@
-import "dotenv/config";
+import dotenv from "dotenv";
+dotenv.config({ path: ".env.functions" });
 import { onRequest } from "firebase-functions/v2/https";
 import { setGlobalOptions } from "firebase-functions/v2";
 import { GoogleGenerativeAI } from "@google/generative-ai";
@@ -6,9 +7,9 @@ import Stripe from "stripe";
 import { auth, db } from "./firebase"; // Firebase Admin SDK
 
 // 🔐 Environment Variables
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
-const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY!;
+const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY!;
+const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET!;
 
 // 🚨 Validate .env setup
 if (!GEMINI_API_KEY || !STRIPE_SECRET_KEY || !STRIPE_WEBHOOK_SECRET) {
@@ -21,7 +22,7 @@ setGlobalOptions({ region: "us-central1" });
 /**
  * 🌟 askGeminiV2: Secure endpoint to generate AI chat via Gemini
  */
-export const askGeminiV2 = onRequest(async (req, res) => {
+export const askGeminiV2 = onRequest(async (req, res): Promise<void> => {
   const { prompt, history = [] } = req.body;
   const idToken = req.headers.authorization?.split("Bearer ")[1];
 
@@ -56,11 +57,11 @@ export const askGeminiV2 = onRequest(async (req, res) => {
 /**
  * 💳 handleStripeWebhookV2: Activates subscriptions after checkout
  */
-export const handleStripeWebhookV2 = onRequest({ cors: true }, async (req, res) => {
+export const handleStripeWebhookV2 = onRequest({ cors: true }, async (req, res): Promise<void> => {
   const stripe = new Stripe(STRIPE_SECRET_KEY, { apiVersion: "2022-11-15" });
 
   const sig = req.headers["stripe-signature"];
-  if (!sig) {
+  if (!sig || typeof sig !== "string") {
     res.status(400).send("Missing Stripe signature.");
     return;
   }
