@@ -25,9 +25,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace 'com.whippybuckle.wwjdapp'
+    namespace 'com.whippybuckle.onevineapp'
     defaultConfig {
-        applicationId 'com.whippybuckle.wwjdapp'
+        applicationId 'com.whippybuckle.onevineapp'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

@@ -1,4 +1,4 @@
-package com.whippybuckle.wwjdapp
+package com.whippybuckle.onevineapp
 
 import android.app.Application
 import android.content.res.Configuration

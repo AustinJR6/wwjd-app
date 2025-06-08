@@ -12,11 +12,15 @@
     "isolatedModules": true,
     "noEmit": true,
     "skipLibCheck": true,
-    "types": ["react-native"],
+    "types": [
+      "react-native"
+    ],
     "forceConsistentCasingInFileNames": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["App/*"]
+      "@/*": [
+        "App/*"
+      ]
     }
   },
   "exclude": [
@@ -25,5 +29,6 @@
     "metro.config.js",
     "jest.config.js",
     "tsconfig.effective.json"
-  ]
+  ],
+  "extends": "expo/tsconfig.base"
 }

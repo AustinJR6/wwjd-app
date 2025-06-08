@@ -1,4 +1,4 @@
-package com.whippybuckle.wwjdapp
+package com.whippybuckle.onevineapp
 
 import android.os.Build
 import android.os.Bundle

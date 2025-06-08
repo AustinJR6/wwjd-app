@@ -7,11 +7,22 @@ module.exports = function (api) {
         'module-resolver',
         {
           alias: {
-            '@': './App'
+            '@': './App',
           },
         },
       ],
-      'react-native-reanimated/plugin', // must stay last
+      [
+        'module:react-native-dotenv',
+        {
+          moduleName: '@env',
+          path: '.env',
+          blacklist: null,
+          whitelist: null,
+          safe: false,
+          allowUndefined: true,
+        },
+      ],
+      'react-native-reanimated/plugin', // 👈 must remain last
     ],
   };
 };
