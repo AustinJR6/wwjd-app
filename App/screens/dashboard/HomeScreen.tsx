@@ -17,7 +17,7 @@ export default function HomeScreen({ navigation }: Props) {
       const t = await getTokenCount();
       await syncSubscriptionStatus(); // updates Firestore token state
       setTokens(t);
-      setSubscribed(t >= 9999); // 9999 token cap implies WWJD+ sub
+      setSubscribed(t >= 9999); // 9999 token cap implies OneVine+ sub
     };
     loadData();
   }, []);
@@ -25,19 +25,19 @@ export default function HomeScreen({ navigation }: Props) {
   return (
     <ScreenContainer>
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <Text style={styles.title}>Welcome to WWJD</Text>
-        <Text style={styles.subtitle}>Walk With Jesus Daily</Text>
+        <Text style={styles.title}>Welcome to OneVine</Text>
+        <Text style={styles.subtitle}>Grow in Faith Daily</Text>
 
         <View style={styles.statusBox}>
           {subscribed ? (
-            <Text style={styles.subscribed}>🌟 WWJD+ Active</Text>
+            <Text style={styles.subscribed}>🌟 OneVine+ Active</Text>
           ) : (
             <Text style={styles.tokenInfo}>🎟️ Tokens: {tokens}</Text>
           )}
         </View>
 
         <View style={styles.buttonContainer}>
-          <Button title="WWJD" onPress={() => navigation.navigate('WWJD')} />
+          <Button title="Religion AI" onPress={() => navigation.navigate('ReligionAI')} />
           <View style={styles.spacer} />
           <Button title="Journal" onPress={() => navigation.navigate('Journal')} />
           <View style={styles.spacer} />
@@ -49,7 +49,7 @@ export default function HomeScreen({ navigation }: Props) {
           <View style={styles.spacer} />
           <Button title="Buy Tokens" onPress={() => navigation.navigate('BuyTokens')} />
           <View style={styles.spacer} />
-          <Button title="Upgrade to WWJD+" onPress={() => navigation.navigate('Upgrade')} />
+          <Button title="Upgrade to OneVine+" onPress={() => navigation.navigate('Upgrade')} />
           <View style={styles.spacer} />
           <Button title="Give Back" onPress={() => navigation.navigate('GiveBack')} />
           <View style={styles.spacer} />

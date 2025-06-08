@@ -15,7 +15,7 @@ import { getTokenCount, setTokenCount } from "@/utils/TokenManager";
 import { ASK_GEMINI_V2 } from "@/utils/constants";
 import { firebaseAuth, db } from "@/config/firebaseConfig";
 
-export default function AskJesusScreen() {
+export default function ReligionAIScreen() {
   const [question, setQuestion] = useState('');
   const [messages, setMessages] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
@@ -96,7 +96,9 @@ export default function AskJesusScreen() {
           Authorization: `Bearer ${idToken}`,
         },
         body: JSON.stringify({
-          prompt: `${conversationContext}\nUser: ${question}\n${promptRole}:`,
+          prompt: `You are a ${promptRole} of the ${religion} faith. ` +
+            `Answer the user using teachings from that tradition and cite any ` +
+            `relevant scriptures.\n${conversationContext}\nUser: ${question}\n${promptRole}:`,
         }),
       });
 
@@ -111,7 +113,7 @@ export default function AskJesusScreen() {
 
       setQuestion('');
     } catch (err) {
-      console.error('❌ AskJesus error:', err);
+      console.error('❌ ReligionAI error:', err);
       Alert.alert('Error', 'Could not get a response. Please try again later.');
     } finally {
       setLoading(false);
@@ -132,7 +134,7 @@ export default function AskJesusScreen() {
 
         {isSubscribed && (
           <View style={styles.subscriptionBanner}>
-            <Text style={styles.subscriptionText}>💎 WWJD+ Unlimited Chat Enabled</Text>
+            <Text style={styles.subscriptionText}>💎 OneVine+ Unlimited Chat Enabled</Text>
             <Button title="Clear Conversation" onPress={handleClear} color={theme.colors.accent} />
           </View>
         )}

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Alert } from 'react-native';
+import { View, Text, StyleSheet, Alert, TextInput } from 'react-native';
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import Button from "@/components/common/Button";
 import { useNavigation, CommonActions } from '@react-navigation/native';
@@ -19,6 +19,9 @@ export default function OnboardingScreen() {
   const user = useUserStore((state: any) => state.user);
   const navigation = useNavigation<OnboardingScreenProps['navigation']>();
   const [religion, setReligion] = useState(user?.religion ?? 'Christian');
+  const [username, setUsername] = useState(user?.displayName ?? '');
+  const [region, setRegion] = useState('');
+  const [organization, setOrganization] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleContinue = async () => {
@@ -27,10 +30,20 @@ export default function OnboardingScreen() {
       return;
     }
 
+    if (!username.trim() || !region.trim()) {
+      Alert.alert('Missing Info', 'Username and region are required.');
+      return;
+    }
+
     setLoading(true);
     try {
       if (user.uid) {
-        await updateUserFields(user.uid, { religion });
+        await updateUserFields(user.uid, {
+          religion,
+          displayName: username,
+          region,
+          organizationId: organization || undefined,
+        });
         await completeOnboarding(user.uid);
 
         navigation.reset({
@@ -51,6 +64,22 @@ export default function OnboardingScreen() {
   return (
     <ScreenContainer>
       <Text style={styles.title}>Welcome to OneVine 🌿</Text>
+      <Text style={styles.subtitle}>Tell us about yourself:</Text>
+
+      <TextInput
+        style={styles.input}
+        placeholder="Username"
+        value={username}
+        onChangeText={setUsername}
+      />
+
+      <TextInput
+        style={styles.input}
+        placeholder="Region"
+        value={region}
+        onChangeText={setRegion}
+      />
+
       <Text style={styles.subtitle}>Choose your spiritual lens:</Text>
 
       <View style={styles.pickerWrapper}>
@@ -64,6 +93,13 @@ export default function OnboardingScreen() {
           ))}
         </Picker>
       </View>
+
+      <TextInput
+        style={styles.input}
+        placeholder="Organization (optional)"
+        value={organization}
+        onChangeText={setOrganization}
+      />
 
       <Button title="Continue" onPress={handleContinue} loading={loading} />
     </ScreenContainer>
@@ -95,6 +131,15 @@ const styles = StyleSheet.create({
     height: 50,
     color: theme.colors.text,
     backgroundColor: theme.colors.inputBackground || theme.colors.surface,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+    backgroundColor: theme.colors.surface,
+    color: theme.colors.text,
   },
 });
 

@@ -9,7 +9,7 @@ export const SCREENS = {
 
   MAIN: {
     HOME: 'Home',
-    WWJD: 'WWJD',
+    RELIGION_AI: 'ReligionAI',
     JOURNAL: 'Journal',
     CHALLENGE: 'Challenge',
     CONFESSIONAL: 'Confessional',

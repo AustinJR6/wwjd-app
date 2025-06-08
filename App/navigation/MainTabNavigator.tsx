@@ -5,7 +5,7 @@ import { theme } from "@/components/theme/theme";
 
 // Screens
 import HomeScreen from "@/screens/dashboard/HomeScreen";
-import AskJesusScreen from "@/screens/AskJesusScreen";
+import ReligionAIScreen from "@/screens/ReligionAIScreen";
 import JournalScreen from "@/screens/JournalScreen";
 import ChallengeScreen from "@/screens/dashboard/ChallengeScreen";
 import ConfessionalScreen from "@/screens/ConfessionalScreen";
@@ -33,7 +33,7 @@ export default function MainTabNavigator() {
           switch (route.name) {
             case 'Home':
               return <Ionicons name="home-outline" size={size} color={color} />;
-            case 'WWJD':
+            case 'ReligionAI':
               return <MaterialCommunityIcons name="cross" size={size} color={color} />;
             case 'Journal':
               return <Ionicons name="book-outline" size={size} color={color} />;
@@ -56,7 +56,7 @@ export default function MainTabNavigator() {
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen as React.ComponentType<any>} />
-      <Tab.Screen name="WWJD" component={AskJesusScreen as React.ComponentType<any>} />
+      <Tab.Screen name="ReligionAI" component={ReligionAIScreen as React.ComponentType<any>} />
       <Tab.Screen name="Journal" component={JournalScreen as React.ComponentType<any>} />
       <Tab.Screen name="Challenge" component={ChallengeScreen as React.ComponentType<any>} />
       <Tab.Screen name="Confessional" component={ConfessionalScreen as React.ComponentType<any>} />

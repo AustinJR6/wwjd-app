@@ -26,7 +26,7 @@ This project uses **React Native (via Expo)** and is powered by **Firebase** for
 - **Google Gemini / OpenAI GPT**
   - Faith-aligned reflection prompts
 - **Stripe**
-  - WWJD+ / OneVine+ subscription handling
+  - OneVine+ subscription handling
 - **Firebase Cloud Functions**
   - (Planned) server-side token logic and analytics
 
@@ -106,7 +106,7 @@ Additional uses cost tokens
 
 Daily streak bonuses
 
-💳 OneVine+ (WWJD+) Subscription
+💳 OneVine+ Subscription
 Unlimited access + priority reflections
 
 🏆 Leaderboards
