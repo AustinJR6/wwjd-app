@@ -12,7 +12,7 @@ import {
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { theme } from "@/components/theme/theme";
 import { ASK_GEMINI_SIMPLE } from "@/utils/constants";
-import { firebaseAuth } from "@/config/firebaseConfig"; // ✅ fixed import
+import { firebaseAuth, db } from "@/config/firebaseConfig"; // ✅ fixed import
 
 export default function ConfessionalScreen() {
   const [confession, setConfession] = useState('');
@@ -30,6 +30,17 @@ export default function ConfessionalScreen() {
       const user = firebaseAuth.currentUser;
       if (!user) return;
 
+      const userRef = db.collection('users').doc(user.uid);
+      const userSnap = await userRef.get();
+      const userData = userSnap.data() || {};
+      const religion = userData.religion || 'Spiritual Guide';
+      const role = religion === 'Christianity' ? 'Pastor' :
+                   religion === 'Islam' ? 'Imam' :
+                   religion === 'Hinduism' ? 'Guru' :
+                   religion === 'Buddhism' ? 'Teacher' :
+                   religion === 'Judaism' ? 'Rabbi' :
+                   'Spiritual Guide';
+
       const idToken = await user.getIdToken();
       const res = await fetch(ASK_GEMINI_SIMPLE, {
         method: 'POST',
@@ -38,7 +49,7 @@ export default function ConfessionalScreen() {
           Authorization: `Bearer ${idToken}`,
         },
         body: JSON.stringify({
-          prompt: `User confession: ${confession}\nJesus:`,
+          prompt: `User confession: ${confession}\n${role}:`,
         }),
       });
 

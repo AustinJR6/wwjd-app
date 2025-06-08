@@ -9,6 +9,8 @@ export interface FirestoreUser {
   email: string;
   displayName?: string;
   religion: string;
+  region?: string;
+  organizationId?: string;
   isSubscribed: boolean;
   onboardingComplete: boolean;
   createdAt: number;
@@ -29,6 +31,8 @@ export async function loadUser(uid: string): Promise<void> {
       displayName: user.displayName ?? '',
       isSubscribed: user.isSubscribed,
       religion: user.religion,
+      region: user.region ?? '',
+      organizationId: user.organizationId,
       tokens: 0, // placeholder
     });
   } else {
@@ -44,11 +48,15 @@ export async function createUserProfile({
   email,
   displayName,
   religion = 'Christian',
+  region = '',
+  organizationId,
 }: {
   uid: string;
   email: string;
   displayName?: string;
   religion?: string;
+  region?: string;
+  organizationId?: string;
 }) {
   const ref = db.collection('users').doc(uid);
   const now = Date.now();
@@ -58,6 +66,8 @@ export async function createUserProfile({
     email,
     displayName,
     religion,
+    region,
+    organizationId,
     isSubscribed: false,
     onboardingComplete: false,
     createdAt: now,
@@ -79,9 +89,9 @@ export async function completeOnboarding(uid: string) {
  */
 export async function updateUserFields(
   uid: string,
-  updates: Partial<Pick<FirestoreUser, 'religion' | 'isSubscribed'>>
+  updates: Partial<FirestoreUser>
 ) {
   const ref = db.collection('users').doc(uid);
-  await ref.update(updates);
+  await ref.set(updates, { merge: true });
 }
 

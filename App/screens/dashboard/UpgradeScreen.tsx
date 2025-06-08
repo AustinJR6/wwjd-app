@@ -36,7 +36,7 @@ export default function UpgradeScreen({ navigation }: Props) {
       );
 
       const rawText = await res.text();
-      console.log('🔥 WWJD+ raw response:', rawText);
+      console.log('🔥 OneVine+ raw response:', rawText);
       const data = JSON.parse(rawText);
 
       if (data.url) {
@@ -45,7 +45,7 @@ export default function UpgradeScreen({ navigation }: Props) {
         Alert.alert('Error', 'Something went wrong. Please try again.');
       }
     } catch (err) {
-      console.error('WWJD+ Subscription Error:', err);
+      console.error('OneVine+ Subscription Error:', err);
       Alert.alert('Subscription Failed', 'We could not start the upgrade. Please try again.');
     } finally {
       setLoading(false);
@@ -55,11 +55,11 @@ export default function UpgradeScreen({ navigation }: Props) {
   return (
     <ScreenContainer>
       <View style={styles.content}>
-        <Text style={styles.title}>WWJD+ Membership</Text>
+        <Text style={styles.title}>OneVine+ Membership</Text>
         <Text style={styles.subtitle}>Experience the full blessing</Text>
 
         <View style={styles.benefitsBox}>
-          <Text style={styles.benefit}>✅ Unlimited daily WWJD questions</Text>
+          <Text style={styles.benefit}>✅ Unlimited Religion AI questions</Text>
           <Text style={styles.benefit}>✅ Full Confessional access</Text>
           <Text style={styles.benefit}>✅ Personalized journaling prompts</Text>
           <Text style={styles.benefit}>✅ Early access to new features</Text>
@@ -68,7 +68,7 @@ export default function UpgradeScreen({ navigation }: Props) {
         <Text style={styles.price}>$9.99 / month</Text>
 
         <View style={styles.buttonWrap}>
-          <Button title="Join WWJD+" onPress={handleUpgrade} disabled={loading} />
+          <Button title="Join OneVine+" onPress={handleUpgrade} disabled={loading} />
         </View>
 
         <View style={styles.buttonWrap}>

@@ -42,6 +42,17 @@ export default function StreakScreen() {
         return;
       }
 
+      const userRef = db.collection('users').doc(user.uid);
+      const userSnap = await userRef.get();
+      const userData = userSnap.data() || {};
+      const religion = userData.religion || 'Spiritual Guide';
+      const role = religion === 'Christianity' ? 'Pastor' :
+                   religion === 'Islam' ? 'Imam' :
+                   religion === 'Hinduism' ? 'Guru' :
+                   religion === 'Buddhism' ? 'Teacher' :
+                   religion === 'Judaism' ? 'Rabbi' :
+                   'Spiritual Guide';
+
       const idToken = await user.getIdToken();
 
       const response = await fetch(ASK_GEMINI_SIMPLE, {
@@ -51,7 +62,7 @@ export default function StreakScreen() {
           Authorization: `Bearer ${idToken}`,
         },
         body: JSON.stringify({
-          prompt: `The user has completed ${streakData?.streakCount || 0} daily challenges in a row. Give them a short motivational message from Jesus that acknowledges their consistency and encourages them to continue.`,
+          prompt: `The user has completed ${streakData?.streakCount || 0} daily challenges in a row. Give them a short motivational message from a ${role} encouraging continued devotion.`,
         }),
       });
 

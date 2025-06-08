@@ -19,7 +19,7 @@ export type RootStackParamList = {
 
   // Main app screens
   Home: undefined;
-  WWJD: undefined;
+  ReligionAI: undefined;
   Journal: undefined;
   Streak: undefined;
   Challenge: undefined;

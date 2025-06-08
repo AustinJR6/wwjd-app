@@ -5,6 +5,8 @@ interface UserData {
   email: string
   displayName: string
   religion: string
+  region: string
+  organizationId?: string
   isSubscribed: boolean
   tokens: number
 }

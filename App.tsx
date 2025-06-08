@@ -33,7 +33,7 @@ import JoinOrganizationScreen from './App/screens/profile/JoinOrganizationScreen
 
 // Root-Level Screens
 import QuoteScreen from './App/screens/QuoteScreen';
-import AskJesusScreen from './App/screens/AskJesusScreen';
+import ReligionAIScreen from './App/screens/ReligionAIScreen';
 import JournalScreen from './App/screens/JournalScreen';
 import ConfessionalScreen from './App/screens/ConfessionalScreen';
 import BuyTokensScreen from './App/screens/BuyTokensScreen';
@@ -119,13 +119,13 @@ export default function App() {
             <Stack.Screen name="Quote" component={QuoteScreen} options={{ headerShown: false }} />
             <Stack.Screen name="SelectReligion" component={SelectReligionScreen} options={{ title: 'Select Religion' }} />
             <Stack.Screen name="Home" component={HomeScreen} />
-            <Stack.Screen name="WWJD" component={AskJesusScreen} options={{ title: 'WWJD' }} />
+            <Stack.Screen name="ReligionAI" component={ReligionAIScreen} options={{ title: 'Religion AI' }} />
             <Stack.Screen name="Journal" component={JournalScreen} options={{ title: 'Quiet Journal' }} />
             <Stack.Screen name="Streak" component={StreakScreen} options={{ title: 'Grace Streak' }} />
             <Stack.Screen name="Challenge" component={ChallengeScreen} options={{ title: 'Daily Challenge' }} />
             <Stack.Screen name="Confessional" component={ConfessionalScreen} options={{ title: 'Confessional' }} />
             <Stack.Screen name="BuyTokens" component={BuyTokensScreen} options={{ title: 'Buy Tokens' }} />
-            <Stack.Screen name="Upgrade" component={UpgradeScreen} options={{ title: 'Upgrade to WWJD+' }} />
+            <Stack.Screen name="Upgrade" component={UpgradeScreen} options={{ title: 'Upgrade to OneVine+' }} />
             <Stack.Screen name="GiveBack" component={GiveBackScreen} options={{ title: 'Give Back' }} />
             <Stack.Screen name="Profile" component={ProfileScreen} />
             <Stack.Screen name="Settings" component={SettingsScreen} />
