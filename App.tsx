@@ -4,8 +4,8 @@ import * as SecureStore from 'expo-secure-store';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import type { FirebaseAuthTypes } from '@react-native-firebase/auth';
+import './App/config/firebaseApp'; // ✅ Ensure Firebase is initialized first
 import { firebaseAuth } from './App/config/firebaseConfig';
-import './App/config/firebaseApp'; // ✅ Force Firebase initialization before anything else
 
 import { RootStackParamList } from './App/navigation/RootStackParamList';
 import { theme } from './App/components/theme/theme';
