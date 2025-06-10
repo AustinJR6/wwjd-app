@@ -9,7 +9,9 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { theme } from "@/components/theme/theme";
 import { RootStackParamList } from "@/navigation/RootStackParamList";
-import { firebaseAuth } from "@/config/firebaseConfig"; // ✅ corrected
+import auth from '@react-native-firebase/auth';
+
+const firebaseAuth = auth();
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 

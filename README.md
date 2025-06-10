@@ -128,7 +128,7 @@ wwjd-app/
 ├── config/               # Firebase and environment setup
 ├── utils/                # Constants, prompt logic, helpers
 ├── navigation/           # Stack navigation
-└── firebaseConfig.ts     # Firebase initialization (React Native SDK)
+└── config/firebaseApp.ts # Firebase initialization trigger
 ✨ Future Features
 ✨ Faith-specific AI tone customization
 

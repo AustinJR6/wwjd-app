@@ -6,7 +6,9 @@ import {
   ActivityIndicator,
   ScrollView
 } from 'react-native';
-import { db } from "@/config/firebaseConfig";
+import firestore from '@react-native-firebase/firestore';
+
+const db = firestore();
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { theme } from "@/components/theme/theme";
 

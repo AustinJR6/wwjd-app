@@ -3,9 +3,10 @@ import { View, ActivityIndicator } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import type { FirebaseAuthTypes } from '@react-native-firebase/auth';
+import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
 import './App/config/firebaseApp'; // ✅ Ensure Firebase is initialized first
-import { firebaseAuth } from './App/config/firebaseConfig';
+
+const firebaseAuth = auth();
 
 import { RootStackParamList } from './App/navigation/RootStackParamList';
 import { theme } from './App/components/theme/theme';

@@ -1,6 +1,8 @@
 import { create } from 'zustand';
-import { firebaseAuth } from "@/config/firebaseConfig";
+import auth from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
+
+const firebaseAuth = auth();
 
 interface ChallengeStore {
   lastCompleted: number | null;
