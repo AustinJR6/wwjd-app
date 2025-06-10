@@ -1,6 +1,4 @@
-import firestore from '@react-native-firebase/firestore';
-
-const db = firestore();
+import { db } from '@/config/firebaseConfig';
 import { useUserStore } from "@/state/userStore";
 
 /**

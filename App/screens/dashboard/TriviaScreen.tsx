@@ -13,9 +13,7 @@ import firestore from '@react-native-firebase/firestore';
 import ScreenContainer from '@/components/theme/ScreenContainer';
 import { theme } from '@/components/theme/theme';
 import { ASK_GEMINI_SIMPLE } from '@/utils/constants';
-import auth from '@react-native-firebase/auth';
-
-const firebaseAuth = auth();
+import { firebaseAuth, db } from '@/config/firebaseConfig';
 
 export default function TriviaScreen() {
   const [story, setStory] = useState('');
@@ -74,14 +72,14 @@ export default function TriviaScreen() {
       correctReligion && answer.toLowerCase().includes(correctReligion.toLowerCase());
 
     try {
-      const userRef = firestore().collection('users').doc(user.uid);
+      const userRef = db.collection('users').doc(user.uid);
 
       if (isCorrect) {
         await userRef.update({
           individualPoints: firestore.FieldValue.increment(10) // ✅ React Native Firebase version
         });
 
-        await firestore()
+        await db
           .collection('completedChallenges')
           .doc(user.uid)
           .set(

@@ -1,8 +1,4 @@
-import auth from '@react-native-firebase/auth';
-import firestore from '@react-native-firebase/firestore';
-
-const firebaseAuth = auth();
-const db = firestore();
+import { firebaseAuth, db } from '@/config/firebaseConfig';
 
 export const getTokenCount = async () => {
   const user = firebaseAuth.currentUser;
