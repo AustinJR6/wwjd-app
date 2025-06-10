@@ -1,4 +1,6 @@
-import { db } from "@/config/firebaseConfig"; // Use aligned db instance
+import firestore from '@react-native-firebase/firestore';
+
+const db = firestore();
 import { useUserStore } from "@/state/userStore";
 
 /**

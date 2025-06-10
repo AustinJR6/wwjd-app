@@ -3,13 +3,13 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { ActivityIndicator, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { FirebaseAuthTypes } from '@react-native-firebase/auth';
+import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
 
 import AuthNavigator from './AuthNavigator';
 import MainTabNavigator from './MainTabNavigator';
 import OnboardingScreen from '@/screens/auth/OnboardingScreen';
 import { theme } from '@/components/theme/theme';
-import { firebaseAuth } from '@/config/firebaseConfig';
+const firebaseAuth = auth();
 
 const Stack = createNativeStackNavigator();
 

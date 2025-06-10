@@ -12,7 +12,11 @@ import ScreenContainer from "@/components/theme/ScreenContainer";
 import { theme } from "@/components/theme/theme";
 import { getTokenCount, setTokenCount } from "@/utils/TokenManager";
 import { ASK_GEMINI_SIMPLE } from "@/utils/constants";
-import { firebaseAuth, db } from "@/config/firebaseConfig";
+import auth from '@react-native-firebase/auth';
+import firestore from '@react-native-firebase/firestore';
+
+const firebaseAuth = auth();
+const db = firestore();
 
 export default function ChallengeScreen() {
   const [challenge, setChallenge] = useState('');

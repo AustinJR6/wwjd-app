@@ -8,7 +8,13 @@ import {
   Alert
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { firebaseAuth, db, storageRef } from "@/config/firebaseConfig";
+import auth from '@react-native-firebase/auth';
+import firestore from '@react-native-firebase/firestore';
+import storage from '@react-native-firebase/storage';
+
+const firebaseAuth = auth();
+const db = firestore();
+const storageRef = storage();
 import { useUser } from "@/hooks/useUser";
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { theme } from "@/components/theme/theme";

@@ -1,4 +1,6 @@
-import { storageRef } from "@/config/firebaseConfig"; // aligned @react-native-firebase/storage instance
+import storage from '@react-native-firebase/storage';
+
+const storageRef = storage();
 
 export async function uploadImage(fileUri: string, path: string): Promise<string> {
   const response = await fetch(fileUri);

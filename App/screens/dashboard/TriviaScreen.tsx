@@ -13,7 +13,9 @@ import firestore from '@react-native-firebase/firestore';
 import ScreenContainer from '@/components/theme/ScreenContainer';
 import { theme } from '@/components/theme/theme';
 import { ASK_GEMINI_SIMPLE } from '@/utils/constants';
-import { firebaseAuth } from '@/config/firebaseConfig';
+import auth from '@react-native-firebase/auth';
+
+const firebaseAuth = auth();
 
 export default function TriviaScreen() {
   const [story, setStory] = useState('');
