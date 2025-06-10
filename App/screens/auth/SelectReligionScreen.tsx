@@ -11,9 +11,7 @@ import {
 import { theme } from "@/components/theme/theme";
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { useUser } from "@/hooks/useUser";
-import firestore from '@react-native-firebase/firestore';
-
-const db = firestore();
+import { db } from '@/config/firebaseConfig';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from "@/navigation/RootStackParamList";
 

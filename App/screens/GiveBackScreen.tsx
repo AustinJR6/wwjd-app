@@ -4,9 +4,7 @@ import ScreenContainer from "@/components/theme/ScreenContainer";
 import { theme } from "@/components/theme/theme";
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from "@/navigation/RootStackParamList";
-import auth from '@react-native-firebase/auth';
-
-const firebaseAuth = auth();
+import { firebaseAuth } from '@/config/firebaseConfig';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'GiveBack'>;
 

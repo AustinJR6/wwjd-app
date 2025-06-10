@@ -1,8 +1,6 @@
 import { create } from 'zustand';
-import auth from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
-
-const firebaseAuth = auth();
+import { firebaseAuth, db } from '@/config/firebaseConfig';
 
 interface ChallengeStore {
   lastCompleted: number | null;
@@ -35,7 +33,7 @@ export const useChallengeStore = create<ChallengeStore>((set, get) => ({
     const user = firebaseAuth.currentUser;
     if (!user) return;
 
-    const ref = firestore().collection('completedChallenges').doc(user.uid);
+    const ref = db.collection('completedChallenges').doc(user.uid);
     const snap = await ref.get();
 
     if (snap.exists) {
@@ -52,7 +50,7 @@ export const useChallengeStore = create<ChallengeStore>((set, get) => ({
     if (!user) return;
 
     const { lastCompleted, streak } = get();
-    const ref = firestore().collection('completedChallenges').doc(user.uid);
+    const ref = db.collection('completedChallenges').doc(user.uid);
 
     await ref.set({
       lastCompleted: lastCompleted ? new Date(lastCompleted) : firestore.FieldValue.serverTimestamp(),
