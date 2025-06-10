@@ -12,11 +12,7 @@ import {
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { theme } from "@/components/theme/theme";
 import { ASK_GEMINI_SIMPLE } from "@/utils/constants";
-import auth from '@react-native-firebase/auth';
-import firestore from '@react-native-firebase/firestore';
-
-const firebaseAuth = auth();
-const db = firestore();
+import { firebaseAuth, db } from '@/config/firebaseConfig';
 
 export default function ConfessionalScreen() {
   const [confession, setConfession] = useState('');

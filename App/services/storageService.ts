@@ -1,6 +1,4 @@
-import storage from '@react-native-firebase/storage';
-
-const storageRef = storage();
+import { storageRef } from '@/config/firebaseConfig';
 
 export async function uploadImage(fileUri: string, path: string): Promise<string> {
   const response = await fetch(fileUri);

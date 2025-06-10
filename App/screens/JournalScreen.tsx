@@ -16,11 +16,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { theme } from "@/components/theme/theme";
 import * as LocalAuthentication from 'expo-local-authentication';
-import auth from '@react-native-firebase/auth';
-import firestore from '@react-native-firebase/firestore';
-
-const firebaseAuth = auth();
-const db = firestore();
+import { firebaseAuth, db } from '@/config/firebaseConfig';
 
 export default function JournalScreen() {
   const [entry, setEntry] = useState('');

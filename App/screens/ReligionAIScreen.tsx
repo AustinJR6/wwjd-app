@@ -13,11 +13,7 @@ import ScreenContainer from "@/components/theme/ScreenContainer";
 import { theme } from "@/components/theme/theme";
 import { getTokenCount, setTokenCount } from "@/utils/TokenManager";
 import { ASK_GEMINI_V2 } from "@/utils/constants";
-import auth from '@react-native-firebase/auth';
-import firestore from '@react-native-firebase/firestore';
-
-const firebaseAuth = auth();
-const db = firestore();
+import { firebaseAuth, db } from '@/config/firebaseConfig';
 
 export default function ReligionAIScreen() {
   const [question, setQuestion] = useState('');

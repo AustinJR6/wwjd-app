@@ -7,9 +7,7 @@ import {
   StyleSheet,
   Alert
 } from 'react-native';
-import firestore from '@react-native-firebase/firestore';
-
-const db = firestore();
+import { db } from '@/config/firebaseConfig';
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { theme } from "@/components/theme/theme";
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
