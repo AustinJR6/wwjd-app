@@ -10,7 +10,7 @@ export default ({ config }) => ({
   },
 
   android: {
-    package: "com.whippybuckle.onevineapp", // ✅ REQUIRED
+    package: "com.whippybuckle.onevineapp",
   },
 
   extra: {
@@ -23,6 +23,9 @@ export default ({ config }) => ({
   },
 
   plugins: [
+    // ✅ ADD THIS — Enables React Native Firebase native linking
+    "@react-native-firebase/app",
+
     [
       "expo-build-properties",
       {
