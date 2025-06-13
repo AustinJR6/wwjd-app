@@ -41,7 +41,7 @@ export default function JournalScreen() {
           }
         }
 
-        const q = db
+        const q = firestore()
           .collection('journalEntries')
           .orderBy('createdAt', 'desc');
         const snap = await q.get();

@@ -79,7 +79,7 @@ export default function TriviaScreen() {
           individualPoints: firestore.FieldValue.increment(10) // ✅ React Native Firebase version
         });
 
-        await db
+        await firestore()
           .collection('completedChallenges')
           .doc(user.uid)
           .set(
