@@ -9,11 +9,11 @@ import {
   ActivityIndicator,
   ScrollView
 } from 'react-native';
-import firestore from '@react-native-firebase/firestore';
+import { auth, firestore } from '@/config/firebase';
 import ScreenContainer from '@/components/theme/ScreenContainer';
 import { theme } from '@/components/theme/theme';
 import { ASK_GEMINI_SIMPLE } from '@/utils/constants';
-import { firebaseAuth, db } from '@/config/firebaseConfig';
+import { firestore as db } from '@/config/firebase';
 
 export default function TriviaScreen() {
   const [story, setStory] = useState('');
@@ -27,7 +27,7 @@ export default function TriviaScreen() {
   }, []);
 
   const fetchTrivia = async () => {
-    const user = firebaseAuth.currentUser;
+    const user = auth().currentUser;
     if (!user) return;
 
     setLoading(true);
@@ -63,7 +63,7 @@ export default function TriviaScreen() {
   const submitAnswer = async () => {
     if (!answer) return;
 
-    const user = firebaseAuth.currentUser;
+    const user = auth().currentUser;
     if (!user) return;
 
     setRevealed(true);
@@ -72,7 +72,7 @@ export default function TriviaScreen() {
       correctReligion && answer.toLowerCase().includes(correctReligion.toLowerCase());
 
     try {
-      const userRef = db.collection('users').doc(user.uid);
+      const userRef = db().collection('users').doc(user.uid);
 
       if (isCorrect) {
         await userRef.update({

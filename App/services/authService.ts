@@ -1,11 +1,11 @@
-import { firebaseAuth } from '@/config/firebaseConfig';
+import { auth } from '@/config/firebase';
 
 /**
  * Sign up a new user with email and password
  */
 export async function signup(email: string, password: string): Promise<void> {
   try {
-    await firebaseAuth.createUserWithEmailAndPassword(email, password);
+    await auth().createUserWithEmailAndPassword(email, password);
   } catch (error: any) {
     throw new Error(error.message);
   }
@@ -16,7 +16,7 @@ export async function signup(email: string, password: string): Promise<void> {
  */
 export async function login(email: string, password: string): Promise<void> {
   try {
-    await firebaseAuth.signInWithEmailAndPassword(email, password);
+    await auth().signInWithEmailAndPassword(email, password);
   } catch (error: any) {
     throw new Error(error.message);
   }
@@ -27,7 +27,7 @@ export async function login(email: string, password: string): Promise<void> {
  */
 export async function logout(): Promise<void> {
   try {
-    await firebaseAuth.signOut();
+    await auth().signOut();
   } catch (error: any) {
     throw new Error(error.message);
   }
@@ -38,7 +38,7 @@ export async function logout(): Promise<void> {
  */
 export async function resetPassword(email: string): Promise<void> {
   try {
-    await firebaseAuth.sendPasswordResetEmail(email);
+    await auth().sendPasswordResetEmail(email);
   } catch (error: any) {
     throw new Error(error.message);
   }

@@ -8,8 +8,7 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
-import firestore from '@react-native-firebase/firestore';
-import { db } from '@/config/firebaseConfig';
+import { firestore } from '@/config/firebase';
 import { useUser } from '@/hooks/useUser';
 import ScreenContainer from '@/components/theme/ScreenContainer';
 import { theme } from '@/components/theme/theme';
@@ -27,11 +26,11 @@ export default function OrganizationManagementScreen() {
     if (!user) return;
     setLoading(true);
     try {
-      const userSnap = await db.collection('users').doc(user.uid).get();
+      const userSnap = await firestore().collection('users').doc(user.uid).get();
       const orgId = userSnap.data()?.organizationId;
       if (!orgId) throw new Error('No organization found');
 
-      const orgSnap = await db.collection('organizations').doc(orgId).get();
+      const orgSnap = await firestore().collection('organizations').doc(orgId).get();
       setOrg({ id: orgId, ...orgSnap.data() });
     } catch (err) {
       console.error('❌ Failed to load org:', err);
@@ -45,7 +44,7 @@ export default function OrganizationManagementScreen() {
     if (!org?.id) return;
 
     try {
-      await db
+      await firestore()
         .collection('organizations')
         .doc(org.id)
         .update({

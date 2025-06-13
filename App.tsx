@@ -4,7 +4,7 @@ import * as SecureStore from 'expo-secure-store';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { FirebaseAuthTypes } from '@react-native-firebase/auth';
-import { firebaseAuth } from '@/config/firebaseConfig';
+import { auth } from '@/config/firebase';
 
 import { RootStackParamList } from './App/navigation/RootStackParamList';
 import { theme } from './App/components/theme/theme';
@@ -51,7 +51,7 @@ export default function App() {
 
     const initialize = async () => {
       try {
-        unsubscribe = firebaseAuth.onAuthStateChanged(
+        unsubscribe = auth().onAuthStateChanged(
           async (firebaseUser: FirebaseAuthTypes.User | null) => {
             setUser(firebaseUser);
 

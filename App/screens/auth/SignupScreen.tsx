@@ -9,7 +9,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { theme } from "@/components/theme/theme";
 import { RootStackParamList } from "@/navigation/RootStackParamList";
-import { firebaseAuth } from '@/config/firebaseConfig';
+import { auth } from '@/config/firebase';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -24,7 +24,7 @@ export default function SignupScreen() {
     try {
       await signup(email, password);
 
-      const firebaseUser = firebaseAuth.currentUser; // ✅ updated access
+      const firebaseUser = auth().currentUser;
       if (!firebaseUser) throw new Error('User creation failed.');
 
       await createUserProfile({

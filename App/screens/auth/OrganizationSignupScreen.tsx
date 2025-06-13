@@ -7,7 +7,7 @@ import {
   StyleSheet,
   Alert
 } from 'react-native';
-import { db } from '@/config/firebaseConfig';
+import { firestore } from '@/config/firebase';
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { theme } from "@/components/theme/theme";
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -31,7 +31,7 @@ export default function OrganizationSignupScreen({ navigation }: Props) {
       const seatLimit = tier === 'enterprise-plus' ? 50 : 25;
       const subscribedSeats = tier === 'enterprise-plus' ? 50 : 0;
 
-      await db.collection('organizations').add({
+      await firestore().collection('organizations').add({
         name,
         tier,
         seatLimit,

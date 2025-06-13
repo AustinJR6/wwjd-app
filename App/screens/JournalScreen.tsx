@@ -16,7 +16,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { theme } from "@/components/theme/theme";
 import * as LocalAuthentication from 'expo-local-authentication';
-import { firebaseAuth, db } from '@/config/firebaseConfig';
+import { firestore } from '@/config/firebase';
 
 export default function JournalScreen() {
   const [entry, setEntry] = useState('');
@@ -65,14 +65,14 @@ export default function JournalScreen() {
     if (!entry.trim()) return;
     setSaving(true);
     try {
-      await db.collection('journalEntries').add({
+      await firestore().collection('journalEntries').add({
         text: entry,
         createdAt: new Date(), // ✅ replaces serverTimestamp()
       });
       Alert.alert('Saved!', 'Your reflection has been saved.');
       setEntry('');
 
-      const q = db.collection('journalEntries').orderBy('createdAt', 'desc');
+      const q = firestore().collection('journalEntries').orderBy('createdAt', 'desc');
       const snap = await q.get();
       const list = snap.docs.map((d) => ({
         id: d.id,

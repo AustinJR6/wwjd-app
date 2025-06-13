@@ -11,8 +11,7 @@ import {
 import { useUser } from '@/hooks/useUser';
 import ScreenContainer from '@/components/theme/ScreenContainer';
 import { theme } from '@/components/theme/theme';
-import firestore from '@react-native-firebase/firestore';
-import { db } from '@/config/firebaseConfig';
+import { firestore } from '@/config/firebase';
 
 export default function JoinOrganizationScreen() {
   const { user } = useUser();
@@ -26,7 +25,7 @@ export default function JoinOrganizationScreen() {
 
   const fetchOrgs = async () => {
     try {
-      const snap = await db.collection('organizations').get();
+      const snap = await firestore().collection('organizations').get();
       const all = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
       setOrgs(all);
       setFiltered(all);
@@ -52,8 +51,8 @@ export default function JoinOrganizationScreen() {
     }
 
     try {
-      const userRef = db.collection('users').doc(user.uid);
-      const orgRef = db.collection('organizations').doc(org.id);
+      const userRef = firestore().collection('users').doc(user.uid);
+      const orgRef = firestore().collection('organizations').doc(org.id);
 
       await userRef.update({
         organizationId: org.id

@@ -12,7 +12,7 @@ import ScreenContainer from "@/components/theme/ScreenContainer";
 import { theme } from "@/components/theme/theme";
 import { getTokenCount, setTokenCount } from "@/utils/TokenManager";
 import { ASK_GEMINI_SIMPLE } from "@/utils/constants";
-import { firebaseAuth, db } from '@/config/firebaseConfig';
+import { auth, firestore } from '@/config/firebase';
 
 export default function ChallengeScreen() {
   const [challenge, setChallenge] = useState('');
@@ -21,12 +21,12 @@ export default function ChallengeScreen() {
 
   const fetchChallenge = async () => {
     try {
-      const user = firebaseAuth.currentUser;
+      const user = auth().currentUser;
       if (!user) return;
 
       setLoading(true);
 
-      const userRef = db.collection('users').doc(user.uid);
+      const userRef = firestore().collection('users').doc(user.uid);
       const userSnap = await userRef.get();
       const userData = userSnap.data() || {};
       const lastChallenge = userData.lastChallenge?.toDate?.();
