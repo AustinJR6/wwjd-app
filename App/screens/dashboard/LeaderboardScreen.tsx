@@ -6,7 +6,7 @@ import {
   ActivityIndicator,
   ScrollView
 } from 'react-native';
-import { db } from '@/config/firebaseConfig';
+import { firestore } from '@/config/firebase';
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { theme } from "@/components/theme/theme";
 
@@ -23,17 +23,17 @@ export default function LeaderboardsScreen() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const userSnap = await db
+      const userSnap = await firestore()
         .collection('users')
         .orderBy('individualPoints', 'desc')
         .get();
 
-      const religionSnap = await db
+      const religionSnap = await firestore()
         .collection('religions')
         .orderBy('totalPoints', 'desc')
         .get();
 
-      const orgSnap = await db
+      const orgSnap = await firestore()
         .collection('organizations')
         .orderBy('totalPoints', 'desc')
         .get();
