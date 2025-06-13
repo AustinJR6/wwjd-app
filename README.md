@@ -70,9 +70,6 @@ plugins: [
       android: {
         googleServicesFile: "./android/app/google-services.json"
       },
-      ios: {
-        googleServicesFile: "./ios/GoogleService-Info.plist"
-      }
     }
   ]
 ]

@@ -11,6 +11,8 @@ export default ({ config }) => ({
 
   android: {
     package: "com.whippybuckle.onevineapp",
+    // Ensure Android build picks up Firebase config
+    googleServicesFile: "./android/app/google-services.json",
   },
 
   extra: {
@@ -31,9 +33,6 @@ export default ({ config }) => ({
       {
         android: {
           googleServicesFile: "./android/app/google-services.json",
-        },
-        ios: {
-          googleServicesFile: "./ios/GoogleService-Info.plist",
         },
       },
     ],
