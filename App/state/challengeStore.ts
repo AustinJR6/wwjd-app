@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import { auth, firestore } from '@/config/firebase';
+import { app, firestore } from '@/config/firebase';
+import { getAuth } from 'firebase/auth';
 import { doc, getDoc, setDoc, collection, serverTimestamp } from 'firebase/firestore';
 
 interface ChallengeStore {
@@ -30,7 +31,7 @@ export const useChallengeStore = create<ChallengeStore>((set, get) => ({
   },
 
   syncWithFirestore: async () => {
-    const user = auth.currentUser;
+    const user = getAuth(app).currentUser;
     if (!user) return;
 
     const ref = doc(collection(firestore, 'completedChallenges'), user.uid);
@@ -46,7 +47,7 @@ export const useChallengeStore = create<ChallengeStore>((set, get) => ({
   },
 
   updateStreakInFirestore: async () => {
-    const user = auth.currentUser;
+    const user = getAuth(app).currentUser;
     if (!user) return;
 
     const { lastCompleted, streak } = get();

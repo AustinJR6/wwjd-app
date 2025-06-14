@@ -3,8 +3,8 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { ActivityIndicator, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { User, onAuthStateChanged } from 'firebase/auth';
-import { auth } from '@/config/firebase';
+import { User, onAuthStateChanged, getAuth } from 'firebase/auth';
+import { app } from '@/config/firebase';
 
 import AuthNavigator from './AuthNavigator';
 import MainTabNavigator from './MainTabNavigator';
@@ -19,7 +19,7 @@ export default function AppNavigator() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+    const unsubscribe = onAuthStateChanged(getAuth(app), async (firebaseUser) => {
       setUser(firebaseUser);
 
       if (firebaseUser) {
