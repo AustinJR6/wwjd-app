@@ -12,6 +12,13 @@ import { useUser } from '@/hooks/useUser';
 import ScreenContainer from '@/components/theme/ScreenContainer';
 import { theme } from '@/components/theme/theme';
 import { firestore } from '@/config/firebase';
+import {
+  collection,
+  getDocs,
+  doc,
+  updateDoc,
+  arrayUnion
+} from 'firebase/firestore';
 
 export default function JoinOrganizationScreen() {
   const { user } = useUser();
@@ -25,7 +32,7 @@ export default function JoinOrganizationScreen() {
 
   const fetchOrgs = async () => {
     try {
-      const snap = await firestore().collection('organizations').get();
+      const snap = await getDocs(collection(firestore, 'organizations'));
       const all = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
       setOrgs(all);
       setFiltered(all);
@@ -51,15 +58,15 @@ export default function JoinOrganizationScreen() {
     }
 
     try {
-      const userRef = firestore().collection('users').doc(user.uid);
-      const orgRef = firestore().collection('organizations').doc(org.id);
+      const userRef = doc(collection(firestore, 'users'), user.uid);
+      const orgRef = doc(collection(firestore, 'organizations'), org.id);
 
-      await userRef.update({
+      await updateDoc(userRef, {
         organizationId: org.id
       });
 
-      await orgRef.update({
-        members: firestore.FieldValue.arrayUnion(user.uid)
+      await updateDoc(orgRef, {
+        members: arrayUnion(user.uid)
       });
 
       Alert.alert('Joined', `You’ve joined ${org.name}.`);

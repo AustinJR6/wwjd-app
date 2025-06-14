@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { auth, firestore } from '@/config/firebase';
+import { doc, getDoc, setDoc, collection, serverTimestamp } from 'firebase/firestore';
 
 interface ChallengeStore {
   lastCompleted: number | null;
@@ -29,11 +30,11 @@ export const useChallengeStore = create<ChallengeStore>((set, get) => ({
   },
 
   syncWithFirestore: async () => {
-    const user = auth().currentUser;
+    const user = auth.currentUser;
     if (!user) return;
 
-    const ref = firestore().collection('completedChallenges').doc(user.uid);
-    const snap = await ref.get();
+    const ref = doc(collection(firestore, 'completedChallenges'), user.uid);
+    const snap = await getDoc(ref);
 
     if (snap.exists) {
       const data = snap.data();
@@ -45,15 +46,19 @@ export const useChallengeStore = create<ChallengeStore>((set, get) => ({
   },
 
   updateStreakInFirestore: async () => {
-    const user = auth().currentUser;
+    const user = auth.currentUser;
     if (!user) return;
 
     const { lastCompleted, streak } = get();
-    const ref = firestore().collection('completedChallenges').doc(user.uid);
+    const ref = doc(collection(firestore, 'completedChallenges'), user.uid);
 
-    await ref.set({
-      lastCompleted: lastCompleted ? new Date(lastCompleted) : firestore.FieldValue.serverTimestamp(),
-      streak,
-    }, { merge: true });
+    await setDoc(
+      ref,
+      {
+        lastCompleted: lastCompleted ? new Date(lastCompleted) : serverTimestamp(),
+        streak,
+      },
+      { merge: true }
+    );
   },
 }));

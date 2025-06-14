@@ -15,7 +15,7 @@ export default function GiveBackScreen({ navigation }: Props) {
     setDonating(true);
 
     try {
-      const user = auth().currentUser;
+      const user = auth.currentUser;
       if (!user) return;
 
       const res = await fetch('https://us-central1-wwjd-app.cloudfunctions.net/createCheckoutSession', {

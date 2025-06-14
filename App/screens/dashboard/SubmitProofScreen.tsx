@@ -9,6 +9,8 @@ import {
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { firestore, storage } from '@/config/firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { collection, addDoc } from 'firebase/firestore';
 import { useUser } from "@/hooks/useUser";
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { theme } from "@/components/theme/theme";
@@ -40,15 +42,13 @@ export default function SubmitProofScreen() {
     setUploading(true);
     try {
       const refPath = `proofs/${user.uid}/${Date.now()}`;
-      const imgRef = storage().ref(refPath);
+      const imgRef = ref(storage, refPath);
       const imgBlob = await fetch(image.uri).then(r => r.blob());
 
-      await imgRef.put(imgBlob);
-      const imgUrl = await imgRef.getDownloadURL();
+      await uploadBytes(imgRef, imgBlob);
+      const imgUrl = await getDownloadURL(imgRef);
 
-      await firestore()
-        .collection('challengeProofs')
-        .add({
+      await addDoc(collection(firestore, 'challengeProofs'), {
           uid: user.uid,
           caption,
           imageUrl: imgUrl,

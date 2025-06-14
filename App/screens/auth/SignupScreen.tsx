@@ -24,7 +24,7 @@ export default function SignupScreen() {
     try {
       await signup(email, password);
 
-      const firebaseUser = auth().currentUser;
+      const firebaseUser = auth.currentUser;
       if (!firebaseUser) throw new Error('User creation failed.');
 
       await createUserProfile({

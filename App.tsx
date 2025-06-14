@@ -3,7 +3,7 @@ import { View, ActivityIndicator } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { FirebaseAuthTypes } from '@react-native-firebase/auth';
+import { User, onAuthStateChanged } from 'firebase/auth';
 import { auth } from '@/config/firebase';
 
 import { RootStackParamList } from './App/navigation/RootStackParamList';
@@ -42,7 +42,7 @@ import GiveBackScreen from './App/screens/GiveBackScreen';
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function App() {
-  const [user, setUser] = useState<FirebaseAuthTypes.User | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [initialRoute, setInitialRoute] = useState<keyof RootStackParamList | undefined>();
   const [checkingAuth, setCheckingAuth] = useState(true);
 
@@ -51,8 +51,9 @@ export default function App() {
 
     const initialize = async () => {
       try {
-        unsubscribe = auth().onAuthStateChanged(
-          async (firebaseUser: FirebaseAuthTypes.User | null) => {
+        unsubscribe = onAuthStateChanged(
+          auth,
+          async (firebaseUser: User | null) => {
             setUser(firebaseUser);
 
             if (firebaseUser) {

@@ -9,6 +9,13 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { firestore } from '@/config/firebase';
+import {
+  doc,
+  getDoc,
+  updateDoc,
+  collection,
+  arrayRemove
+} from 'firebase/firestore';
 import { useUser } from '@/hooks/useUser';
 import ScreenContainer from '@/components/theme/ScreenContainer';
 import { theme } from '@/components/theme/theme';
@@ -26,11 +33,11 @@ export default function OrganizationManagementScreen() {
     if (!user) return;
     setLoading(true);
     try {
-      const userSnap = await firestore().collection('users').doc(user.uid).get();
+      const userSnap = await getDoc(doc(collection(firestore, 'users'), user.uid));
       const orgId = userSnap.data()?.organizationId;
       if (!orgId) throw new Error('No organization found');
 
-      const orgSnap = await firestore().collection('organizations').doc(orgId).get();
+      const orgSnap = await getDoc(doc(collection(firestore, 'organizations'), orgId));
       setOrg({ id: orgId, ...orgSnap.data() });
     } catch (err) {
       console.error('❌ Failed to load org:', err);
@@ -44,12 +51,9 @@ export default function OrganizationManagementScreen() {
     if (!org?.id) return;
 
     try {
-      await firestore()
-        .collection('organizations')
-        .doc(org.id)
-        .update({
-          members: firestore.FieldValue.arrayRemove(uid),
-        });
+      await updateDoc(doc(collection(firestore, 'organizations'), org.id), {
+        members: arrayRemove(uid),
+      });
 
       Alert.alert('Removed', 'Member removed from organization.');
       loadOrg();

@@ -25,7 +25,7 @@ export default function LoginScreen() {
     try {
       await login(email, password);
 
-      const user = auth().currentUser;
+      const user = auth.currentUser;
       if (user) {
         await loadUser(user.uid);
       }

@@ -12,6 +12,7 @@ import ScreenContainer from "@/components/theme/ScreenContainer";
 import { theme } from "@/components/theme/theme";
 import { ASK_GEMINI_SIMPLE } from "@/utils/constants";
 import { auth, firestore } from '@/config/firebase';
+import { doc, getDoc, setDoc, collection } from 'firebase/firestore';
 
 export default function StreakScreen() {
   const [message, setMessage] = useState('');
@@ -24,13 +25,13 @@ export default function StreakScreen() {
 
   const fetchStreakMessage = async () => {
     try {
-      const user = auth().currentUser;
+      const user = auth.currentUser;
       if (!user) return;
 
       setLoading(true);
 
-      const streakRef = firestore().collection('completedChallenges').doc(user.uid);
-      const streakSnap = await streakRef.get();
+      const streakRef = doc(collection(firestore, 'completedChallenges'), user.uid);
+      const streakSnap = await getDoc(streakRef);
       const streakData = streakSnap.data();
 
       const today = new Date().toDateString();
@@ -42,8 +43,8 @@ export default function StreakScreen() {
         return;
       }
 
-      const userRef = firestore().collection('users').doc(user.uid);
-      const userSnap = await userRef.get();
+      const userRef = doc(collection(firestore, 'users'), user.uid);
+      const userSnap = await getDoc(userRef);
       const userData = userSnap.data() || {};
       const religion = userData.religion || 'Spiritual Guide';
       const role = religion === 'Christianity' ? 'Pastor' :
@@ -72,7 +73,8 @@ export default function StreakScreen() {
       setMessage(messageText);
       setStreak(streakData?.streakCount || 0);
 
-      await streakRef.set(
+      await setDoc(
+        streakRef,
         {
           lastStreakMessageDate: today,
           message: messageText,
