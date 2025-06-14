@@ -106,5 +106,3 @@ dependencies {
     // ✅ Firebase AI Logic SDK (Gemini integration)
     implementation 'com.google.firebase:firebase-ai'
 }
-
-apply plugin: 'com.google.gms.google-services'
