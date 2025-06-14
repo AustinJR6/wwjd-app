@@ -1,8 +1,6 @@
 import { create } from 'zustand';
 import { app, firestore } from '@/config/firebase';
 import { getAuth } from 'firebase/auth';
-
-const auth = getAuth(app);
 import { doc, getDoc, setDoc, collection, serverTimestamp } from 'firebase/firestore';
 
 interface ChallengeStore {
@@ -33,6 +31,7 @@ export const useChallengeStore = create<ChallengeStore>((set, get) => ({
   },
 
   syncWithFirestore: async () => {
+    const auth = getAuth(app);
     const user = auth.currentUser;
     if (!user) return;
 
@@ -49,6 +48,7 @@ export const useChallengeStore = create<ChallengeStore>((set, get) => ({
   },
 
   updateStreakInFirestore: async () => {
+    const auth = getAuth(app);
     const user = auth.currentUser;
     if (!user) return;
 

@@ -13,11 +13,10 @@ import { RootStackParamList } from "@/navigation/RootStackParamList";
 import { app } from '@/config/firebase';
 import { getAuth } from 'firebase/auth';
 
-const auth = getAuth(app);
-
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 export default function LoginScreen() {
+  const auth = getAuth(app);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);

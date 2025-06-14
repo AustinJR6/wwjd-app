@@ -7,11 +7,10 @@ import { RootStackParamList } from "@/navigation/RootStackParamList";
 import { app } from '@/config/firebase';
 import { getAuth } from 'firebase/auth';
 
-const auth = getAuth(app);
-
 type Props = NativeStackScreenProps<RootStackParamList, 'GiveBack'>;
 
 export default function GiveBackScreen({ navigation }: Props) {
+  const auth = getAuth(app);
   const [donating, setDonating] = useState(false);
 
   const handleDonation = async (amount: number) => {

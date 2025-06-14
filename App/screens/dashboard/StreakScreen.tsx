@@ -13,11 +13,10 @@ import { theme } from "@/components/theme/theme";
 import { ASK_GEMINI_SIMPLE } from "@/utils/constants";
 import { app, firestore } from '@/config/firebase';
 import { getAuth } from 'firebase/auth';
-
-const auth = getAuth(app);
 import { doc, getDoc, setDoc, collection } from 'firebase/firestore';
 
 export default function StreakScreen() {
+  const auth = getAuth(app);
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [streak, setStreak] = useState(0);
