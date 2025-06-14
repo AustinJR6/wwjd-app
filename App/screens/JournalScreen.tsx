@@ -12,7 +12,6 @@ import {
   Pressable,
   Button,
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { theme } from "@/components/theme/theme";
 import * as LocalAuthentication from 'expo-local-authentication';

@@ -7,6 +7,8 @@ import { RootStackParamList } from "@/navigation/RootStackParamList";
 import { app } from '@/config/firebase';
 import { getAuth } from 'firebase/auth';
 
+const auth = getAuth(app);
+
 type Props = NativeStackScreenProps<RootStackParamList, 'GiveBack'>;
 
 export default function GiveBackScreen({ navigation }: Props) {
@@ -16,7 +18,7 @@ export default function GiveBackScreen({ navigation }: Props) {
     setDonating(true);
 
     try {
-      const user = getAuth(app).currentUser;
+      const user = auth.currentUser;
       if (!user) return;
 
       const res = await fetch('https://us-central1-wwjd-app.cloudfunctions.net/createCheckoutSession', {
