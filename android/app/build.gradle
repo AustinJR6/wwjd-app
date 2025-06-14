@@ -100,9 +100,5 @@ dependencies {
         implementation jscFlavor
     }
 
-    // ✅ Firebase BoM to pin all versions safely
-    implementation platform('com.google.firebase:firebase-bom:33.14.0')
-
-    // ✅ Firebase AI Logic SDK (Gemini integration)
-    implementation 'com.google.firebase:firebase-ai'
+    // ✅ NO native Firebase dependencies here anymore
 }
