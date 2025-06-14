@@ -48,11 +48,12 @@ export default function App() {
 
   useEffect(() => {
     let unsubscribe: () => void;
+    const auth = getAuth(app);
 
     const initialize = async () => {
       try {
         unsubscribe = onAuthStateChanged(
-          getAuth(app),
+          auth,
           async (firebaseUser: User | null) => {
             setUser(firebaseUser);
 

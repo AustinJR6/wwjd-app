@@ -13,6 +13,8 @@ import { RootStackParamList } from "@/navigation/RootStackParamList";
 import { app } from '@/config/firebase';
 import { getAuth } from 'firebase/auth';
 
+const auth = getAuth(app);
+
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 export default function LoginScreen() {
@@ -26,7 +28,7 @@ export default function LoginScreen() {
     try {
       await login(email, password);
 
-      const user = getAuth(app).currentUser;
+      const user = auth.currentUser;
       if (user) {
         await loadUser(user.uid);
       }

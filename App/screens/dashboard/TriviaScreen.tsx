@@ -11,6 +11,8 @@ import {
 } from 'react-native';
 import { app, firestore } from '@/config/firebase';
 import { getAuth } from 'firebase/auth';
+
+const auth = getAuth(app);
 import ScreenContainer from '@/components/theme/ScreenContainer';
 import { theme } from '@/components/theme/theme';
 import { ASK_GEMINI_SIMPLE } from '@/utils/constants';
@@ -28,7 +30,7 @@ export default function TriviaScreen() {
   }, []);
 
   const fetchTrivia = async () => {
-    const user = getAuth(app).currentUser;
+    const user = auth.currentUser;
     if (!user) return;
 
     setLoading(true);
@@ -64,7 +66,7 @@ export default function TriviaScreen() {
   const submitAnswer = async () => {
     if (!answer) return;
 
-    const user = getAuth(app).currentUser;
+    const user = auth.currentUser;
     if (!user) return;
 
     setRevealed(true);

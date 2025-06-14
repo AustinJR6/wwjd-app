@@ -14,6 +14,8 @@ import { getTokenCount, setTokenCount } from "@/utils/TokenManager";
 import { ASK_GEMINI_SIMPLE } from "@/utils/constants";
 import { app, firestore } from '@/config/firebase';
 import { getAuth } from 'firebase/auth';
+
+const auth = getAuth(app);
 import { doc, getDoc, setDoc, collection } from 'firebase/firestore';
 
 export default function ChallengeScreen() {
@@ -23,7 +25,7 @@ export default function ChallengeScreen() {
 
   const fetchChallenge = async () => {
     try {
-      const user = getAuth(app).currentUser;
+      const user = auth.currentUser;
       if (!user) return;
 
       setLoading(true);

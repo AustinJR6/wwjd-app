@@ -7,6 +7,8 @@ import { RootStackParamList } from "@/navigation/RootStackParamList";
 import { app } from '@/config/firebase';
 import { getAuth } from 'firebase/auth';
 
+const auth = getAuth(app);
+
 type Props = NativeStackScreenProps<RootStackParamList, 'Upgrade'>;
 
 export default function UpgradeScreen({ navigation }: Props) {
@@ -16,7 +18,7 @@ export default function UpgradeScreen({ navigation }: Props) {
     setLoading(true);
 
     try {
-      const user = getAuth(app).currentUser;
+      const user = auth.currentUser;
       if (!user) {
         Alert.alert('Error', 'User not logged in.');
         return;
