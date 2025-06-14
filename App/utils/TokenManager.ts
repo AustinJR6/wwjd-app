@@ -1,8 +1,9 @@
-import { auth, firestore } from '@/config/firebase';
+import { app, firestore } from '@/config/firebase';
+import { getAuth } from 'firebase/auth';
 import { doc, getDoc, setDoc, collection } from 'firebase/firestore';
 
 export const getTokenCount = async () => {
-  const user = auth.currentUser;
+  const user = getAuth(app).currentUser;
   if (!user) return 0;
 
   const tokenRef = doc(collection(firestore, 'tokens'), user.uid);
@@ -17,7 +18,7 @@ export const getTokenCount = async () => {
 };
 
 export const setTokenCount = async (count: number) => {
-  const user = auth.currentUser;
+  const user = getAuth(app).currentUser;
   if (!user) return;
 
   const tokenRef = doc(collection(firestore, 'tokens'), user.uid);
@@ -32,7 +33,7 @@ export const consumeToken = async () => {
 };
 
 export const canUseFreeAsk = async () => {
-  const user = auth.currentUser;
+  const user = getAuth(app).currentUser;
   if (!user) return false;
 
   const docRef = doc(collection(firestore, 'freeAsk'), user.uid);
@@ -52,7 +53,7 @@ export const canUseFreeAsk = async () => {
 };
 
 export const useFreeAsk = async () => {
-  const user = auth.currentUser;
+  const user = getAuth(app).currentUser;
   if (!user) return;
 
   const docRef = doc(collection(firestore, 'freeAsk'), user.uid);
@@ -60,7 +61,7 @@ export const useFreeAsk = async () => {
 };
 
 export const syncSubscriptionStatus = async () => {
-  const user = auth.currentUser;
+  const user = getAuth(app).currentUser;
   if (!user) return;
 
   const subRef = doc(collection(firestore, 'subscriptions'), user.uid);

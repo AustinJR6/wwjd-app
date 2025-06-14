@@ -4,7 +4,8 @@ import ScreenContainer from "@/components/theme/ScreenContainer";
 import { theme } from "@/components/theme/theme";
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from "@/navigation/RootStackParamList";
-import { auth } from '@/config/firebase';
+import { app } from '@/config/firebase';
+import { getAuth } from 'firebase/auth';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'GiveBack'>;
 
@@ -15,7 +16,7 @@ export default function GiveBackScreen({ navigation }: Props) {
     setDonating(true);
 
     try {
-      const user = auth.currentUser;
+      const user = getAuth(app).currentUser;
       if (!user) return;
 
       const res = await fetch('https://us-central1-wwjd-app.cloudfunctions.net/createCheckoutSession', {

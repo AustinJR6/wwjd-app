@@ -11,7 +11,8 @@ import {
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { theme } from "@/components/theme/theme";
 import { ASK_GEMINI_SIMPLE } from "@/utils/constants";
-import { auth, firestore } from '@/config/firebase';
+import { app, firestore } from '@/config/firebase';
+import { getAuth } from 'firebase/auth';
 import { doc, getDoc, setDoc, collection } from 'firebase/firestore';
 
 export default function StreakScreen() {
@@ -25,7 +26,7 @@ export default function StreakScreen() {
 
   const fetchStreakMessage = async () => {
     try {
-      const user = auth.currentUser;
+      const user = getAuth(app).currentUser;
       if (!user) return;
 
       setLoading(true);

@@ -12,7 +12,8 @@ import {
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { theme } from "@/components/theme/theme";
 import { ASK_GEMINI_SIMPLE } from "@/utils/constants";
-import { auth, firestore } from '@/config/firebase';
+import { app, firestore } from '@/config/firebase';
+import { getAuth } from 'firebase/auth';
 import { doc, getDoc, collection } from 'firebase/firestore';
 
 export default function ConfessionalScreen() {
@@ -28,7 +29,7 @@ export default function ConfessionalScreen() {
 
     setLoading(true);
     try {
-      const user = auth.currentUser;
+      const user = getAuth(app).currentUser;
       if (!user) return;
 
       const userRef = doc(collection(firestore, 'users'), user.uid);

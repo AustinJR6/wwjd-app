@@ -10,7 +10,8 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { theme } from "@/components/theme/theme";
 import { useUserStore } from "@/state/userStore";
 import { RootStackParamList } from "@/navigation/RootStackParamList";
-import { auth } from '@/config/firebase';
+import { app } from '@/config/firebase';
+import { getAuth } from 'firebase/auth';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -25,7 +26,7 @@ export default function LoginScreen() {
     try {
       await login(email, password);
 
-      const user = auth.currentUser;
+      const user = getAuth(app).currentUser;
       if (user) {
         await loadUser(user.uid);
       }
