@@ -6,8 +6,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { User, onAuthStateChanged, getAuth } from 'firebase/auth';
 import { app } from '@/config/firebase';
 
-const auth = getAuth(app);
-
 import AuthNavigator from './AuthNavigator';
 import MainTabNavigator from './MainTabNavigator';
 import OnboardingScreen from '@/screens/auth/OnboardingScreen';
@@ -16,6 +14,7 @@ import { theme } from '@/components/theme/theme';
 const Stack = createNativeStackNavigator();
 
 export default function AppNavigator() {
+  const auth = getAuth(app);
   const [user, setUser] = useState<User | null>(null);
   const [hasSeenOnboarding, setHasSeenOnboarding] = useState(false);
   const [loading, setLoading] = useState(true);

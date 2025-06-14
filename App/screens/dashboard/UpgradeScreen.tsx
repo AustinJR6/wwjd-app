@@ -7,11 +7,10 @@ import { RootStackParamList } from "@/navigation/RootStackParamList";
 import { app } from '@/config/firebase';
 import { getAuth } from 'firebase/auth';
 
-const auth = getAuth(app);
-
 type Props = NativeStackScreenProps<RootStackParamList, 'Upgrade'>;
 
 export default function UpgradeScreen({ navigation }: Props) {
+  const auth = getAuth(app);
   const [loading, setLoading] = useState(false);
 
   const handleUpgrade = async () => {
