@@ -11,6 +11,7 @@ export default ({ config }) => ({
 
   android: {
     package: "com.whippybuckle.onevineapp",
+    // ✅ No `googleServicesFile` needed anymore
   },
 
   extra: {
@@ -18,7 +19,7 @@ export default ({ config }) => ({
       projectId: "bbf209be-1b48-4f76-a496-9d4fcd8339fd",
     },
     firebase: {
-      projectId: "wwjd-app",
+      projectId: "wwjd-app", // ✅ Optional — only if you’re using it elsewhere in your code
     },
   },
 
@@ -26,7 +27,9 @@ export default ({ config }) => ({
     [
       "expo-build-properties",
       {
-        android: {},
+        android: {
+          // ✅ No need to configure Google Services or Firebase here anymore
+        },
       },
     ],
   ],
