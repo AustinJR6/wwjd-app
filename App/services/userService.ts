@@ -1,4 +1,11 @@
 import { firestore } from '@/config/firebase';
+import {
+  doc,
+  getDoc,
+  setDoc,
+  updateDoc,
+  collection
+} from 'firebase/firestore';
 import { useUserStore } from "@/state/userStore";
 
 /**
@@ -20,8 +27,8 @@ export interface FirestoreUser {
  * Get user from Firestore and set into userStore
  */
 export async function loadUser(uid: string): Promise<void> {
-  const ref = firestore().collection('users').doc(uid);
-  const snapshot = await ref.get();
+  const ref = doc(collection(firestore, 'users'), uid);
+  const snapshot = await getDoc(ref);
 
   if (snapshot.exists) {
     const user = snapshot.data() as FirestoreUser;
@@ -58,7 +65,7 @@ export async function createUserProfile({
   region?: string;
   organizationId?: string;
 }) {
-  const ref = firestore().collection('users').doc(uid);
+  const ref = doc(collection(firestore, 'users'), uid);
   const now = Date.now();
 
   const userData: FirestoreUser = {
@@ -73,15 +80,15 @@ export async function createUserProfile({
     createdAt: now,
   };
 
-  await ref.set(userData);
+  await setDoc(ref, userData);
 }
 
 /**
  * Mark onboarding complete
  */
 export async function completeOnboarding(uid: string) {
-  const ref = firestore().collection('users').doc(uid);
-  await ref.update({ onboardingComplete: true });
+  const ref = doc(collection(firestore, 'users'), uid);
+  await updateDoc(ref, { onboardingComplete: true });
 }
 
 /**
@@ -91,7 +98,7 @@ export async function updateUserFields(
   uid: string,
   updates: Partial<FirestoreUser>
 ) {
-  const ref = firestore().collection('users').doc(uid);
-  await ref.set(updates, { merge: true });
+  const ref = doc(collection(firestore, 'users'), uid);
+  await setDoc(ref, updates, { merge: true });
 }
 

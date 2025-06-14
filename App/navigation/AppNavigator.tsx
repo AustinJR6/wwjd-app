@@ -3,7 +3,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { ActivityIndicator, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { FirebaseAuthTypes } from '@react-native-firebase/auth';
+import { User, onAuthStateChanged } from 'firebase/auth';
 import { auth } from '@/config/firebase';
 
 import AuthNavigator from './AuthNavigator';
@@ -14,12 +14,12 @@ import { theme } from '@/components/theme/theme';
 const Stack = createNativeStackNavigator();
 
 export default function AppNavigator() {
-  const [user, setUser] = useState<FirebaseAuthTypes.User | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [hasSeenOnboarding, setHasSeenOnboarding] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = auth().onAuthStateChanged(async (firebaseUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       setUser(firebaseUser);
 
       if (firebaseUser) {

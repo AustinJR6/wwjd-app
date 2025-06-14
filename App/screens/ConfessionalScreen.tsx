@@ -13,6 +13,7 @@ import ScreenContainer from "@/components/theme/ScreenContainer";
 import { theme } from "@/components/theme/theme";
 import { ASK_GEMINI_SIMPLE } from "@/utils/constants";
 import { auth, firestore } from '@/config/firebase';
+import { doc, getDoc, collection } from 'firebase/firestore';
 
 export default function ConfessionalScreen() {
   const [confession, setConfession] = useState('');
@@ -27,11 +28,11 @@ export default function ConfessionalScreen() {
 
     setLoading(true);
     try {
-      const user = auth().currentUser;
+      const user = auth.currentUser;
       if (!user) return;
 
-      const userRef = firestore().collection('users').doc(user.uid);
-      const userSnap = await userRef.get();
+      const userRef = doc(collection(firestore, 'users'), user.uid);
+      const userSnap = await getDoc(userRef);
       const userData = userSnap.data() || {};
       const religion = userData.religion || 'Spiritual Guide';
       const role = religion === 'Christianity' ? 'Pastor' :

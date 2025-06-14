@@ -16,11 +16,8 @@ This project uses **React Native (via Expo)** and is powered by **Firebase** for
 ## 🧰 Tech Stack
 
 - **React Native** (with Expo)
-- **React Native Firebase SDK**
-  - `@react-native-firebase/app`
-  - `@react-native-firebase/auth`
-  - `@react-native-firebase/firestore`
-- **Firebase**
+- **Firebase Web SDK**
+  - `firebase/app`, `firebase/auth`, `firebase/firestore`
   - Anonymous Auth for guest use
   - Firestore for user journals and token tracking
 - **Google Gemini / OpenAI GPT**
@@ -52,42 +49,7 @@ Enable Anonymous Authentication
 
 Set up Firestore
 
-Download:
-
-google-services.json → android/app/
-
-GoogleService-Info.plist → ios/
-
-Update app.config.js:
-
-js
-Copy
-Edit
-plugins: [
-  [
-    "expo-build-properties",
-    {
-      android: {
-        googleServicesFile: "./android/app/google-services.json"
-      },
-    }
-  ]
-]
-4. Firebase SDK Use ✅
-We use React Native Firebase, not the Web SDK.
-
-Correct:
-js
-Copy
-Edit
-import auth from '@react-native-firebase/auth';
-import firestore from '@react-native-firebase/firestore';
-Avoid:
-js
-Copy
-Edit
-// ❌ Web SDK not compatible with React Native
-import firebase from 'firebase/app';
+Firebase Setup uses the Expo-compatible Web SDK via the `firebase` package.
 📱 Key Features
 ✝️ 🕉️ ☪️ 🕎 Multi-Faith Reflection AI
 Dynamic prompts based on selected religion
@@ -148,9 +110,7 @@ OneVine is rooted in the belief that truth and love transcend labels. Whether Ch
 Austin Rittenhouse – Founder, developer
 
 🛠 Development Notes
-All Firebase integrations use the React Native Firebase SDK
-
-We do not use firebase.initializeApp() or Web SDK
+All Firebase integrations now use the Firebase Web SDK initialized in `App/config/firebase.ts`.
 
 Stripe subscription flow is being integrated with Firebase webhook handling
 

@@ -1,11 +1,12 @@
 import { auth, firestore } from '@/config/firebase';
+import { doc, getDoc, setDoc, collection } from 'firebase/firestore';
 
 export const getTokenCount = async () => {
-  const user = auth().currentUser;
+  const user = auth.currentUser;
   if (!user) return 0;
 
-  const tokenRef = firestore().collection('tokens').doc(user.uid);
-  const tokenSnap = await tokenRef.get();
+  const tokenRef = doc(collection(firestore, 'tokens'), user.uid);
+  const tokenSnap = await getDoc(tokenRef);
 
   if (tokenSnap.exists) {
     const data = tokenSnap.data()!;
@@ -16,11 +17,11 @@ export const getTokenCount = async () => {
 };
 
 export const setTokenCount = async (count: number) => {
-  const user = auth().currentUser;
+  const user = auth.currentUser;
   if (!user) return;
 
-  const tokenRef = firestore().collection('tokens').doc(user.uid);
-  await tokenRef.set({ count }, { merge: true });
+  const tokenRef = doc(collection(firestore, 'tokens'), user.uid);
+  await setDoc(tokenRef, { count }, { merge: true });
 };
 
 export const consumeToken = async () => {
@@ -31,11 +32,11 @@ export const consumeToken = async () => {
 };
 
 export const canUseFreeAsk = async () => {
-  const user = auth().currentUser;
+  const user = auth.currentUser;
   if (!user) return false;
 
-  const docRef = firestore().collection('freeAsk').doc(user.uid);
-  const docSnap = await docRef.get();
+  const docRef = doc(collection(firestore, 'freeAsk'), user.uid);
+  const docSnap = await getDoc(docRef);
 
   if (!docSnap.exists) return true;
 
@@ -51,23 +52,23 @@ export const canUseFreeAsk = async () => {
 };
 
 export const useFreeAsk = async () => {
-  const user = auth().currentUser;
+  const user = auth.currentUser;
   if (!user) return;
 
-  const docRef = firestore().collection('freeAsk').doc(user.uid);
-  await docRef.set({ date: new Date() });
+  const docRef = doc(collection(firestore, 'freeAsk'), user.uid);
+  await setDoc(docRef, { date: new Date() });
 };
 
 export const syncSubscriptionStatus = async () => {
-  const user = auth().currentUser;
+  const user = auth.currentUser;
   if (!user) return;
 
-  const subRef = firestore().collection('subscriptions').doc(user.uid);
-  const subSnap = await subRef.get();
+  const subRef = doc(collection(firestore, 'subscriptions'), user.uid);
+  const subSnap = await getDoc(subRef);
 
   const isSubscribed = subSnap.exists && subSnap.data()!.active === true;
 
-  const tokenRef = firestore().collection('tokens').doc(user.uid);
+  const tokenRef = doc(collection(firestore, 'tokens'), user.uid);
   if (isSubscribed) {
     await tokenRef.set({ count: 9999 }, { merge: true });
   }

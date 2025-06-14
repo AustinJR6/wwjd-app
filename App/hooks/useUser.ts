@@ -1,19 +1,19 @@
 import { useEffect, useState } from 'react';
-import { FirebaseAuthTypes } from '@react-native-firebase/auth';
+import { User, onAuthStateChanged, signInAnonymously } from 'firebase/auth';
 import { auth } from '@/config/firebase';
 
-export function useUser(): { user: FirebaseAuthTypes.User | null; loading: boolean } {
-  const [user, setUser] = useState<FirebaseAuthTypes.User | null>(null);
+export function useUser(): { user: User | null; loading: boolean } {
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = auth().onAuthStateChanged(async (firebaseUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         setUser(firebaseUser);
         setLoading(false);
       } else {
         try {
-          const result = await auth().signInAnonymously();
+          const result = await signInAnonymously(auth);
           setUser(result.user);
         } catch (err) {
           console.error('🔥 Anonymous sign-in failed:', err);

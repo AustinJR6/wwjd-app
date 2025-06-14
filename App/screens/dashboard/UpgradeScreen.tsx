@@ -15,7 +15,7 @@ export default function UpgradeScreen({ navigation }: Props) {
     setLoading(true);
 
     try {
-      const user = auth().currentUser;
+      const user = auth.currentUser;
       if (!user) {
         Alert.alert('Error', 'User not logged in.');
         return;

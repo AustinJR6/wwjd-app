@@ -11,8 +11,6 @@ export default ({ config }) => ({
 
   android: {
     package: "com.whippybuckle.onevineapp",
-    // Ensure Android build picks up Firebase config
-    googleServicesFile: "./android/app/google-services.json",
   },
 
   extra: {
@@ -25,15 +23,10 @@ export default ({ config }) => ({
   },
 
   plugins: [
-    // ✅ ADD THIS — Enables React Native Firebase native linking
-    "@react-native-firebase/app",
-
     [
       "expo-build-properties",
       {
-        android: {
-          googleServicesFile: "./android/app/google-services.json",
-        },
+        android: {},
       },
     ],
   ],

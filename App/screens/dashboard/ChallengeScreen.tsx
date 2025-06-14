@@ -13,6 +13,7 @@ import { theme } from "@/components/theme/theme";
 import { getTokenCount, setTokenCount } from "@/utils/TokenManager";
 import { ASK_GEMINI_SIMPLE } from "@/utils/constants";
 import { auth, firestore } from '@/config/firebase';
+import { doc, getDoc, setDoc, collection } from 'firebase/firestore';
 
 export default function ChallengeScreen() {
   const [challenge, setChallenge] = useState('');
@@ -21,13 +22,13 @@ export default function ChallengeScreen() {
 
   const fetchChallenge = async () => {
     try {
-      const user = auth().currentUser;
+      const user = auth.currentUser;
       if (!user) return;
 
       setLoading(true);
 
-      const userRef = firestore().collection('users').doc(user.uid);
-      const userSnap = await userRef.get();
+      const userRef = doc(collection(firestore, 'users'), user.uid);
+      const userSnap = await getDoc(userRef);
       const userData = userSnap.data() || {};
       const lastChallenge = userData.lastChallenge?.toDate?.();
       const now = new Date();
@@ -56,7 +57,8 @@ export default function ChallengeScreen() {
       const newChallenge = data.response || 'Reflect in silence for five minutes today.';
       setChallenge(newChallenge);
 
-      await userRef.set(
+      await setDoc(
+        userRef,
         {
           lastChallenge: new Date(), // ✅ replaces serverTimestamp()
           lastChallengeText: newChallenge,

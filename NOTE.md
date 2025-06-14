@@ -6,9 +6,8 @@ Hey bro — here’s a snapshot of the project’s current state, issues I’m f
 
 ## ✅ What’s Working
 
-- Firebase is integrated using **React Native Firebase** (`@react-native-firebase/*`)
-- All Web SDK imports (`firebase/app`) have been removed
-- `google-services.json` has been cleaned and corrected
+- Firebase is integrated using the **Firebase Web SDK**
+- Expo build configuration is stable
 - Cloud Functions deployed:
   - `askGeminiV2`: Gemini endpoint with Firebase auth token validation
   - `handleStripeWebhookV2`: Stripe webhook to activate Firestore subscription on successful checkout
@@ -28,7 +27,6 @@ Hey bro — here’s a snapshot of the project’s current state, issues I’m f
 
 
 ### Suspected Causes:
-- Possibly old `google-services.json` was malformed or from wrong app type
 - App may still have a file importing `firebase/app` or trying to call `initializeApp()`
 - Dev client may not have picked up changes before rebuild
 - Firebase app in console might not match native Android package (`com.whippybuckle.wwjdapp`)
@@ -41,7 +39,6 @@ Hey bro — here’s a snapshot of the project’s current state, issues I’m f
   - `firebase.`
   - `.initializeApp(`
   - `import firebase`
-- Ensure `google-services.json` in `android/app/` matches Firebase console
 - Firebase console:
   - Has correct Android app entry with matching package
   - Web app entry is not interfering
@@ -62,7 +59,6 @@ Hey bro — here’s a snapshot of the project’s current state, issues I’m f
 
 ## 🧭 Next Steps (Suggestions)
 
-- Run another clean `eas build --platform android --profile development` after confirming `google-services.json` is valid
 - Consider logging `app().options.projectId` inside the app to confirm which config is actually loaded at runtime
 - If needed, fully uninstall dev client from device and reinstall from fresh build
 

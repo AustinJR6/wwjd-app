@@ -13,7 +13,7 @@ import { auth, firestore } from '@/config/firebase';
 import ScreenContainer from '@/components/theme/ScreenContainer';
 import { theme } from '@/components/theme/theme';
 import { ASK_GEMINI_SIMPLE } from '@/utils/constants';
-import { firestore as db } from '@/config/firebase';
+import { collection, doc, updateDoc, increment, setDoc } from 'firebase/firestore';
 
 export default function TriviaScreen() {
   const [story, setStory] = useState('');
@@ -27,7 +27,7 @@ export default function TriviaScreen() {
   }, []);
 
   const fetchTrivia = async () => {
-    const user = auth().currentUser;
+    const user = auth.currentUser;
     if (!user) return;
 
     setLoading(true);
@@ -63,7 +63,7 @@ export default function TriviaScreen() {
   const submitAnswer = async () => {
     if (!answer) return;
 
-    const user = auth().currentUser;
+    const user = auth.currentUser;
     if (!user) return;
 
     setRevealed(true);
@@ -72,23 +72,21 @@ export default function TriviaScreen() {
       correctReligion && answer.toLowerCase().includes(correctReligion.toLowerCase());
 
     try {
-      const userRef = db().collection('users').doc(user.uid);
+      const userRef = doc(collection(firestore, 'users'), user.uid);
 
       if (isCorrect) {
-        await userRef.update({
-          individualPoints: firestore.FieldValue.increment(10) // ✅ React Native Firebase version
+        await updateDoc(userRef, {
+          individualPoints: increment(10)
         });
 
-        await firestore()
-          .collection('completedChallenges')
-          .doc(user.uid)
-          .set(
-            {
-              lastTrivia: new Date().toISOString(),
-              triviaCompleted: true
-            },
-            { merge: true }
-          );
+        await setDoc(
+          doc(collection(firestore, 'completedChallenges'), user.uid),
+          {
+            lastTrivia: new Date().toISOString(),
+            triviaCompleted: true
+          },
+          { merge: true }
+        );
       }
 
       Alert.alert(

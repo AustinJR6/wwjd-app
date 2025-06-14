@@ -14,6 +14,7 @@ import { theme } from "@/components/theme/theme";
 import { getTokenCount, setTokenCount } from "@/utils/TokenManager";
 import { ASK_GEMINI_V2 } from "@/utils/constants";
 import { auth, firestore } from '@/config/firebase';
+import { doc, getDoc, setDoc, collection } from 'firebase/firestore';
 
 export default function ReligionAIScreen() {
   const [question, setQuestion] = useState('');
@@ -30,11 +31,11 @@ export default function ReligionAIScreen() {
     setLoading(true);
 
     try {
-      const user = auth().currentUser;
+      const user = auth.currentUser;
       if (!user) return;
 
-      const userRef = firestore().collection('users').doc(user.uid);
-      const userSnap = await userRef.get();
+      const userRef = doc(collection(firestore, 'users'), user.uid);
+      const userSnap = await getDoc(userRef);
       const userData = userSnap.data() || {};
       const lastAsk = userData.lastFreeAsk?.toDate?.();
       const now = new Date();
@@ -79,7 +80,7 @@ export default function ReligionAIScreen() {
 
           await setTokenCount(tokens - cost);
         } else {
-          await userRef.set({ lastFreeAsk: new Date() }, { merge: true });
+          await setDoc(userRef, { lastFreeAsk: new Date() }, { merge: true });
         }
       }
 

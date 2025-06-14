@@ -7,6 +7,7 @@ import {
   ScrollView
 } from 'react-native';
 import { firestore } from '@/config/firebase';
+import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { theme } from "@/components/theme/theme";
 
@@ -23,20 +24,17 @@ export default function LeaderboardsScreen() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const userSnap = await firestore()
-        .collection('users')
-        .orderBy('individualPoints', 'desc')
-        .get();
+      const userSnap = await getDocs(
+        query(collection(firestore, 'users'), orderBy('individualPoints', 'desc'))
+      );
 
-      const religionSnap = await firestore()
-        .collection('religions')
-        .orderBy('totalPoints', 'desc')
-        .get();
+      const religionSnap = await getDocs(
+        query(collection(firestore, 'religions'), orderBy('totalPoints', 'desc'))
+      );
 
-      const orgSnap = await firestore()
-        .collection('organizations')
-        .orderBy('totalPoints', 'desc')
-        .get();
+      const orgSnap = await getDocs(
+        query(collection(firestore, 'organizations'), orderBy('totalPoints', 'desc'))
+      );
 
       setIndividuals(userSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       setReligions(religionSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
