@@ -33,3 +33,6 @@ Thumbs.db
 tsconfig.effective.json
 
 /ios
+
+/android
+/ios
