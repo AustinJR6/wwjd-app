@@ -10,7 +10,6 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { theme } from "@/components/theme/theme";
 import { useUserStore } from "@/state/userStore";
 import { RootStackParamList } from "@/navigation/RootStackParamList";
-import { auth } from '@/config/firebase';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -23,11 +22,9 @@ export default function LoginScreen() {
   const handleLogin = async () => {
     setLoading(true);
     try {
-      await login(email, password);
-
-      const user = auth.currentUser;
-      if (user) {
-        await loadUser(user.uid);
+      const result = await login(email, password);
+      if (result.localId) {
+        await loadUser(result.localId);
       }
     } catch (err: any) {
       Alert.alert('Login Failed', err.message);
