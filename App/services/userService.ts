@@ -74,11 +74,14 @@ export async function createUserProfile({
     displayName,
     religion,
     region,
-    organizationId,
     isSubscribed: false,
     onboardingComplete: false,
     createdAt: now,
   };
+
+  if (organizationId) {
+    (userData as any).organizationId = organizationId;
+  }
 
   await setDoc(ref, userData);
 }
@@ -99,6 +102,9 @@ export async function updateUserFields(
   updates: Partial<FirestoreUser>
 ) {
   const ref = doc(collection(firestore, 'users'), uid);
-  await setDoc(ref, updates, { merge: true });
+  const filtered = Object.fromEntries(
+    Object.entries(updates).filter(([_, v]) => v !== undefined)
+  );
+  await setDoc(ref, filtered, { merge: true });
 }
 

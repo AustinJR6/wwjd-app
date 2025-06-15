@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, Alert } from 'react-native';
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import TextField from "@/components/TextField";
 import Button from "@/components/common/Button";
-import { login } from "@/services/authService";
+import { login, resetPassword } from "@/services/authService";
 import { loadUser } from "@/services/userService";
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -32,6 +32,19 @@ export default function LoginScreen() {
       setLoading(false);
     }
   };
+  const handleForgotPassword = async () => {
+    if (!email) {
+      Alert.alert("Password Reset", "Please enter your email first.");
+      return;
+    }
+    try {
+      await resetPassword(email);
+      Alert.alert("Password Reset", "If this email is registered, a reset link has been sent.");
+    } catch (err:any) {
+      Alert.alert("Error", err.message);
+    }
+  };
+
 
   return (
     <ScreenContainer>
@@ -53,6 +66,13 @@ export default function LoginScreen() {
       />
 
       <Button title="Log In" onPress={handleLogin} loading={loading} />
+      <Text
+        style={styles.link}
+        onPress={handleForgotPassword}
+      >
+        Forgot Password?
+      </Text>
+
 
       <Text
         style={styles.link}
