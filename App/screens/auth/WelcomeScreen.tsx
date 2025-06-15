@@ -23,6 +23,9 @@ export default function WelcomeScreen() {
 
   return (
     <LinearGradient colors={["#2E7D32", "#E8F5E9"]} style={styles.container}>
+      <Text style={styles.loginLink} onPress={() => navigation.replace('Login')}>
+        Already have an account? Go to Login
+      </Text>
       <Animated.Image
         source={require('../../../assets/OneVineIcon.png')}
         style={[styles.logo, { opacity: anim, transform: [{ scale }] }]}
@@ -71,5 +74,11 @@ const styles = StyleSheet.create({
     color: theme.colors.text,
     textAlign: 'center',
     marginBottom: 24,
+  },
+  loginLink: {
+    textAlign: 'center',
+    marginBottom: 12,
+    color: theme.colors.primary,
+    textDecorationLine: 'underline',
   },
 });

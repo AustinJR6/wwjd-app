@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, Button, StyleSheet, ScrollView } from 'react-native';
+import * as SecureStore from 'expo-secure-store';
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { theme } from "@/components/theme/theme";
 import { getTokenCount, syncSubscriptionStatus } from "@/utils/TokenManager";
@@ -11,6 +12,8 @@ type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
 export default function HomeScreen({ navigation }: Props) {
   const [tokens, setTokens] = useState<number>(0);
   const [subscribed, setSubscribed] = useState<boolean>(false);
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
+  const [isOrgManager, setIsOrgManager] = useState<boolean>(false);
 
   useEffect(() => {
     const loadData = async () => {
@@ -18,6 +21,10 @@ export default function HomeScreen({ navigation }: Props) {
       await syncSubscriptionStatus(); // updates Firestore token state
       setTokens(t);
       setSubscribed(t >= 9999); // 9999 token cap implies OneVine+ sub
+      const adminFlag = await SecureStore.getItemAsync('isAdmin');
+      const managerFlag = await SecureStore.getItemAsync('isOrgManager');
+      setIsAdmin(adminFlag === 'true');
+      setIsOrgManager(managerFlag === 'true');
     };
     loadData();
   }, []);
@@ -57,11 +64,17 @@ export default function HomeScreen({ navigation }: Props) {
           <View style={styles.spacer} />
           <Button title="Leaderboards" onPress={() => navigation.navigate('Leaderboards')} />
           <View style={styles.spacer} />
-          <Button title="Submit Proof" onPress={() => navigation.navigate('SubmitProof')} />
-          <View style={styles.spacer} />
+          {subscribed && (
+            <>
+              <Button title="Submit Proof" onPress={() => navigation.navigate('SubmitProof')} />
+              <View style={styles.spacer} />
+            </>
+          )}
           <Button title="Join Organization" onPress={() => navigation.navigate('JoinOrganization')} />
           <View style={styles.spacer} />
-          <Button title="Manage Organization" onPress={() => navigation.navigate('OrganizationManagement')} />
+          {(isAdmin || isOrgManager) && (
+            <Button title="Manage Organization" onPress={() => navigation.navigate('OrganizationManagement')} />
+          )}
         </View>
       </ScrollView>
     </ScreenContainer>

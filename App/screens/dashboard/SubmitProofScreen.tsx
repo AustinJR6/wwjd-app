@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -14,12 +14,28 @@ import { useUser } from "@/hooks/useUser";
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { theme } from "@/components/theme/theme";
 import { ensureAuth } from '@/utils/authGuard';
+import * as SecureStore from 'expo-secure-store';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '@/navigation/RootStackParamList';
 
 export default function SubmitProofScreen() {
   const { user } = useUser();
   const [caption, setCaption] = useState('');
   const [image, setImage] = useState<any>(null);
   const [uploading, setUploading] = useState(false);
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+
+  useEffect(() => {
+    const checkAccess = async () => {
+      const sub = await SecureStore.getItemAsync('isSubscribed');
+      if (sub !== 'true') {
+        Alert.alert('Access Denied', 'This feature is for OneVine+ or Org Managers only.');
+        navigation.goBack();
+      }
+    };
+    checkAccess();
+  }, []);
 
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -36,6 +52,14 @@ export default function SubmitProofScreen() {
   const handleSubmit = async () => {
     if (!user || !image || !caption.trim()) {
       Alert.alert('Missing Fields', 'Please add a caption and select an image.');
+      return;
+    }
+
+    const idToken = await SecureStore.getItemAsync('idToken');
+    const userId = await SecureStore.getItemAsync('userId');
+    if (!idToken || !userId) {
+      Alert.alert('Login Required', 'Please log in again.');
+      navigation.replace('Login');
       return;
     }
 
@@ -57,9 +81,9 @@ export default function SubmitProofScreen() {
       Alert.alert('Submitted', 'Your proof has been submitted for review.');
       setCaption('');
       setImage(null);
-    } catch (err) {
-      console.error('❌ Upload failed:', err);
-      Alert.alert('Error', 'Could not submit proof. Try again later.');
+    } catch (err: any) {
+      console.error('🔥 API Error:', err?.response?.data || err.message);
+      Alert.alert('Error', 'Something went wrong. Please try again.');
     } finally {
       setUploading(false);
     }

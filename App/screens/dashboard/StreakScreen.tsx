@@ -15,12 +15,17 @@ import { getDocument, setDocument } from '@/services/firestoreService';
 import { useUser } from '@/hooks/useUser';
 import { getStoredToken } from '@/services/authService';
 import { ensureAuth } from '@/utils/authGuard';
+import * as SecureStore from 'expo-secure-store';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '@/navigation/RootStackParamList';
 
 export default function StreakScreen() {
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [streak, setStreak] = useState(0);
   const { user } = useUser();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   useEffect(() => {
     fetchStreakMessage();
@@ -28,6 +33,14 @@ export default function StreakScreen() {
 
   const fetchStreakMessage = async () => {
     try {
+      const idToken = await SecureStore.getItemAsync('idToken');
+      const userId = await SecureStore.getItemAsync('userId');
+      if (!idToken || !userId) {
+        Alert.alert('Login Required', 'Please log in again.');
+        navigation.replace('Login');
+        return;
+      }
+
       const uid = await ensureAuth(user?.uid);
       if (!uid) return;
 
@@ -77,9 +90,9 @@ export default function StreakScreen() {
         message: messageText,
         streakCount: streakData?.streakCount || 0,
       });
-    } catch (err) {
-      console.error('?? Streak message fetch error:', err);
-      Alert.alert('Error', 'Could not load your encouragement. Try again later.');
+    } catch (err: any) {
+      console.error('🔥 API Error:', err?.response?.data || err.message);
+      Alert.alert('Error', 'Something went wrong. Please try again.');
     } finally {
       setLoading(false);
     }

@@ -17,6 +17,10 @@ import { theme } from "@/components/theme/theme";
 import * as LocalAuthentication from 'expo-local-authentication';
 import { queryCollection, addDocument } from '@/services/firestoreService';
 import { ensureAuth } from '@/utils/authGuard';
+import * as SecureStore from 'expo-secure-store';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '@/navigation/RootStackParamList';
 
 export default function JournalScreen() {
   const [entry, setEntry] = useState('');
@@ -25,10 +29,18 @@ export default function JournalScreen() {
   const [saving, setSaving] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedEntry, setSelectedEntry] = useState<any | null>(null);
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   useEffect(() => {
     async function authenticateAndLoad() {
       try {
+        const idToken = await SecureStore.getItemAsync('idToken');
+        const userId = await SecureStore.getItemAsync('userId');
+        if (!idToken || !userId) {
+          Alert.alert('Login Required', 'Please log in again.');
+          navigation.replace('Login');
+          return;
+        }
         const hasHardware = await LocalAuthentication.hasHardwareAsync();
         const isEnrolled = await LocalAuthentication.isEnrolledAsync();
         if (hasHardware && isEnrolled) {
@@ -46,8 +58,8 @@ export default function JournalScreen() {
 
         const list = await queryCollection('journalEntries', 'createdAt');
         setEntries(list);
-      } catch (err) {
-        console.error('Error loading journal entries:', err);
+      } catch (err: any) {
+        console.error('🔥 API Error:', err?.response?.data || err.message);
       } finally {
         setLoading(false);
       }
@@ -60,6 +72,14 @@ export default function JournalScreen() {
     if (!entry.trim()) return;
     setSaving(true);
     try {
+      const idToken = await SecureStore.getItemAsync('idToken');
+      const userId = await SecureStore.getItemAsync('userId');
+      if (!idToken || !userId) {
+        Alert.alert('Login Required', 'Please log in again.');
+        navigation.replace('Login');
+        return;
+      }
+
       const uid = await ensureAuth();
       if (!uid) throw new Error('Not authenticated');
 
@@ -72,9 +92,9 @@ export default function JournalScreen() {
 
       const list = await queryCollection('journalEntries', 'createdAt');
       setEntries(list);
-    } catch (err) {
-      console.error('Error saving entry:', err);
-      Alert.alert('Error', 'Could not save entry.');
+    } catch (err: any) {
+      console.error('🔥 API Error:', err?.response?.data || err.message);
+      Alert.alert('Error', 'Something went wrong. Please try again.');
     } finally {
       setSaving(false);
     }
