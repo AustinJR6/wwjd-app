@@ -6,8 +6,7 @@ import {
   ActivityIndicator,
   ScrollView
 } from 'react-native';
-import { firestore } from '@/config/firebase';
-import { collection, getDocs, query, orderBy } from 'firebase/firestore';
+import { queryCollection } from '@/services/firestoreService';
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { theme } from "@/components/theme/theme";
 import { ensureAuth } from '@/utils/authGuard';
@@ -31,21 +30,13 @@ export default function LeaderboardsScreen() {
         return;
       }
 
-      const userSnap = await getDocs(
-        query(collection(firestore, 'users'), orderBy('individualPoints', 'desc'))
-      );
+      const userSnap = await queryCollection('users', 'individualPoints');
+      const religionSnap = await queryCollection('religions', 'totalPoints');
+      const orgSnap = await queryCollection('organizations', 'totalPoints');
 
-      const religionSnap = await getDocs(
-        query(collection(firestore, 'religions'), orderBy('totalPoints', 'desc'))
-      );
-
-      const orgSnap = await getDocs(
-        query(collection(firestore, 'organizations'), orderBy('totalPoints', 'desc'))
-      );
-
-      setIndividuals(userSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-      setReligions(religionSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-      setOrganizations(orgSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      setIndividuals(userSnap);
+      setReligions(religionSnap);
+      setOrganizations(orgSnap);
     } catch (err) {
       console.error('🔥 Error loading leaderboards:', err);
     } finally {

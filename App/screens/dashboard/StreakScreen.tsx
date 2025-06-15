@@ -11,8 +11,7 @@ import {
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { theme } from "@/components/theme/theme";
 import { ASK_GEMINI_SIMPLE } from "@/utils/constants";
-import { firestore } from '@/config/firebase';
-import { doc, getDoc, setDoc, collection } from 'firebase/firestore';
+import { getDocument, setDocument } from '@/services/firestoreService';
 import { useUser } from '@/hooks/useUser';
 import { getStoredToken } from '@/services/authService';
 import { ensureAuth } from '@/utils/authGuard';
@@ -34,9 +33,7 @@ export default function StreakScreen() {
 
       setLoading(true);
 
-      const streakRef = doc(collection(firestore, 'completedChallenges'), uid);
-      const streakSnap = await getDoc(streakRef);
-      const streakData = streakSnap.data();
+      const streakData = await getDocument(`completedChallenges/${uid}`);
 
       const today = new Date().toDateString();
 
@@ -47,9 +44,7 @@ export default function StreakScreen() {
         return;
       }
 
-      const userRef = doc(collection(firestore, 'users'), uid);
-      const userSnap = await getDoc(userRef);
-      const userData = userSnap.data() || {};
+      const userData = await getDocument(`users/${uid}`) || {};
       const religion = userData.religion || 'Spiritual Guide';
       const role = religion === 'Christianity' ? 'Pastor' :
                    religion === 'Islam' ? 'Imam' :
@@ -77,14 +72,11 @@ export default function StreakScreen() {
       setMessage(messageText);
       setStreak(streakData?.streakCount || 0);
 
-      await setDoc(
-        streakRef,
-        {
-          lastStreakMessageDate: today,
-          message: messageText,
-        },
-        { merge: true }
-      );
+      await setDocument(`completedChallenges/${uid}`, {
+        lastStreakMessageDate: today,
+        message: messageText,
+        streakCount: streakData?.streakCount || 0,
+      });
     } catch (err) {
       console.error('?? Streak message fetch error:', err);
       Alert.alert('Error', 'Could not load your encouragement. Try again later.');

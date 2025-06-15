@@ -9,13 +9,12 @@ import {
   ActivityIndicator,
   ScrollView
 } from 'react-native';
-import { firestore } from '@/config/firebase';
 import { useUser } from '@/hooks/useUser';
 import { getStoredToken } from '@/services/authService';
 import ScreenContainer from '@/components/theme/ScreenContainer';
 import { theme } from '@/components/theme/theme';
 import { ASK_GEMINI_SIMPLE } from '@/utils/constants';
-import { collection, doc, updateDoc, increment, setDoc } from 'firebase/firestore';
+import { getDocument, setDocument } from '@/services/firestoreService';
 import { ensureAuth } from '@/utils/authGuard';
 
 export default function TriviaScreen() {
@@ -77,21 +76,17 @@ export default function TriviaScreen() {
       correctReligion && answer.toLowerCase().includes(correctReligion.toLowerCase());
 
     try {
-      const userRef = doc(collection(firestore, 'users'), uid);
+      const userData = await getDocument(`users/${uid}`) || {};
 
       if (isCorrect) {
-        await updateDoc(userRef, {
-          individualPoints: increment(10)
+        await setDocument(`users/${uid}`, {
+          individualPoints: (userData.individualPoints || 0) + 10,
         });
 
-        await setDoc(
-          doc(collection(firestore, 'completedChallenges'), uid),
-          {
-            lastTrivia: new Date().toISOString(),
-            triviaCompleted: true
-          },
-          { merge: true }
-        );
+        await setDocument(`completedChallenges/${uid}`, {
+          lastTrivia: new Date().toISOString(),
+          triviaCompleted: true,
+        });
       }
 
       Alert.alert(

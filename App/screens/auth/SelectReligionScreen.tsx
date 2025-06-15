@@ -11,8 +11,7 @@ import {
 import { theme } from "@/components/theme/theme";
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { useUser } from "@/hooks/useUser";
-import { firestore } from '@/config/firebase';
-import { doc, setDoc, collection } from 'firebase/firestore';
+import { setDocument } from '@/services/firestoreService';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from "@/navigation/RootStackParamList";
 import { ensureAuth } from '@/utils/authGuard';
@@ -43,11 +42,7 @@ export default function SelectReligionScreen({ navigation }: Props) {
     if (!uid) return;
 
     try {
-      await setDoc(
-        doc(collection(firestore, 'users'), uid),
-        { religion: selected },
-        { merge: true }
-      );
+      await setDocument(`users/${uid}`, { religion: selected });
 
       navigation.replace('Quote');
     } catch (err) {

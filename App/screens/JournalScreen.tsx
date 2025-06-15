@@ -15,8 +15,7 @@ import {
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { theme } from "@/components/theme/theme";
 import * as LocalAuthentication from 'expo-local-authentication';
-import { firestore } from '@/config/firebase';
-import { collection, getDocs, addDoc, orderBy, query } from 'firebase/firestore';
+import { queryCollection, addDocument } from '@/services/firestoreService';
 import { ensureAuth } from '@/utils/authGuard';
 
 export default function JournalScreen() {
@@ -45,16 +44,7 @@ export default function JournalScreen() {
         const uid = await ensureAuth();
         if (!uid) return;
 
-        const q = query(
-          collection(firestore, 'journalEntries'),
-          orderBy('createdAt', 'desc')
-        );
-        const snap = await getDocs(q);
-
-        const list = snap.docs.map((d) => ({
-          id: d.id,
-          ...d.data(),
-        }));
+        const list = await queryCollection('journalEntries', 'createdAt');
         setEntries(list);
       } catch (err) {
         console.error('Error loading journal entries:', err);
@@ -73,19 +63,14 @@ export default function JournalScreen() {
       const uid = await ensureAuth();
       if (!uid) throw new Error('Not authenticated');
 
-      await addDoc(collection(firestore, 'journalEntries'), {
+      await addDocument('journalEntries', {
         text: entry,
-        createdAt: new Date(), // ✅ replaces serverTimestamp()
+        createdAt: new Date().toISOString(),
       });
       Alert.alert('Saved!', 'Your reflection has been saved.');
       setEntry('');
 
-      const q = query(collection(firestore, 'journalEntries'), orderBy('createdAt', 'desc'));
-      const snap = await getDocs(q);
-      const list = snap.docs.map((d) => ({
-        id: d.id,
-        ...d.data(),
-      }));
+      const list = await queryCollection('journalEntries', 'createdAt');
       setEntries(list);
     } catch (err) {
       console.error('Error saving entry:', err);

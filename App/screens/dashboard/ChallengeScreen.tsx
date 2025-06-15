@@ -12,8 +12,7 @@ import ScreenContainer from "@/components/theme/ScreenContainer";
 import { theme } from "@/components/theme/theme";
 import { getTokenCount, setTokenCount } from "@/utils/TokenManager";
 import { ASK_GEMINI_SIMPLE } from "@/utils/constants";
-import { firestore } from '@/config/firebase';
-import { doc, getDoc, setDoc, collection } from 'firebase/firestore';
+import { getDocument, setDocument } from '@/services/firestoreService';
 import { useUser } from '@/hooks/useUser';
 import { getStoredToken } from '@/services/authService';
 import { ensureAuth } from '@/utils/authGuard';
@@ -31,9 +30,7 @@ export default function ChallengeScreen() {
 
       setLoading(true);
 
-      const userRef = doc(collection(firestore, 'users'), uid);
-      const userSnap = await getDoc(userRef);
-      const userData = userSnap.data() || {};
+      const userData = await getDocument(`users/${uid}`) || {};
       const lastChallenge = userData.lastChallenge?.toDate?.();
       const now = new Date();
       const oneDay = 24 * 60 * 60 * 1000;
@@ -61,14 +58,10 @@ export default function ChallengeScreen() {
       const newChallenge = data.response || 'Reflect in silence for five minutes today.';
       setChallenge(newChallenge);
 
-      await setDoc(
-        userRef,
-        {
-          lastChallenge: new Date(), // ✅ replaces serverTimestamp()
-          lastChallengeText: newChallenge,
-        },
-        { merge: true }
-      );
+      await setDocument(`users/${uid}`, {
+        lastChallenge: new Date().toISOString(),
+        lastChallengeText: newChallenge,
+      });
     } catch (err) {
       console.error('❌ Challenge fetch error:', err);
       Alert.alert('Error', 'Could not load challenge. Try again later.');

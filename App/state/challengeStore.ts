@@ -1,6 +1,5 @@
 import { create } from 'zustand';
-import { firestore } from '@/config/firebase';
-import { doc, getDoc, setDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { getDocument, setDocument } from '@/services/firestoreService';
 import * as SecureStore from 'expo-secure-store';
 import { ensureAuth } from '@/utils/authGuard';
 
@@ -39,14 +38,11 @@ export const useChallengeStore = create<ChallengeStore>((set, get) => ({
     const uid = await ensureAuth();
     if (!uid) return;
 
-    const ref = doc(collection(firestore, 'completedChallenges'), uid);
-    const snap = await getDoc(ref);
-
-    if (snap.exists()) {
-      const data = snap.data();
+    const data = await getDocument(`completedChallenges/${uid}`);
+    if (data) {
       set({
-        lastCompleted: data?.lastCompleted?.toDate?.().getTime() || null,
-        streak: data?.streak || 0,
+        lastCompleted: data.lastCompleted ? new Date(data.lastCompleted).getTime() : null,
+        streak: data.streak || 0,
       });
     }
   },
@@ -56,15 +52,9 @@ export const useChallengeStore = create<ChallengeStore>((set, get) => ({
     if (!uid) return;
 
     const { lastCompleted, streak } = get();
-    const ref = doc(collection(firestore, 'completedChallenges'), uid);
-
-    await setDoc(
-      ref,
-      {
-        lastCompleted: lastCompleted ? new Date(lastCompleted) : serverTimestamp(),
-        streak,
-      },
-      { merge: true }
-    );
+    await setDocument(`completedChallenges/${uid}`, {
+      lastCompleted: lastCompleted ? new Date(lastCompleted).toISOString() : new Date().toISOString(),
+      streak,
+    });
   },
 }));

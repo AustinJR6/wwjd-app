@@ -11,14 +11,7 @@ import {
 import { useUser } from '@/hooks/useUser';
 import ScreenContainer from '@/components/theme/ScreenContainer';
 import { theme } from '@/components/theme/theme';
-import { firestore } from '@/config/firebase';
-import {
-  collection,
-  getDocs,
-  doc,
-  updateDoc,
-  arrayUnion
-} from 'firebase/firestore';
+import { queryCollection, setDocument, getDocument } from '@/services/firestoreService';
 import { ensureAuth } from '@/utils/authGuard';
 
 export default function JoinOrganizationScreen() {
@@ -36,8 +29,7 @@ export default function JoinOrganizationScreen() {
       const uid = await ensureAuth(user?.uid);
       if (!uid) return;
 
-      const snap = await getDocs(collection(firestore, 'organizations'));
-      const all = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      const all = await queryCollection('organizations');
       setOrgs(all);
       setFiltered(all);
     } catch (err) {
@@ -64,15 +56,12 @@ export default function JoinOrganizationScreen() {
     }
 
     try {
-      const userRef = doc(collection(firestore, 'users'), uid);
-      const orgRef = doc(collection(firestore, 'organizations'), org.id);
+      await setDocument(`users/${uid}`, { organizationId: org.id });
 
-      await updateDoc(userRef, {
-        organizationId: org.id
-      });
-
-      await updateDoc(orgRef, {
-        members: arrayUnion(user.uid)
+      const orgData = await getDocument(`organizations/${org.id}`);
+      const members = orgData?.members || [];
+      await setDocument(`organizations/${org.id}`, {
+        members: [...members, user.uid],
       });
 
       Alert.alert('Joined', `You’ve joined ${org.name}.`);
