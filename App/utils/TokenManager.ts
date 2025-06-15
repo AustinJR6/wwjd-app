@@ -10,7 +10,7 @@ export const getTokenCount = async () => {
   const tokenRef = doc(collection(firestore, 'tokens'), user.uid);
   const tokenSnap = await getDoc(tokenRef);
 
-  if (tokenSnap.exists) {
+  if (tokenSnap.exists()) {
     const data = tokenSnap.data()!;
     return data.count || 0;
   } else {
@@ -42,7 +42,7 @@ export const canUseFreeAsk = async () => {
   const docRef = doc(collection(firestore, 'freeAsk'), user.uid);
   const docSnap = await getDoc(docRef);
 
-  if (!docSnap.exists) return true;
+  if (!docSnap.exists()) return true;
 
   const data = docSnap.data()!;
   const lastUsed = data.date?.toDate?.();
@@ -72,11 +72,11 @@ export const syncSubscriptionStatus = async () => {
   const subRef = doc(collection(firestore, 'subscriptions'), user.uid);
   const subSnap = await getDoc(subRef);
 
-  const isSubscribed = subSnap.exists && subSnap.data()!.active === true;
+  const isSubscribed = subSnap.exists() && subSnap.data()!.active === true;
 
   const tokenRef = doc(collection(firestore, 'tokens'), user.uid);
   if (isSubscribed) {
-    await tokenRef.set({ count: 9999 }, { merge: true });
+    await setDoc(tokenRef, { count: 9999 }, { merge: true });
   }
 };
 
