@@ -24,7 +24,7 @@ export default function WelcomeScreen() {
   return (
     <LinearGradient colors={["#2E7D32", "#E8F5E9"]} style={styles.container}>
       <Animated.Image
-        source={require('../../assets/OneVineIcon.png')}
+        source={require('../../../assets/OneVineIcon.png')}
         style={[styles.logo, { opacity: anim, transform: [{ scale }] }]}
         resizeMode="contain"
       />
