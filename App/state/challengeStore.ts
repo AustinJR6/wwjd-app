@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { firestore } from '@/config/firebase';
 import { doc, getDoc, setDoc, collection, serverTimestamp } from 'firebase/firestore';
 import * as SecureStore from 'expo-secure-store';
+import { ensureAuth } from '@/utils/authGuard';
 
 async function getUid(): Promise<string | null> {
   return await SecureStore.getItemAsync('localId');
@@ -35,7 +36,7 @@ export const useChallengeStore = create<ChallengeStore>((set, get) => ({
   },
 
   syncWithFirestore: async () => {
-    const uid = await getUid();
+    const uid = await ensureAuth();
     if (!uid) return;
 
     const ref = doc(collection(firestore, 'completedChallenges'), uid);
@@ -51,7 +52,7 @@ export const useChallengeStore = create<ChallengeStore>((set, get) => ({
   },
 
   updateStreakInFirestore: async () => {
-    const uid = await getUid();
+    const uid = await ensureAuth();
     if (!uid) return;
 
     const { lastCompleted, streak } = get();

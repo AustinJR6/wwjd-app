@@ -13,6 +13,7 @@ import ScreenContainer from "@/components/theme/ScreenContainer";
 import { theme } from "@/components/theme/theme";
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from "@/navigation/RootStackParamList";
+import { ensureAuth } from '@/utils/authGuard';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'OrganizationSignup'>;
 
@@ -29,6 +30,9 @@ export default function OrganizationSignupScreen({ navigation }: Props) {
 
     setSubmitting(true);
     try {
+      const uid = await ensureAuth();
+      if (!uid) throw new Error('Not authenticated');
+
       const seatLimit = tier === 'enterprise-plus' ? 50 : 25;
       const subscribedSeats = tier === 'enterprise-plus' ? 50 : 0;
 

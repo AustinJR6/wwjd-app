@@ -15,6 +15,7 @@ import { firestore } from '@/config/firebase';
 import { doc, getDoc, setDoc, collection } from 'firebase/firestore';
 import { useUser } from '@/hooks/useUser';
 import { getStoredToken } from '@/services/authService';
+import { ensureAuth } from '@/utils/authGuard';
 
 export default function StreakScreen() {
   const [message, setMessage] = useState('');
@@ -28,11 +29,12 @@ export default function StreakScreen() {
 
   const fetchStreakMessage = async () => {
     try {
-      if (!user) return;
+      const uid = await ensureAuth(user?.uid);
+      if (!uid) return;
 
       setLoading(true);
 
-      const streakRef = doc(collection(firestore, 'completedChallenges'), user.uid);
+      const streakRef = doc(collection(firestore, 'completedChallenges'), uid);
       const streakSnap = await getDoc(streakRef);
       const streakData = streakSnap.data();
 
@@ -45,7 +47,7 @@ export default function StreakScreen() {
         return;
       }
 
-      const userRef = doc(collection(firestore, 'users'), user.uid);
+      const userRef = doc(collection(firestore, 'users'), uid);
       const userSnap = await getDoc(userRef);
       const userData = userSnap.data() || {};
       const religion = userData.religion || 'Spiritual Guide';

@@ -15,6 +15,7 @@ import { firestore } from '@/config/firebase';
 import { doc, setDoc, collection } from 'firebase/firestore';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from "@/navigation/RootStackParamList";
+import { ensureAuth } from '@/utils/authGuard';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'SelectReligion'>;
 
@@ -38,10 +39,12 @@ export default function SelectReligionScreen({ navigation }: Props) {
     }
 
     if (!user) return;
+    const uid = await ensureAuth(user.uid);
+    if (!uid) return;
 
     try {
       await setDoc(
-        doc(collection(firestore, 'users'), user.uid),
+        doc(collection(firestore, 'users'), uid),
         { religion: selected },
         { merge: true }
       );

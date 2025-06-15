@@ -16,6 +16,7 @@ import { firestore } from '@/config/firebase';
 import { doc, getDoc, setDoc, collection } from 'firebase/firestore';
 import { useUser } from '@/hooks/useUser';
 import { getStoredToken } from '@/services/authService';
+import { ensureAuth } from '@/utils/authGuard';
 
 export default function ChallengeScreen() {
   const [challenge, setChallenge] = useState('');
@@ -25,11 +26,12 @@ export default function ChallengeScreen() {
 
   const fetchChallenge = async () => {
     try {
-      if (!user) return;
+      const uid = await ensureAuth(user?.uid);
+      if (!uid) return;
 
       setLoading(true);
 
-      const userRef = doc(collection(firestore, 'users'), user.uid);
+      const userRef = doc(collection(firestore, 'users'), uid);
       const userSnap = await getDoc(userRef);
       const userData = userSnap.data() || {};
       const lastChallenge = userData.lastChallenge?.toDate?.();

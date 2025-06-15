@@ -16,6 +16,7 @@ import { firestore } from '@/config/firebase';
 import { doc, getDoc, collection } from 'firebase/firestore';
 import { useUser } from '@/hooks/useUser';
 import { getStoredToken } from '@/services/authService';
+import { ensureAuth } from '@/utils/authGuard';
 
 export default function ConfessionalScreen() {
   const [confession, setConfession] = useState('');
@@ -31,9 +32,13 @@ export default function ConfessionalScreen() {
 
     setLoading(true);
     try {
-      if (!user) return;
+      const uid = await ensureAuth(user?.uid);
+      if (!uid) {
+        setLoading(false);
+        return;
+      }
 
-      const userRef = doc(collection(firestore, 'users'), user.uid);
+      const userRef = doc(collection(firestore, 'users'), uid);
       const userSnap = await getDoc(userRef);
       const userData = userSnap.data() || {};
       const religion = userData.religion || 'Spiritual Guide';

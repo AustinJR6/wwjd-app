@@ -7,6 +7,7 @@ import {
   collection
 } from 'firebase/firestore';
 import { useUserStore } from "@/state/userStore";
+import { ensureAuth } from '@/utils/authGuard';
 
 /**
  * Firestore user document structure
@@ -27,7 +28,10 @@ export interface FirestoreUser {
  * Get user from Firestore and set into userStore
  */
 export async function loadUser(uid: string): Promise<void> {
-  const ref = doc(collection(firestore, 'users'), uid);
+  const storedUid = await ensureAuth(uid);
+  if (!storedUid) return;
+
+  const ref = doc(collection(firestore, 'users'), storedUid);
   const snapshot = await getDoc(ref);
 
   if (snapshot.exists()) {
@@ -65,7 +69,10 @@ export async function createUserProfile({
   region?: string;
   organizationId?: string;
 }) {
-  const ref = doc(collection(firestore, 'users'), uid);
+  const storedUid = await ensureAuth(uid);
+  if (!storedUid) return;
+
+  const ref = doc(collection(firestore, 'users'), storedUid);
   const now = Date.now();
 
   const userData: FirestoreUser = {
@@ -90,7 +97,10 @@ export async function createUserProfile({
  * Mark onboarding complete
  */
 export async function completeOnboarding(uid: string) {
-  const ref = doc(collection(firestore, 'users'), uid);
+  const storedUid = await ensureAuth(uid);
+  if (!storedUid) return;
+
+  const ref = doc(collection(firestore, 'users'), storedUid);
   await updateDoc(ref, { onboardingComplete: true });
 }
 
@@ -101,7 +111,10 @@ export async function updateUserFields(
   uid: string,
   updates: Partial<FirestoreUser>
 ) {
-  const ref = doc(collection(firestore, 'users'), uid);
+  const storedUid = await ensureAuth(uid);
+  if (!storedUid) return;
+
+  const ref = doc(collection(firestore, 'users'), storedUid);
   const filtered = Object.fromEntries(
     Object.entries(updates).filter(([_, v]) => v !== undefined)
   );

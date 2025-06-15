@@ -17,6 +17,7 @@ import { theme } from "@/components/theme/theme";
 import * as LocalAuthentication from 'expo-local-authentication';
 import { firestore } from '@/config/firebase';
 import { collection, getDocs, addDoc, orderBy, query } from 'firebase/firestore';
+import { ensureAuth } from '@/utils/authGuard';
 
 export default function JournalScreen() {
   const [entry, setEntry] = useState('');
@@ -40,6 +41,9 @@ export default function JournalScreen() {
             return;
           }
         }
+
+        const uid = await ensureAuth();
+        if (!uid) return;
 
         const q = query(
           collection(firestore, 'journalEntries'),
@@ -66,6 +70,9 @@ export default function JournalScreen() {
     if (!entry.trim()) return;
     setSaving(true);
     try {
+      const uid = await ensureAuth();
+      if (!uid) throw new Error('Not authenticated');
+
       await addDoc(collection(firestore, 'journalEntries'), {
         text: entry,
         createdAt: new Date(), // ✅ replaces serverTimestamp()
