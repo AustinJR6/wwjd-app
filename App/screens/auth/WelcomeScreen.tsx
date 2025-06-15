@@ -1,7 +1,7 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, Animated, Image } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import Button from '@/components/common/Button';
-import ScreenContainer from '@/components/theme/ScreenContainer';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/navigation/RootStackParamList';
@@ -9,25 +9,67 @@ import { theme } from '@/components/theme/theme';
 
 export default function WelcomeScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const anim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(anim, {
+      toValue: 1,
+      duration: 500,
+      useNativeDriver: true,
+    }).start();
+  }, [anim]);
+
+  const scale = anim.interpolate({ inputRange: [0, 1], outputRange: [0.9, 1] });
+
   return (
-    <ScreenContainer>
-      <View style={styles.center}>
-        <Text style={styles.title}>Welcome to OneVine</Text>
-        <Button title="Log In" onPress={() => navigation.navigate('Login')} />
-        <Button title="Sign Up" onPress={() => navigation.navigate('Signup')} />
-        <Button title="Forgot Password" onPress={() => navigation.navigate('ForgotPassword')} />
-        <Button title="Forgot Username" onPress={() => navigation.navigate('ForgotUsername')} />
+    <LinearGradient colors={["#2E7D32", "#E8F5E9"]} style={styles.container}>
+      <Animated.Image
+        source={require('../../assets/OneVineIcon.png')}
+        style={[styles.logo, { opacity: anim, transform: [{ scale }] }]}
+        resizeMode="contain"
+      />
+      <Text style={styles.title}>Welcome to OneVine</Text>
+      <View style={styles.buttons}>
+        <View style={styles.buttonWrap}>
+          <Button title="Log In" onPress={() => navigation.navigate('Login')} />
+        </View>
+        <View style={styles.buttonWrap}>
+          <Button title="Sign Up" onPress={() => navigation.navigate('Signup')} />
+        </View>
+        <View style={styles.buttonWrap}>
+          <Button title="Forgot Password" onPress={() => navigation.navigate('ForgotPassword')} />
+        </View>
+        <View style={styles.buttonWrap}>
+          <Button title="Forgot Username" onPress={() => navigation.navigate('ForgotUsername')} />
+        </View>
       </View>
-    </ScreenContainer>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  logo: {
+    width: 200,
+    height: 200,
+    alignSelf: 'center',
+    marginBottom: 24,
+  },
+  buttons: {
+    width: '80%',
+    alignSelf: 'center',
+  },
+  buttonWrap: {
+    marginVertical: 8,
+  },
   title: {
     fontSize: 24,
     fontWeight: '700',
     color: theme.colors.text,
-    marginBottom: 20,
+    textAlign: 'center',
+    marginBottom: 24,
   },
 });
