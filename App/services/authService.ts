@@ -2,6 +2,7 @@ import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 
 const API_KEY = process.env.EXPO_PUBLIC_FIREBASE_API_KEY;
+const BASE_URL = 'https://identitytoolkit.googleapis.com/v1';
 
 export interface AuthResponse {
   idToken: string;
@@ -10,43 +11,64 @@ export interface AuthResponse {
   email: string;
 }
 
+// ✅ Register new user
 export async function signup(email: string, password: string): Promise<AuthResponse> {
   try {
     const res = await axios.post<AuthResponse>(
-      `https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${API_KEY}`,
+      `${BASE_URL}/accounts:signUp?key=${API_KEY}`,
       { email, password, returnSecureToken: true }
     );
-    await SecureStore.setItemAsync('idToken', res.data.idToken);
+    await storeAuth(res.data);
     return res.data;
   } catch (error: any) {
     throw new Error(error.response?.data?.error?.message || error.message);
   }
 }
 
+// ✅ Login existing user
 export async function login(email: string, password: string): Promise<AuthResponse> {
   try {
     const res = await axios.post<AuthResponse>(
-      `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${API_KEY}`,
+      `${BASE_URL}/accounts:signInWithPassword?key=${API_KEY}`,
       { email, password, returnSecureToken: true }
     );
-    await SecureStore.setItemAsync('idToken', res.data.idToken);
+    await storeAuth(res.data);
     return res.data;
   } catch (error: any) {
     throw new Error(error.response?.data?.error?.message || error.message);
   }
 }
 
+// ✅ Logout
 export async function logout(): Promise<void> {
   await SecureStore.deleteItemAsync('idToken');
+  await SecureStore.deleteItemAsync('refreshToken');
+  await SecureStore.deleteItemAsync('localId');
+  await SecureStore.deleteItemAsync('email');
 }
 
+// ✅ Trigger password reset email
 export async function resetPassword(email: string): Promise<void> {
   try {
     await axios.post(
-      `https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=${API_KEY}`,
+      `${BASE_URL}/accounts:sendOobCode?key=${API_KEY}`,
       { requestType: 'PASSWORD_RESET', email }
     );
   } catch (error: any) {
     throw new Error(error.response?.data?.error?.message || error.message);
   }
 }
+
+// ✅ Get stored token (if any)
+export async function getStoredToken(): Promise<string | null> {
+  return await SecureStore.getItemAsync('idToken');
+}
+
+// ✅ Save token securely
+async function storeAuth(auth: AuthResponse) {
+  await SecureStore.setItemAsync('idToken', auth.idToken);
+  await SecureStore.setItemAsync('refreshToken', auth.refreshToken);
+  await SecureStore.setItemAsync('localId', auth.localId);
+  await SecureStore.setItemAsync('email', auth.email);
+}
+
