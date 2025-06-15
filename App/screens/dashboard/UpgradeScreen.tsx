@@ -4,18 +4,18 @@ import ScreenContainer from "@/components/theme/ScreenContainer";
 import { theme } from "@/components/theme/theme";
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from "@/navigation/RootStackParamList";
-import { auth } from '@/config/firebase';
+import { useUser } from '@/hooks/useUser';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Upgrade'>;
 
 export default function UpgradeScreen({ navigation }: Props) {
   const [loading, setLoading] = useState(false);
+  const { user } = useUser();
 
   const handleUpgrade = async () => {
     setLoading(true);
 
     try {
-      const user = auth.currentUser;
       if (!user) {
         Alert.alert('Error', 'User not logged in.');
         return;

@@ -3,8 +3,9 @@ import { View, ActivityIndicator } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { User, onAuthStateChanged } from 'firebase/auth';
-import { auth } from '@/config/firebase';
+import { User } from '@/hooks/useUser';
+import { loadUser } from '@/services/userService';
+import { getStoredToken } from './App/services/authService';
 
 import { RootStackParamList } from './App/navigation/RootStackParamList';
 import { theme } from './App/components/theme/theme';
@@ -47,40 +48,30 @@ export default function App() {
   const [checkingAuth, setCheckingAuth] = useState(true);
 
   useEffect(() => {
-    let unsubscribe: () => void;
-
     const initialize = async () => {
       try {
-        unsubscribe = onAuthStateChanged(
-          auth,
-          async (firebaseUser: User | null) => {
-            setUser(firebaseUser);
+        const uid = await SecureStore.getItemAsync('localId');
+        const token = await getStoredToken();
+        if (uid && token) {
+          await loadUser(uid);
+          const hasSeen = await SecureStore.getItemAsync(`hasSeenOnboarding-${uid}`);
+          setUser({ uid } as User);
+          setInitialRoute(hasSeen === 'true' ? 'Quote' : 'Onboarding');
 
-            if (firebaseUser) {
-              const hasSeen = await SecureStore.getItemAsync(`hasSeenOnboarding-${firebaseUser.uid}`);
-              setInitialRoute(hasSeen === 'true' ? 'Quote' : 'Onboarding');
-
-              const { init } = await import('./App/utils/TokenManager');
-              init?.();
-            } else {
-              setInitialRoute('Login');
-            }
-
-            setCheckingAuth(false);
-          }
-        );
+          const { init } = await import('./App/utils/TokenManager');
+          init?.();
+        } else {
+          setInitialRoute('Login');
+        }
       } catch (err) {
-        console.error('❌ Auth load error in AppNavigator:', err);
-        setCheckingAuth(false);
+        console.error('❌ Auth load error:', err);
         setInitialRoute('Login');
+      } finally {
+        setCheckingAuth(false);
       }
     };
 
     initialize();
-
-    return () => {
-      if (unsubscribe) unsubscribe();
-    };
   }, []);
 
   if (checkingAuth || (!initialRoute && user)) {

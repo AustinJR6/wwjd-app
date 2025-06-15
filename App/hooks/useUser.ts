@@ -1,31 +1,18 @@
-import { useEffect, useState } from 'react';
-import { User, onAuthStateChanged, signInAnonymously } from 'firebase/auth';
-import { auth } from '@/config/firebase';
+import { useUserStore } from '@/state/userStore';
+
+export interface User {
+  uid: string;
+  email: string;
+  displayName: string;
+  religion: string;
+  region: string;
+  organizationId?: string;
+  isSubscribed: boolean;
+  tokens: number;
+}
 
 export function useUser(): { user: User | null; loading: boolean } {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (firebaseUser) {
-        setUser(firebaseUser);
-        setLoading(false);
-      } else {
-        try {
-          const result = await signInAnonymously(auth);
-          setUser(result.user);
-        } catch (err) {
-          console.error('🔥 Anonymous sign-in failed:', err);
-        } finally {
-          setLoading(false);
-        }
-      }
-    });
-
-    return () => unsubscribe();
-  }, []);
-
-  return { user, loading };
+  const user = useUserStore((state) => state.user as User | null);
+  return { user, loading: false };
 }
 
