@@ -38,7 +38,7 @@ export const useChallengeStore = create<ChallengeStore>((set, get) => ({
     const ref = doc(collection(firestore, 'completedChallenges'), user.uid);
     const snap = await getDoc(ref);
 
-    if (snap.exists) {
+    if (snap.exists()) {
       const data = snap.data();
       set({
         lastCompleted: data?.lastCompleted?.toDate?.().getTime() || null,
