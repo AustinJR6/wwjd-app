@@ -43,7 +43,7 @@ export async function login(email: string, password: string): Promise<AuthRespon
 export async function logout(): Promise<void> {
   await SecureStore.deleteItemAsync('idToken');
   await SecureStore.deleteItemAsync('refreshToken');
-  await SecureStore.deleteItemAsync('localId');
+  await SecureStore.deleteItemAsync('userId');
   await SecureStore.deleteItemAsync('email');
 }
 
@@ -72,7 +72,7 @@ export async function getStoredToken(): Promise<string | null> {
 async function storeAuth(auth: AuthResponse) {
   await SecureStore.setItemAsync('idToken', auth.idToken);
   await SecureStore.setItemAsync('refreshToken', auth.refreshToken);
-  await SecureStore.setItemAsync('localId', auth.localId);
+  await SecureStore.setItemAsync('userId', auth.localId);
   await SecureStore.setItemAsync('email', auth.email);
 }
 

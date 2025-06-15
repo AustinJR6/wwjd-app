@@ -62,28 +62,44 @@ async function authHeaders() {
 
 export async function getDocument(path: string): Promise<any | null> {
   const headers = await authHeaders();
-  const res = await axios.get(`${BASE_URL}/${path}`, { headers });
-  return res.data ? decodeData(res.data.fields) : null;
+  try {
+    const res = await axios.get(`${BASE_URL}/${path}`, { headers });
+    return res.data ? decodeData(res.data.fields) : null;
+  } catch (err: any) {
+    if (err.response?.status === 404) return null;
+    console.error('Firestore getDocument error:', err);
+    throw new Error(err.response?.data?.error?.message || 'Firestore error');
+  }
 }
 
 export async function setDocument(path: string, data: any): Promise<void> {
   const headers = await authHeaders();
-  await axios.patch(
-    `${BASE_URL}/${path}?updateMask.fieldPaths=*`,
-    { fields: encodeData(data) },
-    { headers }
-  );
+  try {
+    await axios.patch(
+      `${BASE_URL}/${path}?updateMask.fieldPaths=*`,
+      { fields: encodeData(data) },
+      { headers }
+    );
+  } catch (err) {
+    console.error('Firestore setDocument error:', err);
+    throw err;
+  }
 }
 
 export async function addDocument(collectionPath: string, data: any): Promise<string> {
   const headers = await authHeaders();
-  const res = await axios.post(
-    `${BASE_URL}/${collectionPath}`,
-    { fields: encodeData(data) },
-    { headers }
-  );
-  const name: string = res.data.name;
-  return name.split('/').pop() as string;
+  try {
+    const res = await axios.post(
+      `${BASE_URL}/${collectionPath}`,
+      { fields: encodeData(data) },
+      { headers }
+    );
+    const name: string = res.data.name;
+    return name.split('/').pop() as string;
+  } catch (err) {
+    console.error('Firestore addDocument error:', err);
+    throw err;
+  }
 }
 
 export async function queryCollection(
@@ -100,14 +116,19 @@ export async function queryCollection(
       { field: { fieldPath: orderByField }, direction },
     ];
   }
-  const res = await axios.post(
-    `${BASE_URL}:runQuery`,
-    { structuredQuery },
-    { headers }
-  );
-  const docs = (res.data as any[]).filter((d) => d.document).map((d) => ({
-    id: d.document.name.split('/').pop(),
-    ...decodeData(d.document.fields),
-  }));
-  return docs;
+  try {
+    const res = await axios.post(
+      `${BASE_URL}:runQuery`,
+      { structuredQuery },
+      { headers }
+    );
+    const docs = (res.data as any[])
+      .filter((d) => d.document)
+      .map((d) => ({ id: d.document.name.split('/').pop(), ...decodeData(d.document.fields) }));
+    return docs;
+  } catch (err: any) {
+    if (err.response?.status === 404) return [];
+    console.error('Firestore queryCollection error:', err);
+    return [];
+  }
 }

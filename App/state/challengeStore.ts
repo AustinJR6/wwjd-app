@@ -4,7 +4,7 @@ import * as SecureStore from 'expo-secure-store';
 import { ensureAuth } from '@/utils/authGuard';
 
 async function getUid(): Promise<string | null> {
-  return await SecureStore.getItemAsync('localId');
+  return await SecureStore.getItemAsync('userId');
 }
 
 interface ChallengeStore {

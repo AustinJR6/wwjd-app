@@ -7,7 +7,7 @@ export default function Background({ children }: { children: React.ReactNode }) 
   return (
     <View style={styles.wrapper}>
       <LinearGradient
-        colors={[theme.colors.background, '#1a1f2b']}
+        colors={[theme.colors.background, theme.colors.card]}
         style={StyleSheet.absoluteFill}
       />
       <View style={styles.content}>

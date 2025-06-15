@@ -12,8 +12,11 @@ declare global {
 
 export type RootStackParamList = {
   // Auth stack screens
+  Welcome: undefined;
   Login: undefined;
   Signup: undefined;
+  ForgotPassword: undefined;
+  ForgotUsername: undefined;
   Onboarding: undefined;
   OrganizationSignup: undefined;
 

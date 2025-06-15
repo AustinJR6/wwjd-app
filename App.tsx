@@ -13,6 +13,9 @@ import { theme } from './App/components/theme/theme';
 // Auth Screens
 import LoginScreen from './App/screens/auth/LoginScreen';
 import SignupScreen from './App/screens/auth/SignupScreen';
+import WelcomeScreen from './App/screens/auth/WelcomeScreen';
+import ForgotPasswordScreen from './App/screens/auth/ForgotPasswordScreen';
+import ForgotUsernameScreen from './App/screens/auth/ForgotUsernameScreen';
 import OnboardingScreen from './App/screens/auth/OnboardingScreen';
 import SelectReligionScreen from './App/screens/auth/SelectReligionScreen';
 import OrganizationSignupScreen from './App/screens/auth/OrganizationSignupScreen';
@@ -50,7 +53,7 @@ export default function App() {
   useEffect(() => {
     const initialize = async () => {
       try {
-        const uid = await SecureStore.getItemAsync('localId');
+        const uid = await SecureStore.getItemAsync('userId');
         const token = await getStoredToken();
         if (uid && token) {
           await loadUser(uid);
@@ -61,11 +64,11 @@ export default function App() {
           const { init } = await import('./App/utils/TokenManager');
           init?.();
         } else {
-          setInitialRoute('Login');
+          setInitialRoute('Welcome');
         }
       } catch (err) {
         console.error('❌ Auth load error:', err);
-        setInitialRoute('Login');
+        setInitialRoute('Welcome');
       } finally {
         setCheckingAuth(false);
       }
@@ -92,7 +95,7 @@ export default function App() {
   return (
     <NavigationContainer>
       <Stack.Navigator
-        initialRouteName={user ? initialRoute : 'Login'}
+        initialRouteName={user ? initialRoute : 'Welcome'}
         screenOptions={{
           headerStyle: { backgroundColor: theme.colors.background },
           headerTintColor: theme.colors.text,
@@ -101,8 +104,11 @@ export default function App() {
       >
         {!user ? (
           <>
+            <Stack.Screen name="Welcome" component={WelcomeScreen} options={{ headerShown: false }} />
             <Stack.Screen name="Login" component={LoginScreen} options={{ title: 'Login' }} />
             <Stack.Screen name="Signup" component={SignupScreen} options={{ title: 'Sign Up' }} />
+            <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} options={{ title: 'Reset Password' }} />
+            <Stack.Screen name="ForgotUsername" component={ForgotUsernameScreen} options={{ title: 'Find Email' }} />
             <Stack.Screen name="OrganizationSignup" component={OrganizationSignupScreen} options={{ title: 'Create Organization' }} />
           </>
         ) : (

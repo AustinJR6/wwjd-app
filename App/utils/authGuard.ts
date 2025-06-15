@@ -7,7 +7,7 @@ import { getStoredToken } from '@/services/authService';
  */
 export async function ensureAuth(expectedUid?: string): Promise<string | null> {
   const [uid, token] = await Promise.all([
-    SecureStore.getItemAsync('localId'),
+    SecureStore.getItemAsync('userId'),
     getStoredToken(),
   ]);
 

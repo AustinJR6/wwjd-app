@@ -2,24 +2,24 @@
 
 export const theme = {
   colors: {
-    background: '#0d1117',
-    surface: '#1e2530',
-    text: '#e6edf3',
-    fadedText: '#a0aec0',
-    primary: '#6db3f2',
-    accent: '#91a7ff',
-    success: '#50fa7b',
-    warning: '#ffb86c',
-    danger: '#ff5555',
-    border: '#3b4252',
+    background: '#E8F5E9',
+    surface: '#F1F8E9',
+    text: '#1B1B1B',
+    fadedText: '#3E2723',
+    primary: '#4CAF50',
+    accent: '#81C784',
+    success: '#388E3C',
+    warning: '#FDD835',
+    danger: '#E57373',
+    border: '#A5D6A7',
     gray: '#888888',
-    card: '#2c333f',
-    inputBackground: '#1a1f27'  // 👈 new input background
+    card: '#C8E6C9',
+    inputBackground: '#F1F8E9'
   },
 
 
   fonts: {
-    title: 'serif',                   // swap this with a custom font if desired
+    title: 'System',
     body: 'System'
   },
   spacing: {
