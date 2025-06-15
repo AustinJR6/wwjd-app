@@ -12,7 +12,11 @@ interface ButtonProps {
 export default function Button({ title, onPress, disabled, loading }: ButtonProps) {
   return (
     <Pressable
-      style={({ pressed }) => [styles.button, pressed && styles.pressed, disabled && styles.disabled]}
+      style={({ pressed }) => [
+        styles.button,
+        pressed && styles.pressed,
+        disabled && styles.disabled,
+      ]}
       onPress={onPress}
       disabled={disabled || loading}
     >
@@ -29,7 +33,7 @@ const styles = StyleSheet.create({
   button: {
     backgroundColor: theme.colors.primary,
     paddingVertical: 14,
-    borderRadius: 12,
+    borderRadius: 16,
     alignItems: 'center',
     marginVertical: 10,
     shadowColor: '#000',
@@ -37,9 +41,10 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowRadius: 4,
     elevation: 2,
+    minHeight: 48,
   },
   pressed: {
-    opacity: 0.8,
+    backgroundColor: theme.colors.success,
     transform: [{ scale: 0.98 }],
   },
   text: {

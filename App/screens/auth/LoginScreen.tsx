@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Alert } from 'react-native';
+import { View, Text, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import TextField from "@/components/TextField";
 import Button from "@/components/common/Button";
 import { login, resetPassword } from "@/services/authService";
 import { loadUser } from "@/services/userService";
+import * as SecureStore from 'expo-secure-store';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { theme } from "@/components/theme/theme";
-import { useUserStore } from "@/state/userStore";
 import { RootStackParamList } from "@/navigation/RootStackParamList";
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -24,7 +24,10 @@ export default function LoginScreen() {
     try {
       const result = await login(email, password);
       if (result.localId) {
+        await SecureStore.setItemAsync('userId', result.localId);
+        await SecureStore.setItemAsync('idToken', result.idToken);
         await loadUser(result.localId);
+        navigation.replace('Home');
       }
     } catch (err: any) {
       Alert.alert('Login Failed', err.message);
@@ -48,6 +51,13 @@ export default function LoginScreen() {
 
   return (
     <ScreenContainer>
+      {loading && (
+        <ActivityIndicator
+          style={styles.spinner}
+          size="large"
+          color={theme.colors.primary}
+        />
+      )}
       <Text style={styles.title}>Welcome Back</Text>
 
       <TextField
@@ -102,6 +112,9 @@ const styles = StyleSheet.create({
     marginTop: 20,
     color: theme.colors.primary,
     textAlign: 'center',
+  },
+  spinner: {
+    marginBottom: 16,
   },
 });
 

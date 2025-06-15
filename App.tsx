@@ -3,7 +3,7 @@ import { View, ActivityIndicator } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { User } from '@/hooks/useUser';
+import { useUser } from '@/hooks/useUser';
 import { loadUser } from '@/services/userService';
 import { getStoredToken } from './App/services/authService';
 
@@ -46,7 +46,7 @@ import GiveBackScreen from './App/screens/GiveBackScreen';
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function App() {
-  const [user, setUser] = useState<User | null>(null);
+  const { user } = useUser();
   const [initialRoute, setInitialRoute] = useState<keyof RootStackParamList | undefined>();
   const [checkingAuth, setCheckingAuth] = useState(true);
 
@@ -58,7 +58,6 @@ export default function App() {
         if (uid && token) {
           await loadUser(uid);
           const hasSeen = await SecureStore.getItemAsync(`hasSeenOnboarding-${uid}`);
-          setUser({ uid } as User);
           setInitialRoute(hasSeen === 'true' ? 'Quote' : 'Onboarding');
 
           const { init } = await import('./App/utils/TokenManager');
@@ -76,6 +75,12 @@ export default function App() {
 
     initialize();
   }, []);
+
+  useEffect(() => {
+    if (user) {
+      setInitialRoute((prev) => prev ?? 'Home');
+    }
+  }, [user]);
 
   if (checkingAuth || (!initialRoute && user)) {
     return (
