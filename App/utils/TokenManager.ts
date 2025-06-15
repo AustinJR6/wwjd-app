@@ -1,28 +1,19 @@
-import { firestore } from '@/config/firebase';
-import { doc, getDoc, setDoc, collection } from 'firebase/firestore';
+import { getDocument, setDocument } from '@/services/firestoreService';
 import { ensureAuth } from '@/utils/authGuard';
 
 export const getTokenCount = async () => {
   const uid = await ensureAuth();
   if (!uid) return 0;
 
-  const tokenRef = doc(collection(firestore, 'tokens'), uid);
-  const tokenSnap = await getDoc(tokenRef);
-
-  if (tokenSnap.exists()) {
-    const data = tokenSnap.data()!;
-    return data.count || 0;
-  } else {
-    return 0;
-  }
+  const snapshot = await getDocument(`tokens/${uid}`);
+  return snapshot && snapshot.count ? snapshot.count : 0;
 };
 
 export const setTokenCount = async (count: number) => {
   const uid = await ensureAuth();
   if (!uid) return;
 
-  const tokenRef = doc(collection(firestore, 'tokens'), uid);
-  await setDoc(tokenRef, { count }, { merge: true });
+  await setDocument(`tokens/${uid}`, { count });
 };
 
 export const consumeToken = async () => {
@@ -36,13 +27,9 @@ export const canUseFreeAsk = async () => {
   const uid = await ensureAuth();
   if (!uid) return false;
 
-  const docRef = doc(collection(firestore, 'freeAsk'), uid);
-  const docSnap = await getDoc(docRef);
-
-  if (!docSnap.exists()) return true;
-
-  const data = docSnap.data()!;
-  const lastUsed = data.date?.toDate?.();
+  const snapshot = await getDocument(`freeAsk/${uid}`);
+  if (!snapshot) return true;
+  const lastUsed = snapshot.date ? new Date(snapshot.date) : null;
   if (!lastUsed) return true;
 
   const now = new Date();
@@ -55,23 +42,16 @@ export const canUseFreeAsk = async () => {
 export const useFreeAsk = async () => {
   const uid = await ensureAuth();
   if (!uid) return;
-
-  const docRef = doc(collection(firestore, 'freeAsk'), uid);
-  await setDoc(docRef, { date: new Date() });
+  await setDocument(`freeAsk/${uid}`, { date: new Date().toISOString() });
 };
 
 export const syncSubscriptionStatus = async () => {
   const uid = await ensureAuth();
   if (!uid) return;
-
-  const subRef = doc(collection(firestore, 'subscriptions'), uid);
-  const subSnap = await getDoc(subRef);
-
-  const isSubscribed = subSnap.exists() && subSnap.data()!.active === true;
-
-  const tokenRef = doc(collection(firestore, 'tokens'), uid);
+  const sub = await getDocument(`subscriptions/${uid}`);
+  const isSubscribed = !!sub && sub.active === true;
   if (isSubscribed) {
-    await setDoc(tokenRef, { count: 9999 }, { merge: true });
+    await setDocument(`tokens/${uid}`, { count: 9999 });
   }
 };
 

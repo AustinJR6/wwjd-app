@@ -1,11 +1,4 @@
-import { firestore } from '@/config/firebase';
-import {
-  doc,
-  getDoc,
-  setDoc,
-  updateDoc,
-  collection
-} from 'firebase/firestore';
+import { getDocument, setDocument } from './firestoreService';
 import { useUserStore } from "@/state/userStore";
 import { ensureAuth } from '@/utils/authGuard';
 
@@ -31,11 +24,10 @@ export async function loadUser(uid: string): Promise<void> {
   const storedUid = await ensureAuth(uid);
   if (!storedUid) return;
 
-  const ref = doc(collection(firestore, 'users'), storedUid);
-  const snapshot = await getDoc(ref);
+  const snapshot = await getDocument(`users/${storedUid}`);
 
-  if (snapshot.exists()) {
-    const user = snapshot.data() as FirestoreUser;
+  if (snapshot) {
+    const user = snapshot as FirestoreUser;
     useUserStore.getState().setUser({
       uid: user.uid,
       email: user.email,
@@ -72,7 +64,6 @@ export async function createUserProfile({
   const storedUid = await ensureAuth(uid);
   if (!storedUid) return;
 
-  const ref = doc(collection(firestore, 'users'), storedUid);
   const now = Date.now();
 
   const userData: FirestoreUser = {
@@ -90,7 +81,7 @@ export async function createUserProfile({
     (userData as any).organizationId = organizationId;
   }
 
-  await setDoc(ref, userData);
+  await setDocument(`users/${storedUid}`, userData);
 }
 
 /**
@@ -100,8 +91,7 @@ export async function completeOnboarding(uid: string) {
   const storedUid = await ensureAuth(uid);
   if (!storedUid) return;
 
-  const ref = doc(collection(firestore, 'users'), storedUid);
-  await updateDoc(ref, { onboardingComplete: true });
+  await setDocument(`users/${storedUid}`, { onboardingComplete: true });
 }
 
 /**
@@ -114,10 +104,9 @@ export async function updateUserFields(
   const storedUid = await ensureAuth(uid);
   if (!storedUid) return;
 
-  const ref = doc(collection(firestore, 'users'), storedUid);
   const filtered = Object.fromEntries(
     Object.entries(updates).filter(([_, v]) => v !== undefined)
   );
-  await setDoc(ref, filtered, { merge: true });
+  await setDocument(`users/${storedUid}`, filtered);
 }
 

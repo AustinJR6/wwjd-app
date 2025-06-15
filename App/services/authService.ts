@@ -61,7 +61,11 @@ export async function resetPassword(email: string): Promise<void> {
 
 // ✅ Get stored token (if any)
 export async function getStoredToken(): Promise<string | null> {
-  return await SecureStore.getItemAsync('idToken');
+  const token = await SecureStore.getItemAsync('idToken');
+  if (!token) {
+    console.warn('🚫 idToken missing from SecureStore');
+  }
+  return token;
 }
 
 // ✅ Save token securely
