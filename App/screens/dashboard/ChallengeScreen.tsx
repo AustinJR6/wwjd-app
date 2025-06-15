@@ -12,17 +12,19 @@ import ScreenContainer from "@/components/theme/ScreenContainer";
 import { theme } from "@/components/theme/theme";
 import { getTokenCount, setTokenCount } from "@/utils/TokenManager";
 import { ASK_GEMINI_SIMPLE } from "@/utils/constants";
-import { auth, firestore } from '@/config/firebase';
+import { firestore } from '@/config/firebase';
 import { doc, getDoc, setDoc, collection } from 'firebase/firestore';
+import { useUser } from '@/hooks/useUser';
+import { getStoredToken } from '@/services/authService';
 
 export default function ChallengeScreen() {
   const [challenge, setChallenge] = useState('');
   const [loading, setLoading] = useState(false);
   const [canSkip, setCanSkip] = useState(true);
+  const { user } = useUser();
 
   const fetchChallenge = async () => {
     try {
-      const user = auth.currentUser;
       if (!user) return;
 
       setLoading(true);
@@ -41,7 +43,7 @@ export default function ChallengeScreen() {
         return;
       }
 
-      const idToken = await user.getIdToken();
+      const idToken = await getStoredToken();
       const response = await fetch(ASK_GEMINI_SIMPLE, {
         method: 'POST',
         headers: {

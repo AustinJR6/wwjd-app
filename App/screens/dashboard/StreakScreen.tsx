@@ -11,13 +11,16 @@ import {
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { theme } from "@/components/theme/theme";
 import { ASK_GEMINI_SIMPLE } from "@/utils/constants";
-import { auth, firestore } from '@/config/firebase';
+import { firestore } from '@/config/firebase';
 import { doc, getDoc, setDoc, collection } from 'firebase/firestore';
+import { useUser } from '@/hooks/useUser';
+import { getStoredToken } from '@/services/authService';
 
 export default function StreakScreen() {
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [streak, setStreak] = useState(0);
+  const { user } = useUser();
 
   useEffect(() => {
     fetchStreakMessage();
@@ -25,7 +28,6 @@ export default function StreakScreen() {
 
   const fetchStreakMessage = async () => {
     try {
-      const user = auth.currentUser;
       if (!user) return;
 
       setLoading(true);
@@ -54,7 +56,7 @@ export default function StreakScreen() {
                    religion === 'Judaism' ? 'Rabbi' :
                    'Spiritual Guide';
 
-      const idToken = await user.getIdToken();
+      const idToken = await getStoredToken();
 
       const response = await fetch(ASK_GEMINI_SIMPLE, {
         method: 'POST',

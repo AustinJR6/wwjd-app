@@ -12,13 +12,16 @@ import {
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { theme } from "@/components/theme/theme";
 import { ASK_GEMINI_SIMPLE } from "@/utils/constants";
-import { auth, firestore } from '@/config/firebase';
+import { firestore } from '@/config/firebase';
 import { doc, getDoc, collection } from 'firebase/firestore';
+import { useUser } from '@/hooks/useUser';
+import { getStoredToken } from '@/services/authService';
 
 export default function ConfessionalScreen() {
   const [confession, setConfession] = useState('');
   const [response, setResponse] = useState('');
   const [loading, setLoading] = useState(false);
+  const { user } = useUser();
 
   const handleConfess = async () => {
     if (!confession.trim()) {
@@ -28,7 +31,6 @@ export default function ConfessionalScreen() {
 
     setLoading(true);
     try {
-      const user = auth.currentUser;
       if (!user) return;
 
       const userRef = doc(collection(firestore, 'users'), user.uid);
@@ -42,7 +44,7 @@ export default function ConfessionalScreen() {
                    religion === 'Judaism' ? 'Rabbi' :
                    'Spiritual Guide';
 
-      const idToken = await user.getIdToken();
+      const idToken = await getStoredToken();
       const res = await fetch(ASK_GEMINI_SIMPLE, {
         method: 'POST',
         headers: {

@@ -13,14 +13,17 @@ import ScreenContainer from "@/components/theme/ScreenContainer";
 import { theme } from "@/components/theme/theme";
 import { getTokenCount, setTokenCount } from "@/utils/TokenManager";
 import { ASK_GEMINI_V2 } from "@/utils/constants";
-import { auth, firestore } from '@/config/firebase';
+import { firestore } from '@/config/firebase';
 import { doc, getDoc, setDoc, collection } from 'firebase/firestore';
+import { useUser } from '@/hooks/useUser';
+import { getStoredToken } from '@/services/authService';
 
 export default function ReligionAIScreen() {
   const [question, setQuestion] = useState('');
   const [messages, setMessages] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [isSubscribed, setIsSubscribed] = useState(false);
+  const { user } = useUser();
 
   const handleAsk = async () => {
     if (!question.trim()) {
@@ -31,7 +34,6 @@ export default function ReligionAIScreen() {
     setLoading(true);
 
     try {
-      const user = auth.currentUser;
       if (!user) return;
 
       const userRef = doc(collection(firestore, 'users'), user.uid);
@@ -89,7 +91,7 @@ export default function ReligionAIScreen() {
         conversationContext = messages.join('\n');
       }
 
-      const idToken = await user.getIdToken();
+      const idToken = await getStoredToken();
       const response = await fetch(ASK_GEMINI_V2, {
         method: 'POST',
         headers: {

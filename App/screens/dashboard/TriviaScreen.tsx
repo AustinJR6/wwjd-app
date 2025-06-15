@@ -9,7 +9,9 @@ import {
   ActivityIndicator,
   ScrollView
 } from 'react-native';
-import { auth, firestore } from '@/config/firebase';
+import { firestore } from '@/config/firebase';
+import { useUser } from '@/hooks/useUser';
+import { getStoredToken } from '@/services/authService';
 import ScreenContainer from '@/components/theme/ScreenContainer';
 import { theme } from '@/components/theme/theme';
 import { ASK_GEMINI_SIMPLE } from '@/utils/constants';
@@ -26,8 +28,9 @@ export default function TriviaScreen() {
     fetchTrivia();
   }, []);
 
+  const { user } = useUser();
+
   const fetchTrivia = async () => {
-    const user = auth.currentUser;
     if (!user) return;
 
     setLoading(true);
@@ -35,7 +38,7 @@ export default function TriviaScreen() {
     setAnswer('');
 
     try {
-      const idToken = await user.getIdToken();
+      const idToken = await getStoredToken();
       const response = await fetch(ASK_GEMINI_SIMPLE, {
         method: 'POST',
         headers: {
@@ -63,7 +66,6 @@ export default function TriviaScreen() {
   const submitAnswer = async () => {
     if (!answer) return;
 
-    const user = auth.currentUser;
     if (!user) return;
 
     setRevealed(true);
