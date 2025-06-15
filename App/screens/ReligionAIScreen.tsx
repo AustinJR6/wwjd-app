@@ -13,12 +13,10 @@ import ScreenContainer from "@/components/theme/ScreenContainer";
 import { theme } from "@/components/theme/theme";
 import { getTokenCount, setTokenCount } from "@/utils/TokenManager";
 import { ASK_GEMINI_V2 } from "@/utils/constants";
-import { app, firestore } from '@/config/firebase';
-import { getAuth } from 'firebase/auth';
+import { auth, firestore } from '@/config/firebase';
 import { doc, getDoc, setDoc, collection } from 'firebase/firestore';
 
 export default function ReligionAIScreen() {
-  const auth = getAuth(app);
   const [question, setQuestion] = useState('');
   const [messages, setMessages] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);

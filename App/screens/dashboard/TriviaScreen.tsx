@@ -9,15 +9,13 @@ import {
   ActivityIndicator,
   ScrollView
 } from 'react-native';
-import { app, firestore } from '@/config/firebase';
-import { getAuth } from 'firebase/auth';
+import { auth, firestore } from '@/config/firebase';
 import ScreenContainer from '@/components/theme/ScreenContainer';
 import { theme } from '@/components/theme/theme';
 import { ASK_GEMINI_SIMPLE } from '@/utils/constants';
 import { collection, doc, updateDoc, increment, setDoc } from 'firebase/firestore';
 
 export default function TriviaScreen() {
-  const auth = getAuth(app);
   const [story, setStory] = useState('');
   const [answer, setAnswer] = useState('');
   const [correctReligion, setCorrectReligion] = useState('');
