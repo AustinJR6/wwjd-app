@@ -10,6 +10,7 @@ import { firestore } from '@/config/firebase';
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { theme } from "@/components/theme/theme";
+import { ensureAuth } from '@/utils/authGuard';
 
 export default function LeaderboardsScreen() {
   const [individuals, setIndividuals] = useState<any[]>([]);
@@ -24,6 +25,12 @@ export default function LeaderboardsScreen() {
   const fetchData = async () => {
     setLoading(true);
     try {
+      const uid = await ensureAuth();
+      if (!uid) {
+        setLoading(false);
+        return;
+      }
+
       const userSnap = await getDocs(
         query(collection(firestore, 'users'), orderBy('individualPoints', 'desc'))
       );

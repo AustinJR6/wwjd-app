@@ -14,6 +14,7 @@ import { collection, addDoc } from 'firebase/firestore';
 import { useUser } from "@/hooks/useUser";
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { theme } from "@/components/theme/theme";
+import { ensureAuth } from '@/utils/authGuard';
 
 export default function SubmitProofScreen() {
   const { user } = useUser();
@@ -39,9 +40,12 @@ export default function SubmitProofScreen() {
       return;
     }
 
+    const uid = await ensureAuth(user.uid);
+    if (!uid) return;
+
     setUploading(true);
     try {
-      const refPath = `proofs/${user.uid}/${Date.now()}`;
+      const refPath = `proofs/${uid}/${Date.now()}`;
       const imgRef = ref(storage, refPath);
       const imgBlob = await fetch(image.uri).then(r => r.blob());
 
@@ -49,7 +53,7 @@ export default function SubmitProofScreen() {
       const imgUrl = await getDownloadURL(imgRef);
 
       await addDoc(collection(firestore, 'challengeProofs'), {
-          uid: user.uid,
+          uid,
           caption,
           imageUrl: imgUrl,
           createdAt: new Date() // ✅ replacing serverTimestamp()

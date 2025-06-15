@@ -1,13 +1,9 @@
 import { firestore } from '@/config/firebase';
 import { doc, getDoc, setDoc, collection } from 'firebase/firestore';
-import * as SecureStore from 'expo-secure-store';
-
-async function getUid(): Promise<string | null> {
-  return await SecureStore.getItemAsync('localId');
-}
+import { ensureAuth } from '@/utils/authGuard';
 
 export const getTokenCount = async () => {
-  const uid = await getUid();
+  const uid = await ensureAuth();
   if (!uid) return 0;
 
   const tokenRef = doc(collection(firestore, 'tokens'), uid);
@@ -22,7 +18,7 @@ export const getTokenCount = async () => {
 };
 
 export const setTokenCount = async (count: number) => {
-  const uid = await getUid();
+  const uid = await ensureAuth();
   if (!uid) return;
 
   const tokenRef = doc(collection(firestore, 'tokens'), uid);
@@ -37,7 +33,7 @@ export const consumeToken = async () => {
 };
 
 export const canUseFreeAsk = async () => {
-  const uid = await getUid();
+  const uid = await ensureAuth();
   if (!uid) return false;
 
   const docRef = doc(collection(firestore, 'freeAsk'), uid);
@@ -57,7 +53,7 @@ export const canUseFreeAsk = async () => {
 };
 
 export const useFreeAsk = async () => {
-  const uid = await getUid();
+  const uid = await ensureAuth();
   if (!uid) return;
 
   const docRef = doc(collection(firestore, 'freeAsk'), uid);
@@ -65,7 +61,7 @@ export const useFreeAsk = async () => {
 };
 
 export const syncSubscriptionStatus = async () => {
-  const uid = await getUid();
+  const uid = await ensureAuth();
   if (!uid) return;
 
   const subRef = doc(collection(firestore, 'subscriptions'), uid);

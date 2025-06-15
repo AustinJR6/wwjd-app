@@ -19,6 +19,7 @@ import {
 import { useUser } from '@/hooks/useUser';
 import ScreenContainer from '@/components/theme/ScreenContainer';
 import { theme } from '@/components/theme/theme';
+import { ensureAuth } from '@/utils/authGuard';
 
 export default function OrganizationManagementScreen() {
   const { user } = useUser();
@@ -31,9 +32,11 @@ export default function OrganizationManagementScreen() {
 
   const loadOrg = async () => {
     if (!user) return;
+    const uid = await ensureAuth(user.uid);
+    if (!uid) return;
     setLoading(true);
     try {
-      const userSnap = await getDoc(doc(collection(firestore, 'users'), user.uid));
+      const userSnap = await getDoc(doc(collection(firestore, 'users'), uid));
       const orgId = userSnap.data()?.organizationId;
       if (!orgId) throw new Error('No organization found');
 
@@ -49,6 +52,8 @@ export default function OrganizationManagementScreen() {
 
   const removeMember = async (uid: string) => {
     if (!org?.id) return;
+    const authUid = await ensureAuth(user?.uid);
+    if (!authUid) return;
 
     try {
       await updateDoc(doc(collection(firestore, 'organizations'), org.id), {

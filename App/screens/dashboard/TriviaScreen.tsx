@@ -16,6 +16,7 @@ import ScreenContainer from '@/components/theme/ScreenContainer';
 import { theme } from '@/components/theme/theme';
 import { ASK_GEMINI_SIMPLE } from '@/utils/constants';
 import { collection, doc, updateDoc, increment, setDoc } from 'firebase/firestore';
+import { ensureAuth } from '@/utils/authGuard';
 
 export default function TriviaScreen() {
   const [story, setStory] = useState('');
@@ -31,7 +32,8 @@ export default function TriviaScreen() {
   const { user } = useUser();
 
   const fetchTrivia = async () => {
-    if (!user) return;
+    const uid = await ensureAuth(user?.uid);
+    if (!uid) return;
 
     setLoading(true);
     setRevealed(false);
@@ -66,7 +68,8 @@ export default function TriviaScreen() {
   const submitAnswer = async () => {
     if (!answer) return;
 
-    if (!user) return;
+    const uid = await ensureAuth(user?.uid);
+    if (!uid) return;
 
     setRevealed(true);
 
@@ -74,7 +77,7 @@ export default function TriviaScreen() {
       correctReligion && answer.toLowerCase().includes(correctReligion.toLowerCase());
 
     try {
-      const userRef = doc(collection(firestore, 'users'), user.uid);
+      const userRef = doc(collection(firestore, 'users'), uid);
 
       if (isCorrect) {
         await updateDoc(userRef, {
@@ -82,7 +85,7 @@ export default function TriviaScreen() {
         });
 
         await setDoc(
-          doc(collection(firestore, 'completedChallenges'), user.uid),
+          doc(collection(firestore, 'completedChallenges'), uid),
           {
             lastTrivia: new Date().toISOString(),
             triviaCompleted: true
