@@ -13,11 +13,28 @@ import { useUser } from '@/hooks/useUser';
 import ScreenContainer from '@/components/theme/ScreenContainer';
 import { theme } from '@/components/theme/theme';
 import { ensureAuth } from '@/utils/authGuard';
+import * as SecureStore from 'expo-secure-store';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '@/navigation/RootStackParamList';
 
 export default function OrganizationManagementScreen() {
   const { user } = useUser();
   const [org, setOrg] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+
+  useEffect(() => {
+    const checkAccess = async () => {
+      const admin = await SecureStore.getItemAsync('isAdmin');
+      const manager = await SecureStore.getItemAsync('isOrgManager');
+      if (admin !== 'true' && manager !== 'true') {
+        Alert.alert('Access Denied', 'This feature is for OneVine+ or Org Managers only.');
+        navigation.goBack();
+      }
+    };
+    checkAccess();
+  }, []);
 
   useEffect(() => {
     if (user) loadOrg();
@@ -25,6 +42,13 @@ export default function OrganizationManagementScreen() {
 
   const loadOrg = async () => {
     if (!user) return;
+    const idToken = await SecureStore.getItemAsync('idToken');
+    const userId = await SecureStore.getItemAsync('userId');
+    if (!idToken || !userId) {
+      Alert.alert('Login Required', 'Please log in again.');
+      navigation.replace('Login');
+      return;
+    }
     const uid = await ensureAuth(user.uid);
     if (!uid) return;
     setLoading(true);
@@ -35,9 +59,9 @@ export default function OrganizationManagementScreen() {
 
       const orgSnap = await getDocument(`organizations/${orgId}`);
       setOrg({ id: orgId, ...orgSnap });
-    } catch (err) {
-      console.error('❌ Failed to load org:', err);
-      Alert.alert('Error', 'Unable to load your organization.');
+    } catch (err: any) {
+      console.error('🔥 API Error:', err?.response?.data || err.message);
+      Alert.alert('Error', 'Something went wrong. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -45,6 +69,13 @@ export default function OrganizationManagementScreen() {
 
   const removeMember = async (uid: string) => {
     if (!org?.id) return;
+    const idToken = await SecureStore.getItemAsync('idToken');
+    const userId = await SecureStore.getItemAsync('userId');
+    if (!idToken || !userId) {
+      Alert.alert('Login Required', 'Please log in again.');
+      navigation.replace('Login');
+      return;
+    }
     const authUid = await ensureAuth(user?.uid);
     if (!authUid) return;
 
@@ -55,9 +86,9 @@ export default function OrganizationManagementScreen() {
 
       Alert.alert('Removed', 'Member removed from organization.');
       loadOrg();
-    } catch (err) {
-      console.error('❌ Remove member error:', err);
-      Alert.alert('Error', 'Failed to remove member.');
+    } catch (err: any) {
+      console.error('🔥 API Error:', err?.response?.data || err.message);
+      Alert.alert('Error', 'Something went wrong. Please try again.');
     }
   };
 

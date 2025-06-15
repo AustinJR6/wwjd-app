@@ -16,15 +16,28 @@ import { getDocument, setDocument } from '@/services/firestoreService';
 import { useUser } from '@/hooks/useUser';
 import { getStoredToken } from '@/services/authService';
 import { ensureAuth } from '@/utils/authGuard';
+import * as SecureStore from 'expo-secure-store';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '@/navigation/RootStackParamList';
 
 export default function ChallengeScreen() {
   const [challenge, setChallenge] = useState('');
   const [loading, setLoading] = useState(false);
   const [canSkip, setCanSkip] = useState(true);
   const { user } = useUser();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   const fetchChallenge = async () => {
     try {
+      const idToken = await SecureStore.getItemAsync('idToken');
+      const userId = await SecureStore.getItemAsync('userId');
+      if (!idToken || !userId) {
+        Alert.alert('Login Required', 'Please log in again.');
+        navigation.replace('Login');
+        return;
+      }
+
       const uid = await ensureAuth(user?.uid);
       if (!uid) return;
 
@@ -62,9 +75,9 @@ export default function ChallengeScreen() {
         lastChallenge: new Date().toISOString(),
         lastChallengeText: newChallenge,
       });
-    } catch (err) {
-      console.error('❌ Challenge fetch error:', err);
-      Alert.alert('Error', 'Could not load challenge. Try again later.');
+    } catch (err: any) {
+      console.error('🔥 API Error:', err?.response?.data || err.message);
+      Alert.alert('Error', 'Something went wrong. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -75,6 +88,14 @@ export default function ChallengeScreen() {
     const tokens = await getTokenCount();
     if (tokens < cost) {
       Alert.alert('Not Enough Tokens', `You need ${cost} tokens to skip.`);
+      return;
+    }
+
+    const idToken = await SecureStore.getItemAsync('idToken');
+    const userId = await SecureStore.getItemAsync('userId');
+    if (!idToken || !userId) {
+      Alert.alert('Login Required', 'Please log in again.');
+      navigation.replace('Login');
       return;
     }
 
@@ -91,9 +112,14 @@ export default function ChallengeScreen() {
 
     if (!confirmed) return;
 
-    await setTokenCount(tokens - cost);
-    setCanSkip(true);
-    fetchChallenge();
+    try {
+      await setTokenCount(tokens - cost);
+      setCanSkip(true);
+      fetchChallenge();
+    } catch (error: any) {
+      console.error('🔥 API Error:', error?.response?.data || error.message);
+      Alert.alert('Error', 'Something went wrong. Please try again.');
+    }
   };
 
   useEffect(() => {

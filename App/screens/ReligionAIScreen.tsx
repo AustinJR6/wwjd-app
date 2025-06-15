@@ -17,6 +17,10 @@ import { getDocument, setDocument } from '@/services/firestoreService';
 import { useUser } from '@/hooks/useUser';
 import { getStoredToken } from '@/services/authService';
 import { ensureAuth } from '@/utils/authGuard';
+import * as SecureStore from 'expo-secure-store';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '@/navigation/RootStackParamList';
 
 export default function ReligionAIScreen() {
   const [question, setQuestion] = useState('');
@@ -24,10 +28,19 @@ export default function ReligionAIScreen() {
   const [loading, setLoading] = useState(false);
   const [isSubscribed, setIsSubscribed] = useState(false);
   const { user } = useUser();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   const handleAsk = async () => {
     if (!question.trim()) {
       Alert.alert('Please enter a question.');
+      return;
+    }
+
+    const idToken = await SecureStore.getItemAsync('idToken');
+    const userId = await SecureStore.getItemAsync('userId');
+    if (!idToken || !userId) {
+      Alert.alert('Login Required', 'Please log in again.');
+      navigation.replace('Login');
       return;
     }
 
@@ -117,9 +130,9 @@ export default function ReligionAIScreen() {
       }
 
       setQuestion('');
-    } catch (err) {
-      console.error('❌ ReligionAI error:', err);
-      Alert.alert('Error', 'Could not get a response. Please try again later.');
+    } catch (err: any) {
+      console.error('🔥 API Error:', err?.response?.data || err.message);
+      Alert.alert('Error', 'Something went wrong. Please try again.');
     } finally {
       setLoading(false);
     }

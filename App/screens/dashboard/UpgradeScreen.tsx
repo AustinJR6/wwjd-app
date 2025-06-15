@@ -5,6 +5,7 @@ import { theme } from "@/components/theme/theme";
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from "@/navigation/RootStackParamList";
 import { useUser } from '@/hooks/useUser';
+import * as SecureStore from 'expo-secure-store';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Upgrade'>;
 
@@ -16,6 +17,14 @@ export default function UpgradeScreen({ navigation }: Props) {
     setLoading(true);
 
     try {
+      const idToken = await SecureStore.getItemAsync('idToken');
+      const userId = await SecureStore.getItemAsync('userId');
+      if (!idToken || !userId) {
+        Alert.alert('Login Required', 'Please log in again.');
+        navigation.replace('Login');
+        return;
+      }
+
       if (!user) {
         Alert.alert('Error', 'User not logged in.');
         return;
@@ -44,9 +53,9 @@ export default function UpgradeScreen({ navigation }: Props) {
       } else {
         Alert.alert('Error', 'Something went wrong. Please try again.');
       }
-    } catch (err) {
-      console.error('OneVine+ Subscription Error:', err);
-      Alert.alert('Subscription Failed', 'We could not start the upgrade. Please try again.');
+    } catch (err: any) {
+      console.error('🔥 API Error:', err?.response?.data || err.message);
+      Alert.alert('Error', 'Something went wrong. Please try again.');
     } finally {
       setLoading(false);
     }

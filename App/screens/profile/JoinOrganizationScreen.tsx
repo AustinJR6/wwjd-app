@@ -13,12 +13,17 @@ import ScreenContainer from '@/components/theme/ScreenContainer';
 import { theme } from '@/components/theme/theme';
 import { queryCollection, setDocument, getDocument } from '@/services/firestoreService';
 import { ensureAuth } from '@/utils/authGuard';
+import * as SecureStore from 'expo-secure-store';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '@/navigation/RootStackParamList';
 
 export default function JoinOrganizationScreen() {
   const { user } = useUser();
   const [query, setQuery] = useState('');
   const [orgs, setOrgs] = useState<any[]>([]);
   const [filtered, setFiltered] = useState<any[]>([]);
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   useEffect(() => {
     fetchOrgs();
@@ -26,14 +31,22 @@ export default function JoinOrganizationScreen() {
 
   const fetchOrgs = async () => {
     try {
+      const idToken = await SecureStore.getItemAsync('idToken');
+      const userId = await SecureStore.getItemAsync('userId');
+      if (!idToken || !userId) {
+        Alert.alert('Login Required', 'Please log in again.');
+        navigation.replace('Login');
+        return;
+      }
+
       const uid = await ensureAuth(user?.uid);
       if (!uid) return;
 
       const all = await queryCollection('organizations');
       setOrgs(all);
       setFiltered(all);
-    } catch (err) {
-      console.error('❌ Failed to fetch organizations:', err);
+    } catch (err: any) {
+      console.error('🔥 API Error:', err?.response?.data || err.message);
     }
   };
 
@@ -48,6 +61,13 @@ export default function JoinOrganizationScreen() {
 
   const joinOrg = async (org: any) => {
     if (!user) return;
+    const idToken = await SecureStore.getItemAsync('idToken');
+    const userId = await SecureStore.getItemAsync('userId');
+    if (!idToken || !userId) {
+      Alert.alert('Login Required', 'Please log in again.');
+      navigation.replace('Login');
+      return;
+    }
     const uid = await ensureAuth(user.uid);
     if (!uid) return;
     if ((org.members?.length || 0) >= org.seatLimit) {
@@ -65,9 +85,9 @@ export default function JoinOrganizationScreen() {
       });
 
       Alert.alert('Joined', `You’ve joined ${org.name}.`);
-    } catch (err) {
-      console.error('❌ Join error:', err);
-      Alert.alert('Error', 'Could not join organization. Please try again.');
+    } catch (err: any) {
+      console.error('🔥 API Error:', err?.response?.data || err.message);
+      Alert.alert('Error', 'Something went wrong. Please try again.');
     }
   };
 
