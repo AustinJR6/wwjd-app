@@ -1,51 +1,52 @@
-import { auth } from '@/config/firebase';
-import {
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  signOut,
-  sendPasswordResetEmail,
-} from 'firebase/auth';
+import axios from 'axios';
+import * as SecureStore from 'expo-secure-store';
 
-/**
- * Sign up a new user with email and password
- */
-export async function signup(email: string, password: string): Promise<void> {
+const API_KEY = process.env.EXPO_PUBLIC_FIREBASE_API_KEY;
+
+export interface AuthResponse {
+  idToken: string;
+  localId: string;
+  refreshToken: string;
+  email: string;
+}
+
+export async function signup(email: string, password: string): Promise<AuthResponse> {
   try {
-    await createUserWithEmailAndPassword(auth, email, password);
+    const res = await axios.post<AuthResponse>(
+      `https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${API_KEY}`,
+      { email, password, returnSecureToken: true }
+    );
+    await SecureStore.setItemAsync('idToken', res.data.idToken);
+    return res.data;
   } catch (error: any) {
-    throw new Error(error.message);
+    throw new Error(error.response?.data?.error?.message || error.message);
   }
 }
 
-/**
- * Log in an existing user with email and password
- */
-export async function login(email: string, password: string): Promise<void> {
+export async function login(email: string, password: string): Promise<AuthResponse> {
   try {
-    await signInWithEmailAndPassword(auth, email, password);
+    const res = await axios.post<AuthResponse>(
+      `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${API_KEY}`,
+      { email, password, returnSecureToken: true }
+    );
+    await SecureStore.setItemAsync('idToken', res.data.idToken);
+    return res.data;
   } catch (error: any) {
-    throw new Error(error.message);
+    throw new Error(error.response?.data?.error?.message || error.message);
   }
 }
 
-/**
- * Log out the currently signed-in user
- */
 export async function logout(): Promise<void> {
-  try {
-    await signOut(auth);
-  } catch (error: any) {
-    throw new Error(error.message);
-  }
+  await SecureStore.deleteItemAsync('idToken');
 }
 
-/**
- * Send a password reset email
- */
 export async function resetPassword(email: string): Promise<void> {
   try {
-    await sendPasswordResetEmail(auth, email);
+    await axios.post(
+      `https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=${API_KEY}`,
+      { requestType: 'PASSWORD_RESET', email }
+    );
   } catch (error: any) {
-    throw new Error(error.message);
+    throw new Error(error.response?.data?.error?.message || error.message);
   }
 }
