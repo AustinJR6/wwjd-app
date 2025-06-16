@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Switch, Alert } from 'react-native';
+import { View, Text, StyleSheet, Switch, Alert, LayoutAnimation } from 'react-native';
 import Constants from 'expo-constants';
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import Button from "@/components/common/Button";
@@ -13,7 +13,11 @@ import { useTheme } from "@/components/theme/theme";
 export default function SettingsScreen() {
   const theme = useTheme();
   const nightMode = useSettingsStore((s) => s.nightMode);
-  const toggleNight = useSettingsStore((s) => s.toggleNightMode);
+  const toggleNightStore = useSettingsStore((s) => s.toggleNightMode);
+  const toggleNight = () => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    toggleNightStore();
+  };
   const [changing, setChanging] = useState(false);
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 

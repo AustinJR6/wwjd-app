@@ -19,6 +19,12 @@ export default function Header() {
           alignItems: 'center',
           paddingVertical: theme.spacing.sm,
           marginBottom: theme.spacing.md,
+          borderBottomWidth: StyleSheet.hairlineWidth,
+          borderColor: theme.colors.border,
+          shadowColor: '#000',
+          shadowOpacity: 0.1,
+          shadowOffset: { width: 0, height: 2 },
+          shadowRadius: 4,
         },
         iconWrap: {
           marginLeft: theme.spacing.md,
