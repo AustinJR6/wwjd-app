@@ -6,6 +6,7 @@ import TextField from "@/components/TextField";
 import Button from "@/components/common/Button";
 import { login, resetPassword } from "@/services/authService";
 import { loadUser } from "@/services/userService";
+import { getDocument } from "@/services/firestoreService";
 import * as SecureStore from 'expo-secure-store';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -29,7 +30,20 @@ export default function LoginScreen() {
         await SecureStore.setItemAsync('userId', result.localId);
         await SecureStore.setItemAsync('idToken', result.idToken);
         await loadUser(result.localId);
-        navigation.replace('Home');
+        let hasSeen = await SecureStore.getItemAsync(
+          `hasSeenOnboarding-${result.localId}`
+        );
+        if (!hasSeen) {
+          const userDoc = await getDocument(`users/${result.localId}`);
+          if (userDoc?.onboardingComplete) {
+            hasSeen = 'true';
+            await SecureStore.setItemAsync(
+              `hasSeenOnboarding-${result.localId}`,
+              'true'
+            );
+          }
+        }
+        navigation.replace(hasSeen === 'true' ? 'Home' : 'Onboarding');
       }
     } catch (err: any) {
       showGracefulError(err.message);

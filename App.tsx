@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, ActivityIndicator, Text } from 'react-native';
+import ErrorBoundary from './App/components/common/ErrorBoundary';
 import { useFonts, Poppins_600SemiBold } from '@expo-google-fonts/poppins';
 import { Merriweather_400Regular } from '@expo-google-fonts/merriweather';
 import * as SecureStore from 'expo-secure-store';
@@ -60,6 +61,7 @@ export default function App() {
 
   useEffect(() => {
     if (fontsLoaded) {
+      console.log('✅ Fonts loaded');
       Text.defaultProps = Text.defaultProps || {};
       Text.defaultProps.style = { fontFamily: theme.fonts.body };
     }
@@ -67,22 +69,27 @@ export default function App() {
 
   useEffect(() => {
     const initialize = async () => {
+      console.log('🔑 Checking saved auth credentials');
       try {
         const uid = await SecureStore.getItemAsync('userId');
         const token = await getStoredToken();
         if (uid && token) {
           await loadUser(uid);
+          console.log('✅ Authenticated user', uid);
           const hasSeen = await SecureStore.getItemAsync(`hasSeenOnboarding-${uid}`);
-          setInitialRoute(hasSeen === 'true' ? 'Quote' : 'Onboarding');
+          const route = hasSeen === 'true' ? 'Quote' : 'Onboarding';
+          console.log('🔀 Initial route', route);
+          setInitialRoute(route);
 
           const { init } = await import('./App/utils/TokenManager');
           init?.();
         } else {
-          setInitialRoute('Welcome');
+          console.log('👤 No auth found, routing to Login');
+          setInitialRoute('Login');
         }
       } catch (err) {
         console.error('❌ Auth load error:', err);
-        setInitialRoute('Welcome');
+        setInitialRoute('Login');
       } finally {
         setCheckingAuth(false);
       }
@@ -93,6 +100,7 @@ export default function App() {
 
   useEffect(() => {
     if (user) {
+      console.log('🙋 User state updated:', user.uid);
       setInitialRoute((prev) => prev ?? 'Home');
     }
   }, [user]);
@@ -112,10 +120,12 @@ export default function App() {
     );
   }
 
+  console.log('🚀 Rendering navigator with initial route', user ? initialRoute : 'Login');
   return (
+    <ErrorBoundary>
     <NavigationContainer>
       <Stack.Navigator
-        initialRouteName={user ? initialRoute : 'Welcome'}
+        initialRouteName={user ? initialRoute : 'Login'}
         screenOptions={{
           headerStyle: { backgroundColor: theme.colors.background },
           headerTintColor: theme.colors.text,
@@ -156,5 +166,6 @@ export default function App() {
       </Stack.Navigator>
       {showAnim && <StartupAnimation onDone={() => setShowAnim(false)} />}
     </NavigationContainer>
+    </ErrorBoundary>
   );
 }
