@@ -14,14 +14,16 @@ import {
 import Button from '@/components/common/Button';
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { useTheme } from "@/components/theme/theme";
+import { showGracefulError } from '@/utils/gracefulError';
 import * as LocalAuthentication from 'expo-local-authentication';
-import { queryCollection, addDocument } from '@/services/firestoreService';
+import { queryCollection, addDocument, getDocument, setDocument } from '@/services/firestoreService';
 import { ensureAuth } from '@/utils/authGuard';
 import * as SecureStore from 'expo-secure-store';
 import { getStoredToken } from '@/services/authService';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/navigation/RootStackParamList';
+import { getPromptsForReligion } from '@/utils/guidedPrompts';
 
 export default function JournalScreen() {
   const theme = useTheme();
@@ -119,6 +121,12 @@ export default function JournalScreen() {
   const [selectedEntry, setSelectedEntry] = useState<any | null>(null);
   const [emotion, setEmotion] = useState('');
   const [tags, setTags] = useState('');
+  const [religion, setReligion] = useState('');
+  const [guidedMode, setGuidedMode] = useState(false);
+  const [prompts, setPrompts] = useState<string[]>([]);
+  const [currentStep, setCurrentStep] = useState(0);
+  const [responses, setResponses] = useState<string[]>([]);
+  const [guidedText, setGuidedText] = useState('');
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   useEffect(() => {
@@ -157,6 +165,8 @@ export default function JournalScreen() {
           { fieldPath: 'userId', op: 'EQUAL', value: uid }
         );
         setEntries(list);
+        const userData = await getDocument(`users/${uid}`);
+        setReligion(userData?.religion || '');
       } catch (err: any) {
         console.error('🔥 API Error:', err?.response?.data || err.message);
       } finally {
@@ -166,6 +176,31 @@ export default function JournalScreen() {
 
     authenticateAndLoad();
   }, []);
+
+  const startGuided = () => {
+    const p = getPromptsForReligion(religion || '');
+    setPrompts(p);
+    setGuidedMode(true);
+    setCurrentStep(0);
+    setResponses([]);
+    setGuidedText('');
+  };
+
+  const handleNextPrompt = () => {
+    if (!guidedText.trim()) return;
+    const updated = [...responses, guidedText.trim()];
+    if (currentStep + 1 < prompts.length) {
+      setResponses(updated);
+      setGuidedText('');
+      setCurrentStep(currentStep + 1);
+    } else {
+      const combined = prompts.map((q, i) => `${q}\n${updated[i]}`).join('\n\n');
+      setEntry(combined);
+      setResponses([]);
+      setGuidedText('');
+      setGuidedMode(false);
+    }
+  };
 
   const saveEntry = async () => {
     if (!entry.trim()) return;
@@ -217,7 +252,7 @@ export default function JournalScreen() {
       setEntries(list);
     } catch (err: any) {
       console.error('🔥 API Error:', err?.response?.data || err.message);
-      Alert.alert('Error', 'Something went wrong. Please try again.');
+      showGracefulError();
     } finally {
       setSaving(false);
     }
@@ -239,35 +274,57 @@ export default function JournalScreen() {
   return (
     <ScreenContainer>
       <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.prompt}>
-          Today’s Prompt:{' '}
-          <Text style={styles.promptBold}>What’s on your heart this morning?</Text>
-        </Text>
+        {!guidedMode ? (
+          <>
+            <Text style={styles.prompt}>
+              Today’s Prompt:{' '}
+              <Text style={styles.promptBold}>What’s on your heart this morning?</Text>
+            </Text>
 
-        <TextInput
-          style={styles.input}
-          multiline
-          placeholder="Write your reflection here…"
-          placeholderTextColor={theme.colors.fadedText}
-          value={entry}
-          onChangeText={setEntry}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Emotion (optional)"
-          placeholderTextColor={theme.colors.fadedText}
-          value={emotion}
-          onChangeText={setEmotion}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Tags (comma separated)"
-          placeholderTextColor={theme.colors.fadedText}
-          value={tags}
-          onChangeText={setTags}
-        />
+            <TextInput
+              style={styles.input}
+              multiline
+              placeholder="Write your reflection here…"
+              placeholderTextColor={theme.colors.fadedText}
+              value={entry}
+              onChangeText={setEntry}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Emotion (optional)"
+              placeholderTextColor={theme.colors.fadedText}
+              value={emotion}
+              onChangeText={setEmotion}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Tags (comma separated)"
+              placeholderTextColor={theme.colors.fadedText}
+              value={tags}
+              onChangeText={setTags}
+            />
 
-        <Button title={saving ? 'Saving…' : 'Save Entry'} onPress={saveEntry} disabled={saving} />
+            <Button title={saving ? 'Saving…' : 'Save Entry'} onPress={saveEntry} disabled={saving} />
+            <Button title="Start Guided Journal" onPress={startGuided} />
+          </>
+        ) : (
+          <>
+            <Text style={styles.prompt}>{prompts[currentStep]}</Text>
+            <Text style={styles.promptBold}>{`${currentStep + 1} of ${prompts.length}`}</Text>
+            <TextInput
+              style={styles.input}
+              multiline
+              placeholder="Your response…"
+              placeholderTextColor={theme.colors.fadedText}
+              value={guidedText}
+              onChangeText={setGuidedText}
+            />
+            <Button
+              title={currentStep + 1 === prompts.length ? 'Finish' : 'Next'}
+              onPress={handleNextPrompt}
+            />
+          </>
+        )}
 
         <Text style={styles.sectionTitle}>Past Reflections</Text>
         {entries.length === 0 && (

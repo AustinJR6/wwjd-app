@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import { showGracefulError } from '@/utils/gracefulError';
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import TextField from "@/components/TextField";
 import Button from "@/components/common/Button";
@@ -31,7 +32,7 @@ export default function LoginScreen() {
         navigation.replace('Home');
       }
     } catch (err: any) {
-      Alert.alert('Login Failed', err.message);
+      showGracefulError(err.message);
     } finally {
       setLoading(false);
     }
@@ -45,7 +46,7 @@ export default function LoginScreen() {
       await resetPassword(email);
       Alert.alert("Password Reset", "If this email is registered, a reset link has been sent.");
     } catch (err:any) {
-      Alert.alert("Error", err.message);
+      showGracefulError(err.message);
     }
   };
 

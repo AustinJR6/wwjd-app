@@ -12,6 +12,7 @@ import Button from '@/components/common/Button';
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { useTheme } from "@/components/theme/theme";
 import { getTokenCount, setTokenCount } from "@/utils/TokenManager";
+import { showGracefulError } from '@/utils/gracefulError';
 import { ASK_GEMINI_V2 } from "@/utils/constants";
 import { getDocument, setDocument } from '@/services/firestoreService';
 import { useUser } from '@/hooks/useUser';
@@ -162,7 +163,7 @@ export default function ReligionAIScreen() {
       setQuestion('');
     } catch (err: any) {
       console.error('🔥 API Error:', err?.response?.data || err.message);
-      Alert.alert('Error', 'Something went wrong. Please try again.');
+      showGracefulError();
     } finally {
       setLoading(false);
     }
