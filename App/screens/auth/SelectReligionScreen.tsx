@@ -109,7 +109,7 @@ const styles = StyleSheet.create({
     color: theme.colors.text
   },
   selectedText: {
-    color: '#fff',
+    color: theme.colors.buttonText,
     fontWeight: 'bold'
   },
   buttonWrap: {

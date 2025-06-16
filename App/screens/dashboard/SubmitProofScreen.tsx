@@ -3,10 +3,11 @@ import {
   View,
   Text,
   TextInput,
-  Button,
+  
   StyleSheet,
   Alert
 } from 'react-native';
+import Button from '@/components/common/Button';
 import * as ImagePicker from 'expo-image-picker';
 import { uploadImage } from '@/services/storageService';
 import { addDocument } from '@/services/firestoreService';
@@ -133,7 +134,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 12,
     marginBottom: 12,
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.surface,
     color: theme.colors.text
   },
   filename: {

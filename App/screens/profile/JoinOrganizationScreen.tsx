@@ -3,11 +3,11 @@ import {
   View,
   Text,
   TextInput,
-  Button,
   FlatList,
   StyleSheet,
   Alert
 } from 'react-native';
+import Button from '@/components/common/Button';
 import { useUser } from '@/hooks/useUser';
 import ScreenContainer from '@/components/theme/ScreenContainer';
 import { theme } from '@/components/theme/theme';
@@ -135,7 +135,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 12,
     marginBottom: 16,
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.surface,
     color: theme.colors.text
   },
   row: {

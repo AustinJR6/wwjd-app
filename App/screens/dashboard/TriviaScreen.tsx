@@ -3,12 +3,13 @@ import {
   View,
   Text,
   TextInput,
-  Button,
+  
   StyleSheet,
   Alert,
   ActivityIndicator,
   ScrollView
 } from 'react-native';
+import Button from '@/components/common/Button';
 import { useUser } from '@/hooks/useUser';
 import { getStoredToken } from '@/services/authService';
 import ScreenContainer from '@/components/theme/ScreenContainer';
@@ -149,7 +150,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 12,
     marginBottom: 12,
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.surface,
     color: theme.colors.text
   }
 });

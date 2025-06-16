@@ -3,13 +3,14 @@ import {
   View,
   Text,
   TextInput,
-  Button,
+  
   ActivityIndicator,
   StyleSheet,
   Alert,
   ScrollView,
 } from 'react-native';
 import ScreenContainer from "@/components/theme/ScreenContainer";
+import Button from '@/components/common/Button';
 import { theme } from "@/components/theme/theme";
 import { ASK_GEMINI_SIMPLE } from "@/utils/constants";
 import { getDocument } from '@/services/firestoreService';
@@ -111,7 +112,7 @@ const styles = StyleSheet.create({
     minHeight: 100,
     marginBottom: 16,
     textAlignVertical: 'top',
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.surface,
   },
   buttonWrap: {
     marginVertical: 12,

@@ -2,19 +2,20 @@
 
 export const theme = {
   colors: {
-    background: '#E8F5E9',
-    surface: '#F1F8E9',
-    text: '#1B1B1B',
-    fadedText: '#3E2723',
-    primary: '#4CAF50',
-    accent: '#81C784',
-    success: '#388E3C',
+    background: '#F5F5E5',
+    surface: '#EFE8D8',
+    text: '#4E342E',
+    fadedText: '#6D4C41',
+    primary: '#6B8E23',
+    accent: '#8FBC8F',
+    success: '#556B2F',
     warning: '#FDD835',
     danger: '#E57373',
-    border: '#A5D6A7',
+    border: '#A1887F',
     gray: '#888888',
-    card: '#C8E6C9',
-    inputBackground: '#F1F8E9'
+    card: '#DDE4C9',
+    inputBackground: '#F8F4EC',
+    buttonText: '#F8F8F0'
   },
 
 

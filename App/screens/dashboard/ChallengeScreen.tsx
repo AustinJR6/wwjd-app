@@ -2,12 +2,12 @@ import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
-  Button,
   ActivityIndicator,
   StyleSheet,
   Alert,
   ScrollView,
 } from 'react-native';
+import Button from '@/components/common/Button';
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { theme } from "@/components/theme/theme";
 import { getTokenCount, setTokenCount } from "@/utils/TokenManager";

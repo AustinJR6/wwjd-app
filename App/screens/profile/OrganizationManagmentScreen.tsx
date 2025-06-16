@@ -3,11 +3,11 @@ import {
   View,
   Text,
   FlatList,
-  Button,
   StyleSheet,
   Alert,
   ActivityIndicator,
 } from 'react-native';
+import Button from '@/components/common/Button';
 import { getDocument, setDocument } from '@/services/firestoreService';
 import { useUser } from '@/hooks/useUser';
 import ScreenContainer from '@/components/theme/ScreenContainer';
