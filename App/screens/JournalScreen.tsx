@@ -10,8 +10,8 @@ import {
   ActivityIndicator,
   Modal,
   Pressable,
-  Button,
 } from 'react-native';
+import Button from '@/components/common/Button';
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { theme } from "@/components/theme/theme";
 import * as LocalAuthentication from 'expo-local-authentication';

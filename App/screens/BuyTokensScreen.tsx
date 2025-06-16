@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, Button, StyleSheet, Alert } from 'react-native';
+import { View, Text, StyleSheet, Alert } from 'react-native';
+import Button from '@/components/common/Button';
 import { setTokenCount, getTokenCount } from "@/utils/TokenManager";
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { theme } from "@/components/theme/theme";

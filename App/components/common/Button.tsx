@@ -1,5 +1,6 @@
 import React from 'react';
 import { Text, Pressable, StyleSheet, ActivityIndicator } from 'react-native';
+import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import { theme } from '@/components/theme/theme'; // ✅ Fixed path
 
 interface ButtonProps {
@@ -7,24 +8,35 @@ interface ButtonProps {
   onPress: () => void;
   disabled?: boolean;
   loading?: boolean;
+  color?: string;
 }
 
-export default function Button({ title, onPress, disabled, loading }: ButtonProps) {
+export default function Button({ title, onPress, disabled, loading, color }: ButtonProps) {
+  const scale = useSharedValue(1);
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
   return (
     <Pressable
       style={({ pressed }) => [
         styles.button,
+        { backgroundColor: color || theme.colors.primary },
         pressed && styles.pressed,
         disabled && styles.disabled,
       ]}
+      onPressIn={() => { scale.value = withTiming(0.97); }}
+      onPressOut={() => { scale.value = withTiming(1); }}
       onPress={onPress}
       disabled={disabled || loading}
     >
-      {loading ? (
-        <ActivityIndicator color="white" />
-      ) : (
-        <Text style={styles.text}>{title}</Text>
-      )}
+      <Animated.View style={animatedStyle}>
+        {loading ? (
+          <ActivityIndicator color={theme.colors.buttonText} />
+        ) : (
+          <Text style={styles.text}>{title}</Text>
+        )}
+      </Animated.View>
     </Pressable>
   );
 }
@@ -45,10 +57,9 @@ const styles = StyleSheet.create({
   },
   pressed: {
     backgroundColor: theme.colors.success,
-    transform: [{ scale: 0.98 }],
   },
   text: {
-    color: 'white',
+    color: theme.colors.buttonText,
     fontSize: 16,
     fontWeight: '600',
   },

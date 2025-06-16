@@ -3,12 +3,12 @@ import {
   View,
   Text,
   TextInput,
-  Button,
   ActivityIndicator,
   StyleSheet,
   Alert,
   ScrollView,
 } from 'react-native';
+import Button from '@/components/common/Button';
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { theme } from "@/components/theme/theme";
 import { getTokenCount, setTokenCount } from "@/utils/TokenManager";
@@ -217,7 +217,7 @@ const styles = StyleSheet.create({
     minHeight: 100,
     marginBottom: 16,
     textAlignVertical: 'top',
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.surface,
   },
   buttonWrap: {
     marginVertical: 12,
