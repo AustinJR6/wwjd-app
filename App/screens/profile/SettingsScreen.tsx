@@ -9,10 +9,12 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/navigation/RootStackParamList';
 import { useSettingsStore } from "@/state/settingsStore";
 import { useUserStore } from "@/state/userStore";
+import { useUser } from '@/hooks/useUser';
 import { useTheme } from "@/components/theme/theme";
 
 export default function SettingsScreen() {
   const theme = useTheme();
+  const { user } = useUser();
   const nightMode = useSettingsStore((s) => s.nightMode);
   const toggleNightStore = useSettingsStore((s) => s.toggleNightMode);
   const toggleNight = () => {
@@ -72,13 +74,31 @@ export default function SettingsScreen() {
           <Text style={styles.text}>Night Mode</Text>
           <Switch value={nightMode} onValueChange={toggleNight} />
         </View>
-        <Button title="Profile" onPress={() => navigation.navigate('Profile')} />
-        <Button title="Buy Tokens" onPress={() => navigation.navigate('BuyTokens')} />
-        <Button title="Upgrade" onPress={() => navigation.navigate('Upgrade')} />
-        <Button title="Join Organization" onPress={() => navigation.navigate('JoinOrganization')} />
-        <Button title="Give Back" onPress={() => navigation.navigate('GiveBack')} />
-        <Button title="Change Password" onPress={handleChangePassword} loading={changing} />
-        <Button title="Sign Out" onPress={handleLogout} />
+        {user ? (
+          <>
+            <Button title="Profile" onPress={() => navigation.navigate('Profile')} />
+            <Button title="Buy Tokens" onPress={() => navigation.navigate('BuyTokens')} />
+            <Button title="Upgrade" onPress={() => navigation.navigate('Upgrade')} />
+            <Button title="Join Organization" onPress={() => navigation.navigate('JoinOrganization')} />
+            <Button title="Give Back" onPress={() => navigation.navigate('GiveBack')} />
+            <Button title="Change Password" onPress={handleChangePassword} loading={changing} />
+            <Button title="Sign Out" onPress={handleLogout} />
+          </>
+        ) : (
+          <>
+            <Button title="Log In" onPress={() => navigation.navigate('Login')} />
+            <Button title="Sign Up" onPress={() => navigation.navigate('Signup')} />
+            <Button
+              title="App Info"
+              onPress={() =>
+                Alert.alert(
+                  'OneVine',
+                  `Version ${Constants.expoConfig?.version}`,
+                )
+              }
+            />
+          </>
+        )}
         <Text style={styles.version}>v{Constants.expoConfig?.version}</Text>
       </View>
     </ScreenContainer>

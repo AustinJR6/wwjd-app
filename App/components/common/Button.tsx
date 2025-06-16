@@ -1,7 +1,9 @@
 import React from 'react';
-import { Text, Pressable, StyleSheet, ActivityIndicator } from 'react-native';
+import { Text, Pressable, StyleSheet, ActivityIndicator, View } from 'react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import { useTheme } from '@/components/theme/theme';
+import { useThemeAssets } from '@/components/theme/themeAssets';
+import { LinearGradient } from 'expo-linear-gradient';
 
 interface ButtonProps {
   title: string;
@@ -13,6 +15,7 @@ interface ButtonProps {
 
 export default function Button({ title, onPress, disabled, loading, color }: ButtonProps) {
   const theme = useTheme();
+  const assets = useThemeAssets();
   const scale = useSharedValue(1);
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
@@ -22,20 +25,25 @@ export default function Button({ title, onPress, disabled, loading, color }: But
     () =>
       StyleSheet.create({
         button: {
-          backgroundColor: theme.colors.primary,
-          paddingVertical: 14,
+          overflow: 'hidden',
           borderRadius: 24,
-          alignItems: 'center',
           marginVertical: 10,
-          shadowColor: '#000',
-          shadowOpacity: 0.25,
-          shadowOffset: { width: 0, height: 2 },
-          shadowRadius: 6,
-          elevation: 2,
+          shadowColor: assets.glow,
+          shadowOpacity: 0.6,
+          shadowOffset: { width: 0, height: 4 },
+          shadowRadius: 10,
+          elevation: 3,
           minHeight: 48,
         },
+        gradient: {
+          flex: 1,
+          justifyContent: 'center',
+          alignItems: 'center',
+          paddingVertical: 14,
+          borderRadius: 24,
+        },
         pressed: {
-          backgroundColor: theme.colors.success,
+          opacity: 0.9,
         },
         text: {
           color: theme.colors.buttonText,
@@ -44,7 +52,7 @@ export default function Button({ title, onPress, disabled, loading, color }: But
           fontFamily: theme.fonts.title,
         },
         disabled: {
-          backgroundColor: theme.colors.gray,
+          opacity: 0.5,
         },
       }),
     [theme],
@@ -54,7 +62,6 @@ export default function Button({ title, onPress, disabled, loading, color }: But
     <Pressable
       style={({ pressed }) => [
         styles.button,
-        { backgroundColor: color || theme.colors.primary },
         pressed && styles.pressed,
         disabled && styles.disabled,
       ]}
@@ -63,13 +70,18 @@ export default function Button({ title, onPress, disabled, loading, color }: But
       onPress={onPress}
       disabled={disabled || loading}
     >
-      <Animated.View style={animatedStyle}>
-        {loading ? (
-          <ActivityIndicator color={theme.colors.buttonText} />
-        ) : (
-          <Text style={styles.text}>{title}</Text>
-        )}
-      </Animated.View>
+      <LinearGradient
+        colors={color ? [color, color] : assets.buttonGradient}
+        style={styles.gradient}
+      >
+        <Animated.View style={animatedStyle}>
+          {loading ? (
+            <ActivityIndicator color={theme.colors.buttonText} />
+          ) : (
+            <Text style={styles.text}>{title}</Text>
+          )}
+        </Animated.View>
+      </LinearGradient>
     </Pressable>
   );
 }
