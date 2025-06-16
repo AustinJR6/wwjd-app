@@ -6,7 +6,7 @@ type AskGeminiResponse = {
 };
 
 type StripeCheckoutResponse = {
-  checkoutUrl: string;
+  url: string;
 };
 
 export async function askGemini(prompt: string): Promise<string> {
@@ -19,13 +19,16 @@ export async function askGemini(prompt: string): Promise<string> {
   }
 }
 
-export async function createStripeCheckout(userId: string): Promise<string> {
+export async function createStripeCheckout(
+  uid: string,
+  options: { type: 'subscription' | 'one-time'; amount?: number }
+): Promise<string> {
   try {
-    const res = await axios.post<StripeCheckoutResponse>(
-      `${STRIPE_API_URL}/create-checkout`,
-      { userId }
-    );
-    return res.data.checkoutUrl;
+    const res = await axios.post<StripeCheckoutResponse>(STRIPE_API_URL, {
+      uid,
+      ...options,
+    });
+    return res.data.url;
   } catch (err: any) {
     console.error('Stripe API error:', err);
     throw new Error('Unable to start checkout.');

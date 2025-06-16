@@ -164,6 +164,20 @@ export default function ChallengeScreen() {
       individualPoints: (userData.individualPoints || 0) + 5,
     });
 
+    if (userData.religion) {
+      const relData = await getDocument(`religions/${userData.religion}`);
+      await setDocument(`religions/${userData.religion}`, {
+        totalPoints: (relData?.totalPoints || 0) + 5,
+      });
+    }
+
+    if (userData.organizationId) {
+      const orgData = await getDocument(`organizations/${userData.organizationId}`);
+      await setDocument(`organizations/${userData.organizationId}`, {
+        totalPoints: (orgData?.totalPoints || 0) + 5,
+      });
+    }
+
     Alert.alert('Great job!', 'Challenge completed.');
   };
 

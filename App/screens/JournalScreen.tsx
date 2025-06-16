@@ -117,6 +117,8 @@ export default function JournalScreen() {
   const [saving, setSaving] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedEntry, setSelectedEntry] = useState<any | null>(null);
+  const [emotion, setEmotion] = useState('');
+  const [tags, setTags] = useState('');
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   useEffect(() => {
@@ -152,7 +154,7 @@ export default function JournalScreen() {
           'journalEntries',
           'createdAt',
           'DESCENDING',
-          { fieldPath: 'uid', op: 'EQUAL', value: uid }
+          { fieldPath: 'userId', op: 'EQUAL', value: uid }
         );
         setEntries(list);
       } catch (err: any) {
@@ -177,15 +179,41 @@ export default function JournalScreen() {
         return;
       }
 
+      const userData = await getDocument(`users/${uid}`) || {};
+
       await addDocument('journalEntries', {
-        uid,
-        text: entry,
+        userId: uid,
+        content: entry,
+        emotion: emotion || 'neutral',
+        tags: tags ? tags.split(',').map((t) => t.trim()).filter(Boolean) : [],
+        challengeRef: userData.lastChallengeText || null,
         createdAt: new Date().toISOString(),
       });
+
+      await setDocument(`users/${uid}`, {
+        individualPoints: (userData.individualPoints || 0) + 2,
+      });
+
+      if (userData.religion) {
+        const relData = await getDocument(`religions/${userData.religion}`);
+        await setDocument(`religions/${userData.religion}`, {
+          totalPoints: (relData?.totalPoints || 0) + 2,
+        });
+      }
+
+      if (userData.organizationId) {
+        const orgData = await getDocument(`organizations/${userData.organizationId}`);
+        await setDocument(`organizations/${userData.organizationId}`, {
+          totalPoints: (orgData?.totalPoints || 0) + 2,
+        });
+      }
+
       Alert.alert('Saved!', 'Your reflection has been saved.');
       setEntry('');
+      setEmotion('');
+      setTags('');
 
-      const list = await queryCollection('journalEntries', 'createdAt', 'DESCENDING', { fieldPath: 'uid', op: 'EQUAL', value: uid });
+      const list = await queryCollection('journalEntries', 'createdAt', 'DESCENDING', { fieldPath: 'userId', op: 'EQUAL', value: uid });
       setEntries(list);
     } catch (err: any) {
       console.error('🔥 API Error:', err?.response?.data || err.message);
@@ -224,6 +252,20 @@ export default function JournalScreen() {
           value={entry}
           onChangeText={setEntry}
         />
+        <TextInput
+          style={styles.input}
+          placeholder="Emotion (optional)"
+          placeholderTextColor={theme.colors.fadedText}
+          value={emotion}
+          onChangeText={setEmotion}
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Tags (comma separated)"
+          placeholderTextColor={theme.colors.fadedText}
+          value={tags}
+          onChangeText={setTags}
+        />
 
         <Button title={saving ? 'Saving…' : 'Save Entry'} onPress={saveEntry} disabled={saving} />
 
@@ -240,7 +282,7 @@ export default function JournalScreen() {
                   : '(no date)'}
               </Text>
               <Text style={styles.entryText}>
-                {e.text.length > 100 ? e.text.slice(0, 100) + '…' : e.text}
+                {e.content.length > 100 ? e.content.slice(0, 100) + '…' : e.content}
               </Text>
             </View>
           </Pressable>
@@ -261,7 +303,7 @@ export default function JournalScreen() {
                 : '(no date)'}
             </Text>
             <ScrollView>
-              <Text style={styles.modalText}>{selectedEntry?.text}</Text>
+              <Text style={styles.modalText}>{selectedEntry?.content}</Text>
             </ScrollView>
             <Button title="Close" onPress={() => setModalVisible(false)} />
           </View>

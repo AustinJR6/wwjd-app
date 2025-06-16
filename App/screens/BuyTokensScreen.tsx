@@ -1,7 +1,8 @@
 import React from 'react';
 import { View, Text, StyleSheet, Alert } from 'react-native';
 import Button from '@/components/common/Button';
-import { setTokenCount, getTokenCount } from "@/utils/TokenManager";
+import { useUser } from '@/hooks/useUser';
+import { createStripeCheckout } from '@/services/apiService';
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { useTheme } from "@/components/theme/theme";
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -54,13 +55,23 @@ export default function BuyTokensScreen({ navigation }: Props) {
       }),
     [theme],
   );
+  const { user } = useUser();
   const purchase = async (amount: number) => {
-    const current = await getTokenCount();
-    const newTotal = current + amount;
-    await setTokenCount(newTotal);
-
-    Alert.alert('Purchase Complete', `You now have ${newTotal} tokens.`);
-    navigation.navigate('Home');
+    if (!user) return;
+    try {
+      const url = await createStripeCheckout(user.uid, {
+        type: 'one-time',
+        amount,
+      });
+      if (url) {
+        Linking.openURL(url);
+      } else {
+        Alert.alert('Error', 'Unable to start purchase.');
+      }
+    } catch (err) {
+      console.error('Purchase error:', err);
+      Alert.alert('Error', 'Unable to start purchase.');
+    }
   };
 
   return (
