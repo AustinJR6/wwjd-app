@@ -42,7 +42,7 @@ export default function OrganizationManagementScreen() {
 
   const loadOrg = async () => {
     if (!user) return;
-    const idToken = await SecureStore.getItemAsync('idToken');
+    const idToken = await getStoredToken();
     const userId = await SecureStore.getItemAsync('userId');
     if (!idToken || !userId) {
       Alert.alert('Login Required', 'Please log in again.');
@@ -69,7 +69,7 @@ export default function OrganizationManagementScreen() {
 
   const removeMember = async (uid: string) => {
     if (!org?.id) return;
-    const idToken = await SecureStore.getItemAsync('idToken');
+    const idToken = await getStoredToken();
     const userId = await SecureStore.getItemAsync('userId');
     if (!idToken || !userId) {
       Alert.alert('Login Required', 'Please log in again.');

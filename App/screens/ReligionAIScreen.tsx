@@ -36,7 +36,7 @@ export default function ReligionAIScreen() {
       return;
     }
 
-    let idToken = await SecureStore.getItemAsync('idToken');
+    let idToken = await getStoredToken();
     const userId = await SecureStore.getItemAsync('userId');
     if (!idToken || !userId) {
       Alert.alert('Login Required', 'Please log in again.');

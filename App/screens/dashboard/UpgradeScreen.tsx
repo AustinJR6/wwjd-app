@@ -17,7 +17,7 @@ export default function UpgradeScreen({ navigation }: Props) {
     setLoading(true);
 
     try {
-      const idToken = await SecureStore.getItemAsync('idToken');
+      const idToken = await getStoredToken();
       const userId = await SecureStore.getItemAsync('userId');
       if (!idToken || !userId) {
         Alert.alert('Login Required', 'Please log in again.');
@@ -46,7 +46,13 @@ export default function UpgradeScreen({ navigation }: Props) {
 
       const rawText = await res.text();
       console.log('🔥 OneVine+ raw response:', rawText);
-      const data = JSON.parse(rawText);
+      let data: any;
+      try {
+        data = JSON.parse(rawText);
+      } catch {
+        Alert.alert('Error', 'Unexpected server response.');
+        return;
+      }
 
       if (data.url) {
         Linking.openURL(data.url);

@@ -32,7 +32,13 @@ export default function GiveBackScreen({ navigation }: Props) {
 
       const rawText = await res.text();
       console.log('🔥 Raw response:', rawText);
-      const data = JSON.parse(rawText);
+      let data: any;
+      try {
+        data = JSON.parse(rawText);
+      } catch {
+        Alert.alert('Error', 'Unexpected server response.');
+        return;
+      }
 
       if (data.url) {
         Linking.openURL(data.url);
