@@ -2,7 +2,12 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useTheme } from '@/components/theme/theme';
 
-export default class ErrorBoundary extends React.Component<{children: React.ReactNode}> {
+interface BoundaryProps {
+  children: React.ReactNode;
+  theme: ReturnType<typeof useTheme>;
+}
+
+class Boundary extends React.Component<BoundaryProps> {
   state = { hasError: false, error: null as any };
 
   static getDerivedStateFromError(error: any) {
@@ -15,7 +20,7 @@ export default class ErrorBoundary extends React.Component<{children: React.Reac
 
   render() {
     const { hasError, error } = this.state as any;
-    const theme = useTheme();
+    const { theme } = this.props;
     if (hasError) {
       return (
         <View style={styles(theme).container}>
@@ -26,6 +31,11 @@ export default class ErrorBoundary extends React.Component<{children: React.Reac
     }
     return this.props.children;
   }
+}
+
+export default function ErrorBoundary({ children }: { children: React.ReactNode }) {
+  const theme = useTheme();
+  return <Boundary theme={theme}>{children}</Boundary>;
 }
 
 const styles = (theme: any) =>

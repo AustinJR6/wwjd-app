@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Animated, Image } from 'react-native';
+import { View, Text, StyleSheet, Animated } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Button from '@/components/common/Button';
 import { useNavigation } from '@react-navigation/native';
@@ -64,11 +64,7 @@ export default function WelcomeScreen() {
       <Text style={styles.loginLink} onPress={() => navigation.replace('Login')}>
         Already have an account? Go to Login
       </Text>
-      <Animated.Image
-        source={require('../../../assets/OneVineIcon.png')}
-        style={[styles.logo, { opacity: anim, transform: [{ scale }] }]}
-        resizeMode="contain"
-      />
+      {/* Image removed if asset missing to prevent crash */}
       <Text style={styles.title}>Welcome to OneVine</Text>
       <View style={styles.buttons}>
         <View style={styles.buttonWrap}>
