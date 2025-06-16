@@ -5,6 +5,7 @@ import Button from "@/components/common/Button";
 import { useNavigation, CommonActions } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { completeOnboarding, updateUserFields } from "@/services/userService";
+import { loadUser } from "@/services/userService";
 import { useUserStore } from "@/state/userStore";
 import { SCREENS } from "@/navigation/screens";
 import { useTheme } from "@/components/theme/theme";
@@ -25,6 +26,21 @@ export default function OnboardingScreen() {
   const [region, setRegion] = useState('');
   const [organization, setOrganization] = useState('');
   const [loading, setLoading] = useState(false);
+
+  React.useEffect(() => {
+    if (user) return;
+    async function fetchUser() {
+      try {
+        const uid = await SecureStore.getItemAsync('userId');
+        if (uid) {
+          await loadUser(uid);
+        }
+      } catch (err) {
+        console.warn('Failed to load user', err);
+      }
+    }
+    fetchUser();
+  }, [user]);
 
   const handleContinue = async () => {
     if (!user) {
