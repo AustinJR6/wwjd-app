@@ -5,10 +5,11 @@ import Button from '@/components/common/Button';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/navigation/RootStackParamList';
-import { theme } from '@/components/theme/theme';
+import { useTheme } from '@/components/theme/theme';
 
 export default function WelcomeScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const theme = useTheme();
   const anim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -21,8 +22,45 @@ export default function WelcomeScreen() {
 
   const scale = anim.interpolate({ inputRange: [0, 1], outputRange: [0.9, 1] });
 
+  const styles = React.useMemo(
+    () =>
+      StyleSheet.create({
+        container: {
+          flex: 1,
+          justifyContent: 'center',
+        },
+        logo: {
+          width: 200,
+          height: 200,
+          alignSelf: 'center',
+          marginBottom: 24,
+        },
+        buttons: {
+          width: '80%',
+          alignSelf: 'center',
+        },
+        buttonWrap: {
+          marginVertical: 8,
+        },
+        title: {
+          fontSize: 24,
+          fontWeight: '700',
+          color: theme.colors.text,
+          textAlign: 'center',
+          marginBottom: 24,
+        },
+        loginLink: {
+          textAlign: 'center',
+          marginBottom: 12,
+          color: theme.colors.primary,
+          textDecorationLine: 'underline',
+        },
+      }),
+    [theme],
+  );
+
   return (
-    <LinearGradient colors={["#2E7D32", "#E8F5E9"]} style={styles.container}>
+    <LinearGradient colors={[theme.colors.primary, theme.colors.surface]} style={styles.container}>
       <Text style={styles.loginLink} onPress={() => navigation.replace('Login')}>
         Already have an account? Go to Login
       </Text>
@@ -50,35 +88,4 @@ export default function WelcomeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-  },
-  logo: {
-    width: 200,
-    height: 200,
-    alignSelf: 'center',
-    marginBottom: 24,
-  },
-  buttons: {
-    width: '80%',
-    alignSelf: 'center',
-  },
-  buttonWrap: {
-    marginVertical: 8,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: theme.colors.text,
-    textAlign: 'center',
-    marginBottom: 24,
-  },
-  loginLink: {
-    textAlign: 'center',
-    marginBottom: 12,
-    color: theme.colors.primary,
-    textDecorationLine: 'underline',
-  },
-});
+

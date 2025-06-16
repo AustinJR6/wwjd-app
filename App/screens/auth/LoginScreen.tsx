@@ -8,7 +8,7 @@ import { loadUser } from "@/services/userService";
 import * as SecureStore from 'expo-secure-store';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { theme } from "@/components/theme/theme";
+import { useTheme } from "@/components/theme/theme";
 import { RootStackParamList } from "@/navigation/RootStackParamList";
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -18,6 +18,7 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const navigation = useNavigation<NavigationProp>();
+  const theme = useTheme();
 
   const handleLogin = async () => {
     setLoading(true);
@@ -48,6 +49,27 @@ export default function LoginScreen() {
     }
   };
 
+
+  const styles = React.useMemo(
+    () =>
+      StyleSheet.create({
+        title: {
+          fontSize: 24,
+          fontWeight: '700',
+          color: theme.colors.text,
+          marginBottom: 20,
+        },
+        link: {
+          marginTop: 20,
+          color: theme.colors.primary,
+          textAlign: 'center',
+        },
+        spinner: {
+          marginBottom: 16,
+        },
+      }),
+    [theme],
+  );
 
   return (
     <ScreenContainer>
@@ -101,20 +123,5 @@ export default function LoginScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: theme.colors.text,
-    marginBottom: 20,
-  },
-  link: {
-    marginTop: 20,
-    color: theme.colors.primary,
-    textAlign: 'center',
-  },
-  spinner: {
-    marginBottom: 16,
-  },
-});
+// styles created inside component to update with theme
 

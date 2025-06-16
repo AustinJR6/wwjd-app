@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import Button from '@/components/common/Button';
 import * as SecureStore from 'expo-secure-store';
 import ScreenContainer from "@/components/theme/ScreenContainer";
-import { theme } from "@/components/theme/theme";
+import { useTheme } from "@/components/theme/theme";
 import { getTokenCount, syncSubscriptionStatus } from "@/utils/TokenManager";
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from "@/navigation/RootStackParamList";
@@ -16,6 +16,7 @@ export default function HomeScreen({ navigation }: Props) {
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [isOrgManager, setIsOrgManager] = useState<boolean>(false);
 
+  const theme = useTheme();
   useEffect(() => {
     const loadData = async () => {
       const t = await getTokenCount();
@@ -29,6 +30,51 @@ export default function HomeScreen({ navigation }: Props) {
     };
     loadData();
   }, []);
+
+  const styles = React.useMemo(
+    () =>
+      StyleSheet.create({
+        scrollContent: {
+          paddingBottom: 48,
+        },
+        title: {
+          fontSize: 28,
+          fontFamily: theme.fonts.title,
+          color: theme.colors.text,
+          marginBottom: theme.spacing.sm,
+          textAlign: 'center',
+        },
+        subtitle: {
+          fontSize: 16,
+          color: theme.colors.fadedText,
+          marginBottom: theme.spacing.lg,
+          textAlign: 'center',
+        },
+        statusBox: {
+          marginBottom: theme.spacing.md,
+        },
+        tokenInfo: {
+          fontSize: 16,
+          textAlign: 'center',
+          color: theme.colors.accent,
+        },
+        subscribed: {
+          fontSize: 16,
+          textAlign: 'center',
+          color: theme.colors.primary,
+          fontWeight: '600',
+        },
+        buttonContainer: {
+          width: '70%',
+          justifyContent: 'center',
+          alignSelf: 'center',
+        },
+        spacer: {
+          height: theme.spacing.md,
+        },
+      }),
+    [theme],
+  );
 
   return (
     <ScreenContainer>
@@ -82,44 +128,5 @@ export default function HomeScreen({ navigation }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  scrollContent: {
-    paddingBottom: 48,
-  },
-  title: {
-    fontSize: 28,
-    fontFamily: theme.fonts.title,
-    color: theme.colors.text,
-    marginBottom: theme.spacing.sm,
-    textAlign: 'center',
-  },
-  subtitle: {
-    fontSize: 16,
-    color: theme.colors.fadedText,
-    marginBottom: theme.spacing.lg,
-    textAlign: 'center',
-  },
-  statusBox: {
-    marginBottom: theme.spacing.md,
-  },
-  tokenInfo: {
-    fontSize: 16,
-    textAlign: 'center',
-    color: theme.colors.accent,
-  },
-  subscribed: {
-    fontSize: 16,
-    textAlign: 'center',
-    color: theme.colors.primary,
-    fontWeight: '600',
-  },
-  buttonContainer: {
-    width: '70%',
-    justifyContent: 'center',
-    alignSelf: 'center',
-  },
-  spacer: {
-    height: theme.spacing.md,
-  },
-});
+
 
