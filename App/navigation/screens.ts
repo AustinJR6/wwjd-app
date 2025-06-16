@@ -13,7 +13,6 @@ export const SCREENS = {
     JOURNAL: 'Journal',
     CHALLENGE: 'Challenge',
     CONFESSIONAL: 'Confessional',
-    STREAK: 'Streak',
     UPGRADE: 'Upgrade',
     GIVEBACK: 'GiveBack',
     PROFILE: 'Profile',

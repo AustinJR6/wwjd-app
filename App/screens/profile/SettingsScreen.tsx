@@ -4,6 +4,9 @@ import Constants from 'expo-constants';
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import Button from "@/components/common/Button";
 import { logout, changePassword } from "@/services/authService";
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '@/navigation/RootStackParamList';
 import { useSettingsStore } from "@/state/settingsStore";
 import { useTheme } from "@/components/theme/theme";
 
@@ -12,6 +15,7 @@ export default function SettingsScreen() {
   const nightMode = useSettingsStore((s) => s.nightMode);
   const toggleNight = useSettingsStore((s) => s.toggleNightMode);
   const [changing, setChanging] = useState(false);
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   const styles = React.useMemo(
     () =>
@@ -51,6 +55,7 @@ export default function SettingsScreen() {
 
   const handleLogout = async () => {
     await logout();
+    navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
   };
 
   return (
