@@ -3,12 +3,29 @@ import { View, StyleSheet, Pressable, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { theme } from '@/components/theme/theme';
+import { useTheme } from '@/components/theme/theme';
 import { RootStackParamList } from '@/navigation/RootStackParamList';
 import { logout } from '@/services/authService';
 
 export default function Header() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const theme = useTheme();
+  const styles = React.useMemo(
+    () =>
+      StyleSheet.create({
+        container: {
+          flexDirection: 'row',
+          justifyContent: 'flex-end',
+          alignItems: 'center',
+          paddingVertical: theme.spacing.sm,
+          marginBottom: theme.spacing.md,
+        },
+        iconWrap: {
+          marginLeft: theme.spacing.md,
+        },
+      }),
+    [theme],
+  );
 
   const handleLogout = () => {
     Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
@@ -36,15 +53,3 @@ export default function Header() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    alignItems: 'center',
-    paddingVertical: theme.spacing.sm,
-    marginBottom: theme.spacing.md,
-  },
-  iconWrap: {
-    marginLeft: theme.spacing.md,
-  },
-});

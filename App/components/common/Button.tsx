@@ -1,7 +1,7 @@
 import React from 'react';
 import { Text, Pressable, StyleSheet, ActivityIndicator } from 'react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
-import { theme } from '@/components/theme/theme'; // ✅ Fixed path
+import { useTheme } from '@/components/theme/theme';
 
 interface ButtonProps {
   title: string;
@@ -12,10 +12,42 @@ interface ButtonProps {
 }
 
 export default function Button({ title, onPress, disabled, loading, color }: ButtonProps) {
+  const theme = useTheme();
   const scale = useSharedValue(1);
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
   }));
+
+  const styles = React.useMemo(
+    () =>
+      StyleSheet.create({
+        button: {
+          backgroundColor: theme.colors.primary,
+          paddingVertical: 14,
+          borderRadius: 16,
+          alignItems: 'center',
+          marginVertical: 10,
+          shadowColor: '#000',
+          shadowOpacity: 0.2,
+          shadowOffset: { width: 0, height: 2 },
+          shadowRadius: 4,
+          elevation: 2,
+          minHeight: 48,
+        },
+        pressed: {
+          backgroundColor: theme.colors.success,
+        },
+        text: {
+          color: theme.colors.buttonText,
+          fontSize: 16,
+          fontWeight: '600',
+        },
+        disabled: {
+          backgroundColor: theme.colors.gray,
+        },
+      }),
+    [theme],
+  );
 
   return (
     <Pressable
@@ -41,29 +73,5 @@ export default function Button({ title, onPress, disabled, loading, color }: But
   );
 }
 
-const styles = StyleSheet.create({
-  button: {
-    backgroundColor: theme.colors.primary,
-    paddingVertical: 14,
-    borderRadius: 16,
-    alignItems: 'center',
-    marginVertical: 10,
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
-    elevation: 2,
-    minHeight: 48,
-  },
-  pressed: {
-    backgroundColor: theme.colors.success,
-  },
-  text: {
-    color: theme.colors.buttonText,
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  disabled: {
-    backgroundColor: theme.colors.gray,
-  },
-});
+// styles are created inside the component so they can react to theme changes
+

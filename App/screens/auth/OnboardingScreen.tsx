@@ -7,7 +7,8 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { completeOnboarding, updateUserFields } from "@/services/userService";
 import { useUserStore } from "@/state/userStore";
 import { SCREENS } from "@/navigation/screens";
-import { theme } from "@/components/theme/theme";
+import { useTheme } from "@/components/theme/theme";
+import * as SecureStore from 'expo-secure-store';
 import { Picker } from '@react-native-picker/picker';
 import type { RootStackParamList } from "@/navigation/RootStackParamList";
 
@@ -18,6 +19,7 @@ const religions = ['Christian', 'Muslim', 'Jewish', 'Hindu', 'Buddhist'];
 export default function OnboardingScreen() {
   const user = useUserStore((state: any) => state.user);
   const navigation = useNavigation<OnboardingScreenProps['navigation']>();
+  const theme = useTheme();
   const [religion, setReligion] = useState(user?.religion ?? 'Christian');
   const [username, setUsername] = useState(user?.displayName ?? '');
   const [region, setRegion] = useState('');
@@ -26,7 +28,8 @@ export default function OnboardingScreen() {
 
   const handleContinue = async () => {
     if (!user) {
-      Alert.alert('Error', 'User not found. Please log in again.');
+      Alert.alert('Session expired — please log in again.');
+      navigation.replace('Login');
       return;
     }
 
@@ -45,6 +48,7 @@ export default function OnboardingScreen() {
           organizationId: organization || undefined,
         });
         await completeOnboarding(user.uid);
+        await SecureStore.setItemAsync(`hasSeenOnboarding-${user.uid}`, 'true');
 
         navigation.reset({
           index: 0,
@@ -60,6 +64,52 @@ export default function OnboardingScreen() {
       setLoading(false);
     }
   };
+
+  const styles = React.useMemo(
+    () =>
+      StyleSheet.create({
+        title: {
+          fontSize: 24,
+          fontWeight: '700',
+          color: theme.colors.text,
+          marginBottom: 10,
+          textAlign: 'center',
+        },
+        subtitle: {
+          fontSize: 16,
+          color: theme.colors.fadedText,
+          marginBottom: 20,
+          textAlign: 'center',
+        },
+        pickerWrapper: {
+          borderWidth: 1,
+          borderColor: theme.colors.border,
+          borderRadius: 8,
+          marginBottom: 20,
+          overflow: 'hidden',
+        },
+        picker: {
+          height: 50,
+          color: theme.colors.text,
+          backgroundColor: theme.colors.inputBackground || theme.colors.surface,
+        },
+        input: {
+          borderWidth: 1,
+          borderColor: theme.colors.border,
+          borderRadius: 8,
+          padding: 12,
+          marginBottom: 16,
+          backgroundColor: theme.colors.surface,
+          color: theme.colors.text,
+        },
+        link: {
+          color: theme.colors.primary,
+          marginTop: 16,
+          textAlign: 'center',
+        },
+      }),
+    [theme],
+  );
 
   return (
     <ScreenContainer>
@@ -102,44 +152,12 @@ export default function OnboardingScreen() {
       />
 
       <Button title="Continue" onPress={handleContinue} loading={loading} />
+      <Text style={styles.link} onPress={() => navigation.replace('Login')}>
+        Already have an account? Log in
+      </Text>
     </ScreenContainer>
   );
 }
 
-const styles = StyleSheet.create({
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: theme.colors.text,
-    marginBottom: 10,
-    textAlign: 'center',
-  },
-  subtitle: {
-    fontSize: 16,
-    color: theme.colors.fadedText,
-    marginBottom: 20,
-    textAlign: 'center',
-  },
-  pickerWrapper: {
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    borderRadius: 8,
-    marginBottom: 20,
-    overflow: 'hidden',
-  },
-  picker: {
-    height: 50,
-    color: theme.colors.text,
-    backgroundColor: theme.colors.inputBackground || theme.colors.surface,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 16,
-    backgroundColor: theme.colors.surface,
-    color: theme.colors.text,
-  },
-});
+// styles moved inside component to react to theme
 
