@@ -1,2 +1,4 @@
-export const GEMINI_API_URL = 'https://us-central1-wwjd-app.cloudfunctions.net/geminiHandler';
-export const STRIPE_API_URL = 'https://us-central1-wwjd-app.cloudfunctions.net/createCheckoutSession';
+const BASE_URL = process.env.EXPO_PUBLIC_FUNCTION_BASE_URL;
+
+export const GEMINI_API_URL = `${BASE_URL}/askGeminiV2`;
+export const STRIPE_API_URL = `${BASE_URL}/createCheckoutSession`;
