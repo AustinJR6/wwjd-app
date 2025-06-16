@@ -206,6 +206,26 @@ async function ensureSubscriptions() {
   }
 }
 
+async function ensureOrganizations() {
+  try {
+    const snap = await db.collection('organizations').get();
+    if (snap.empty) {
+      await db.collection('organizations').doc('demo-org').set({
+        name: 'Demo Org',
+        tier: 'enterprise',
+        seatLimit: 25,
+        subscribedSeats: 0,
+        members: [],
+        totalPoints: 0,
+      });
+      console.log('🏢 Created demo organization');
+    }
+  } catch (err) {
+    console.error('❌ ensureOrganizations error:', err);
+    throw err;
+  }
+}
+
 export const seedFirestore = onRequest(async (req, res): Promise<void> => {
   const token = req.headers.authorization?.split('Bearer ')[1];
   if (token !== process.env.SEED_SECRET_KEY) {
@@ -254,6 +274,15 @@ export const seedFirestore = onRequest(async (req, res): Promise<void> => {
     console.log('✅ Journal entries ensured');
   } catch (err) {
     console.error('❌ ensureJournalEntries failed:', err);
+    res.status(500).json({ success: false, error: (err as Error).message });
+    return;
+  }
+
+  try {
+    await ensureOrganizations();
+    console.log('🏢 Organizations ensured');
+  } catch (err) {
+    console.error('❌ ensureOrganizations failed:', err);
     res.status(500).json({ success: false, error: (err as Error).message });
     return;
   }

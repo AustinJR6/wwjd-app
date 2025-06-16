@@ -23,7 +23,6 @@ import OrganizationSignupScreen from './App/screens/auth/OrganizationSignupScree
 // Dashboard Screens
 import HomeScreen from './App/screens/dashboard/HomeScreen';
 import ChallengeScreen from './App/screens/dashboard/ChallengeScreen';
-import StreakScreen from './App/screens/dashboard/StreakScreen';
 import UpgradeScreen from './App/screens/dashboard/UpgradeScreen';
 import LeaderboardsScreen from './App/screens/dashboard/LeaderboardScreen';
 import TriviaScreen from './App/screens/dashboard/TriviaScreen';
@@ -125,7 +124,6 @@ export default function App() {
             <Stack.Screen name="Home" component={HomeScreen} />
             <Stack.Screen name="ReligionAI" component={ReligionAIScreen} options={{ title: 'Religion AI' }} />
             <Stack.Screen name="Journal" component={JournalScreen} options={{ title: 'Quiet Journal' }} />
-            <Stack.Screen name="Streak" component={StreakScreen} options={{ title: 'Grace Streak' }} />
             <Stack.Screen name="Challenge" component={ChallengeScreen} options={{ title: 'Daily Challenge' }} />
             <Stack.Screen name="Confessional" component={ConfessionalScreen} options={{ title: 'Confessional' }} />
             <Stack.Screen name="BuyTokens" component={BuyTokensScreen} options={{ title: 'Buy Tokens' }} />

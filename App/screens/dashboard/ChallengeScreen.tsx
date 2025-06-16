@@ -16,6 +16,7 @@ import { getDocument, setDocument } from '@/services/firestoreService';
 import { useUser } from '@/hooks/useUser';
 import { getStoredToken } from '@/services/authService';
 import { ensureAuth } from '@/utils/authGuard';
+import { useChallengeStore } from '@/state/challengeStore';
 import * as SecureStore from 'expo-secure-store';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -33,6 +34,7 @@ export default function ChallengeScreen() {
           marginBottom: 12,
           color: theme.colors.primary,
         },
+        streak: { marginBottom: 8, color: theme.colors.text },
         challengeText: {
           fontSize: 16,
           marginBottom: 12,
@@ -45,6 +47,9 @@ export default function ChallengeScreen() {
   const [challenge, setChallenge] = useState('');
   const [loading, setLoading] = useState(false);
   const [canSkip, setCanSkip] = useState(true);
+  const streak = useChallengeStore((s) => s.streak);
+  const incrementStreak = useChallengeStore((s) => s.incrementStreak);
+  const syncStreak = useChallengeStore((s) => s.syncWithFirestore);
   const { user } = useUser();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
@@ -75,6 +80,8 @@ export default function ChallengeScreen() {
         return;
       }
 
+      const religion = userData.religion || 'spiritual';
+
       // Reuse the token instead of fetching it again
       idToken = idToken || (await getStoredToken());
       const response = await fetch(ASK_GEMINI_SIMPLE, {
@@ -84,7 +91,7 @@ export default function ChallengeScreen() {
           Authorization: `Bearer ${idToken}`,
         },
         body: JSON.stringify({
-          prompt: 'Give me a daily spiritual or moral challenge for self-reflection.',
+          prompt: `Give me a short daily challenge for someone of the ${religion} faith.`,
         }),
       });
 
@@ -143,7 +150,25 @@ export default function ChallengeScreen() {
     }
   };
 
+  const handleComplete = async () => {
+    const uid = await ensureAuth(user?.uid);
+    if (!uid) return;
+
+    incrementStreak();
+
+    const currentTokens = await getTokenCount();
+    await setTokenCount(currentTokens + 1);
+
+    const userData = await getDocument(`users/${uid}`) || {};
+    await setDocument(`users/${uid}`, {
+      individualPoints: (userData.individualPoints || 0) + 5,
+    });
+
+    Alert.alert('Great job!', 'Challenge completed.');
+  };
+
   useEffect(() => {
+    syncStreak();
     fetchChallenge();
   }, []);
 
@@ -151,6 +176,7 @@ export default function ChallengeScreen() {
     <ScreenContainer>
       <ScrollView contentContainerStyle={styles.container}>
         <Text style={styles.title}>Daily Challenge</Text>
+        <Text style={styles.streak}>Streak: {streak} days</Text>
         {loading ? (
           <ActivityIndicator size="large" color={theme.colors.primary} />
         ) : (
@@ -158,6 +184,7 @@ export default function ChallengeScreen() {
         )}
         <View style={styles.buttonWrap}>
           {canSkip && <Button title="Skip Challenge" onPress={handleSkip} />}
+          <Button title="Mark Completed" onPress={handleComplete} />
         </View>
       </ScrollView>
     </ScreenContainer>

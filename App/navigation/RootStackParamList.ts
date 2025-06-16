@@ -24,7 +24,6 @@ export type RootStackParamList = {
   Home: undefined;
   ReligionAI: undefined;
   Journal: undefined;
-  Streak: undefined;
   Challenge: undefined;
   Confessional: undefined;
   BuyTokens: undefined;

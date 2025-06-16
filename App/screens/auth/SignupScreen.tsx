@@ -4,7 +4,7 @@ import ScreenContainer from "@/components/theme/ScreenContainer";
 import TextField from "@/components/TextField";
 import Button from "@/components/common/Button";
 import { signup } from "@/services/authService";
-import { createUserProfile } from "@/services/userService";
+import { createUserProfile, loadUser } from "@/services/userService";
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTheme } from "@/components/theme/theme";
@@ -30,8 +30,8 @@ export default function SignupScreen() {
         email: result.email,
         displayName: '',
       });
-
-      // Navigation handled automatically after auth
+      await loadUser(result.localId);
+      navigation.replace('Onboarding');
     } catch (err: any) {
       Alert.alert('Signup Failed', err.message);
     } finally {
