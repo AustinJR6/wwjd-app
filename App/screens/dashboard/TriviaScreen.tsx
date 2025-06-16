@@ -13,12 +13,36 @@ import Button from '@/components/common/Button';
 import { useUser } from '@/hooks/useUser';
 import { getStoredToken } from '@/services/authService';
 import ScreenContainer from '@/components/theme/ScreenContainer';
-import { theme } from '@/components/theme/theme';
+import { useTheme } from '@/components/theme/theme';
 import { ASK_GEMINI_SIMPLE } from '@/utils/constants';
 import { getDocument, setDocument } from '@/services/firestoreService';
 import { ensureAuth } from '@/utils/authGuard';
 
 export default function TriviaScreen() {
+  const theme = useTheme();
+  const styles = React.useMemo(
+    () =>
+      StyleSheet.create({
+        container: { paddingBottom: 64 },
+        question: {
+          fontSize: 16,
+          marginBottom: 12,
+          color: theme.colors.text,
+        },
+        input: {
+          borderWidth: 1,
+          borderColor: theme.colors.border,
+          borderRadius: 8,
+          padding: 12,
+          marginBottom: 12,
+          backgroundColor: theme.colors.surface,
+          color: theme.colors.text,
+        },
+        buttonWrap: { marginVertical: 8 },
+        answer: { marginTop: 12, color: theme.colors.primary },
+      }),
+    [theme],
+  );
   const [story, setStory] = useState('');
   const [answer, setAnswer] = useState('');
   const [correctReligion, setCorrectReligion] = useState('');
@@ -127,30 +151,3 @@ export default function TriviaScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    padding: 24,
-    justifyContent: 'center'
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: theme.colors.primary,
-    marginBottom: 16,
-    textAlign: 'center'
-  },
-  story: {
-    fontSize: 16,
-    color: theme.colors.text,
-    marginBottom: 16
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 12,
-    backgroundColor: theme.colors.surface,
-    color: theme.colors.text
-  }
-});

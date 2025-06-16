@@ -8,7 +8,7 @@ import {
   Button,
   Alert
 } from 'react-native';
-import { theme } from "@/components/theme/theme";
+import { useTheme } from "@/components/theme/theme";
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { useUser } from "@/hooks/useUser";
 import { setDocument } from '@/services/firestoreService';
@@ -28,6 +28,21 @@ const RELIGIONS = [
 ];
 
 export default function SelectReligionScreen({ navigation }: Props) {
+  const theme = useTheme();
+  const styles = React.useMemo(
+    () =>
+      StyleSheet.create({
+        item: {
+          padding: 12,
+          borderBottomWidth: 1,
+          borderColor: theme.colors.border,
+        },
+        itemText: { color: theme.colors.text },
+        selectedItem: { backgroundColor: theme.colors.accent },
+        buttonWrap: { marginTop: 24, alignItems: 'center' },
+      }),
+    [theme],
+  );
   const [selected, setSelected] = useState<string | null>(null);
   const { user } = useUser();
 
@@ -84,37 +99,5 @@ export default function SelectReligionScreen({ navigation }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 20,
-    color: theme.colors.primary
-  },
-  religionItem: {
-    padding: 16,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    borderRadius: 8,
-    marginBottom: 12,
-    backgroundColor: theme.colors.surface
-  },
-  selectedItem: {
-    backgroundColor: theme.colors.accent,
-    borderColor: theme.colors.primary
-  },
-  religionText: {
-    fontSize: 16,
-    color: theme.colors.text
-  },
-  selectedText: {
-    color: theme.colors.buttonText,
-    fontWeight: 'bold'
-  },
-  buttonWrap: {
-    marginTop: 24
-  }
-});
 
 

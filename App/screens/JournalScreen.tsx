@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import Button from '@/components/common/Button';
 import ScreenContainer from "@/components/theme/ScreenContainer";
-import { theme } from "@/components/theme/theme";
+import { useTheme } from "@/components/theme/theme";
 import * as LocalAuthentication from 'expo-local-authentication';
 import { queryCollection, addDocument } from '@/services/firestoreService';
 import { ensureAuth } from '@/utils/authGuard';
@@ -24,6 +24,93 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/navigation/RootStackParamList';
 
 export default function JournalScreen() {
+  const theme = useTheme();
+  const styles = React.useMemo(
+    () =>
+      StyleSheet.create({
+        container: {
+          paddingBottom: 64,
+        },
+        prompt: {
+          fontSize: 18,
+          marginBottom: 12,
+          color: theme.colors.text,
+        },
+        promptBold: {
+          fontWeight: '600',
+          color: theme.colors.primary,
+        },
+        input: {
+          borderColor: theme.colors.border,
+          borderWidth: 1,
+          borderRadius: 8,
+          padding: 12,
+          textAlignVertical: 'top',
+          backgroundColor: theme.colors.surface,
+          color: theme.colors.text,
+          marginBottom: 16,
+          minHeight: 120,
+        },
+        center: {
+          flex: 1,
+          justifyContent: 'center',
+          alignItems: 'center',
+        },
+        sectionTitle: {
+          fontSize: 18,
+          fontWeight: 'bold',
+          marginTop: 24,
+          marginBottom: 12,
+          color: theme.colors.text,
+        },
+        entryItem: {
+          marginBottom: 12,
+          padding: 12,
+          backgroundColor: theme.colors.surface,
+          borderRadius: 8,
+        },
+        emptyText: {
+          textAlign: 'center',
+          color: theme.colors.fadedText,
+          marginBottom: 12,
+        },
+        entryDate: {
+          fontSize: 14,
+          fontWeight: 'bold',
+          color: theme.colors.fadedText,
+          marginBottom: 4,
+        },
+        entryText: {
+          fontSize: 16,
+          color: theme.colors.text,
+        },
+        modalBackdrop: {
+          flex: 1,
+          backgroundColor: 'rgba(0,0,0,0.6)',
+          justifyContent: 'center',
+          padding: 24,
+        },
+        modalContent: {
+          backgroundColor: theme.colors.surface,
+          padding: 20,
+          borderRadius: 12,
+          maxHeight: '80%',
+        },
+        modalTitle: {
+          fontSize: 18,
+          fontWeight: 'bold',
+          marginBottom: 12,
+          textAlign: 'center',
+          color: theme.colors.primary,
+        },
+        modalText: {
+          fontSize: 16,
+          color: theme.colors.text,
+          marginBottom: 16,
+        },
+      }),
+    [theme],
+  );
   const [entry, setEntry] = useState('');
   const [entries, setEntries] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -184,86 +271,4 @@ export default function JournalScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    paddingBottom: 64,
-  },
-  prompt: {
-    fontSize: 18,
-    marginBottom: 12,
-    color: theme.colors.text,
-  },
-  promptBold: {
-    fontWeight: '600',
-    color: theme.colors.primary,
-  },
-  input: {
-    borderColor: theme.colors.border,
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 12,
-    textAlignVertical: 'top',
-    backgroundColor: theme.colors.surface,
-    color: theme.colors.text,
-    marginBottom: 16,
-    minHeight: 120,
-  },
-  center: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginTop: 24,
-    marginBottom: 12,
-    color: theme.colors.text,
-  },
-  entryItem: {
-    marginBottom: 12,
-    padding: 12,
-    backgroundColor: theme.colors.surface,
-    borderRadius: 8,
-  },
-  emptyText: {
-    textAlign: 'center',
-    color: theme.colors.fadedText,
-    marginBottom: 12,
-  },
-  entryDate: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: theme.colors.fadedText,
-    marginBottom: 4,
-  },
-  entryText: {
-    fontSize: 16,
-    color: theme.colors.text,
-  },
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    justifyContent: 'center',
-    padding: 24,
-  },
-  modalContent: {
-    backgroundColor: theme.colors.surface,
-    padding: 20,
-    borderRadius: 12,
-    maxHeight: '80%',
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 12,
-    textAlign: 'center',
-    color: theme.colors.primary,
-  },
-  modalText: {
-    fontSize: 16,
-    color: theme.colors.text,
-    marginBottom: 16,
-  },
-});
 

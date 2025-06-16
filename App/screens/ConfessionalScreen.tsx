@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import Button from '@/components/common/Button';
-import { theme } from "@/components/theme/theme";
+import { useTheme } from "@/components/theme/theme";
 import { ASK_GEMINI_SIMPLE } from "@/utils/constants";
 import { getDocument } from '@/services/firestoreService';
 import { useUser } from '@/hooks/useUser';
@@ -19,6 +19,46 @@ import { getStoredToken } from '@/services/authService';
 import { ensureAuth } from '@/utils/authGuard';
 
 export default function ConfessionalScreen() {
+  const theme = useTheme();
+  const styles = React.useMemo(
+    () =>
+      StyleSheet.create({
+        container: {
+          padding: 24,
+          justifyContent: 'center',
+          alignItems: 'center',
+        },
+        title: {
+          fontSize: 24,
+          fontWeight: 'bold',
+          color: theme.colors.primary,
+          marginBottom: 16,
+        },
+        input: {
+          borderWidth: 1,
+          borderColor: theme.colors.border,
+          borderRadius: 8,
+          padding: 12,
+          width: '100%',
+          minHeight: 100,
+          marginBottom: 16,
+          textAlignVertical: 'top',
+          backgroundColor: theme.colors.surface,
+        },
+        buttonWrap: {
+          marginVertical: 12,
+          width: '100%',
+        },
+        response: {
+          marginTop: 16,
+          fontSize: 16,
+          color: theme.colors.text,
+          textAlign: 'left',
+          width: '100%',
+        },
+      }),
+    [theme],
+  );
   const [confession, setConfession] = useState('');
   const [response, setResponse] = useState('');
   const [loading, setLoading] = useState(false);
@@ -91,39 +131,4 @@ export default function ConfessionalScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    padding: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: theme.colors.primary,
-    marginBottom: 16,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    borderRadius: 8,
-    padding: 12,
-    width: '100%',
-    minHeight: 100,
-    marginBottom: 16,
-    textAlignVertical: 'top',
-    backgroundColor: theme.colors.surface,
-  },
-  buttonWrap: {
-    marginVertical: 12,
-    width: '100%',
-  },
-  response: {
-    marginTop: 16,
-    fontSize: 16,
-    color: theme.colors.text,
-    textAlign: 'left',
-    width: '100%',
-  },
-});
 

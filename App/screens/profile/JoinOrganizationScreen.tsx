@@ -10,7 +10,7 @@ import {
 import Button from '@/components/common/Button';
 import { useUser } from '@/hooks/useUser';
 import ScreenContainer from '@/components/theme/ScreenContainer';
-import { theme } from '@/components/theme/theme';
+import { useTheme } from '@/components/theme/theme';
 import { queryCollection, setDocument, getDocument } from '@/services/firestoreService';
 import { ensureAuth } from '@/utils/authGuard';
 import * as SecureStore from 'expo-secure-store';
@@ -19,6 +19,26 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/navigation/RootStackParamList';
 
 export default function JoinOrganizationScreen() {
+  const theme = useTheme();
+  const styles = React.useMemo(
+    () =>
+      StyleSheet.create({
+        container: { paddingBottom: 64 },
+        input: {
+          borderWidth: 1,
+          borderColor: theme.colors.border,
+          borderRadius: 8,
+          padding: 12,
+          marginBottom: 12,
+          backgroundColor: theme.colors.surface,
+          color: theme.colors.text,
+        },
+        item: { padding: 12, borderBottomWidth: 1, borderColor: theme.colors.border },
+        itemName: { color: theme.colors.text },
+        buttonWrap: { marginTop: 24, alignItems: 'center' },
+      }),
+    [theme],
+  );
   const { user } = useUser();
   const [query, setQuery] = useState('');
   const [orgs, setOrgs] = useState<any[]>([]);
@@ -121,42 +141,3 @@ export default function JoinOrganizationScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 16,
-    color: theme.colors.primary
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 16,
-    backgroundColor: theme.colors.surface,
-    color: theme.colors.text
-  },
-  row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ddd'
-  },
-  infoWrap: {
-    flex: 1,
-    marginRight: 10
-  },
-  name: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: theme.colors.text
-  },
-  meta: {
-    fontSize: 14,
-    color: theme.colors.fadedText
-  }
-});

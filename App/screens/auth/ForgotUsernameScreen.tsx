@@ -4,9 +4,29 @@ import ScreenContainer from '@/components/theme/ScreenContainer';
 import TextField from '@/components/TextField';
 import Button from '@/components/common/Button';
 import { queryCollection } from '@/services/firestoreService';
-import { theme } from '@/components/theme/theme';
+import { useTheme } from '@/components/theme/theme';
 
 export default function ForgotUsernameScreen() {
+  const theme = useTheme();
+  const styles = React.useMemo(
+    () =>
+      StyleSheet.create({
+        container: { paddingBottom: 64 },
+        label: { fontSize: 16, marginBottom: 8, color: theme.colors.text },
+        email: { fontSize: 18, textAlign: 'center', color: theme.colors.primary },
+        input: {
+          borderWidth: 1,
+          borderColor: theme.colors.border,
+          borderRadius: 8,
+          padding: 12,
+          marginBottom: 12,
+          backgroundColor: theme.colors.surface,
+          color: theme.colors.text,
+        },
+        buttonWrap: { marginTop: 24, alignItems: 'center' },
+      }),
+    [theme],
+  );
   const [name, setName] = useState('');
   const [region, setRegion] = useState('');
   const [email, setEmail] = useState<string | null>(null);
@@ -44,16 +64,3 @@ export default function ForgotUsernameScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: theme.colors.text,
-    marginBottom: 20,
-  },
-  result: {
-    marginTop: 20,
-    color: theme.colors.primary,
-    textAlign: 'center',
-  },
-});

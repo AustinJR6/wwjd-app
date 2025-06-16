@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { addDocument } from '@/services/firestoreService';
 import ScreenContainer from "@/components/theme/ScreenContainer";
-import { theme } from "@/components/theme/theme";
+import { useTheme } from "@/components/theme/theme";
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from "@/navigation/RootStackParamList";
 import { ensureAuth } from '@/utils/authGuard';
@@ -17,6 +17,33 @@ import { ensureAuth } from '@/utils/authGuard';
 type Props = NativeStackScreenProps<RootStackParamList, 'OrganizationSignup'>;
 
 export default function OrganizationSignupScreen({ navigation }: Props) {
+  const theme = useTheme();
+  const styles = React.useMemo(
+    () =>
+      StyleSheet.create({
+        container: { paddingBottom: 64 },
+        title: {
+          fontSize: 20,
+          fontWeight: 'bold',
+          marginBottom: 16,
+          textAlign: 'center',
+          color: theme.colors.primary,
+        },
+        input: {
+          borderWidth: 1,
+          borderColor: theme.colors.border,
+          borderRadius: 8,
+          padding: 12,
+          marginBottom: 12,
+          backgroundColor: theme.colors.surface,
+          color: theme.colors.text,
+        },
+        tierRow: { flexDirection: 'row', justifyContent: 'space-around', marginBottom: 16 },
+        tierOption: { color: theme.colors.text },
+        buttonWrap: { marginTop: 24, alignItems: 'center' },
+      }),
+    [theme],
+  );
   const [name, setName] = useState('');
   const [tier, setTier] = useState<'enterprise' | 'enterprise-plus'>('enterprise');
   const [submitting, setSubmitting] = useState(false);
@@ -87,35 +114,4 @@ export default function OrganizationSignupScreen({ navigation }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    color: theme.colors.primary,
-    marginBottom: 20
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 16,
-    backgroundColor: theme.colors.surface,
-    color: theme.colors.text
-  },
-  label: {
-    fontSize: 16,
-    marginBottom: 8,
-    color: theme.colors.text
-  },
-  buttonGroup: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginBottom: 16
-  },
-  submitWrap: {
-    marginTop: 16
-  }
-});
 
