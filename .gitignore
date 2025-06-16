@@ -34,5 +34,5 @@ tsconfig.effective.json
 
 /ios
 
-/android
+#/android
 /ios
