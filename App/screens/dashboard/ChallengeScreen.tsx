@@ -30,7 +30,7 @@ export default function ChallengeScreen() {
 
   const fetchChallenge = async () => {
     try {
-      let idToken = await SecureStore.getItemAsync('idToken');
+      let idToken = await getStoredToken();
       const userId = await SecureStore.getItemAsync('userId');
       if (!idToken || !userId) {
         Alert.alert('Login Required', 'Please log in again.');
@@ -92,7 +92,7 @@ export default function ChallengeScreen() {
       return;
     }
 
-    const idToken = await SecureStore.getItemAsync('idToken');
+    const idToken = await getStoredToken();
     const userId = await SecureStore.getItemAsync('userId');
     if (!idToken || !userId) {
       Alert.alert('Login Required', 'Please log in again.');

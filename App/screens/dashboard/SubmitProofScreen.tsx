@@ -55,7 +55,7 @@ export default function SubmitProofScreen() {
       return;
     }
 
-    const idToken = await SecureStore.getItemAsync('idToken');
+    const idToken = await getStoredToken();
     const userId = await SecureStore.getItemAsync('userId');
     if (!idToken || !userId) {
       Alert.alert('Login Required', 'Please log in again.');

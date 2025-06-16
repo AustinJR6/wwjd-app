@@ -26,6 +26,9 @@ function encodeValue(value: any): any {
 function encodeData(data: any): any {
   const fields: any = {};
   for (const [k, v] of Object.entries(data)) {
+    if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(k)) {
+      throw new Error(`Invalid field name: ${k}`);
+    }
     fields[k] = encodeValue(v);
   }
   return fields;
@@ -63,41 +66,69 @@ async function authHeaders() {
 export async function getDocument(path: string): Promise<any | null> {
   const headers = await authHeaders();
   try {
-    const res = await axios.get(`${BASE_URL}/${path}`, { headers });
+    const url = `${BASE_URL}/${path}`;
+    const res = await axios.get(url, { headers });
     return res.data ? decodeData(res.data.fields) : null;
   } catch (err: any) {
     if (err.response?.status === 404) return null;
-    console.error('Firestore getDocument error:', err);
+    console.error('Firestore getDocument error:', {
+      url: `${BASE_URL}/${path}`,
+      status: err.response?.status,
+      data: err.response?.data,
+      message: err.message,
+    });
     throw new Error(err.response?.data?.error?.message || 'Firestore error');
   }
 }
 
 export async function setDocument(path: string, data: any): Promise<void> {
   const headers = await authHeaders();
+  const fieldPaths = Object.keys(data)
+    .filter((k) => /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(k));
+  const mask = fieldPaths
+    .map((k) => `updateMask.fieldPaths=${encodeURIComponent(k)}`)
+    .join('&');
+  const url = `${BASE_URL}/${path}${mask ? `?${mask}` : ''}`;
   try {
     await axios.patch(
-      `${BASE_URL}/${path}?updateMask.fieldPaths=*`,
+      url,
       { fields: encodeData(data) },
       { headers }
     );
-  } catch (err) {
-    console.error('Firestore setDocument error:', err);
+  } catch (err: any) {
+    console.error('Firestore setDocument error:', {
+      url,
+      status: err.response?.status,
+      data: err.response?.data,
+      message: err.message,
+    });
     throw err;
   }
+}
+
+export async function updateDocument(path: string, data: any): Promise<void> {
+  // Alias of setDocument for semantic clarity
+  await setDocument(path, data);
 }
 
 export async function addDocument(collectionPath: string, data: any): Promise<string> {
   const headers = await authHeaders();
   try {
+    const url = `${BASE_URL}/${collectionPath}`;
     const res = await axios.post(
-      `${BASE_URL}/${collectionPath}`,
+      url,
       { fields: encodeData(data) },
       { headers }
     );
     const name: string = res.data.name;
     return name.split('/').pop() as string;
-  } catch (err) {
-    console.error('Firestore addDocument error:', err);
+  } catch (err: any) {
+    console.error('Firestore addDocument error:', {
+      url: `${BASE_URL}/${collectionPath}`,
+      status: err.response?.status,
+      data: err.response?.data,
+      message: err.message,
+    });
     throw err;
   }
 }
@@ -105,7 +136,8 @@ export async function addDocument(collectionPath: string, data: any): Promise<st
 export async function queryCollection(
   collection: string,
   orderByField?: string,
-  direction: 'DESCENDING' | 'ASCENDING' = 'DESCENDING'
+  direction: 'DESCENDING' | 'ASCENDING' = 'DESCENDING',
+  filter?: { fieldPath: string; op: 'EQUAL' | 'LESS_THAN' | 'LESS_THAN_OR_EQUAL' | 'GREATER_THAN' | 'GREATER_THAN_OR_EQUAL'; value: any }
 ): Promise<any[]> {
   const headers = await authHeaders();
   const structuredQuery: any = {
@@ -116,9 +148,19 @@ export async function queryCollection(
       { field: { fieldPath: orderByField }, direction },
     ];
   }
+  if (filter) {
+    structuredQuery.where = {
+      fieldFilter: {
+        field: { fieldPath: filter.fieldPath },
+        op: filter.op,
+        value: encodeValue(filter.value),
+      },
+    };
+  }
+  const url = `${BASE_URL}:runQuery`;
   try {
     const res = await axios.post(
-      `${BASE_URL}:runQuery`,
+      url,
       { structuredQuery },
       { headers }
     );
@@ -128,7 +170,12 @@ export async function queryCollection(
     return docs;
   } catch (err: any) {
     if (err.response?.status === 404) return [];
-    console.error('Firestore queryCollection error:', err);
+    console.error('Firestore queryCollection error:', {
+      url,
+      status: err.response?.status,
+      data: err.response?.data,
+      message: err.message,
+    });
     return [];
   }
 }

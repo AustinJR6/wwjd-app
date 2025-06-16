@@ -18,6 +18,7 @@ import * as LocalAuthentication from 'expo-local-authentication';
 import { queryCollection, addDocument } from '@/services/firestoreService';
 import { ensureAuth } from '@/utils/authGuard';
 import * as SecureStore from 'expo-secure-store';
+import { getStoredToken } from '@/services/authService';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/navigation/RootStackParamList';
@@ -34,7 +35,7 @@ export default function JournalScreen() {
   useEffect(() => {
     async function authenticateAndLoad() {
       try {
-        const idToken = await SecureStore.getItemAsync('idToken');
+        const idToken = await getStoredToken();
         const userId = await SecureStore.getItemAsync('userId');
         if (!idToken || !userId) {
           Alert.alert('Login Required', 'Please log in again.');
@@ -54,9 +55,18 @@ export default function JournalScreen() {
         }
 
         const uid = await ensureAuth();
-        if (!uid) return;
+        if (!uid) {
+          Alert.alert('Login Required', 'Please log in again.');
+          navigation.replace('Login');
+          return;
+        }
 
-        const list = await queryCollection('journalEntries', 'createdAt');
+        const list = await queryCollection(
+          'journalEntries',
+          'createdAt',
+          'DESCENDING',
+          { fieldPath: 'uid', op: 'EQUAL', value: uid }
+        );
         setEntries(list);
       } catch (err: any) {
         console.error('🔥 API Error:', err?.response?.data || err.message);
@@ -72,25 +82,23 @@ export default function JournalScreen() {
     if (!entry.trim()) return;
     setSaving(true);
     try {
-      const idToken = await SecureStore.getItemAsync('idToken');
-      const userId = await SecureStore.getItemAsync('userId');
-      if (!idToken || !userId) {
+      const idToken = await getStoredToken();
+      const uid = await ensureAuth();
+      if (!idToken || !uid) {
         Alert.alert('Login Required', 'Please log in again.');
         navigation.replace('Login');
         return;
       }
 
-      const uid = await ensureAuth();
-      if (!uid) throw new Error('Not authenticated');
-
       await addDocument('journalEntries', {
+        uid,
         text: entry,
         createdAt: new Date().toISOString(),
       });
       Alert.alert('Saved!', 'Your reflection has been saved.');
       setEntry('');
 
-      const list = await queryCollection('journalEntries', 'createdAt');
+      const list = await queryCollection('journalEntries', 'createdAt', 'DESCENDING', { fieldPath: 'uid', op: 'EQUAL', value: uid });
       setEntries(list);
     } catch (err: any) {
       console.error('🔥 API Error:', err?.response?.data || err.message);
@@ -133,6 +141,9 @@ export default function JournalScreen() {
         <Button title={saving ? 'Saving…' : 'Save Entry'} onPress={saveEntry} disabled={saving} />
 
         <Text style={styles.sectionTitle}>Past Reflections</Text>
+        {entries.length === 0 && (
+          <Text style={styles.emptyText}>No journal entries yet.</Text>
+        )}
         {entries.map((e) => (
           <Pressable key={e.id} onPress={() => openEntry(e)}>
             <View style={styles.entryItem}>
@@ -214,6 +225,11 @@ const styles = StyleSheet.create({
     padding: 12,
     backgroundColor: theme.colors.surface,
     borderRadius: 8,
+  },
+  emptyText: {
+    textAlign: 'center',
+    color: theme.colors.fadedText,
+    marginBottom: 12,
   },
   entryDate: {
     fontSize: 14,

@@ -31,7 +31,7 @@ export default function JoinOrganizationScreen() {
 
   const fetchOrgs = async () => {
     try {
-      const idToken = await SecureStore.getItemAsync('idToken');
+      const idToken = await getStoredToken();
       const userId = await SecureStore.getItemAsync('userId');
       if (!idToken || !userId) {
         Alert.alert('Login Required', 'Please log in again.');
@@ -61,7 +61,7 @@ export default function JoinOrganizationScreen() {
 
   const joinOrg = async (org: any) => {
     if (!user) return;
-    const idToken = await SecureStore.getItemAsync('idToken');
+    const idToken = await getStoredToken();
     const userId = await SecureStore.getItemAsync('userId');
     if (!idToken || !userId) {
       Alert.alert('Login Required', 'Please log in again.');
