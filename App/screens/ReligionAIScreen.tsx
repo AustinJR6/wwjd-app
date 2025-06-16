@@ -41,6 +41,14 @@ export default function ReligionAIScreen() {
         message: { marginBottom: 8, color: theme.colors.text },
         userMsg: { fontWeight: 'bold', color: theme.colors.accent },
         systemMsg: { color: theme.colors.fadedText },
+        answer: {
+          marginBottom: 8,
+          backgroundColor: theme.colors.card,
+          padding: 12,
+          borderRadius: 12,
+          fontStyle: 'italic',
+          color: theme.colors.text,
+        },
       }),
     [theme],
   );

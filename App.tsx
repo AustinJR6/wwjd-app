@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { View, ActivityIndicator } from 'react-native';
+import { View, ActivityIndicator, Text } from 'react-native';
+import { useFonts, Poppins_600SemiBold } from '@expo-google-fonts/poppins';
+import { Merriweather_400Regular } from '@expo-google-fonts/merriweather';
 import * as SecureStore from 'expo-secure-store';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -47,8 +49,19 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 export default function App() {
   const { user } = useUser();
   const theme = useTheme();
+  const [fontsLoaded] = useFonts({
+    Poppins_600SemiBold,
+    Merriweather_400Regular,
+  });
   const [initialRoute, setInitialRoute] = useState<keyof RootStackParamList | undefined>();
   const [checkingAuth, setCheckingAuth] = useState(true);
+
+  useEffect(() => {
+    if (fontsLoaded) {
+      Text.defaultProps = Text.defaultProps || {};
+      Text.defaultProps.style = { fontFamily: theme.fonts.body };
+    }
+  }, [fontsLoaded, theme]);
 
   useEffect(() => {
     const initialize = async () => {
@@ -82,7 +95,7 @@ export default function App() {
     }
   }, [user]);
 
-  if (checkingAuth || (!initialRoute && user)) {
+  if (!fontsLoaded || checkingAuth || (!initialRoute && user)) {
     return (
       <View
         style={{
@@ -104,7 +117,7 @@ export default function App() {
         screenOptions={{
           headerStyle: { backgroundColor: theme.colors.background },
           headerTintColor: theme.colors.text,
-          headerTitleStyle: { fontWeight: 'bold', fontSize: 20 },
+          headerTitleStyle: { fontWeight: 'bold', fontSize: 20, fontFamily: theme.fonts.title },
         }}
       >
         {!user ? (
