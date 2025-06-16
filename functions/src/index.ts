@@ -95,3 +95,5 @@ export const handleStripeWebhookV2 = onRequest({ cors: true }, async (req, res):
 
   res.status(200).send("Success");
 });
+
+export { seedFirestore } from "./seed";
