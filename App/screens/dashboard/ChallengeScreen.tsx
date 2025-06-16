@@ -30,7 +30,7 @@ export default function ChallengeScreen() {
 
   const fetchChallenge = async () => {
     try {
-      const idToken = await SecureStore.getItemAsync('idToken');
+      let idToken = await SecureStore.getItemAsync('idToken');
       const userId = await SecureStore.getItemAsync('userId');
       if (!idToken || !userId) {
         Alert.alert('Login Required', 'Please log in again.');
@@ -55,7 +55,8 @@ export default function ChallengeScreen() {
         return;
       }
 
-      const idToken = await getStoredToken();
+      // Reuse the token instead of fetching it again
+      idToken = idToken || (await getStoredToken());
       const response = await fetch(ASK_GEMINI_SIMPLE, {
         method: 'POST',
         headers: {
