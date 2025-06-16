@@ -6,7 +6,7 @@ import { useNavigation, CommonActions } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { completeOnboarding, updateUserFields } from "@/services/userService";
 import { loadUser } from "@/services/userService";
-import { useUserStore } from "@/state/userStore";
+import { useUserDataStore } from "@/state/userDataStore";
 import { SCREENS } from "@/navigation/screens";
 import { useTheme } from "@/components/theme/theme";
 import * as SecureStore from 'expo-secure-store';
@@ -18,7 +18,8 @@ type OnboardingScreenProps = NativeStackScreenProps<RootStackParamList, 'Onboard
 const religions = ['Christian', 'Muslim', 'Jewish', 'Hindu', 'Buddhist'];
 
 export default function OnboardingScreen() {
-  const user = useUserStore((state: any) => state.user);
+  const user = useUserDataStore((state) => state.userProfile);
+  const refreshUser = useUserDataStore((s) => s.refresh);
   const navigation = useNavigation<OnboardingScreenProps['navigation']>();
   const theme = useTheme();
   const [religion, setReligion] = useState(user?.religion ?? 'Christian');
@@ -64,6 +65,7 @@ export default function OnboardingScreen() {
           organizationId: organization || undefined,
         });
         await completeOnboarding(user.uid);
+        await refreshUser();
         await SecureStore.setItemAsync(`hasSeenOnboarding-${user.uid}`, 'true');
 
         navigation.reset({

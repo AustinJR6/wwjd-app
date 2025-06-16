@@ -1,4 +1,4 @@
-import { useUserStore } from '@/state/userStore';
+import { useUserDataStore } from '@/state/userDataStore';
 
 export interface User {
   uid: string;
@@ -12,7 +12,9 @@ export interface User {
 }
 
 export function useUser(): { user: User | null; loading: boolean } {
-  const user = useUserStore((state) => state.user as User | null);
-  return { user, loading: false };
+  const { userProfile, tokenCount, isSubscribed, loading } = useUserDataStore();
+  const user = userProfile
+    ? { ...userProfile, isSubscribed, tokens: tokenCount } as User
+    : null;
+  return { user, loading };
 }
-

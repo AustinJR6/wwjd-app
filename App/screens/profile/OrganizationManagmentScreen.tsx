@@ -76,8 +76,7 @@ export default function OrganizationManagementScreen() {
     if (!uid) return;
     setLoading(true);
     try {
-      const userSnap = await getDocument(`users/${uid}`);
-      const orgId = userSnap?.organizationId;
+      const orgId = user.organizationId;
       if (!orgId) throw new Error('No organization found');
 
       const orgSnap = await getDocument(`organizations/${orgId}`);

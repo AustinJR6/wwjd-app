@@ -5,8 +5,7 @@ import TextField from '@/components/TextField';
 import Button from '@/components/common/Button';
 import { Picker } from '@react-native-picker/picker';
 import { useUser } from '@/hooks/useUser';
-import { useUserStore } from '@/state/userStore';
-import { getTokenCount } from '@/utils/TokenManager';
+import { useUserDataStore } from '@/state/userDataStore';
 import { getDocument, setDocument } from '@/services/firestoreService';
 import { updateUserFields } from '@/services/userService';
 import { useTheme } from '@/components/theme/theme';
@@ -16,12 +15,11 @@ const RELIGIONS = ['Christianity', 'Islam', 'Judaism', 'Buddhism', 'Hinduism'];
 
 export default function ProfileScreen() {
   const { user } = useUser();
-  const updateUser = useUserStore((s) => s.updateUser);
+  const refreshUser = useUserDataStore((s) => s.refresh);
   const theme = useTheme();
   const [username, setUsername] = useState(user?.displayName || '');
   const [region, setRegion] = useState(user?.region || '');
   const [religion, setReligion] = useState(user?.religion || RELIGIONS[0]);
-  const [tokens, setTokens] = useState(0);
   const [points, setPoints] = useState(0);
   const [saving, setSaving] = useState(false);
 
@@ -52,11 +50,7 @@ export default function ProfileScreen() {
     const uid = await ensureAuth(user?.uid);
     if (!uid) return;
     try {
-      const [tokenCount, profile] = await Promise.all([
-        getTokenCount(),
-        getDocument(`users/${uid}`),
-      ]);
-      setTokens(tokenCount);
+      const profile = await getDocument(`users/${uid}`);
       if (profile) {
         setPoints(profile.individualPoints || 0);
       }
@@ -71,7 +65,7 @@ export default function ProfileScreen() {
     setSaving(true);
     try {
       await updateUserFields(uid, { displayName: username, region, religion });
-      updateUser({ displayName: username, region, religion });
+      await refreshUser();
       if (religion !== user?.religion) {
         await setDocument(`users/${uid}`, { lastChallenge: null });
       }
@@ -104,7 +98,7 @@ export default function ProfileScreen() {
 
         <Text style={styles.info}>Points: {points}</Text>
         <Text style={styles.info}>Subscribed: {user?.isSubscribed ? 'Yes' : 'No'}</Text>
-        <Text style={styles.info}>Tokens: {tokens}</Text>
+        <Text style={styles.info}>Tokens: {user?.tokens ?? 0}</Text>
 
         <Button title="Save Changes" onPress={handleSave} loading={saving} />
       </View>

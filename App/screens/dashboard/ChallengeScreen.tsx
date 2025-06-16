@@ -10,7 +10,8 @@ import {
 import Button from '@/components/common/Button';
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { useTheme } from "@/components/theme/theme";
-import { getTokenCount, setTokenCount } from "@/utils/TokenManager";
+import { setTokenCount } from "@/utils/TokenManager";
+import { useUserDataStore } from '@/state/userDataStore';
 import { showGracefulError } from '@/utils/gracefulError';
 import { ASK_GEMINI_SIMPLE } from "@/utils/constants";
 import { getDocument, setDocument } from '@/services/firestoreService';
@@ -52,6 +53,8 @@ export default function ChallengeScreen() {
   const incrementStreak = useChallengeStore((s) => s.incrementStreak);
   const syncStreak = useChallengeStore((s) => s.syncWithFirestore);
   const { user } = useUser();
+  const tokenCount = useUserDataStore((s) => s.tokenCount);
+  const setTokenStore = useUserDataStore((s) => s.setTokenCount);
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   const checkMilestoneReward = async (current: number) => {
@@ -64,8 +67,9 @@ export default function ChallengeScreen() {
       const granted = userData.streakMilestones || {};
       if (granted[current]) return;
       const reward = current >= 30 ? 10 : current >= 14 ? 7 : 5;
-      const tokens = await getTokenCount();
+      const tokens = tokenCount ?? 0;
       await setTokenCount(tokens + reward);
+      setTokenStore(tokens + reward);
       await setDocument(`users/${uid}`, { [`streakMilestones.${current}`]: true });
 
       const idToken = await getStoredToken();
@@ -73,7 +77,7 @@ export default function ChallengeScreen() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
         body: JSON.stringify({
-          prompt: `Provide a short blessing for a user who reached a ${current}-day spiritual challenge streak in the ${userData.religion || 'Christian'} tradition.`,
+          prompt: `Provide a short blessing for a user who reached a ${current}-day spiritual challenge streak in the ${user?.religion || userData.religion || 'Christian'} tradition.`,
         }),
       });
       const data = await res.json();
@@ -111,7 +115,7 @@ export default function ChallengeScreen() {
         return;
       }
 
-      const religion = userData.religion || 'spiritual';
+      const religion = user?.religion || userData.religion || 'spiritual';
 
       // Reuse the token instead of fetching it again
       idToken = idToken || (await getStoredToken());
@@ -144,7 +148,7 @@ export default function ChallengeScreen() {
 
   const handleSkip = async () => {
     const cost = 3;
-    const tokens = await getTokenCount();
+    const tokens = tokenCount ?? 0;
     if (tokens < cost) {
       Alert.alert('Not Enough Tokens', `You need ${cost} tokens to skip.`);
       return;
@@ -173,6 +177,7 @@ export default function ChallengeScreen() {
 
     try {
       await setTokenCount(tokens - cost);
+      setTokenStore(tokens - cost);
       setCanSkip(true);
       fetchChallenge();
     } catch (error: any) {
@@ -187,8 +192,9 @@ export default function ChallengeScreen() {
 
     const newStreak = incrementStreak();
 
-    const currentTokens = await getTokenCount();
+    const currentTokens = tokenCount ?? 0;
     await setTokenCount(currentTokens + 1);
+    setTokenStore(currentTokens + 1);
     await checkMilestoneReward(newStreak);
 
     const userData = await getDocument(`users/${uid}`) || {};
@@ -196,16 +202,16 @@ export default function ChallengeScreen() {
       individualPoints: (userData.individualPoints || 0) + 5,
     });
 
-    if (userData.religion) {
-      const relData = await getDocument(`religions/${userData.religion}`);
-      await setDocument(`religions/${userData.religion}`, {
+    if (user?.religion) {
+      const relData = await getDocument(`religions/${user.religion}`);
+      await setDocument(`religions/${user.religion}`, {
         totalPoints: (relData?.totalPoints || 0) + 5,
       });
     }
 
-    if (userData.organizationId) {
-      const orgData = await getDocument(`organizations/${userData.organizationId}`);
-      await setDocument(`organizations/${userData.organizationId}`, {
+    if (user?.organizationId) {
+      const orgData = await getDocument(`organizations/${user.organizationId}`);
+      await setDocument(`organizations/${user.organizationId}`, {
         totalPoints: (orgData?.totalPoints || 0) + 5,
       });
     }

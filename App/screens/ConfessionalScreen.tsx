@@ -15,6 +15,7 @@ import { useTheme } from "@/components/theme/theme";
 import { ASK_GEMINI_SIMPLE } from "@/utils/constants";
 import { getDocument } from '@/services/firestoreService';
 import { useUser } from '@/hooks/useUser';
+import { useUserDataStore } from '@/state/userDataStore';
 import { getStoredToken } from '@/services/authService';
 import { ensureAuth } from '@/utils/authGuard';
 import { showGracefulError } from '@/utils/gracefulError';
@@ -96,7 +97,7 @@ export default function ConfessionalScreen() {
       }
 
       const userData = await getDocument(`users/${uid}`);
-      const religion = userData.religion || 'Spiritual Guide';
+      const religion = user?.religion || userData?.religion || 'Spiritual Guide';
       const role = religion === 'Christianity' ? 'Pastor' :
                    religion === 'Islam' ? 'Imam' :
                    religion === 'Hinduism' ? 'Guru' :

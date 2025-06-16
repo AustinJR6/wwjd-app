@@ -8,6 +8,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useUser } from '@/hooks/useUser';
 import { loadUser } from '@/services/userService';
+import { useUserDataStore } from '@/state/userDataStore';
 import { getStoredToken } from './App/services/authService';
 import StartupAnimation from './App/components/common/StartupAnimation';
 
@@ -50,6 +51,7 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function App() {
   const { user } = useUser();
+  const initUserStore = useUserDataStore((s) => s.initialize);
   const theme = useTheme();
   const [fontsLoaded] = useFonts({
     Poppins_600SemiBold,
@@ -70,19 +72,19 @@ export default function App() {
   useEffect(() => {
     const initialize = async () => {
       console.log('🔑 Checking saved auth credentials');
+      initUserStore();
       try {
         const uid = await SecureStore.getItemAsync('userId');
         const token = await getStoredToken();
         if (uid && token) {
           await loadUser(uid);
+          initUserStore();
           console.log('✅ Authenticated user', uid);
           const hasSeen = await SecureStore.getItemAsync(`hasSeenOnboarding-${uid}`);
           const route = hasSeen === 'true' ? 'Quote' : 'Onboarding';
           console.log('🔀 Initial route', route);
           setInitialRoute(route);
 
-          const { init } = await import('./App/utils/TokenManager');
-          init?.();
         } else {
           console.log('👤 No auth found, routing to Login');
           setInitialRoute('Login');
