@@ -1,7 +1,6 @@
 import { getStoredToken } from './authService';
 
-const PROJECT_ID = process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID;
-const REGION = process.env.EXPO_PUBLIC_FIREBASE_REGION || 'us-central1';
+const BASE_URL = process.env.EXPO_PUBLIC_FUNCTION_BASE_URL;
 
 export async function callFunction(name: string, data: any): Promise<any> {
   const idToken = await getStoredToken();
@@ -11,7 +10,7 @@ export async function callFunction(name: string, data: any): Promise<any> {
   }
 
   const res = await fetch(
-    `https://${REGION}-${PROJECT_ID}.cloudfunctions.net/${name}`,
+    `${BASE_URL}/${name}`,
     {
       method: 'POST',
       headers: {

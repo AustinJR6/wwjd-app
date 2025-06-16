@@ -15,8 +15,8 @@ build/
 firebase-debug.log
 .firebase/
 # Environment
-.env
 .env.*
+!.env.example
 
 # VSCode/Visual Studio files
 .vscode/

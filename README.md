@@ -50,6 +50,15 @@ Enable Anonymous Authentication
 Set up Firestore
 
 Firebase Setup uses the Expo-compatible Web SDK via the `firebase` package.
+
+### Environment Variables
+
+Create a `.env` file in the project root with the following entry so the app can
+reach your deployed Firebase functions from any network:
+
+```env
+EXPO_PUBLIC_FUNCTION_BASE_URL=https://us-central1-wwjd-app.cloudfunctions.net
+```
 📱 Key Features
 ✝️ 🕉️ ☪️ 🕎 Multi-Faith Reflection AI
 Dynamic prompts based on selected religion
