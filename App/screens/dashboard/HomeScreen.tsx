@@ -93,33 +93,13 @@ export default function HomeScreen({ navigation }: Props) {
         <View style={styles.buttonContainer}>
           <Button title="Religion AI" onPress={() => navigation.navigate('ReligionAI')} />
           <View style={styles.spacer} />
-          <Button title="Journal" onPress={() => navigation.navigate('Journal')} />
-          <View style={styles.spacer} />
           <Button title="Challenge" onPress={() => navigation.navigate('Challenge')} />
           <View style={styles.spacer} />
           <Button title="Confessional" onPress={() => navigation.navigate('Confessional')} />
           <View style={styles.spacer} />
-          <Button title="Buy Tokens" onPress={() => navigation.navigate('BuyTokens')} />
-          <View style={styles.spacer} />
-          <Button title="Upgrade to OneVine+" onPress={() => navigation.navigate('Upgrade')} />
-          <View style={styles.spacer} />
-          <Button title="Give Back" onPress={() => navigation.navigate('GiveBack')} />
-          <View style={styles.spacer} />
-          <Button title="Trivia Challenge" onPress={() => navigation.navigate('Trivia')} />
+          <Button title="Journal" onPress={() => navigation.navigate('Journal')} />
           <View style={styles.spacer} />
           <Button title="Leaderboards" onPress={() => navigation.navigate('Leaderboards')} />
-          <View style={styles.spacer} />
-          {subscribed && (
-            <>
-              <Button title="Submit Proof" onPress={() => navigation.navigate('SubmitProof')} />
-              <View style={styles.spacer} />
-            </>
-          )}
-          <Button title="Join Organization" onPress={() => navigation.navigate('JoinOrganization')} />
-          <View style={styles.spacer} />
-          {(isAdmin || isOrgManager) && (
-            <Button title="Manage Organization" onPress={() => navigation.navigate('OrganizationManagement')} />
-          )}
         </View>
       </ScrollView>
     </ScreenContainer>

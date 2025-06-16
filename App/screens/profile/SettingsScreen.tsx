@@ -8,6 +8,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/navigation/RootStackParamList';
 import { useSettingsStore } from "@/state/settingsStore";
+import { useUserStore } from "@/state/userStore";
 import { useTheme } from "@/components/theme/theme";
 
 export default function SettingsScreen() {
@@ -19,6 +20,7 @@ export default function SettingsScreen() {
     toggleNightStore();
   };
   const [changing, setChanging] = useState(false);
+  const clearUser = useUserStore((s) => s.clearUser);
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   const styles = React.useMemo(
@@ -59,6 +61,7 @@ export default function SettingsScreen() {
 
   const handleLogout = async () => {
     await logout();
+    clearUser();
     navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
   };
 
@@ -69,6 +72,11 @@ export default function SettingsScreen() {
           <Text style={styles.text}>Night Mode</Text>
           <Switch value={nightMode} onValueChange={toggleNight} />
         </View>
+        <Button title="Profile" onPress={() => navigation.navigate('Profile')} />
+        <Button title="Buy Tokens" onPress={() => navigation.navigate('BuyTokens')} />
+        <Button title="Upgrade" onPress={() => navigation.navigate('Upgrade')} />
+        <Button title="Join Organization" onPress={() => navigation.navigate('JoinOrganization')} />
+        <Button title="Give Back" onPress={() => navigation.navigate('GiveBack')} />
         <Button title="Change Password" onPress={handleChangePassword} loading={changing} />
         <Button title="Sign Out" onPress={handleLogout} />
         <Text style={styles.version}>v{Constants.expoConfig?.version}</Text>
