@@ -27,6 +27,7 @@ export const useChallengeStore = create<ChallengeStore>((set, get) => ({
     const newStreak = get().streak + 1;
     set({ streak: newStreak });
     get().updateStreakInFirestore();
+    return newStreak;
   },
 
   resetStreak: () => {
@@ -52,9 +53,11 @@ export const useChallengeStore = create<ChallengeStore>((set, get) => ({
     if (!uid) return;
 
     const { lastCompleted, streak } = get();
-    await setDocument(`completedChallenges/${uid}`, {
+    const payload = {
       lastCompleted: lastCompleted ? new Date(lastCompleted).toISOString() : new Date().toISOString(),
       streak,
-    });
+    };
+    await setDocument(`completedChallenges/${uid}`, payload);
+    await setDocument(`users/${uid}`, payload);
   },
 }));

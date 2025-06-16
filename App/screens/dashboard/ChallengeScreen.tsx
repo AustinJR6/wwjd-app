@@ -11,6 +11,7 @@ import Button from '@/components/common/Button';
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { useTheme } from "@/components/theme/theme";
 import { getTokenCount, setTokenCount } from "@/utils/TokenManager";
+import { showGracefulError } from '@/utils/gracefulError';
 import { ASK_GEMINI_SIMPLE } from "@/utils/constants";
 import { getDocument, setDocument } from '@/services/firestoreService';
 import { useUser } from '@/hooks/useUser';
@@ -52,6 +53,36 @@ export default function ChallengeScreen() {
   const syncStreak = useChallengeStore((s) => s.syncWithFirestore);
   const { user } = useUser();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+
+  const checkMilestoneReward = async (current: number) => {
+    const milestones = [3, 7, 14, 30];
+    if (!milestones.includes(current)) return;
+    const uid = await ensureAuth(user?.uid);
+    if (!uid) return;
+    try {
+      const userData = await getDocument(`users/${uid}`) || {};
+      const granted = userData.streakMilestones || {};
+      if (granted[current]) return;
+      const reward = current >= 30 ? 10 : current >= 14 ? 7 : 5;
+      const tokens = await getTokenCount();
+      await setTokenCount(tokens + reward);
+      await setDocument(`users/${uid}`, { [`streakMilestones.${current}`]: true });
+
+      const idToken = await getStoredToken();
+      const res = await fetch(ASK_GEMINI_SIMPLE, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
+        body: JSON.stringify({
+          prompt: `Provide a short blessing for a user who reached a ${current}-day spiritual challenge streak in the ${userData.religion || 'Christian'} tradition.`,
+        }),
+      });
+      const data = await res.json();
+      const blessing = data.response || "You’ve walked with discipline and devotion. This is your blessing.";
+      Alert.alert('Blessing!', `${blessing}\nYou earned ${reward} Grace Tokens.`);
+    } catch (err) {
+      console.error('❌ Milestone reward error:', err);
+    }
+  };
 
   const fetchChallenge = async () => {
     try {
@@ -105,7 +136,7 @@ export default function ChallengeScreen() {
       });
     } catch (err: any) {
       console.error('🔥 API Error:', err?.response?.data || err.message);
-      Alert.alert('Error', 'Something went wrong. Please try again.');
+      showGracefulError();
     } finally {
       setLoading(false);
     }
@@ -146,7 +177,7 @@ export default function ChallengeScreen() {
       fetchChallenge();
     } catch (error: any) {
       console.error('🔥 API Error:', error?.response?.data || error.message);
-      Alert.alert('Error', 'Something went wrong. Please try again.');
+      showGracefulError();
     }
   };
 
@@ -154,10 +185,11 @@ export default function ChallengeScreen() {
     const uid = await ensureAuth(user?.uid);
     if (!uid) return;
 
-    incrementStreak();
+    const newStreak = incrementStreak();
 
     const currentTokens = await getTokenCount();
     await setTokenCount(currentTokens + 1);
+    await checkMilestoneReward(newStreak);
 
     const userData = await getDocument(`users/${uid}`) || {};
     await setDocument(`users/${uid}`, {

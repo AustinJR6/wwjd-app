@@ -8,6 +8,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useUser } from '@/hooks/useUser';
 import { loadUser } from '@/services/userService';
 import { getStoredToken } from './App/services/authService';
+import StartupAnimation from './App/components/common/StartupAnimation';
 
 import { RootStackParamList } from './App/navigation/RootStackParamList';
 import { useTheme } from './App/components/theme/theme';
@@ -55,6 +56,7 @@ export default function App() {
   });
   const [initialRoute, setInitialRoute] = useState<keyof RootStackParamList | undefined>();
   const [checkingAuth, setCheckingAuth] = useState(true);
+  const [showAnim, setShowAnim] = useState(true);
 
   useEffect(() => {
     if (fontsLoaded) {
@@ -152,6 +154,7 @@ export default function App() {
           </>
         )}
       </Stack.Navigator>
+      {showAnim && <StartupAnimation onDone={() => setShowAnim(false)} />}
     </NavigationContainer>
   );
 }

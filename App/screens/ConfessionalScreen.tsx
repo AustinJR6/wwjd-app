@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -17,6 +17,7 @@ import { getDocument } from '@/services/firestoreService';
 import { useUser } from '@/hooks/useUser';
 import { getStoredToken } from '@/services/authService';
 import { ensureAuth } from '@/utils/authGuard';
+import { showGracefulError } from '@/utils/gracefulError';
 
 export default function ConfessionalScreen() {
   const theme = useTheme();
@@ -60,19 +61,31 @@ export default function ConfessionalScreen() {
           borderRadius: 12,
           fontStyle: 'italic',
         },
+        systemMsg: {
+          fontSize: 14,
+          color: theme.colors.fadedText,
+          marginBottom: 8,
+          width: '100%',
+        },
       }),
     [theme],
   );
-  const [confession, setConfession] = useState('');
-  const [response, setResponse] = useState('');
+  const [text, setText] = useState('');
+  const [messages, setMessages] = useState<{sender:'user'|'ai', text:string}[]>([]);
   const [loading, setLoading] = useState(false);
   const { user } = useUser();
 
+  useEffect(() => {
+    return () => setMessages([]);
+  }, []);
+
   const handleConfess = async () => {
-    if (!confession.trim()) {
+    if (!text.trim()) {
       Alert.alert('Please enter your confession.');
       return;
     }
+
+    if (messages.length >= 10) return;
 
     setLoading(true);
     try {
@@ -92,6 +105,9 @@ export default function ConfessionalScreen() {
                    'Spiritual Guide';
 
       const idToken = await getStoredToken();
+      const conversation = messages
+        .map((m) => `${m.sender === 'user' ? 'User' : role}: ${m.text}`)
+        .join('\n');
       const res = await fetch(ASK_GEMINI_SIMPLE, {
         method: 'POST',
         headers: {
@@ -99,16 +115,17 @@ export default function ConfessionalScreen() {
           Authorization: `Bearer ${idToken}`,
         },
         body: JSON.stringify({
-          prompt: `User confession: ${confession}\n${role}:`,
+          prompt: `${conversation}\nUser: ${text}\n${role}:`,
         }),
       });
 
       const data = await res.json();
       const answer = data.response || 'You are forgiven. Walk in peace.';
-      setResponse(answer);
+      setMessages((prev) => [...prev, { sender: 'user', text }, { sender: 'ai', text: answer }]);
+      setText('');
     } catch (err) {
       console.error('❌ Confession error:', err);
-      Alert.alert('Error', 'Could not process your confession. Please try again later.');
+      showGracefulError('Could not process your confession.');
     } finally {
       setLoading(false);
     }
@@ -121,15 +138,18 @@ export default function ConfessionalScreen() {
         <TextInput
           style={styles.input}
           placeholder="What's on your heart?"
-          value={confession}
-          onChangeText={setConfession}
+          value={text}
+          onChangeText={setText}
           multiline
         />
+        <Text style={styles.systemMsg}>This conversation is private and vanishes when you leave.</Text>
         <View style={styles.buttonWrap}>
-          <Button title="Confess" onPress={handleConfess} disabled={loading} />
+          <Button title="Send" onPress={handleConfess} disabled={loading || messages.length >= 10} />
         </View>
         {loading && <ActivityIndicator size="large" color={theme.colors.primary} />}
-        {response && <Text style={styles.response}>{response}</Text>}
+        {messages.map((m, idx) => (
+          <Text key={idx} style={styles.response}>{m.sender === 'user' ? 'You: ' : ''}{m.text}</Text>
+        ))}
       </ScrollView>
     </ScreenContainer>
   );

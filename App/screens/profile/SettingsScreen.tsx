@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Switch, Alert, LayoutAnimation } from 'react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import Constants from 'expo-constants';
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import Button from "@/components/common/Button";
@@ -11,11 +12,16 @@ import { useSettingsStore } from "@/state/settingsStore";
 import { useUserStore } from "@/state/userStore";
 import { useUser } from '@/hooks/useUser';
 import { useTheme } from "@/components/theme/theme";
+import { scheduleReflectionReminder, cancelReflectionReminder } from '@/utils/reminderNotification';
 
 export default function SettingsScreen() {
   const theme = useTheme();
   const { user } = useUser();
   const nightMode = useSettingsStore((s) => s.nightMode);
+  const reminderEnabled = useSettingsStore((s) => s.reminderEnabled);
+  const reminderTime = useSettingsStore((s) => s.reminderTime);
+  const setReminderEnabled = useSettingsStore((s) => s.setReminderEnabled);
+  const setReminderTime = useSettingsStore((s) => s.setReminderTime);
   const toggleNightStore = useSettingsStore((s) => s.toggleNightMode);
   const toggleNight = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -74,6 +80,39 @@ export default function SettingsScreen() {
           <Text style={styles.text}>Night Mode</Text>
           <Switch value={nightMode} onValueChange={toggleNight} />
         </View>
+        <View style={styles.row}>
+          <Text style={styles.text}>Enable Reflection Reminder</Text>
+          <Switch
+            value={reminderEnabled}
+            onValueChange={async (v) => {
+              setReminderEnabled(v);
+              if (v) {
+                await scheduleReflectionReminder(reminderTime);
+              } else {
+                await cancelReflectionReminder();
+              }
+            }}
+          />
+        </View>
+        {reminderEnabled && (
+          <View style={styles.row}>
+            <Text style={styles.text}>Time of Reminder</Text>
+            <DateTimePicker
+              value={new Date(`1970-01-01T${reminderTime}:00`)}
+              mode="time"
+              display="spinner"
+              onChange={(_, date) => {
+                if (date) {
+                  const h = date.getHours().toString().padStart(2, '0');
+                  const m = date.getMinutes().toString().padStart(2, '0');
+                  const t = `${h}:${m}`;
+                  setReminderTime(t);
+                  scheduleReflectionReminder(t);
+                }
+              }}
+            />
+          </View>
+        )}
         {user ? (
           <>
             <Button title="Profile" onPress={() => navigation.navigate('Profile')} />
