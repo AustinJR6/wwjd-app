@@ -6,6 +6,7 @@ import { useTheme } from "@/components/theme/theme";
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from "@/navigation/RootStackParamList";
 import { useUser } from '@/hooks/useUser';
+import { createStripeCheckout } from '@/services/apiService';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'GiveBack'>;
 
@@ -43,30 +44,13 @@ export default function GiveBackScreen({ navigation }: Props) {
     try {
       if (!user) return;
 
-      const res = await fetch('https://us-central1-wwjd-app.cloudfunctions.net/createCheckoutSession', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          uid: user.uid,
-          type: 'one-time',
-          amount,
-        }),
+      const url = await createStripeCheckout(user.uid, {
+        type: 'one-time',
+        amount,
       });
 
-      const rawText = await res.text();
-      console.log('🔥 Raw response:', rawText);
-      let data: any;
-      try {
-        data = JSON.parse(rawText);
-      } catch {
-        Alert.alert('Error', 'Unexpected server response.');
-        return;
-      }
-
-      if (data.url) {
-        Linking.openURL(data.url);
+      if (url) {
+        Linking.openURL(url);
       } else {
         Alert.alert('Error', 'Something went wrong. Please try again.');
       }

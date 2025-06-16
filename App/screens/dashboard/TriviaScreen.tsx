@@ -45,7 +45,9 @@ export default function TriviaScreen() {
   );
   const [story, setStory] = useState('');
   const [answer, setAnswer] = useState('');
+  const [storyGuess, setStoryGuess] = useState('');
   const [correctReligion, setCorrectReligion] = useState('');
+  const [correctStory, setCorrectStory] = useState('');
   const [loading, setLoading] = useState(false);
   const [revealed, setRevealed] = useState(false);
 
@@ -72,15 +74,17 @@ export default function TriviaScreen() {
           Authorization: `Bearer ${idToken}`
         },
         body: JSON.stringify({
-          prompt: `Give me a short moral story originally from any major world religion. Replace all real names and locations with fictional ones so that it seems to come from a different culture or context. Keep the meaning and lesson of the story intact. At the end, include a line that says REVEAL: followed by the actual religion.`
+          prompt: `Give me a short moral story originally from any major world religion. Replace all real names and locations with fictional ones so that it seems to come from a different culture. Keep the meaning and lesson intact. After the story, add two lines: RELIGION: <religion> and STORY: <story name>.`
         })
       });
 
       const data = await response.json();
-      const [cleanStory, religion] = data.response.split('\nREVEAL:');
+      const [cleanStory, info] = data.response.split('\nRELIGION:');
+      const [religionLine, storyLine] = info?.split('\nSTORY:') || [];
 
       setStory(cleanStory.trim());
-      setCorrectReligion(religion?.trim());
+      setCorrectReligion(religionLine?.trim() || '');
+      setCorrectStory(storyLine?.trim() || '');
     } catch (err) {
       console.error('❌ Trivia fetch error:', err);
       Alert.alert('Error', 'Could not load trivia. Please try again later.');
@@ -90,34 +94,52 @@ export default function TriviaScreen() {
   };
 
   const submitAnswer = async () => {
-    if (!answer) return;
+    if (!answer && !storyGuess) return;
 
     const uid = await ensureAuth(user?.uid);
     if (!uid) return;
 
     setRevealed(true);
 
-    const isCorrect =
-      correctReligion && answer.toLowerCase().includes(correctReligion.toLowerCase());
+    const religionCorrect =
+      correctReligion && answer.trim().toLowerCase() === correctReligion.toLowerCase();
+    const storyCorrect =
+      correctStory && storyGuess.trim().toLowerCase().includes(correctStory.toLowerCase());
 
     try {
       const userData = await getDocument(`users/${uid}`) || {};
+      const earned = (religionCorrect ? 1 : 0) + (storyCorrect ? 5 : 0);
 
-      if (isCorrect) {
+      if (earned > 0) {
         await setDocument(`users/${uid}`, {
-          individualPoints: (userData.individualPoints || 0) + 10,
+          individualPoints: (userData.individualPoints || 0) + earned,
         });
 
         await setDocument(`completedChallenges/${uid}`, {
           lastTrivia: new Date().toISOString(),
           triviaCompleted: true,
         });
+
+        if (userData.religion) {
+          const relData = await getDocument(`religions/${userData.religion}`);
+          await setDocument(`religions/${userData.religion}`, {
+            totalPoints: (relData?.totalPoints || 0) + earned,
+          });
+        }
+
+        if (userData.organizationId) {
+          const orgData = await getDocument(`organizations/${userData.organizationId}`);
+          await setDocument(`organizations/${userData.organizationId}`, {
+            totalPoints: (orgData?.totalPoints || 0) + earned,
+          });
+        }
       }
 
-      Alert.alert(
-        isCorrect ? 'Correct!' : 'Not quite',
-        `The story was from: ${correctReligion}`
-      );
+      const msg = `Religion guess ${religionCorrect ? 'correct' : 'wrong'}\n` +
+        `Story guess ${storyCorrect ? 'correct' : 'wrong'}\n` +
+        `Correct religion: ${correctReligion}\nCorrect story: ${correctStory}`;
+
+      Alert.alert('Trivia Result', msg);
     } catch (err) {
       console.error('❌ Point update or challenge log failed:', err);
       Alert.alert('Error', 'Could not update your progress. Try again.');
@@ -142,6 +164,12 @@ export default function TriviaScreen() {
               placeholder="Guess the religion"
               value={answer}
               onChangeText={setAnswer}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Guess the exact story"
+              value={storyGuess}
+              onChangeText={setStoryGuess}
             />
             <Button title="Submit Guess" onPress={submitAnswer} />
           </>

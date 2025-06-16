@@ -73,11 +73,51 @@ export async function changePassword(newPassword: string): Promise<void> {
   }
 }
 
-// ✅ Get stored token (if any)
+// ✅ Refresh ID token using the stored refreshToken
+export async function refreshIdToken(): Promise<string> {
+  const refreshToken = await SecureStore.getItemAsync('refreshToken');
+  if (!refreshToken) {
+    throw new Error('Missing refresh token');
+  }
+  const res = await axios.post(
+    `https://securetoken.googleapis.com/v1/token?key=${API_KEY}`,
+    {
+      grant_type: 'refresh_token',
+      refresh_token: refreshToken,
+    },
+  );
+  const { id_token, refresh_token, user_id, email } = res.data;
+  await SecureStore.setItemAsync('idToken', id_token);
+  await SecureStore.setItemAsync('refreshToken', refresh_token);
+  if (user_id) await SecureStore.setItemAsync('userId', String(user_id));
+  if (email) await SecureStore.setItemAsync('email', email);
+  return id_token as string;
+}
+
+// ✅ Get stored token (if any) and refresh if expired
 export async function getStoredToken(): Promise<string | null> {
-  const token = await SecureStore.getItemAsync('idToken');
+  let token = await SecureStore.getItemAsync('idToken');
   if (!token) {
     console.warn('🚫 idToken missing from SecureStore');
+    return null;
+  }
+  try {
+    const payload = JSON.parse(
+      typeof atob === 'function'
+        ? atob(token.split('.')[1])
+        : Buffer.from(token.split('.')[1], 'base64').toString('utf8'),
+    );
+    if (payload.exp * 1000 < Date.now()) {
+      token = await refreshIdToken();
+    }
+  } catch {
+    // If decode fails, try refreshing to be safe
+    try {
+      token = await refreshIdToken();
+    } catch (err) {
+      console.warn('Unable to refresh token', err);
+      return null;
+    }
   }
   return token;
 }

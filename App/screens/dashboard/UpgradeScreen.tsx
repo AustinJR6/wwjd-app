@@ -7,6 +7,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from "@/navigation/RootStackParamList";
 import { useUser } from '@/hooks/useUser';
 import * as SecureStore from 'expo-secure-store';
+import { createStripeCheckout } from '@/services/apiService';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Upgrade'>;
 
@@ -62,32 +63,9 @@ export default function UpgradeScreen({ navigation }: Props) {
         return;
       }
 
-      const res = await fetch(
-        'https://us-central1-wwjd-app.cloudfunctions.net/createCheckoutSession',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            uid: user.uid,
-            type: 'subscription',
-          }),
-        }
-      );
-
-      const rawText = await res.text();
-      console.log('🔥 OneVine+ raw response:', rawText);
-      let data: any;
-      try {
-        data = JSON.parse(rawText);
-      } catch {
-        Alert.alert('Error', 'Unexpected server response.');
-        return;
-      }
-
-      if (data.url) {
-        Linking.openURL(data.url);
+      const url = await createStripeCheckout(user.uid, { type: 'subscription' });
+      if (url) {
+        Linking.openURL(url);
       } else {
         Alert.alert('Error', 'Something went wrong. Please try again.');
       }
