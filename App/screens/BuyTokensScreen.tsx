@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, Alert } from 'react-native';
+import { View, Text, StyleSheet, Alert, Linking } from 'react-native';
 import Button from '@/components/common/Button';
 import { useUser } from '@/hooks/useUser';
 import { createStripeCheckout } from '@/services/apiService';
