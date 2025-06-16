@@ -13,7 +13,7 @@ import { uploadImage } from '@/services/storageService';
 import { addDocument } from '@/services/firestoreService';
 import { useUser } from "@/hooks/useUser";
 import ScreenContainer from "@/components/theme/ScreenContainer";
-import { theme } from "@/components/theme/theme";
+import { useTheme } from "@/components/theme/theme";
 import { ensureAuth } from '@/utils/authGuard';
 import * as SecureStore from 'expo-secure-store';
 import { useNavigation } from '@react-navigation/native';
@@ -21,6 +21,25 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/navigation/RootStackParamList';
 
 export default function SubmitProofScreen() {
+  const theme = useTheme();
+  const styles = React.useMemo(
+    () =>
+      StyleSheet.create({
+        container: { paddingBottom: 64 },
+        input: {
+          borderWidth: 1,
+          borderColor: theme.colors.border,
+          borderRadius: 8,
+          padding: 12,
+          marginBottom: 12,
+          backgroundColor: theme.colors.surface,
+          color: theme.colors.text,
+        },
+        preview: { marginVertical: 12, width: '100%', height: 200 },
+        buttonWrap: { marginVertical: 8 },
+      }),
+    [theme],
+  );
   const { user } = useUser();
   const [caption, setCaption] = useState('');
   const [image, setImage] = useState<any>(null);
@@ -120,31 +139,4 @@ export default function SubmitProofScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    color: theme.colors.primary,
-    marginBottom: 16
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 12,
-    backgroundColor: theme.colors.surface,
-    color: theme.colors.text
-  },
-  filename: {
-    fontSize: 14,
-    color: theme.colors.fadedText,
-    marginVertical: 8,
-    textAlign: 'center'
-  },
-  buttonWrap: {
-    marginTop: 20
-  }
-});
 

@@ -11,7 +11,7 @@ import Button from '@/components/common/Button';
 import { getDocument, setDocument } from '@/services/firestoreService';
 import { useUser } from '@/hooks/useUser';
 import ScreenContainer from '@/components/theme/ScreenContainer';
-import { theme } from '@/components/theme/theme';
+import { useTheme } from '@/components/theme/theme';
 import { ensureAuth } from '@/utils/authGuard';
 import * as SecureStore from 'expo-secure-store';
 import { useNavigation } from '@react-navigation/native';
@@ -19,6 +19,28 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/navigation/RootStackParamList';
 
 export default function OrganizationManagementScreen() {
+  const theme = useTheme();
+  const styles = React.useMemo(
+    () =>
+      StyleSheet.create({
+        container: { paddingBottom: 64 },
+        title: {
+          fontSize: 20,
+          fontWeight: 'bold',
+          marginBottom: 16,
+          textAlign: 'center',
+          color: theme.colors.primary,
+        },
+        item: {
+          padding: 12,
+          borderBottomWidth: 1,
+          borderColor: theme.colors.border,
+        },
+        itemText: { color: theme.colors.text },
+        buttonWrap: { marginTop: 24, alignItems: 'center' },
+      }),
+    [theme],
+  );
   const { user } = useUser();
   const [org, setOrg] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -131,38 +153,3 @@ export default function OrganizationManagementScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 8,
-    color: theme.colors.primary,
-  },
-  subtitle: {
-    fontSize: 16,
-    textAlign: 'center',
-    marginBottom: 12,
-    color: theme.colors.text,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginTop: 20,
-    marginBottom: 10,
-    color: theme.colors.accent,
-  },
-  row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ddd',
-  },
-  memberText: {
-    flex: 1,
-    fontSize: 16,
-    color: theme.colors.text,
-  },
-});

@@ -8,7 +8,7 @@ import { loadUser } from '@/services/userService';
 import { getStoredToken } from './App/services/authService';
 
 import { RootStackParamList } from './App/navigation/RootStackParamList';
-import { theme } from './App/components/theme/theme';
+import { useTheme } from './App/components/theme/theme';
 
 // Auth Screens
 import LoginScreen from './App/screens/auth/LoginScreen';
@@ -47,6 +47,7 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export default function App() {
   const { user } = useUser();
+  const theme = useTheme();
   const [initialRoute, setInitialRoute] = useState<keyof RootStackParamList | undefined>();
   const [checkingAuth, setCheckingAuth] = useState(true);
 

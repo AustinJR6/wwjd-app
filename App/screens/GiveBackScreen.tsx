@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, Alert, Linking } from 'react-native';
 import Button from '@/components/common/Button';
 import ScreenContainer from "@/components/theme/ScreenContainer";
-import { theme } from "@/components/theme/theme";
+import { useTheme } from "@/components/theme/theme";
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from "@/navigation/RootStackParamList";
 import { useUser } from '@/hooks/useUser';
@@ -10,6 +10,30 @@ import { useUser } from '@/hooks/useUser';
 type Props = NativeStackScreenProps<RootStackParamList, 'GiveBack'>;
 
 export default function GiveBackScreen({ navigation }: Props) {
+  const theme = useTheme();
+  const styles = React.useMemo(
+    () =>
+      StyleSheet.create({
+        content: { flex: 1, justifyContent: 'center' },
+        title: {
+          fontSize: 26,
+          fontWeight: 'bold',
+          textAlign: 'center',
+          marginBottom: 8,
+          color: theme.colors.primary,
+        },
+        subtitle: {
+          fontSize: 16,
+          textAlign: 'center',
+          marginBottom: 24,
+          color: theme.colors.text,
+        },
+        donateWrap: { marginBottom: 16, alignItems: 'center' },
+        price: { color: theme.colors.accent, fontWeight: '600' },
+        buttonWrap: { marginTop: 32, alignItems: 'center' },
+      }),
+    [theme],
+  );
   const [donating, setDonating] = useState(false);
   const { user } = useUser();
 
@@ -82,48 +106,4 @@ export default function GiveBackScreen({ navigation }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  content: {
-    flex: 1,
-    justifyContent: 'center',
-  },
-  title: {
-    fontSize: 26,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 8,
-    color: theme.colors.primary,
-  },
-  subtitle: {
-    fontSize: 16,
-    textAlign: 'center',
-    color: theme.colors.text,
-    marginBottom: 24,
-    paddingHorizontal: 20,
-  },
-  section: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginTop: 16,
-    marginBottom: 8,
-    textAlign: 'center',
-    color: theme.colors.accent,
-  },
-  buttonGroup: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginBottom: 16,
-  },
-  note: {
-    fontSize: 14,
-    color: theme.colors.fadedText,
-    textAlign: 'center',
-    paddingHorizontal: 24,
-    marginTop: 12,
-  },
-  backWrap: {
-    marginTop: 32,
-    alignItems: 'center',
-  },
-});
 

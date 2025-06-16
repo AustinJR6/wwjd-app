@@ -4,9 +4,22 @@ import ScreenContainer from '@/components/theme/ScreenContainer';
 import TextField from '@/components/TextField';
 import Button from '@/components/common/Button';
 import { resetPassword } from '@/services/authService';
-import { theme } from '@/components/theme/theme';
+import { useTheme } from '@/components/theme/theme';
 
 export default function ForgotPasswordScreen() {
+  const theme = useTheme();
+  const styles = React.useMemo(
+    () =>
+      StyleSheet.create({
+        title: {
+          fontSize: 24,
+          fontWeight: '700',
+          color: theme.colors.text,
+          marginBottom: 20,
+        },
+      }),
+    [theme],
+  );
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -35,11 +48,3 @@ export default function ForgotPasswordScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: theme.colors.text,
-    marginBottom: 20,
-  },
-});

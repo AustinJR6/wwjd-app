@@ -8,10 +8,32 @@ import {
 } from 'react-native';
 import { queryCollection } from '@/services/firestoreService';
 import ScreenContainer from "@/components/theme/ScreenContainer";
-import { theme } from "@/components/theme/theme";
+import { useTheme } from "@/components/theme/theme";
 import { ensureAuth } from '@/utils/authGuard';
 
 export default function LeaderboardsScreen() {
+  const theme = useTheme();
+  const styles = React.useMemo(
+    () =>
+      StyleSheet.create({
+        container: { paddingBottom: 64 },
+        title: {
+          fontSize: 20,
+          fontWeight: 'bold',
+          marginBottom: 16,
+          textAlign: 'center',
+          color: theme.colors.primary,
+        },
+        item: {
+          marginBottom: 8,
+          padding: 12,
+          backgroundColor: theme.colors.surface,
+          borderRadius: 8,
+        },
+        itemText: { color: theme.colors.text },
+      }),
+    [theme],
+  );
   const [individuals, setIndividuals] = useState<any[]>([]);
   const [religions, setReligions] = useState<any[]>([]);
   const [organizations, setOrganizations] = useState<any[]>([]);
@@ -75,43 +97,4 @@ export default function LeaderboardsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    padding: 20
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    color: theme.colors.primary,
-    marginBottom: 20
-  },
-  section: {
-    marginBottom: 24
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: theme.colors.accent,
-    marginBottom: 8
-  },
-  row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 6,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee'
-  },
-  rank: {
-    width: 24,
-    fontWeight: 'bold'
-  },
-  name: {
-    flex: 1,
-    fontSize: 16
-  },
-  points: {
-    fontWeight: '600'
-  }
-});
 

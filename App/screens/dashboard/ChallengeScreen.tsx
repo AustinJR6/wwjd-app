@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import Button from '@/components/common/Button';
 import ScreenContainer from "@/components/theme/ScreenContainer";
-import { theme } from "@/components/theme/theme";
+import { useTheme } from "@/components/theme/theme";
 import { getTokenCount, setTokenCount } from "@/utils/TokenManager";
 import { ASK_GEMINI_SIMPLE } from "@/utils/constants";
 import { getDocument, setDocument } from '@/services/firestoreService';
@@ -22,6 +22,26 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/navigation/RootStackParamList';
 
 export default function ChallengeScreen() {
+  const theme = useTheme();
+  const styles = React.useMemo(
+    () =>
+      StyleSheet.create({
+        container: { paddingBottom: 64 },
+        title: {
+          fontSize: 20,
+          fontWeight: 'bold',
+          marginBottom: 12,
+          color: theme.colors.primary,
+        },
+        challengeText: {
+          fontSize: 16,
+          marginBottom: 12,
+          color: theme.colors.text,
+        },
+        buttonWrap: { marginVertical: 8 },
+      }),
+    [theme],
+  );
   const [challenge, setChallenge] = useState('');
   const [loading, setLoading] = useState(false);
   const [canSkip, setCanSkip] = useState(true);
@@ -144,26 +164,4 @@ export default function ChallengeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    padding: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: theme.colors.primary,
-    marginBottom: 16,
-  },
-  challenge: {
-    fontSize: 18,
-    color: theme.colors.text,
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  buttonWrap: {
-    marginTop: 20,
-  },
-});
 

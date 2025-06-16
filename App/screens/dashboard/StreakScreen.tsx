@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import Button from '@/components/common/Button';
 import ScreenContainer from "@/components/theme/ScreenContainer";
-import { theme } from "@/components/theme/theme";
+import { useTheme } from "@/components/theme/theme";
 import { ASK_GEMINI_SIMPLE } from "@/utils/constants";
 import { getDocument, setDocument } from '@/services/firestoreService';
 import { useUser } from '@/hooks/useUser';
@@ -21,6 +21,22 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/navigation/RootStackParamList';
 
 export default function StreakScreen() {
+  const theme = useTheme();
+  const styles = React.useMemo(
+    () =>
+      StyleSheet.create({
+        container: { paddingBottom: 64 },
+        title: {
+          fontSize: 20,
+          fontWeight: 'bold',
+          marginBottom: 12,
+          color: theme.colors.primary,
+        },
+        streakText: { marginBottom: 12, color: theme.colors.text },
+        buttonWrap: { marginVertical: 8 },
+      }),
+    [theme],
+  );
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [streak, setStreak] = useState(0);
@@ -119,32 +135,4 @@ export default function StreakScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    padding: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: theme.colors.primary,
-    marginBottom: 12,
-  },
-  streak: {
-    fontSize: 20,
-    color: theme.colors.accent,
-    marginBottom: 20,
-  },
-  message: {
-    fontSize: 18,
-    textAlign: 'center',
-    marginVertical: 16,
-    color: theme.colors.text,
-  },
-  buttonWrap: {
-    marginTop: 16,
-    width: '100%',
-  },
-});
 

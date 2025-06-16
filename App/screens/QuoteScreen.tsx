@@ -2,13 +2,34 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import Button from '@/components/common/Button';
 import ScreenContainer from "@/components/theme/ScreenContainer";
-import { theme } from "@/components/theme/theme";
+import { useTheme } from "@/components/theme/theme";
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from "@/navigation/RootStackParamList";
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Quote'>;
 
 export default function QuoteScreen({ navigation }: Props) {
+  const theme = useTheme();
+  const styles = React.useMemo(
+    () =>
+      StyleSheet.create({
+        content: { flex: 1, justifyContent: 'center' },
+        verse: {
+          fontSize: 20,
+          textAlign: 'center',
+          marginBottom: 16,
+          color: theme.colors.text,
+        },
+        reference: {
+          fontSize: 16,
+          textAlign: 'center',
+          marginBottom: 24,
+          color: theme.colors.fadedText,
+        },
+        buttonWrap: { alignItems: 'center' },
+      }),
+    [theme],
+  );
   const [quote, setQuote] = useState<{ text: string; reference: string }>({
     text: '',
     reference: '',
@@ -69,32 +90,4 @@ export default function QuoteScreen({ navigation }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  content: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  quote: {
-    fontSize: 22,
-    fontStyle: 'italic',
-    color: theme.colors.text,
-    textAlign: 'center',
-    marginBottom: 16,
-  },
-  reference: {
-    fontSize: 16,
-    color: theme.colors.fadedText,
-    marginBottom: 32,
-    textAlign: 'center',
-  },
-  buttonWrap: {
-    width: 160,
-  },
-  center: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-});
 

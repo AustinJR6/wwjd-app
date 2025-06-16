@@ -3,13 +3,57 @@ import { View, Text, StyleSheet, Alert } from 'react-native';
 import Button from '@/components/common/Button';
 import { setTokenCount, getTokenCount } from "@/utils/TokenManager";
 import ScreenContainer from "@/components/theme/ScreenContainer";
-import { theme } from "@/components/theme/theme";
+import { useTheme } from "@/components/theme/theme";
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from "@/navigation/RootStackParamList";
 
 type Props = NativeStackScreenProps<RootStackParamList, 'BuyTokens'>;
 
 export default function BuyTokensScreen({ navigation }: Props) {
+  const theme = useTheme();
+  const styles = React.useMemo(
+    () =>
+      StyleSheet.create({
+        content: {
+          flex: 1,
+          justifyContent: 'center',
+        },
+        title: {
+          fontSize: 26,
+          fontWeight: 'bold',
+          textAlign: 'center',
+          marginBottom: 8,
+          color: theme.colors.primary,
+        },
+        subtitle: {
+          fontSize: 16,
+          textAlign: 'center',
+          color: theme.colors.text,
+          marginBottom: 32,
+        },
+        pack: {
+          marginBottom: 24,
+          padding: 16,
+          backgroundColor: theme.colors.surface,
+          borderRadius: 10,
+        },
+        amount: {
+          fontSize: 18,
+          marginBottom: 8,
+          textAlign: 'center',
+          color: theme.colors.text,
+        },
+        price: {
+          color: theme.colors.accent,
+          fontWeight: '600',
+        },
+        buttonWrap: {
+          marginTop: 32,
+          alignItems: 'center',
+        },
+      }),
+    [theme],
+  );
   const purchase = async (amount: number) => {
     const current = await getTokenCount();
     const newTotal = current + amount;
@@ -54,43 +98,4 @@ export default function BuyTokensScreen({ navigation }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  content: {
-    flex: 1,
-    justifyContent: 'center',
-  },
-  title: {
-    fontSize: 26,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 8,
-    color: theme.colors.primary,
-  },
-  subtitle: {
-    fontSize: 16,
-    textAlign: 'center',
-    color: theme.colors.text,
-    marginBottom: 32,
-  },
-  pack: {
-    marginBottom: 24,
-    padding: 16,
-    backgroundColor: theme.colors.surface,
-    borderRadius: 10,
-  },
-  amount: {
-    fontSize: 18,
-    marginBottom: 8,
-    textAlign: 'center',
-    color: theme.colors.text,
-  },
-  price: {
-    color: theme.colors.accent,
-    fontWeight: '600',
-  },
-  buttonWrap: {
-    marginTop: 32,
-    alignItems: 'center',
-  },
-});
 

@@ -1,7 +1,7 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { theme } from "@/components/theme/theme";
+import { useTheme } from "@/components/theme/theme";
 
 // Screens
 import HomeScreen from "@/screens/dashboard/HomeScreen";
@@ -17,6 +17,7 @@ import LeaderboardsScreen from "@/screens/dashboard/LeaderboardScreen";
 const Tab = createBottomTabNavigator();
 
 export default function MainTabNavigator() {
+  const theme = useTheme();
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({

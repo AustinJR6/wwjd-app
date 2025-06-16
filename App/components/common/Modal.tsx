@@ -1,6 +1,6 @@
 import React from 'react'
 import { Modal as RNModal, View, Text, StyleSheet, TouchableOpacity } from 'react-native'
-import { theme } from "@/components/theme/theme"
+import { useTheme } from "@/components/theme/theme"
 
 interface ModalProps {
   visible: boolean
@@ -10,6 +10,42 @@ interface ModalProps {
 }
 
 export default function Modal({ visible, title, onClose, children }: ModalProps) {
+  const theme = useTheme();
+  const styles = React.useMemo(
+    () =>
+      StyleSheet.create({
+        overlay: {
+          flex: 1,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          justifyContent: 'center',
+          alignItems: 'center',
+        },
+        container: {
+          width: '85%',
+          backgroundColor: theme.colors.card,
+          borderRadius: 15,
+          padding: 20,
+          elevation: 10,
+        },
+        title: {
+          fontSize: 18,
+          fontWeight: 'bold',
+          marginBottom: 10,
+          color: theme.colors.text,
+        },
+        content: {
+          marginBottom: 20,
+        },
+        close: {
+          alignSelf: 'flex-end',
+        },
+        closeText: {
+          color: theme.colors.primary,
+          fontWeight: '600',
+        },
+      }),
+    [theme],
+  );
   return (
     <RNModal animationType="slide" transparent visible={visible}>
       <View style={styles.overlay}>
@@ -25,35 +61,4 @@ export default function Modal({ visible, title, onClose, children }: ModalProps)
   )
 }
 
-const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center'
-  },
-  container: {
-    width: '85%',
-    backgroundColor: theme.colors.card,
-    borderRadius: 15,
-    padding: 20,
-    elevation: 10
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 10,
-    color: theme.colors.text
-  },
-  content: {
-    marginBottom: 20
-  },
-  close: {
-    alignSelf: 'flex-end'
-  },
-  closeText: {
-    color: theme.colors.primary,
-    fontWeight: '600'
-  }
-})
 

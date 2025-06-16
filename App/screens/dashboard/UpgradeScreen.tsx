@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, Alert, Linking } from 'react-native';
 import Button from '@/components/common/Button';
 import ScreenContainer from "@/components/theme/ScreenContainer";
-import { theme } from "@/components/theme/theme";
+import { useTheme } from "@/components/theme/theme";
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from "@/navigation/RootStackParamList";
 import { useUser } from '@/hooks/useUser';
@@ -11,6 +11,37 @@ import * as SecureStore from 'expo-secure-store';
 type Props = NativeStackScreenProps<RootStackParamList, 'Upgrade'>;
 
 export default function UpgradeScreen({ navigation }: Props) {
+  const theme = useTheme();
+  const styles = React.useMemo(
+    () =>
+      StyleSheet.create({
+        content: { flex: 1, justifyContent: 'center' },
+        title: {
+          fontSize: 26,
+          fontWeight: 'bold',
+          textAlign: 'center',
+          color: theme.colors.primary,
+          marginBottom: 8,
+        },
+        subtitle: {
+          fontSize: 16,
+          textAlign: 'center',
+          marginBottom: 24,
+          color: theme.colors.text,
+        },
+        benefitsBox: { marginBottom: 24, paddingHorizontal: 8 },
+        benefit: { fontSize: 16, marginBottom: 8, color: theme.colors.text },
+        price: {
+          fontSize: 20,
+          fontWeight: '600',
+          textAlign: 'center',
+          marginBottom: 24,
+          color: theme.colors.accent,
+        },
+        buttonWrap: { marginVertical: 12, alignItems: 'center' },
+      }),
+    [theme],
+  );
   const [loading, setLoading] = useState(false);
   const { user } = useUser();
 
@@ -95,43 +126,4 @@ export default function UpgradeScreen({ navigation }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
-  content: {
-    flex: 1,
-    justifyContent: 'center',
-  },
-  title: {
-    fontSize: 26,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    color: theme.colors.primary,
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 16,
-    textAlign: 'center',
-    marginBottom: 24,
-    color: theme.colors.text,
-  },
-  benefitsBox: {
-    marginBottom: 24,
-    paddingHorizontal: 8,
-  },
-  benefit: {
-    fontSize: 16,
-    marginBottom: 8,
-    color: theme.colors.text,
-  },
-  price: {
-    fontSize: 20,
-    fontWeight: '600',
-    textAlign: 'center',
-    marginBottom: 24,
-    color: theme.colors.accent,
-  },
-  buttonWrap: {
-    marginVertical: 12,
-    alignItems: 'center',
-  },
-});
 
