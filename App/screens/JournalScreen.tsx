@@ -18,6 +18,7 @@ import { showGracefulError } from '@/utils/gracefulError';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { queryCollection, addDocument, getDocument, setDocument } from '@/services/firestoreService';
 import { ensureAuth } from '@/utils/authGuard';
+import { useUserDataStore } from '@/state/userDataStore';
 import * as SecureStore from 'expo-secure-store';
 import { getStoredToken } from '@/services/authService';
 import { useNavigation } from '@react-navigation/native';
@@ -27,6 +28,7 @@ import { getPromptsForReligion } from '@/utils/guidedPrompts';
 
 export default function JournalScreen() {
   const theme = useTheme();
+  const user = useUserDataStore((s) => s.userProfile);
   const styles = React.useMemo(
     () =>
       StyleSheet.create({
@@ -165,8 +167,7 @@ export default function JournalScreen() {
           { fieldPath: 'userId', op: 'EQUAL', value: uid }
         );
         setEntries(list);
-        const userData = await getDocument(`users/${uid}`);
-        setReligion(userData?.religion || '');
+        setReligion(user?.religion || '');
       } catch (err: any) {
         console.error('🔥 API Error:', err?.response?.data || err.message);
       } finally {
@@ -229,16 +230,17 @@ export default function JournalScreen() {
         individualPoints: (userData.individualPoints || 0) + 2,
       });
 
-      if (userData.religion) {
-        const relData = await getDocument(`religions/${userData.religion}`);
-        await setDocument(`religions/${userData.religion}`, {
+      const religion = user?.religion;
+      if (religion) {
+        const relData = await getDocument(`religions/${religion}`);
+        await setDocument(`religions/${religion}`, {
           totalPoints: (relData?.totalPoints || 0) + 2,
         });
       }
 
-      if (userData.organizationId) {
-        const orgData = await getDocument(`organizations/${userData.organizationId}`);
-        await setDocument(`organizations/${userData.organizationId}`, {
+      if (user?.organizationId) {
+        const orgData = await getDocument(`organizations/${user.organizationId}`);
+        await setDocument(`organizations/${user.organizationId}`, {
           totalPoints: (orgData?.totalPoints || 0) + 2,
         });
       }

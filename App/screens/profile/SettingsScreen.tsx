@@ -9,7 +9,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/navigation/RootStackParamList';
 import { useSettingsStore } from "@/state/settingsStore";
-import { useUserStore } from "@/state/userStore";
+import { useUserDataStore } from "@/state/userDataStore";
 import { useUser } from '@/hooks/useUser';
 import { useTheme } from "@/components/theme/theme";
 import { scheduleReflectionReminder, cancelReflectionReminder } from '@/utils/reminderNotification';
@@ -28,7 +28,7 @@ export default function SettingsScreen() {
     toggleNightStore();
   };
   const [changing, setChanging] = useState(false);
-  const clearUser = useUserStore((s) => s.clearUser);
+  const clearUser = useUserDataStore((s) => s.clear);
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   const styles = React.useMemo(

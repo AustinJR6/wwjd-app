@@ -4,7 +4,8 @@ import Button from '@/components/common/Button';
 import * as SecureStore from 'expo-secure-store';
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { useTheme } from "@/components/theme/theme";
-import { getTokenCount, syncSubscriptionStatus } from "@/utils/TokenManager";
+import { syncSubscriptionStatus } from "@/utils/TokenManager";
+import { useUserDataStore } from '@/state/userDataStore';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from "@/navigation/RootStackParamList";
 
@@ -17,19 +18,19 @@ export default function HomeScreen({ navigation }: Props) {
   const [isOrgManager, setIsOrgManager] = useState<boolean>(false);
 
   const theme = useTheme();
+  const tokenCount = useUserDataStore((s) => s.tokenCount);
   useEffect(() => {
     const loadData = async () => {
-      const t = await getTokenCount();
-      await syncSubscriptionStatus(); // updates Firestore token state
-      setTokens(t);
-      setSubscribed(t >= 9999); // 9999 token cap implies OneVine+ sub
+      await syncSubscriptionStatus();
+      setTokens(tokenCount);
+      setSubscribed(tokenCount >= 9999);
       const adminFlag = await SecureStore.getItemAsync('isAdmin');
       const managerFlag = await SecureStore.getItemAsync('isOrgManager');
       setIsAdmin(adminFlag === 'true');
       setIsOrgManager(managerFlag === 'true');
     };
     loadData();
-  }, []);
+  }, [tokenCount]);
 
   const styles = React.useMemo(
     () =>

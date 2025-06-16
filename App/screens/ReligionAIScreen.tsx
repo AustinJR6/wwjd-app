@@ -11,7 +11,8 @@ import {
 import Button from '@/components/common/Button';
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { useTheme } from "@/components/theme/theme";
-import { getTokenCount, setTokenCount } from "@/utils/TokenManager";
+import { setTokenCount } from "@/utils/TokenManager";
+import { useUserDataStore } from '@/state/userDataStore';
 import { showGracefulError } from '@/utils/gracefulError';
 import { ASK_GEMINI_V2 } from "@/utils/constants";
 import { getDocument, setDocument } from '@/services/firestoreService';
@@ -58,6 +59,8 @@ export default function ReligionAIScreen() {
   const [loading, setLoading] = useState(false);
   const [isSubscribed, setIsSubscribed] = useState(false);
   const { user } = useUser();
+  const tokenCount = useUserDataStore((s) => s.tokenCount);
+  const setTokenStore = useUserDataStore((s) => s.setTokenCount);
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   const handleAsk = async () => {
@@ -83,16 +86,17 @@ export default function ReligionAIScreen() {
         return;
       }
 
+      const profile = user ?? {} as any;
       const userData = await getDocument(`users/${uid}`) || {};
       const lastAsk = userData.lastFreeAsk?.toDate?.();
       const now = new Date();
       const oneDay = 24 * 60 * 60 * 1000;
       const canAskFree = !lastAsk || now.getTime() - lastAsk.getTime() > oneDay;
       const cost = 5;
-      const subscribed = userData.isSubscribed;
+      const subscribed = profile.isSubscribed ?? false;
       setIsSubscribed(subscribed);
 
-      const religion = userData.religion || 'Spiritual Guide';
+      const religion = profile.religion || 'Spiritual Guide';
       const promptRole = religion === 'Christianity' ? 'Jesus' :
                          religion === 'Islam' ? 'Imam' :
                          religion === 'Hinduism' ? 'Guru' :
@@ -102,7 +106,7 @@ export default function ReligionAIScreen() {
 
       if (!subscribed) {
         if (!canAskFree) {
-          const tokens = await getTokenCount();
+          const tokens = tokenCount ?? 0;
           if (tokens < cost) {
             Alert.alert('Not Enough Tokens', `You need ${cost} tokens to ask again.`);
             setLoading(false);
@@ -126,6 +130,7 @@ export default function ReligionAIScreen() {
           }
 
           await setTokenCount(tokens - cost);
+          setTokenStore(tokens - cost);
         } else {
           await setDocument(`users/${uid}`, { lastFreeAsk: new Date().toISOString() });
         }

@@ -1,10 +1,7 @@
 import { getDocument, setDocument } from './firestoreService';
-import { useUserStore } from "@/state/userStore";
+import { useUserDataStore } from '@/state/userDataStore';
 import { ensureAuth } from '@/utils/authGuard';
 
-/**
- * Firestore user document structure
- */
 export interface FirestoreUser {
   uid: string;
   email: string;
@@ -17,9 +14,6 @@ export interface FirestoreUser {
   createdAt: number;
 }
 
-/**
- * Get user from Firestore and set into userStore
- */
 export async function loadUser(uid: string): Promise<void> {
   const storedUid = await ensureAuth(uid);
   if (!storedUid) return;
@@ -28,24 +22,22 @@ export async function loadUser(uid: string): Promise<void> {
 
   if (snapshot) {
     const user = snapshot as FirestoreUser;
-    useUserStore.getState().setUser({
-      uid: user.uid,
-      email: user.email,
-      displayName: user.displayName ?? '',
+    useUserDataStore.setState((state) => ({
+      userProfile: {
+        uid: user.uid,
+        email: user.email,
+        displayName: user.displayName ?? '',
+        religion: user.religion,
+        region: user.region ?? '',
+        organizationId: user.organizationId,
+      },
       isSubscribed: user.isSubscribed,
-      religion: user.religion,
-      region: user.region ?? '',
-      organizationId: user.organizationId,
-      tokens: 0, // placeholder
-    });
+    }));
   } else {
     throw new Error('User not found in Firestore.');
   }
 }
 
-/**
- * Create user profile in Firestore on first signup
- */
 export async function createUserProfile({
   uid,
   email,
@@ -84,9 +76,6 @@ export async function createUserProfile({
   await setDocument(`users/${storedUid}`, userData);
 }
 
-/**
- * Mark onboarding complete
- */
 export async function completeOnboarding(uid: string) {
   const storedUid = await ensureAuth(uid);
   if (!storedUid) return;
@@ -94,9 +83,6 @@ export async function completeOnboarding(uid: string) {
   await setDocument(`users/${storedUid}`, { onboardingComplete: true });
 }
 
-/**
- * Update religion or subscription status
- */
 export async function updateUserFields(
   uid: string,
   updates: Partial<FirestoreUser>
@@ -109,4 +95,3 @@ export async function updateUserFields(
   );
   await setDocument(`users/${storedUid}`, filtered);
 }
-
