@@ -1,5 +1,32 @@
 {
   "expo": {
-    "icon": "./assets/OneVineIcon.png"
+    "name": "OneVine",
+    "slug": "onevine",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/OneVineIcon.png",
+    "splash": {
+      "image": "./assets/OneVineIcon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "updates": {
+      "fallbackToCacheTimeout": 0
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/OneVineIcon.png",
+        "backgroundColor": "#ffffff"
+      }
+    },
+    "web": {
+      "favicon": "./assets/OneVineIcon.png"
+    }
   }
 }
