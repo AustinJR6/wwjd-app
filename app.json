@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "OneVine",
-    "slug": "onevine",
+    "slug": "onevine-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/OneVineIcon.png",
@@ -11,15 +11,15 @@
       "backgroundColor": "#ffffff"
     },
     "updates": {
-      "fallbackToCacheTimeout": 0
+      "url": "https://u.expo.dev/bbf209be-1b48-4f76-a496-9d4fcd8339fd"
     },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "assetBundlePatterns": ["**/*"],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.lysara.onevine"
     },
     "android": {
+      "package": "com.lysara.onevine",
       "adaptiveIcon": {
         "foregroundImage": "./assets/OneVineIcon.png",
         "backgroundColor": "#ffffff"
@@ -27,6 +27,14 @@
     },
     "web": {
       "favicon": "./assets/OneVineIcon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "bbf209be-1b48-4f76-a496-9d4fcd8339fd"
+      },
+      "firebase": {
+        "projectId": "wwjd-app"
+      }
     }
   }
 }
