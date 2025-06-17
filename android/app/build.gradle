@@ -21,7 +21,8 @@ react {
     bundleCommand = "export:embed"
 
     autolinkLibrariesWithApp()
-}
+} 
+
 
 def enableProguardInReleaseBuilds = (findProperty('android.enableProguardInReleaseBuilds') ?: false).toBoolean()
 def jscFlavor = 'io.github.react-native-community:jsc-android:2026004.+'
@@ -58,4 +59,8 @@ android {
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
         }
     }
+}
+
+dependencies {
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
 }
