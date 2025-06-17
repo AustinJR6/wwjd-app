@@ -30,6 +30,7 @@ export default ({ config }) => ({
       {
         android: {
           // ✅ No need to configure Google Services or Firebase here anymore
+          kotlinVersion: "1.8.10",
           jsEngine: "jsc",
         },
         ios: {
