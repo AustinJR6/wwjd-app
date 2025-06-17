@@ -85,13 +85,13 @@ android {
     ndkVersion rootProject.ext.ndkVersion
 
     buildToolsVersion rootProject.ext.buildToolsVersion
-    compileSdk 35
+    compileSdk rootProject.ext.compileSdkVersion
 
     namespace 'com.whippybuckle.onevineapp'
     defaultConfig {
         applicationId 'com.whippybuckle.onevineapp'
         minSdkVersion rootProject.ext.minSdkVersion
-        targetSdkVersion 35
+        targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
         versionName "1.0.0"
     }
