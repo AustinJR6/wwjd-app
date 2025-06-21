@@ -3,9 +3,7 @@ export default ({ config }) => ({
   name: "OneVine",
   slug: "onevine-app",
   version: "1.0.0",
-  runtimeVersion: {
-    policy: "appVersion",
-  },
+  runtimeVersion: "1.0.0",
   jsEngine: "jsc",
 
   updates: {
@@ -14,16 +12,6 @@ export default ({ config }) => ({
 
   android: {
     package: "com.whippybuckle.onevineapp",
-    versionCode: 1,
-    adaptiveIcon: {
-      foregroundImage: "./assets/OneVineIcon.png",
-      backgroundColor: "#FFFFFF",
-    },
-  },
-
-  ios: {
-    bundleIdentifier: "com.whippybuckle.onevineapp",
-    buildNumber: "1.0.0",
   },
 
   extra: {
@@ -40,7 +28,7 @@ export default ({ config }) => ({
       "expo-build-properties",
       {
         android: {
-          kotlinVersion: "1.8.10",
+          kotlinVersion: "1.9.10",
           jsEngine: "jsc",
           compileSdkVersion: 35,
           targetSdkVersion: 35,
@@ -50,6 +38,5 @@ export default ({ config }) => ({
         },
       },
     ],
-    "expo-updates",
   ],
 });
