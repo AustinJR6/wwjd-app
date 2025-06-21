@@ -1,10 +1,9 @@
-// app.config.js
 export default {
   name: "wwjd-app",
   slug: "wwjd-app",
   version: "1.0.0",
   orientation: "portrait",
-  icon: "./assets/OneVineIcon.png",
+  icon: "./assets/icon.png",
   userInterfaceStyle: "light",
   splash: {
     image: "./assets/splash.png",
@@ -22,7 +21,6 @@ export default {
     jsEngine: "jsc",
     compileSdkVersion: 35,
     targetSdkVersion: 35,
-    package: "com.whippybuckle.wwjdapp" // ✅ REQUIRED for prebuild to work
   },
   web: {
     favicon: "./assets/favicon.png",
@@ -34,10 +32,13 @@ export default {
         android: {
           compileSdkVersion: 35,
           targetSdkVersion: 35,
-          // kotlinVersion removed — good call
         },
       },
     ],
   ],
+  extra: {
+    eas: {
+      projectId: "4e9fc79d-ed33-4fc3-8e71-5533c8872160",
+    },
+  },
 };
-
