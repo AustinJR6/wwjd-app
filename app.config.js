@@ -4,7 +4,7 @@ export default {
   slug: "wwjd-app",
   version: "1.0.0",
   orientation: "portrait",
-  icon: "./assets/icon.png",
+  icon: "./assets/OneVineIcon.png",
   userInterfaceStyle: "light",
   splash: {
     image: "./assets/splash.png",
