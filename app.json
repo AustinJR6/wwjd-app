@@ -13,10 +13,15 @@
     "updates": {
       "url": "https://u.expo.dev/bbf209be-1b48-4f76-a496-9d4fcd8339fd"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.lysara.onevine"
+      "bundleIdentifier": "com.lysara.onevine",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "com.lysara.onevine",
