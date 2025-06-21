@@ -22,6 +22,7 @@ export default {
     jsEngine: "jsc",
     compileSdkVersion: 35,
     targetSdkVersion: 35,
+    package: "com.whippybuckle.wwjdapp" // ✅ REQUIRED for prebuild to work
   },
   web: {
     favicon: "./assets/favicon.png",
@@ -33,9 +34,10 @@ export default {
         android: {
           compileSdkVersion: 35,
           targetSdkVersion: 35,
-          // ❌ Removed kotlinVersion here to fix the error
+          // kotlinVersion removed — good call
         },
       },
     ],
   ],
 };
+
