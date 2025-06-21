@@ -1,38 +1,49 @@
+# Environment files
 .env
-node_modules/
-.expo/
-dist/
-web-build/
-*.log
+.env.*
+!.env.example
+
 # Node modules and build artifacts
 node_modules/
 .expo/
 dist/
 build/
+web-build/
 
-# Firebase files
-.firebaserc
+# Logs
+*.log
 firebase-debug.log
-.firebase/
-# Environment
-.env.*
-!.env.example
 
-# VSCode/Visual Studio files
-.vscode/
-.vs/
+# Firebase local cache
+.firebaserc
+.firebase/
+
+# TypeScript tooling output
+tsconfig.effective.json
+
+# React Native / Expo artifacts
+*.hbc
+*.map
 
 # System files
 .DS_Store
 Thumbs.db
-*.log
 
-# Expo/React Native stuff
-*.hbc
-*.map
-tsconfig.effective.json
+# IDE/Editor configs
+.vscode/
+.vs/
 
-/ios
+# iOS build artifacts (keep native code, ignore generated stuff)
+ios/Pods/
+ios/build/
+ios/DerivedData/
+ios/*.xcworkspace
+ios/*.xcuserdata
+ios/*.xcuserstate
 
-/android
-/ios
+# Android build artifacts (but keep gradlew and everything else)
+android/.gradle/
+android/.idea/
+android/local.properties
+android/app/build/
+android/build/
