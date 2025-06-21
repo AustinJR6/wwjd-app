@@ -16,7 +16,7 @@ export default ({ config }) => ({
     package: "com.whippybuckle.onevineapp",
     versionCode: 1,
     adaptiveIcon: {
-      foregroundImage: "./assets/adaptive-icon.png",
+      foregroundImage: "./assets/OneVineIcon.png",
       backgroundColor: "#FFFFFF",
     },
   },
