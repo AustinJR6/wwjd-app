@@ -25,7 +25,8 @@
       "autoIncrement": true,
       "channel": "production",
       "android": {
-        "buildType": "app-bundle"
+        "buildType": "app-bundle",
+        "prebuildCommand": "ls -la android && file android/gradlew && chmod +x android/gradlew"
       },
       "ios": {
         "simulator": false
