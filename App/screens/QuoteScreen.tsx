@@ -14,12 +14,19 @@ export default function QuoteScreen({ navigation }: Props) {
     () =>
       StyleSheet.create({
         content: { flex: 1, justifyContent: 'center' },
+        center: { flex: 1, justifyContent: 'center', alignItems: 'center' }, // ✅ added missing 'center' style
         verse: {
           fontSize: 20,
           textAlign: 'center',
           marginBottom: 16,
           color: theme.colors.text,
         },
+        quote: {
+          fontSize: 20,
+          textAlign: 'center',
+          marginBottom: 16,
+          color: theme.colors.text,
+        }, // ✅ added missing 'quote' style
         reference: {
           fontSize: 16,
           textAlign: 'center',

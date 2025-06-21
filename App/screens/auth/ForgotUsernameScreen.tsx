@@ -12,6 +12,13 @@ export default function ForgotUsernameScreen() {
     () =>
       StyleSheet.create({
         container: { paddingBottom: 64 },
+        title: {
+          fontSize: 24,
+          fontWeight: '700',
+          color: theme.colors.text,
+          marginBottom: 20,
+          textAlign: 'center',
+        }, // ✅ added missing 'title' style
         label: { fontSize: 16, marginBottom: 8, color: theme.colors.text },
         email: { fontSize: 18, textAlign: 'center', color: theme.colors.primary },
         input: {
@@ -24,6 +31,12 @@ export default function ForgotUsernameScreen() {
           color: theme.colors.text,
         },
         buttonWrap: { marginTop: 24, alignItems: 'center' },
+        result: {
+          marginTop: 16,
+          fontSize: 16,
+          color: theme.colors.text,
+          textAlign: 'center',
+        }, // ✅ added missing 'result' style
       }),
     [theme],
   );

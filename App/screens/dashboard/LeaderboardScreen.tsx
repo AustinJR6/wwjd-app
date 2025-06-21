@@ -31,6 +31,27 @@ export default function LeaderboardsScreen() {
           borderRadius: 8,
         },
         itemText: { color: theme.colors.text },
+        section: {
+          marginBottom: 24,
+          padding: 16,
+          backgroundColor: '#fff',
+          borderRadius: 12,
+          shadowColor: '#000',
+          shadowOpacity: 0.05,
+          shadowOffset: { width: 0, height: 2 },
+          shadowRadius: 6,
+          elevation: 2,
+        }, // ✅ added missing 'section' style
+        sectionTitle: {
+          fontSize: 18,
+          fontWeight: '600',
+          marginBottom: 8,
+          color: theme.colors.text,
+        }, // ✅ added missing 'sectionTitle' style
+        row: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 }, // ✅ added missing 'row' style
+        rank: { width: 30, color: theme.colors.text, fontWeight: 'bold' }, // ✅ added missing 'rank' style
+        name: { flex: 1, color: theme.colors.text }, // ✅ added missing 'name' style
+        points: { color: theme.colors.accent }, // ✅ added missing 'points' style
       }),
     [theme],
   );

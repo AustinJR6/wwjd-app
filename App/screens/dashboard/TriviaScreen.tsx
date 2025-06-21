@@ -24,6 +24,13 @@ export default function TriviaScreen() {
     () =>
       StyleSheet.create({
         container: { paddingBottom: 64 },
+        title: {
+          fontSize: 24,
+          fontWeight: '700',
+          color: theme.colors.text,
+          marginBottom: 16,
+          textAlign: 'center',
+        }, // ✅ added missing 'title' style
         question: {
           fontSize: 16,
           marginBottom: 12,
@@ -40,6 +47,11 @@ export default function TriviaScreen() {
         },
         buttonWrap: { marginVertical: 8 },
         answer: { marginTop: 12, color: theme.colors.primary },
+        story: {
+          fontSize: 16,
+          marginBottom: 12,
+          color: theme.colors.text,
+        }, // ✅ added missing 'story' style
       }),
     [theme],
   );
