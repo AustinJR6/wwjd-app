@@ -40,6 +40,20 @@ export default function SelectReligionScreen({ navigation }: Props) {
         itemText: { color: theme.colors.text },
         selectedItem: { backgroundColor: theme.colors.accent },
         buttonWrap: { marginTop: 24, alignItems: 'center' },
+        religionItem: {
+          padding: 12,
+          borderBottomWidth: 1,
+          borderColor: theme.colors.border,
+        }, // ✅ added missing 'religionItem' style
+        religionText: { color: theme.colors.text }, // ✅ added missing 'religionText' style
+        selectedText: { color: theme.colors.background }, // ✅ added missing 'selectedText' style
+        title: {
+          fontSize: 24,
+          fontWeight: '700',
+          color: theme.colors.text,
+          marginBottom: 20,
+          textAlign: 'center',
+        }, // ✅ added missing 'title' style
       }),
     [theme],
   );

@@ -27,6 +27,13 @@ export default function SubmitProofScreen() {
     () =>
       StyleSheet.create({
         container: { paddingBottom: 64 },
+        title: {
+          fontSize: 24,
+          fontWeight: '700',
+          color: theme.colors.text,
+          marginBottom: 20,
+          textAlign: 'center',
+        }, // ✅ added missing 'title' style
         input: {
           borderWidth: 1,
           borderColor: theme.colors.border,
@@ -38,6 +45,7 @@ export default function SubmitProofScreen() {
         },
         preview: { marginVertical: 12, width: '100%', height: 200 },
         buttonWrap: { marginVertical: 8 },
+        filename: { marginVertical: 8, color: theme.colors.text }, // ✅ added missing 'filename' style
       }),
     [theme],
   );

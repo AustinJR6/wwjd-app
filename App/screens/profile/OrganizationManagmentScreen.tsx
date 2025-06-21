@@ -32,6 +32,12 @@ export default function OrganizationManagementScreen() {
           textAlign: 'center',
           color: theme.colors.primary,
         },
+        subtitle: {
+          fontSize: 16,
+          color: theme.colors.text,
+          marginBottom: 8,
+          textAlign: 'center',
+        }, // ✅ added missing 'subtitle' style
         item: {
           padding: 12,
           borderBottomWidth: 1,
@@ -39,6 +45,22 @@ export default function OrganizationManagementScreen() {
         },
         itemText: { color: theme.colors.text },
         buttonWrap: { marginTop: 24, alignItems: 'center' },
+        sectionTitle: {
+          fontSize: 18,
+          fontWeight: '600',
+          marginTop: 16,
+          marginBottom: 8,
+          color: theme.colors.text,
+        }, // ✅ added missing 'sectionTitle' style
+        row: {
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          paddingVertical: 8,
+          borderBottomWidth: 1,
+          borderColor: theme.colors.border,
+        }, // ✅ added missing 'row' style
+        memberText: { flex: 1, color: theme.colors.text }, // ✅ added missing 'memberText' style
       }),
     [theme],
   );

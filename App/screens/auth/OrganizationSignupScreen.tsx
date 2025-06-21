@@ -41,6 +41,9 @@ export default function OrganizationSignupScreen({ navigation }: Props) {
         tierRow: { flexDirection: 'row', justifyContent: 'space-around', marginBottom: 16 },
         tierOption: { color: theme.colors.text },
         buttonWrap: { marginTop: 24, alignItems: 'center' },
+        label: { fontSize: 16, marginBottom: 8, color: theme.colors.text }, // ✅ added missing 'label' style
+        buttonGroup: { flexDirection: 'row', justifyContent: 'space-around', marginBottom: 16 }, // ✅ added missing 'buttonGroup' style
+        submitWrap: { marginTop: 24, alignItems: 'center' }, // ✅ added missing 'submitWrap' style
       }),
     [theme],
   );

@@ -32,6 +32,20 @@ export default function GiveBackScreen({ navigation }: Props) {
         donateWrap: { marginBottom: 16, alignItems: 'center' },
         price: { color: theme.colors.accent, fontWeight: '600' },
         buttonWrap: { marginTop: 32, alignItems: 'center' },
+        section: {
+          marginVertical: 20,
+          padding: 16,
+          backgroundColor: '#fff',
+          borderRadius: 12,
+          shadowColor: '#000',
+          shadowOpacity: 0.05,
+          shadowOffset: { width: 0, height: 2 },
+          shadowRadius: 6,
+          elevation: 2,
+        }, // ✅ added missing 'section' style
+        buttonGroup: { flexDirection: 'row', justifyContent: 'space-around', marginVertical: 16 }, // ✅ added missing 'buttonGroup' style
+        note: { fontSize: 14, textAlign: 'center', marginTop: 16, color: theme.colors.text }, // ✅ added missing 'note' style
+        backWrap: { marginTop: 32, alignItems: 'center' }, // ✅ added missing 'backWrap' style
       }),
     [theme],
   );

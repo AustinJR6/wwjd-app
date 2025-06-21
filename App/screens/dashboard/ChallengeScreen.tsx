@@ -41,6 +41,11 @@ export default function ChallengeScreen() {
           marginBottom: 12,
           color: theme.colors.text,
         },
+        challenge: {
+          fontSize: 16,
+          marginBottom: 12,
+          color: theme.colors.text,
+        }, // ✅ added missing 'challenge' style
         buttonWrap: { marginVertical: 8 },
       }),
     [theme],

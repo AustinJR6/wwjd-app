@@ -50,6 +50,21 @@ export default function ReligionAIScreen() {
           fontStyle: 'italic',
           color: theme.colors.text,
         },
+        title: {
+          fontSize: 24,
+          fontWeight: 'bold',
+          textAlign: 'center',
+          marginBottom: 16,
+          color: theme.colors.primary,
+        }, // ✅ added missing 'title' style
+        subscriptionBanner: {
+          padding: 12,
+          backgroundColor: theme.colors.surface,
+          borderRadius: 8,
+          marginBottom: 12,
+          alignItems: 'center',
+        }, // ✅ added missing 'subscriptionBanner' style
+        subscriptionText: { marginBottom: 8, color: theme.colors.text }, // ✅ added missing 'subscriptionText' style
       }),
     [theme],
   );

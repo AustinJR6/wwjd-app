@@ -25,6 +25,13 @@ export default function JoinOrganizationScreen() {
     () =>
       StyleSheet.create({
         container: { paddingBottom: 64 },
+        title: {
+          fontSize: 24,
+          fontWeight: '700',
+          color: theme.colors.text,
+          marginBottom: 20,
+          textAlign: 'center',
+        }, // ✅ added missing 'title' style
         input: {
           borderWidth: 1,
           borderColor: theme.colors.border,
@@ -37,6 +44,10 @@ export default function JoinOrganizationScreen() {
         item: { padding: 12, borderBottomWidth: 1, borderColor: theme.colors.border },
         itemName: { color: theme.colors.text },
         buttonWrap: { marginTop: 24, alignItems: 'center' },
+        row: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, borderBottomWidth: 1, borderColor: theme.colors.border }, // ✅ added missing 'row' style
+        infoWrap: { flex: 1, marginRight: 8 }, // ✅ added missing 'infoWrap' style
+        name: { fontSize: 16, fontWeight: '600', color: theme.colors.text }, // ✅ added missing 'name' style
+        meta: { color: theme.colors.fadedText, fontSize: 14 }, // ✅ added missing 'meta' style
       }),
     [theme],
   );
