@@ -3,7 +3,9 @@ export default ({ config }) => ({
   name: "OneVine",
   slug: "onevine-app",
   version: "1.0.0",
-  runtimeVersion: "1.0.0",
+  runtimeVersion: {
+    policy: "appVersion",
+  },
   jsEngine: "jsc",
 
   updates: {
@@ -12,7 +14,16 @@ export default ({ config }) => ({
 
   android: {
     package: "com.whippybuckle.onevineapp",
-    // ✅ No `googleServicesFile` needed anymore
+    versionCode: 1,
+    adaptiveIcon: {
+      foregroundImage: "./assets/adaptive-icon.png",
+      backgroundColor: "#FFFFFF",
+    },
+  },
+
+  ios: {
+    bundleIdentifier: "com.whippybuckle.onevineapp",
+    buildNumber: "1.0.0",
   },
 
   extra: {
@@ -20,7 +31,7 @@ export default ({ config }) => ({
       projectId: "bbf209be-1b48-4f76-a496-9d4fcd8339fd",
     },
     firebase: {
-      projectId: "wwjd-app", // ✅ Optional — only if you’re using it elsewhere in your code
+      projectId: "wwjd-app",
     },
   },
 
@@ -29,7 +40,6 @@ export default ({ config }) => ({
       "expo-build-properties",
       {
         android: {
-          // ✅ No need to configure Google Services or Firebase here anymore
           kotlinVersion: "1.8.10",
           jsEngine: "jsc",
           compileSdkVersion: 35,
@@ -40,5 +50,6 @@ export default ({ config }) => ({
         },
       },
     ],
+    "expo-updates",
   ],
 });
