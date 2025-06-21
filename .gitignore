@@ -33,17 +33,6 @@ Thumbs.db
 .vscode/
 .vs/
 
-# iOS build artifacts (keep native code, ignore generated stuff)
-ios/Pods/
-ios/build/
-ios/DerivedData/
-ios/*.xcworkspace
-ios/*.xcuserdata
-ios/*.xcuserstate
-
-# Android build artifacts (but keep gradlew and everything else)
-android/.gradle/
-android/.idea/
-android/local.properties
-android/app/build/
-android/build/
+# Ignore native folders to enable CNG / prebuild
+android/
+ios/
