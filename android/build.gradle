@@ -1,11 +1,14 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 
-// ✅ Fix: Make kotlinVersion visible to all plugins (esp. expo-root-project)
+// ✅ For plugin compatibility (expo-root-project expects this at top-level)
 ext {
   kotlinVersion = '1.8.10'
 }
 
 buildscript {
+  // ✅ Declare again here so classpath block doesn't break
+  ext.kotlinVersion = '1.8.10'
+
   repositories {
     google()
     mavenCentral()
@@ -14,7 +17,7 @@ buildscript {
   dependencies {
     classpath('com.android.tools.build:gradle')
     classpath('com.facebook.react:react-native-gradle-plugin')
-    classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion") // ✅ use the version from ext
+    classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion")
   }
 }
 
@@ -29,7 +32,6 @@ def reactNativeAndroidDir = new File(
 allprojects {
   repositories {
     maven {
-      // All of React Native (JS, Obj-C sources, Android binaries) is installed from npm
       url(reactNativeAndroidDir)
     }
 
