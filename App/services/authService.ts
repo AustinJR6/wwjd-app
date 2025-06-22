@@ -122,6 +122,17 @@ export async function getStoredToken(): Promise<string | null> {
   return token;
 }
 
+// ✅ Always refresh and return a valid ID token
+export async function getFreshIdToken(): Promise<string | null> {
+  try {
+    const token = await refreshIdToken();
+    return token;
+  } catch (err) {
+    console.warn('Unable to force refresh token', err);
+    return getStoredToken();
+  }
+}
+
 // ✅ Save token securely
 async function storeAuth(auth: AuthResponse) {
   await SafeStore.setItem('idToken', auth.idToken);

@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import Button from '@/components/common/Button';
 import { useUser } from '@/hooks/useUser';
-import { getStoredToken } from '@/services/authService';
+import { getStoredToken, getFreshIdToken } from '@/services/authService';
 import ScreenContainer from '@/components/theme/ScreenContainer';
 import { useTheme } from '@/components/theme/theme';
 import { ASK_GEMINI_SIMPLE, INCREMENT_RELIGION_POINTS_URL } from '@/utils/constants';
@@ -137,7 +137,7 @@ export default function TriviaScreen() {
         });
 
         if (userData.religion) {
-          const idToken = await getStoredToken();
+          const idToken = await getFreshIdToken();
           if (!idToken) console.warn('Missing idToken for incrementReligionPoints');
           const url = INCREMENT_RELIGION_POINTS_URL;
           console.log('📡 Calling endpoint:', url);

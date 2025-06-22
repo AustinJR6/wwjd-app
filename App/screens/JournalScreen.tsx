@@ -19,7 +19,7 @@ import { queryCollection, addDocument, getDocument, setDocument } from '@/servic
 import { callFunction } from '@/services/functionService';
 import { ensureAuth } from '@/utils/authGuard';
 import * as SafeStore from '@/utils/secureStore';
-import { getStoredToken } from '@/services/authService';
+import { getStoredToken, getFreshIdToken } from '@/services/authService';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/navigation/RootStackParamList';
@@ -232,7 +232,7 @@ export default function JournalScreen() {
       });
 
       if (userData.religion) {
-        const idToken = await getStoredToken();
+        const idToken = await getFreshIdToken();
         if (!idToken) console.warn('Missing idToken for incrementReligionPoints');
         const url = INCREMENT_RELIGION_POINTS_URL;
         console.log('📡 Calling endpoint:', url);
