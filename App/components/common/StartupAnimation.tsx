@@ -10,7 +10,11 @@ export default function StartupAnimation({ onDone }: { onDone: () => void }) {
 
   useEffect(() => {
     opacity.value = withTiming(1, { duration: 800 }, () => {
-      opacity.value = withTiming(0, { duration: 800 }, () => onDone());
+      opacity.value = withTiming(0, { duration: 800 }, () => {
+        if (typeof onDone === 'function') {
+          onDone();
+        }
+      });
     });
   }, []);
 
