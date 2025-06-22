@@ -1,4 +1,5 @@
-import { getStoredToken } from './authService';
+import axios from 'axios';
+import { getStoredToken, getFreshIdToken } from './authService';
 
 const BASE_URL = process.env.EXPO_PUBLIC_FUNCTION_BASE_URL;
 
@@ -27,6 +28,35 @@ export async function callFunction(name: string, data: any): Promise<any> {
     }
 
     return res.json();
+  } catch (err: any) {
+    console.error('🔥 Backend error:', err?.response?.data || err.message);
+    throw err;
+  }
+}
+
+export async function incrementReligionPoints(
+  religion: string,
+  points: number,
+): Promise<void> {
+  const idToken = await getFreshIdToken();
+  if (!idToken) {
+    console.warn('🚫 incrementReligionPoints without idToken');
+    throw new Error('Missing auth token');
+  }
+
+  const url = `${BASE_URL}/incrementReligionPoints`;
+  console.log('📡 Calling endpoint:', url);
+  try {
+    await axios.post(
+      url,
+      { religion, points },
+      {
+        headers: {
+          Authorization: `Bearer ${idToken}`,
+          'Content-Type': 'application/json',
+        },
+      },
+    );
   } catch (err: any) {
     console.error('🔥 Backend error:', err?.response?.data || err.message);
     throw err;

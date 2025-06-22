@@ -9,15 +9,20 @@ dotenv.config();
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
 
 export const incrementReligionPoints = onRequest(async (req, res) => {
-  const raw = req.headers.authorization || "";
-  const idToken = raw.replace(/Bearer\s+/i, "").trim();
-  if (!idToken) {
-    res.status(401).send("Missing token");
+  const header = req.headers.authorization || "";
+  console.log("🪪 Authorization Header:", header);
+
+  if (!header.toLowerCase().startsWith("bearer ")) {
+    res.status(401).send("Missing or malformed Authorization header");
     return;
   }
 
+  const idToken = header.replace(/^Bearer\s+/i, "").trim();
+
+  let decoded: admin.auth.DecodedIdToken;
   try {
-    const decoded = await auth.verifyIdToken(idToken);
+    decoded = await auth.verifyIdToken(idToken);
+    console.log("✅ Authenticated user:", decoded.uid);
     const { religion, points } = req.body;
 
     if (
@@ -53,17 +58,23 @@ export const completeChallenge = onRequest(async (_req, res) => {
 });
 
 export const askGeminiV2 = onRequest(async (req, res) => {
-  const idToken = req.headers.authorization?.split("Bearer ")[1];
-  const { prompt = "", history = [] } = req.body || {};
+  const header = req.headers.authorization || "";
+  console.log("🪪 Authorization Header:", header);
 
-  if (!idToken) {
-    res.status(401).json({ error: "Missing token" });
+  if (!header.toLowerCase().startsWith("bearer ")) {
+    res.status(401).json({ error: "Missing or malformed Authorization header" });
     return;
   }
 
+  const idToken = header.replace(/^Bearer\s+/i, "").trim();
+
+  const { prompt = "", history = [] } = req.body || {};
+
+  let decoded: admin.auth.DecodedIdToken;
   try {
-    const decoded = await auth.verifyIdToken(idToken);
+    decoded = await auth.verifyIdToken(idToken);
     const uid = decoded.uid;
+    console.log("✅ Authenticated user:", uid);
 
     const userRef = db.collection("users").doc(uid);
     const snap = await userRef.get();

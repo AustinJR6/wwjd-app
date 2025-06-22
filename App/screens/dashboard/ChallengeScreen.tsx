@@ -11,15 +11,14 @@ import ScreenContainer from "@/components/theme/ScreenContainer";
 import { useTheme } from "@/components/theme/theme";
 import { getTokenCount, setTokenCount } from "@/utils/TokenManager";
 import { showGracefulError } from '@/utils/gracefulError';
-import { ASK_GEMINI_SIMPLE, INCREMENT_RELIGION_POINTS_URL } from "@/utils/constants";
+import { ASK_GEMINI_SIMPLE } from "@/utils/constants";
 import { getDocument, setDocument } from '@/services/firestoreService';
-import { callFunction } from '@/services/functionService';
+import { callFunction, incrementReligionPoints } from '@/services/functionService';
 import { useUser } from '@/hooks/useUser';
-import { getStoredToken, getFreshIdToken } from '@/services/authService';
+import { getStoredToken } from '@/services/authService';
 import { ensureAuth } from '@/utils/authGuard';
 import { useChallengeStore } from '@/state/challengeStore';
 import * as SafeStore from '@/utils/secureStore';
-import axios from 'axios';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/navigation/RootStackParamList';
@@ -261,21 +260,8 @@ export default function ChallengeScreen() {
     });
 
     if (userData.religion) {
-      const idToken = await getFreshIdToken();
-      if (!idToken) console.warn('Missing idToken for incrementReligionPoints');
-      const url = INCREMENT_RELIGION_POINTS_URL;
-      console.log('📡 Calling endpoint:', url);
       try {
-        await axios.post(
-          url,
-          { religion: userData.religion, points: 5 },
-          {
-            headers: {
-              Authorization: `Bearer ${idToken}`,
-              'Content-Type': 'application/json',
-            },
-          },
-        );
+        await incrementReligionPoints(userData.religion, 5);
       } catch (err: any) {
         console.error('🔥 Backend error:', err.response?.data || err.message);
       }
