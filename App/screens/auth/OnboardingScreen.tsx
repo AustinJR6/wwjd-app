@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import CustomText from '@/components/common/CustomText';
+import CustomText from '@/components/CustomText';
 import { View, StyleSheet, Alert, TextInput } from 'react-native';
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import Button from "@/components/common/Button";

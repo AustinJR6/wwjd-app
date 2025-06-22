@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import CustomText from '@/components/common/CustomText';
+import CustomText from '@/components/CustomText';
 import { View, StyleSheet, ScrollView } from 'react-native';
 import Button from '@/components/common/Button';
 import * as SecureStore from 'expo-secure-store';

@@ -1,5 +1,5 @@
 import React from 'react';
-import CustomText from '@/components/common/CustomText';
+import CustomText from '@/components/CustomText';
 import { Pressable, StyleSheet, ActivityIndicator, View } from 'react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import { useTheme } from '@/components/theme/theme';
