@@ -26,6 +26,7 @@ import { RootStackParamList } from '@/navigation/RootStackParamList';
 import { getPromptsForReligion } from '@/utils/guidedPrompts';
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
+import { INCREMENT_RELIGION_POINTS_URL } from '@/utils/constants';
 
 export default function JournalScreen() {
   const theme = useTheme();
@@ -233,20 +234,21 @@ export default function JournalScreen() {
 
       if (userData.religion) {
         const idToken = await SecureStore.getItemAsync('idToken');
+        const url = INCREMENT_RELIGION_POINTS_URL;
+        console.log('📡 Calling endpoint:', url);
         try {
           await axios.post(
-            'https://us-central1-wwjd-app.cloudfunctions.net/incrementReligionPoints',
+            url,
             { religion: userData.religion, points: 2 },
-            { headers: { Authorization: `Bearer ${idToken}` } }
+            {
+              headers: {
+                Authorization: `Bearer ${idToken}`,
+                'Content-Type': 'application/json',
+              },
+            }
           );
         } catch (err: any) {
-          if (err.response?.status === 404) {
-            console.error('❌ Cloud Function not deployed or wrong URL');
-          } else if (err.response?.status === 401) {
-            console.error('❌ Unauthorized – invalid or missing token');
-          } else {
-            console.error('🔥 Challenge point error:', err.message);
-          }
+          console.error('🔥 Backend error:', err.response?.data || err.message);
         }
       }
 
