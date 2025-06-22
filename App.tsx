@@ -62,10 +62,8 @@ export default function App() {
   useEffect(() => {
     if (fontsLoaded) {
       console.log('✅ Fonts loaded');
-      Text.defaultProps = Text.defaultProps || {};
-      Text.defaultProps.style = { fontFamily: theme.fonts.body };
     }
-  }, [fontsLoaded, theme]);
+  }, [fontsLoaded]);
 
   useEffect(() => {
     const initialize = async () => {

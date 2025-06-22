@@ -1,12 +1,11 @@
 import React, { useEffect, useState } from 'react';
+import CustomText from '@/components/common/CustomText';
 import {
   View,
-  Text,
   ActivityIndicator,
   StyleSheet,
   Alert,
-  ScrollView,
-} from 'react-native';
+  ScrollView} from 'react-native';
 import Button from '@/components/common/Button';
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { useTheme } from "@/components/theme/theme";
@@ -226,12 +225,12 @@ export default function ChallengeScreen() {
   return (
     <ScreenContainer>
       <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.title}>Daily Challenge</Text>
-        <Text style={styles.streak}>Streak: {streak} days</Text>
+        <CustomText style={styles.title}>Daily Challenge</CustomText>
+        <CustomText style={styles.streak}>Streak: {streak} days</CustomText>
         {loading ? (
           <ActivityIndicator size="large" color={theme.colors.primary} />
         ) : (
-          <Text style={styles.challenge}>{challenge}</Text>
+          <CustomText style={styles.challenge}>{challenge}</CustomText>
         )}
         <View style={styles.buttonWrap}>
           {canSkip && <Button title="Skip Challenge" onPress={handleSkip} />}

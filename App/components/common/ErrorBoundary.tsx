@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import CustomText from '@/components/common/CustomText';
+import { View, StyleSheet } from 'react-native';
 import { useTheme } from '@/components/theme/theme';
 
 interface BoundaryProps {
@@ -24,8 +25,8 @@ class Boundary extends React.Component<BoundaryProps> {
     if (hasError) {
       return (
         <View style={styles(theme).container}>
-          <Text style={styles(theme).text}>Something went wrong.</Text>
-          {error && <Text style={styles(theme).error}>{String(error)}</Text>}
+          <CustomText style={styles(theme).text}>Something went wrong.</CustomText>
+          {error && <CustomText style={styles(theme).error}>{String(error)}</CustomText>}
         </View>
       );
     }

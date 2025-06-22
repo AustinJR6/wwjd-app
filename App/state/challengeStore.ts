@@ -11,7 +11,7 @@ interface ChallengeStore {
   lastCompleted: number | null;
   streak: number;
   setLastCompleted: (timestamp: number) => void;
-  incrementStreak: () => void;
+  incrementStreak: () => number;
   resetStreak: () => void;
   syncWithFirestore: () => Promise<void>;
   updateStreakInFirestore: () => Promise<void>;

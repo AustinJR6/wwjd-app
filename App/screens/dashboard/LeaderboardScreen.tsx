@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
+import CustomText from '@/components/common/CustomText';
 import {
   View,
-  Text,
   StyleSheet,
   ActivityIndicator,
   ScrollView
@@ -89,12 +89,12 @@ export default function LeaderboardsScreen() {
 
   const renderList = (title: string, data: any[], keyName: string, valueName: string) => (
     <View style={styles.section}>
-      <Text style={styles.sectionTitle}>{title}</Text>
+      <CustomText style={styles.sectionTitle}>{title}</CustomText>
       {data.map((item, index) => (
         <View key={item.id || index} style={styles.row}>
-          <Text style={styles.rank}>{index + 1}.</Text>
-          <Text style={styles.name}>{item[keyName]}</Text>
-          <Text style={styles.points}>{item[valueName]} pts</Text>
+          <CustomText style={styles.rank}>{index + 1}.</CustomText>
+          <CustomText style={styles.name}>{item[keyName]}</CustomText>
+          <CustomText style={styles.points}>{item[valueName]} pts</CustomText>
         </View>
       ))}
     </View>
@@ -103,7 +103,7 @@ export default function LeaderboardsScreen() {
   return (
     <ScreenContainer>
       <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.title}>Leaderboards</Text>
+        <CustomText style={styles.title}>Leaderboards</CustomText>
         {loading ? (
           <ActivityIndicator size="large" color={theme.colors.primary} />
         ) : (

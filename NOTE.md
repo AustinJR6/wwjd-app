@@ -29,7 +29,7 @@ Hey bro — here’s a snapshot of the project’s current state, issues I’m f
 ### Suspected Causes:
 - App may still have a file importing `firebase/app` or trying to call `initializeApp()`
 - Dev client may not have picked up changes before rebuild
-- Firebase app in console might not match native Android package (`com.whippybuckle.wwjdapp`)
+- Firebase app in console might not match native Android package (`com.whippybuckle.onevineapp`)
 
 ---
 

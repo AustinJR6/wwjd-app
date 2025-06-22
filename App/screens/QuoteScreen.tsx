@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
+import CustomText from '@/components/common/CustomText';
+import { View, StyleSheet, ActivityIndicator } from 'react-native';
 import Button from '@/components/common/Button';
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { useTheme } from "@/components/theme/theme";
@@ -87,8 +88,8 @@ export default function QuoteScreen({ navigation }: Props) {
   return (
     <ScreenContainer>
       <View style={styles.content}>
-        <Text style={styles.quote}>“{quote.text}”</Text>
-        <Text style={styles.reference}>— {quote.reference}</Text>
+        <CustomText style={styles.quote}>“{quote.text}”</CustomText>
+        <CustomText style={styles.reference}>— {quote.reference}</CustomText>
         <View style={styles.buttonWrap}>
           <Button title="Continue" onPress={() => navigation.replace('Home')} />
         </View>

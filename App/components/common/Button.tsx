@@ -1,5 +1,6 @@
 import React from 'react';
-import { Text, Pressable, StyleSheet, ActivityIndicator, View } from 'react-native';
+import CustomText from '@/components/common/CustomText';
+import { Pressable, StyleSheet, ActivityIndicator, View } from 'react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import { useTheme } from '@/components/theme/theme';
 import { useThemeAssets } from '@/components/theme/themeAssets';
@@ -71,14 +72,14 @@ export default function Button({ title, onPress, disabled, loading, color }: But
       disabled={disabled || loading}
     >
       <LinearGradient
-        colors={color ? [color, color] : assets.buttonGradient}
+        colors={color ? [color, color] : (assets.buttonGradient as any)}
         style={styles.gradient}
       >
         <Animated.View style={animatedStyle}>
           {loading ? (
             <ActivityIndicator color={theme.colors.buttonText} />
           ) : (
-            <Text style={styles.text}>{title}</Text>
+            <CustomText style={styles.text}>{title}</CustomText>
           )}
         </Animated.View>
       </LinearGradient>

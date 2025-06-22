@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import CustomText from '@/components/common/CustomText';
+import { View, StyleSheet } from 'react-native';
 import Animated, { useSharedValue, withTiming, useAnimatedStyle } from 'react-native-reanimated';
 import { useTheme } from '@/components/theme/theme';
 
@@ -26,7 +27,7 @@ export default function StartupAnimation({ onDone }: { onDone: () => void }) {
 
   return (
     <Animated.View style={[styles.container, animStyle]} pointerEvents="none">
-      <Text style={styles.text}>OneVine</Text>
+      <CustomText style={styles.text}>OneVine</CustomText>
     </Animated.View>
   );
 }

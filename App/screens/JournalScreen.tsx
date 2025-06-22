@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import CustomText from '@/components/common/CustomText';
 import {
   View,
-  Text,
   StyleSheet,
   Alert,
   ScrollView,
@@ -9,8 +9,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Modal,
-  Pressable,
-} from 'react-native';
+  Pressable} from 'react-native';
 import Button from '@/components/common/Button';
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { useTheme } from "@/components/theme/theme";
@@ -276,10 +275,10 @@ export default function JournalScreen() {
       <ScrollView contentContainerStyle={styles.container}>
         {!guidedMode ? (
           <>
-            <Text style={styles.prompt}>
+            <CustomText style={styles.prompt}>
               Today’s Prompt:{' '}
-              <Text style={styles.promptBold}>What’s on your heart this morning?</Text>
-            </Text>
+              <CustomText style={styles.promptBold}>What’s on your heart this morning?</CustomText>
+            </CustomText>
 
             <TextInput
               style={styles.input}
@@ -309,8 +308,8 @@ export default function JournalScreen() {
           </>
         ) : (
           <>
-            <Text style={styles.prompt}>{prompts[currentStep]}</Text>
-            <Text style={styles.promptBold}>{`${currentStep + 1} of ${prompts.length}`}</Text>
+            <CustomText style={styles.prompt}>{prompts[currentStep]}</CustomText>
+            <CustomText style={styles.promptBold}>{`${currentStep + 1} of ${prompts.length}`}</CustomText>
             <TextInput
               style={styles.input}
               multiline
@@ -326,21 +325,21 @@ export default function JournalScreen() {
           </>
         )}
 
-        <Text style={styles.sectionTitle}>Past Reflections</Text>
+        <CustomText style={styles.sectionTitle}>Past Reflections</CustomText>
         {entries.length === 0 && (
-          <Text style={styles.emptyText}>No journal entries yet.</Text>
+          <CustomText style={styles.emptyText}>No journal entries yet.</CustomText>
         )}
         {entries.map((e) => (
           <Pressable key={e.id} onPress={() => openEntry(e)}>
             <View style={styles.entryItem}>
-              <Text style={styles.entryDate}>
+              <CustomText style={styles.entryDate}>
                 {e.createdAt?.toDate
                   ? e.createdAt.toDate().toLocaleString()
                   : '(no date)'}
-              </Text>
-              <Text style={styles.entryText}>
+              </CustomText>
+              <CustomText style={styles.entryText}>
                 {e.content.length > 100 ? e.content.slice(0, 100) + '…' : e.content}
-              </Text>
+              </CustomText>
             </View>
           </Pressable>
         ))}
@@ -354,13 +353,13 @@ export default function JournalScreen() {
       >
         <View style={styles.modalBackdrop}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>
+            <CustomText style={styles.modalTitle}>
               {selectedEntry?.createdAt?.toDate
                 ? selectedEntry.createdAt.toDate().toLocaleString()
                 : '(no date)'}
-            </Text>
+            </CustomText>
             <ScrollView>
-              <Text style={styles.modalText}>{selectedEntry?.content}</Text>
+              <CustomText style={styles.modalText}>{selectedEntry?.content}</CustomText>
             </ScrollView>
             <Button title="Close" onPress={() => setModalVisible(false)} />
           </View>

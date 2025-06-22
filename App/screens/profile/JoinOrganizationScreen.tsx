@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import CustomText from '@/components/common/CustomText';
 import {
   View,
-  Text,
   TextInput,
   FlatList,
   StyleSheet,
@@ -125,7 +125,7 @@ export default function JoinOrganizationScreen() {
 
   return (
     <ScreenContainer>
-      <Text style={styles.title}>Join an Organization</Text>
+      <CustomText style={styles.title}>Join an Organization</CustomText>
       <TextInput
         style={styles.input}
         placeholder="Search by name"
@@ -139,11 +139,11 @@ export default function JoinOrganizationScreen() {
         renderItem={({ item }) => (
           <View style={styles.row}>
             <View style={styles.infoWrap}>
-              <Text style={styles.name}>{item.name}</Text>
-              <Text style={styles.meta}>Tier: {item.tier}</Text>
-              <Text style={styles.meta}>
+              <CustomText style={styles.name}>{item.name}</CustomText>
+              <CustomText style={styles.meta}>Tier: {item.tier}</CustomText>
+              <CustomText style={styles.meta}>
                 Seats: {item.members?.length || 0} / {item.seatLimit}
-              </Text>
+              </CustomText>
             </View>
             <Button title="Join" onPress={() => joinOrg(item)} />
           </View>
