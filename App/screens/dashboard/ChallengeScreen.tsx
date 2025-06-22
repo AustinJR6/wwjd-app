@@ -15,7 +15,7 @@ import { ASK_GEMINI_SIMPLE, INCREMENT_RELIGION_POINTS_URL } from "@/utils/consta
 import { getDocument, setDocument } from '@/services/firestoreService';
 import { callFunction } from '@/services/functionService';
 import { useUser } from '@/hooks/useUser';
-import { getStoredToken } from '@/services/authService';
+import { getStoredToken, getFreshIdToken } from '@/services/authService';
 import { ensureAuth } from '@/utils/authGuard';
 import { useChallengeStore } from '@/state/challengeStore';
 import * as SafeStore from '@/utils/secureStore';
@@ -157,46 +157,45 @@ export default function ChallengeScreen() {
   };
 
   const handleSkip = async () => {
-    const cost = 3;
-    const tokens = await getTokenCount();
-    if (tokens < cost) {
-      Alert.alert('Not Enough Tokens', `You need ${cost} tokens to skip.`);
+    const uid = await ensureAuth(user?.uid);
+    if (!uid) return;
+
+    const userData = await getDocument(`users/${uid}`) || {};
+    const today = new Date().toISOString().slice(0, 10);
+    let history = userData.dailyChallengeHistory || { date: today, completed: 0, skipped: 0 };
+    if (history.date !== today) history = { date: today, completed: 0, skipped: 0 };
+
+    const free = history.skipped === 0;
+    let tokens = await getTokenCount();
+    if (!free && tokens <= 0) {
+      Alert.alert('Out of Tokens', 'You need a token to skip.');
       return;
     }
 
-    const idToken = await getStoredToken();
-    const userId = await SafeStore.getItem('userId');
-    if (!idToken || !userId) {
-      Alert.alert('Login Required', 'Please log in again.');
-      navigation.replace('Login');
-      return;
+    let confirmed = true;
+    if (!free) {
+      confirmed = await new Promise((resolve) => {
+        Alert.alert(
+          'Use 1 Token to Skip?',
+          'Are you sure you want to skip the current challenge?',
+          [
+            { text: 'Cancel', onPress: () => resolve(false), style: 'cancel' },
+            { text: 'Yes', onPress: () => resolve(true) },
+          ]
+        );
+      });
     }
-
-    const confirmed = await new Promise((resolve) => {
-      Alert.alert(
-        `Use ${cost} Tokens to Skip?`,
-        'Are you sure you want to skip the current challenge?',
-        [
-          { text: 'Cancel', onPress: () => resolve(false), style: 'cancel' },
-          { text: 'Yes', onPress: () => resolve(true) },
-        ]
-      );
-    });
 
     if (!confirmed) return;
 
     try {
-      await setTokenCount(tokens - cost);
-      setCanSkip(true);
-      const uid = await ensureAuth(user?.uid);
-      if (uid) {
-        const userData = await getDocument(`users/${uid}`) || {};
-        const today = new Date().toISOString().slice(0, 10);
-        let history = userData.dailyChallengeHistory || { date: today, completed: 0, skipped: 0 };
-        if (history.date !== today) history = { date: today, completed: 0, skipped: 0 };
-        history.skipped += 1;
-        await setDocument(`users/${uid}`, { dailyChallengeHistory: history });
+      if (!free) {
+        await setTokenCount(tokens - 1);
+        tokens -= 1;
       }
+      setCanSkip(true);
+      history.skipped += 1;
+      await setDocument(`users/${uid}`, { dailyChallengeHistory: history });
       fetchChallenge();
     } catch (error: any) {
       console.error('🔥 API Error:', error?.response?.data || error.message);
@@ -262,7 +261,7 @@ export default function ChallengeScreen() {
     });
 
     if (userData.religion) {
-      const idToken = await getStoredToken();
+      const idToken = await getFreshIdToken();
       if (!idToken) console.warn('Missing idToken for incrementReligionPoints');
       const url = INCREMENT_RELIGION_POINTS_URL;
       console.log('📡 Calling endpoint:', url);
