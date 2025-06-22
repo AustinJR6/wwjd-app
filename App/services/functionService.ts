@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { getStoredToken, getFreshIdToken } from './authService';
+import { sendRequestWithGusBugLogging } from '@/utils/gusBugLogger';
 
 const BASE_URL = process.env.EXPO_PUBLIC_FUNCTION_BASE_URL;
 
@@ -13,14 +14,14 @@ export async function callFunction(name: string, data: any): Promise<any> {
   const url = `${BASE_URL}/${name}`;
   console.log('📡 Calling endpoint:', url);
   try {
-    const res = await fetch(url, {
+    const res = await sendRequestWithGusBugLogging(() => fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${idToken}`,
       },
       body: JSON.stringify(data ?? {}),
-    });
+    }));
 
     if (!res.ok) {
       const text = await res.text();
@@ -47,15 +48,17 @@ export async function incrementReligionPoints(
   const url = `${BASE_URL}/incrementReligionPoints`;
   console.log('📡 Calling endpoint:', url);
   try {
-    await axios.post(
-      url,
-      { religion, points },
-      {
-        headers: {
-          Authorization: `Bearer ${idToken}`,
-          'Content-Type': 'application/json',
+    await sendRequestWithGusBugLogging(() =>
+      axios.post(
+        url,
+        { religion, points },
+        {
+          headers: {
+            Authorization: `Bearer ${idToken}`,
+            'Content-Type': 'application/json',
+          },
         },
-      },
+      )
     );
   } catch (err: any) {
     console.error('🔥 Backend error:', err?.response?.data || err.message);

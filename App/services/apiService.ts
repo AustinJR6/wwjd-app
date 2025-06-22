@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { GEMINI_API_URL, STRIPE_API_URL } from '@/config/apiConfig';
 import { getStoredToken } from './authService';
+import { sendRequestWithGusBugLogging } from '@/utils/gusBugLogger';
 
 type AskGeminiResponse = {
   reply: string;
@@ -21,7 +22,9 @@ export async function askGemini(prompt: string): Promise<string> {
       Authorization: `Bearer ${idToken}`,
       'Content-Type': 'application/json',
     };
-    const res = await axios.post<AskGeminiResponse>(GEMINI_API_URL, { prompt }, { headers });
+    const res = await sendRequestWithGusBugLogging(() =>
+      axios.post<AskGeminiResponse>(GEMINI_API_URL, { prompt }, { headers })
+    );
     return res.data.reply;
   } catch (err: any) {
     if (err.response?.status === 403) {
@@ -46,10 +49,12 @@ export async function createStripeCheckout(
       Authorization: `Bearer ${idToken}`,
       'Content-Type': 'application/json',
     };
-    const res = await axios.post<StripeCheckoutResponse>(STRIPE_API_URL, {
-      uid,
-      ...options,
-    }, { headers });
+    const res = await sendRequestWithGusBugLogging(() =>
+      axios.post<StripeCheckoutResponse>(STRIPE_API_URL, {
+        uid,
+        ...options,
+      }, { headers })
+    );
     return res.data.url;
   } catch (err: any) {
     if (err.response?.status === 403) {

@@ -7,22 +7,19 @@ import * as dotenv from "dotenv";
 dotenv.config();
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
+const LOGGING_MODE = process.env.LOGGING_MODE || "gusbug";
 
 export const incrementReligionPoints = onRequest(async (req, res) => {
-  const header = req.headers.authorization || "";
-  console.log("🪪 Authorization Header:", header);
-
-  if (!header.toLowerCase().startsWith("bearer ")) {
-    res.status(401).send("Missing or malformed Authorization header");
+  const idToken = req.headers.authorization?.split("Bearer ")[1];
+  if (!idToken) {
+    console.error("❌ Gus Bug Alert: Missing ID token in header. 🐞");
+    res.status(401).json({ error: "Unauthorized — Gus bug stole the token!" });
     return;
   }
-
-  const idToken = header.replace(/^Bearer\s+/i, "").trim();
-
   let decoded: admin.auth.DecodedIdToken;
   try {
     decoded = await auth.verifyIdToken(idToken);
-    console.log("✅ Authenticated user:", decoded.uid);
+    console.log(`✅ Gus Bug Authenticated: ${decoded.uid} is legit! 🎯`);
     const { religion, points } = req.body;
 
     if (
@@ -44,29 +41,44 @@ export const incrementReligionPoints = onRequest(async (req, res) => {
 
     res.status(200).send({ message: "Points updated" });
   } catch (err: any) {
-    console.error("🔥 Backend error:", err.message);
+    console.error("🛑 Gus Bug Tampered Token: Couldn't verify. 🧙‍♂️✨", err);
     if (err.code === "auth/argument-error") {
-      res.status(401).send("Invalid token");
-    } else {
-      res.status(500).send("Internal error");
+      res.status(401).json({
+        error: "Unauthorized — Gus bug cast an invalid token spell.",
+      });
+      return;
     }
+    res.status(500).send("Internal error");
   }
 });
 
-export const completeChallenge = onRequest(async (_req, res) => {
-  res.status(200).send({ message: "✅ completeChallenge function is live" });
+export const completeChallenge = onRequest(async (req, res) => {
+  const idToken = req.headers.authorization?.split("Bearer ")[1];
+  if (!idToken) {
+    console.error("❌ Gus Bug Alert: Missing ID token in header. 🐞");
+    res.status(401).json({ error: "Unauthorized — Gus bug stole the token!" });
+    return;
+  }
+  try {
+    const decodedToken = await auth.verifyIdToken(idToken);
+    console.log(`✅ Gus Bug Authenticated: ${decodedToken.uid} is legit! 🎯`);
+    res.status(200).send({ message: "✅ completeChallenge function is live" });
+  } catch (err) {
+    console.error("🛑 Gus Bug Tampered Token: Couldn't verify. 🧙‍♂️✨", err);
+    res.status(401).json({
+      error: "Unauthorized — Gus bug cast an invalid token spell.",
+    });
+    return;
+  }
 });
 
 export const askGeminiV2 = onRequest(async (req, res) => {
-  const header = req.headers.authorization || "";
-  console.log("🪪 Authorization Header:", header);
-
-  if (!header.toLowerCase().startsWith("bearer ")) {
-    res.status(401).json({ error: "Missing or malformed Authorization header" });
+  const idToken = req.headers.authorization?.split("Bearer ")[1];
+  if (!idToken) {
+    console.error("❌ Gus Bug Alert: Missing ID token in header. 🐞");
+    res.status(401).json({ error: "Unauthorized — Gus bug stole the token!" });
     return;
   }
-
-  const idToken = header.replace(/^Bearer\s+/i, "").trim();
 
   const { prompt = "", history = [] } = req.body || {};
 
@@ -74,7 +86,7 @@ export const askGeminiV2 = onRequest(async (req, res) => {
   try {
     decoded = await auth.verifyIdToken(idToken);
     const uid = decoded.uid;
-    console.log("✅ Authenticated user:", uid);
+    console.log(`✅ Gus Bug Authenticated: ${uid} is legit! 🎯`);
 
     const userRef = db.collection("users").doc(uid);
     const snap = await userRef.get();
@@ -115,11 +127,18 @@ export const askGeminiV2 = onRequest(async (req, res) => {
 
     res.status(200).json({ response: text });
   } catch (err: any) {
-    console.error("🔥 Gemini Error:", err.message);
+    console.error("🛑 Gus Bug Tampered Token: Couldn't verify. 🧙‍♂️✨", err);
     if (err.code === "auth/argument-error") {
-      res.status(401).json({ error: "Invalid token" });
-    } else {
-      res.status(500).json({ error: "Gemini failed" });
+      res.status(401).json({
+        error: "Unauthorized — Gus bug cast an invalid token spell.",
+      });
+      return;
     }
+    res.status(500).json({ error: "Gemini failed" });
   }
+});
+
+export const handleStripeWebhookV2 = onRequest(async (req, res) => {
+  console.log('💰 Gus Bug Webhook triggered. No auth needed!');
+  res.status(200).send({ received: true });
 });

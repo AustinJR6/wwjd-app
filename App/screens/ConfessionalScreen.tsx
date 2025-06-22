@@ -17,6 +17,7 @@ import { useUser } from '@/hooks/useUser';
 import { getStoredToken } from '@/services/authService';
 import { ensureAuth } from '@/utils/authGuard';
 import { showGracefulError } from '@/utils/gracefulError';
+import { sendRequestWithGusBugLogging } from '@/utils/gusBugLogger';
 
 export default function ConfessionalScreen() {
   const theme = useTheme();
@@ -112,17 +113,19 @@ export default function ConfessionalScreen() {
       const conversation = messages
         .map((m) => `${m.sender === 'user' ? 'User' : role}: ${m.text}`)
         .join('\n');
-      const res = await fetch(ASK_GEMINI_SIMPLE, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${idToken}`,
-        },
-        body: JSON.stringify({
-          prompt: `${conversation}\nUser: ${text}\n${role}:`,
-          history: historyMsgs,
-        }),
-      });
+      const res = await sendRequestWithGusBugLogging(() =>
+        fetch(ASK_GEMINI_SIMPLE, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${idToken}`,
+          },
+          body: JSON.stringify({
+            prompt: `${conversation}\nUser: ${text}\n${role}:`,
+            history: historyMsgs,
+          }),
+        })
+      );
 
       const data = await res.json();
       const answer = data.response || 'You are forgiven. Walk in peace.';

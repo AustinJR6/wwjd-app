@@ -18,6 +18,7 @@ import { useUser } from '@/hooks/useUser';
 import { getStoredToken } from '@/services/authService';
 import { ensureAuth } from '@/utils/authGuard';
 import { useChallengeStore } from '@/state/challengeStore';
+import { sendRequestWithGusBugLogging } from '@/utils/gusBugLogger';
 import * as SafeStore from '@/utils/secureStore';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -78,14 +79,16 @@ export default function ChallengeScreen() {
 
       const idToken = await getStoredToken();
       if (!idToken) console.warn('Missing idToken for askGeminiSimple');
-      const res = await fetch(ASK_GEMINI_SIMPLE, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
-        body: JSON.stringify({
-          prompt: `Provide a short blessing for a user who reached a ${current}-day spiritual challenge streak in the ${userData.religion || 'Christian'} tradition.`,
-          history: [],
-        }),
-      });
+      const res = await sendRequestWithGusBugLogging(() =>
+        fetch(ASK_GEMINI_SIMPLE, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
+          body: JSON.stringify({
+            prompt: `Provide a short blessing for a user who reached a ${current}-day spiritual challenge streak in the ${userData.religion || 'Christian'} tradition.`,
+            history: [],
+          }),
+        })
+      );
       const data = await res.json();
       const blessing = data.response || "You’ve walked with discipline and devotion. This is your blessing.";
       Alert.alert('Blessing!', `${blessing}\nYou earned ${reward} Grace Tokens.`);
@@ -126,17 +129,19 @@ export default function ChallengeScreen() {
 
       // Reuse the token instead of fetching it again
       idToken = idToken || (await getStoredToken());
-      const response = await fetch(ASK_GEMINI_SIMPLE, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${idToken}`,
-        },
-        body: JSON.stringify({
-          prompt: `Give me a short daily challenge for someone of the ${religion} faith.`,
-          history: [],
-        }),
-      });
+      const response = await sendRequestWithGusBugLogging(() =>
+        fetch(ASK_GEMINI_SIMPLE, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${idToken}`,
+          },
+          body: JSON.stringify({
+            prompt: `Give me a short daily challenge for someone of the ${religion} faith.`,
+            history: [],
+          }),
+        })
+      );
 
       const data = await response.json();
       const newChallenge = data.response || 'Reflect in silence for five minutes today.';
