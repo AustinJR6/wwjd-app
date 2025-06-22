@@ -138,6 +138,8 @@ export default function App() {
             <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} options={{ title: 'Reset Password' }} />
             <Stack.Screen name="ForgotUsername" component={ForgotUsernameScreen} options={{ title: 'Find Email' }} />
             <Stack.Screen name="OrganizationSignup" component={OrganizationSignupScreen} options={{ title: 'Create Organization' }} />
+            {/* Onboarding needs to be accessible immediately after login */}
+            <Stack.Screen name="Onboarding" component={OnboardingScreen} options={{ headerShown: false }} />
           </>
         ) : (
           <>

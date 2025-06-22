@@ -6,6 +6,7 @@ import ScreenContainer from "@/components/theme/ScreenContainer";
 import TextField from "@/components/TextField";
 import Button from "@/components/common/Button";
 import { login, resetPassword } from "@/services/authService";
+import { loadUser } from "@/services/userService";
 import * as SafeStore from '@/utils/secureStore';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -28,6 +29,9 @@ export default function LoginScreen() {
       if (result.localId) {
         await SafeStore.setItem('userId', result.localId);
         await SafeStore.setItem('idToken', result.idToken);
+
+        // Load the user profile so the root navigator registers authenticated screens
+        await loadUser(result.localId);
 
         const hasSeen = await SafeStore.getItem(
           `hasSeenOnboarding-${result.localId}`
