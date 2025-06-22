@@ -8,6 +8,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from "@/navigation/RootStackParamList";
 import { useUser } from '@/hooks/useUser';
 import { createStripeCheckout } from '@/services/apiService';
+import { PRICE_IDS } from '@/config/stripeConfig';
 import * as SafeStore from '@/utils/secureStore';
 import { getStoredToken } from '@/services/authService';
 
@@ -65,7 +66,10 @@ export default function UpgradeScreen({ navigation }: Props) {
         return;
       }
 
-      const url = await createStripeCheckout(user.uid, { type: 'subscription' });
+      const url = await createStripeCheckout(user.uid, {
+        type: 'subscription',
+        priceId: PRICE_IDS.SUBSCRIPTION,
+      });
       if (url) {
         Linking.openURL(url);
       } else {

@@ -8,6 +8,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from "@/navigation/RootStackParamList";
 import { useUser } from '@/hooks/useUser';
 import { createStripeCheckout } from '@/services/apiService';
+import { PRICE_IDS } from '@/config/stripeConfig';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'GiveBack'>;
 
@@ -59,9 +60,15 @@ export default function GiveBackScreen({ navigation }: Props) {
     try {
       if (!user) return;
 
+      const priceId =
+        amount === 2
+          ? PRICE_IDS.DONATE_2
+          : amount === 5
+          ? PRICE_IDS.DONATE_5
+          : PRICE_IDS.DONATE_10;
       const url = await createStripeCheckout(user.uid, {
         type: 'one-time',
-        amount,
+        priceId,
       });
 
       if (url) {

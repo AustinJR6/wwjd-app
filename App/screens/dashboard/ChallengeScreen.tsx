@@ -104,7 +104,7 @@ export default function ChallengeScreen() {
     }
   };
 
-  const fetchChallenge = async () => {
+  const fetchChallenge = async (forceNew = false) => {
     try {
       let idToken = await getStoredToken();
       if (!idToken) console.warn('Missing idToken for fetchChallenge');
@@ -125,7 +125,7 @@ export default function ChallengeScreen() {
       const now = new Date();
       const oneDay = 24 * 60 * 60 * 1000;
 
-      if (lastChallenge && now.getTime() - lastChallenge.getTime() < oneDay) {
+      if (!forceNew && lastChallenge && now.getTime() - lastChallenge.getTime() < oneDay) {
         setChallenge(userData.lastChallengeText || '');
         setCanSkip(false);
         setLoading(false);
@@ -146,6 +146,7 @@ export default function ChallengeScreen() {
           body: JSON.stringify({
             prompt: `Give me a short daily challenge for someone of the ${religion} faith.`,
             history: [],
+            seed: Date.now(),
           }),
         })
       );
@@ -215,7 +216,7 @@ export default function ChallengeScreen() {
       setCanSkip(true);
       history.skipped += 1;
       await setDocument(`users/${uid}`, { dailyChallengeHistory: history });
-      fetchChallenge();
+      fetchChallenge(true);
     } catch (error: any) {
       console.error('🔥 API Error:', error?.response?.data || error.message);
       showGracefulError();
@@ -297,7 +298,8 @@ export default function ChallengeScreen() {
     }
 
     Alert.alert('Great job!', 'Challenge completed.');
-    fetchChallenge();
+    const shouldGenerateNew = useToken || history.completed < limit;
+    fetchChallenge(shouldGenerateNew);
   };
 
   useEffect(() => {

@@ -4,6 +4,7 @@ import { View, StyleSheet, Alert, Linking } from 'react-native';
 import Button from '@/components/common/Button';
 import { useUser } from '@/hooks/useUser';
 import { createStripeCheckout } from '@/services/apiService';
+import { PRICE_IDS } from '@/config/stripeConfig';
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { useTheme } from "@/components/theme/theme";
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -60,9 +61,15 @@ export default function BuyTokensScreen({ navigation }: Props) {
   const purchase = async (amount: number) => {
     if (!user) return;
     try {
+      const priceId =
+        amount === 5
+          ? PRICE_IDS.TOKENS_5
+          : amount === 15
+          ? PRICE_IDS.TOKENS_15
+          : PRICE_IDS.TOKENS_40;
       const url = await createStripeCheckout(user.uid, {
         type: 'one-time',
-        amount,
+        priceId,
       });
       if (url) {
         Linking.openURL(url);
