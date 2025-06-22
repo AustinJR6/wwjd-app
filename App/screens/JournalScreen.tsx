@@ -200,7 +200,15 @@ export default function JournalScreen() {
         },
         body: JSON.stringify({ prompt, history: [] }),
       });
-      const data = await res.json();
+      const text = await res.text();
+      let data: any;
+      try {
+        data = JSON.parse(text);
+      } catch (err) {
+        console.error('Invalid JSON from guided journal:', text);
+        showGracefulError();
+        return;
+      }
       setGuidedText(data.response || '');
       console.log('🎉 Gus Bug: Gemini text received.');
       Alert.alert('Guided Prompt Ready', 'Gemini has provided a suggestion.');

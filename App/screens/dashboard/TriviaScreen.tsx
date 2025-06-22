@@ -96,7 +96,16 @@ export default function TriviaScreen() {
         })
       );
 
-      const data = await response.json();
+      const text = await response.text();
+      let data: any;
+      try {
+        data = JSON.parse(text);
+      } catch (err) {
+        console.error('Invalid JSON from trivia:', text);
+        Alert.alert('Error', 'Could not load trivia. Please try again later.');
+        setLoading(false);
+        return;
+      }
       const [cleanStory, info] = data.response.split('\nRELIGION:');
       const [religionLine, storyLine] = info?.split('\nSTORY:') || [];
 
