@@ -105,6 +105,10 @@ export default function ConfessionalScreen() {
 
       const idToken = await getStoredToken();
       if (!idToken) console.warn('Missing idToken for askGeminiSimple');
+      const historyMsgs = messages.map((m) => ({
+        role: m.sender === 'user' ? 'user' : 'model',
+        text: m.text,
+      }));
       const conversation = messages
         .map((m) => `${m.sender === 'user' ? 'User' : role}: ${m.text}`)
         .join('\n');
@@ -116,6 +120,7 @@ export default function ConfessionalScreen() {
         },
         body: JSON.stringify({
           prompt: `${conversation}\nUser: ${text}\n${role}:`,
+          history: historyMsgs,
         }),
       });
 

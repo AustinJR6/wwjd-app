@@ -154,6 +154,10 @@ export default function ReligionAIScreen() {
       // Reuse the token instead of fetching it again
       idToken = idToken || (await getStoredToken());
       if (!idToken) console.warn('Missing idToken for ReligionAI request');
+      const historyMsgs = messages.map((m) => ({
+        role: m.startsWith('User:') ? 'user' : 'model',
+        text: m.replace(/^[^:]+:\s*/, ''),
+      }));
       const response = await fetch(ASK_GEMINI_V2, {
         method: 'POST',
         headers: {
@@ -164,6 +168,7 @@ export default function ReligionAIScreen() {
           prompt: `You are a ${promptRole} of the ${religion} faith. ` +
             `Answer the user using teachings from that tradition and cite any ` +
             `relevant scriptures.\n${conversationContext}\nUser: ${question}\n${promptRole}:`,
+          history: historyMsgs,
         }),
       });
 
@@ -225,5 +230,3 @@ export default function ReligionAIScreen() {
     </ScreenContainer>
   );
 }
-
-

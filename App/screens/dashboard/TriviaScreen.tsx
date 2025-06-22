@@ -89,7 +89,8 @@ export default function TriviaScreen() {
           Authorization: `Bearer ${idToken}`
         },
         body: JSON.stringify({
-          prompt: `Give me a short moral story originally from any major world religion. Replace all real names and locations with fictional ones so that it seems to come from a different culture. Keep the meaning and lesson intact. After the story, add two lines: RELIGION: <religion> and STORY: <story name>.`
+          prompt: `Give me a short moral story originally from any major world religion. Replace all real names and locations with fictional ones so that it seems to come from a different culture. Keep the meaning and lesson intact. After the story, add two lines: RELIGION: <religion> and STORY: <story name>.`,
+          history: [],
         })
       });
 
