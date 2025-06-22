@@ -16,16 +16,14 @@ import { useTheme } from "@/components/theme/theme";
 import { showGracefulError } from '@/utils/gracefulError';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { queryCollection, addDocument, getDocument, setDocument } from '@/services/firestoreService';
-import { callFunction } from '@/services/functionService';
+import { callFunction, incrementReligionPoints } from '@/services/functionService';
 import { ensureAuth } from '@/utils/authGuard';
 import * as SafeStore from '@/utils/secureStore';
-import { getStoredToken, getFreshIdToken } from '@/services/authService';
+import { getStoredToken } from '@/services/authService';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/navigation/RootStackParamList';
 import { getPromptsForReligion } from '@/utils/guidedPrompts';
-import axios from 'axios';
-import { INCREMENT_RELIGION_POINTS_URL } from '@/utils/constants';
 
 export default function JournalScreen() {
   const theme = useTheme();
@@ -232,21 +230,8 @@ export default function JournalScreen() {
       });
 
       if (userData.religion) {
-        const idToken = await getFreshIdToken();
-        if (!idToken) console.warn('Missing idToken for incrementReligionPoints');
-        const url = INCREMENT_RELIGION_POINTS_URL;
-        console.log('📡 Calling endpoint:', url);
         try {
-          await axios.post(
-            url,
-            { religion: userData.religion, points: 2 },
-            {
-              headers: {
-                Authorization: `Bearer ${idToken}`,
-                'Content-Type': 'application/json',
-              },
-            }
-          );
+          await incrementReligionPoints(userData.religion, 2);
         } catch (err: any) {
           console.error('🔥 Backend error:', err.response?.data || err.message);
         }
