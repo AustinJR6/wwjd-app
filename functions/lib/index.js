@@ -87,3 +87,55 @@ exports.handleStripeWebhookV2 = (0, https_1.onRequest)({ cors: true }, async (re
     }
     res.status(200).send("Success");
 });
+
+/**
+ * 💳 createCheckoutSession: Starts a Stripe Checkout session
+ */
+exports.createCheckoutSession = (0, https_1.onRequest)(async (req, res) => {
+    const stripe = new stripe_1.default(STRIPE_SECRET_KEY, { apiVersion: "2022-11-15" });
+    const { uid, type, amount } = req.body;
+    if (!uid || !type) {
+        res.status(400).json({ error: "Missing parameters." });
+        return;
+    }
+    try {
+        let session;
+        if (type === "subscription") {
+            session = await stripe.checkout.sessions.create({
+                mode: "subscription",
+                line_items: [
+                    {
+                        price: process.env.STRIPE_SUBSCRIPTION_PRICE_ID,
+                        quantity: 1,
+                    },
+                ],
+                metadata: { userId: uid },
+                success_url: "https://example.com/success",
+                cancel_url: "https://example.com/cancel",
+            });
+        }
+        else {
+            session = await stripe.checkout.sessions.create({
+                mode: "payment",
+                line_items: [
+                    {
+                        price_data: {
+                            currency: "usd",
+                            product_data: { name: "Token Pack" },
+                            unit_amount: Math.round((amount || 0) * 100),
+                        },
+                        quantity: 1,
+                    },
+                ],
+                metadata: { userId: uid },
+                success_url: "https://example.com/success",
+                cancel_url: "https://example.com/cancel",
+            });
+        }
+        res.status(200).json({ url: session.url });
+    }
+    catch (err) {
+        console.error("❌ createCheckoutSession error:", err.message);
+        res.status(500).json({ error: "Failed to create checkout session." });
+    }
+});
