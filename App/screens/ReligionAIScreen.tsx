@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import CustomText from '@/components/CustomText';
 import {
   View,
@@ -74,6 +74,28 @@ export default function ReligionAIScreen() {
   const [isSubscribed, setIsSubscribed] = useState(false);
   const { user } = useUser();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+
+  useEffect(() => {
+    const loadHistory = async () => {
+      if (!user?.uid || !user.isSubscribed) {
+        setIsSubscribed(false);
+        return;
+      }
+      setIsSubscribed(true);
+      const uid = await ensureAuth(user.uid);
+      if (!uid) return;
+      try {
+        const history = await getDocument(`users/${uid}/religionAI/history`);
+        if (history?.messages) {
+          setMessages(history.messages as string[]);
+        }
+      } catch (err) {
+        console.error('Failed to load ReligionAI history', err);
+      }
+    };
+
+    loadHistory();
+  }, [user]);
 
   const handleAsk = async () => {
     if (!question.trim()) {
@@ -178,10 +200,17 @@ export default function ReligionAIScreen() {
       const data = await response.json();
       const answer = data?.response || 'I am always with you. Trust in Me.';
 
+      let updatedMessages: string[];
       if (subscribed) {
-        setMessages((prev) => [...prev, `User: ${question}`, `${promptRole}: ${answer}`]);
+        updatedMessages = [...messages, `User: ${question}`, `${promptRole}: ${answer}`];
+        setMessages(updatedMessages);
+        await setDocument(`users/${uid}/religionAI/history`, {
+          messages: updatedMessages,
+          updatedAt: new Date().toISOString(),
+        });
       } else {
-        setMessages([`User: ${question}`, `${promptRole}: ${answer}`]);
+        updatedMessages = [`User: ${question}`, `${promptRole}: ${answer}`];
+        setMessages(updatedMessages);
       }
 
       setQuestion('');
@@ -196,7 +225,23 @@ export default function ReligionAIScreen() {
   const handleClear = () => {
     Alert.alert('Clear Conversation?', 'This will reset your message history.', [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Clear', onPress: () => setMessages([]) },
+      {
+        text: 'Clear',
+        onPress: async () => {
+          setMessages([]);
+          const uid = await ensureAuth(user?.uid);
+          if (uid) {
+            try {
+              await setDocument(`users/${uid}/religionAI/history`, {
+                messages: [],
+                updatedAt: new Date().toISOString(),
+              });
+            } catch (err) {
+              console.error('Failed to clear ReligionAI history', err);
+            }
+          }
+        },
+      },
     ]);
   };
 
