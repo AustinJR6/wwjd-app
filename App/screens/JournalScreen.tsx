@@ -179,6 +179,7 @@ export default function JournalScreen() {
   }, []);
 
   const handleGuidedJournal = async () => {
+    console.log("🔮 Start Guided Journal Pressed");
     const p = getPromptsForReligion(religion || '');
     setPrompts(p);
     setGuidedMode(true);
@@ -222,11 +223,23 @@ export default function JournalScreen() {
       setResponses([]);
       setGuidedText('');
       setGuidedMode(false);
+      Alert.alert('✨ Guided Complete', 'Your full entry is now ready to be saved.');
     }
   };
 
   const handleSaveEntry = async () => {
-    if (!entry.trim()) return;
+    console.log("📝 Save Entry Pressed");
+    if (guidedMode) {
+      Alert.alert(
+        'Guided Journal in Progress',
+        'Please complete the guided prompts before saving.'
+      );
+      return;
+    }
+    if (!entry.trim()) {
+      Alert.alert('Empty Entry', 'Please write something before saving.');
+      return;
+    }
     setSaving(true);
     try {
       const idToken = await getStoredToken();
@@ -268,7 +281,7 @@ export default function JournalScreen() {
         });
       }
 
-      Alert.alert('Saved!', 'Your reflection has been saved.');
+      Alert.alert('✅ Journal Saved', 'Your reflection has been securely stored.');
       console.log('🎉 Gus Bug: Journal entry saved.');
       setEntry('');
       setEmotion('');
@@ -330,7 +343,11 @@ export default function JournalScreen() {
               onChangeText={setTags}
             />
 
-            <Button title={saving ? 'Saving…' : 'Save Entry'} onPress={handleSaveEntry} disabled={saving} />
+            <Button
+              title={saving ? 'Saving…' : 'Save Entry'}
+              onPress={handleSaveEntry}
+              disabled={saving || guidedMode}
+            />
             <Button title="Start Guided Journal" onPress={handleGuidedJournal} />
           </>
         ) : (
