@@ -40,8 +40,13 @@ export default function Header() {
         text: 'Sign Out',
         style: 'destructive',
         onPress: async () => {
-          await logout();
-          navigation.reset({ index: 0, routes: [{ name: 'Welcome' }] });
+          try {
+            await logout();
+            navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+          } catch (err) {
+            console.error('\u274C Sign out failed:', err);
+            Alert.alert('Logout Error', 'Could not sign out. Please try again.');
+          }
         },
       },
     ]);
