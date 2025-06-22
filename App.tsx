@@ -37,6 +37,7 @@ import ProfileScreen from './App/screens/profile/ProfileScreen';
 import SettingsScreen from './App/screens/profile/SettingsScreen';
 import OrganizationManagementScreen from './App/screens/profile/OrganizationManagmentScreen';
 import JoinOrganizationScreen from './App/screens/profile/JoinOrganizationScreen';
+import ChangePasswordScreen from './App/screens/profile/ChangePasswordScreen';
 
 // Root-Level Screens
 import QuoteScreen from './App/screens/QuoteScreen';
@@ -155,6 +156,7 @@ export default function App() {
             <Stack.Screen name="Upgrade" component={UpgradeScreen} options={{ title: 'Upgrade to OneVine+' }} />
             <Stack.Screen name="GiveBack" component={GiveBackScreen} options={{ title: 'Give Back' }} />
             <Stack.Screen name="Profile" component={ProfileScreen} />
+            <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} options={{ title: 'Change Password' }} />
             <Stack.Screen name="Settings" component={SettingsScreen} />
             <Stack.Screen name="Trivia" component={TriviaScreen} options={{ title: 'Trivia Challenge' }} />
             <Stack.Screen name="Leaderboards" component={LeaderboardsScreen} options={{ title: 'Leaderboards' }} />

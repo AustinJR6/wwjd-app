@@ -35,6 +35,7 @@ export type RootStackParamList = {
   JoinOrganization: undefined;
   OrganizationManagement: undefined;
   Profile: undefined;
+  ChangePassword: undefined;
   Settings: undefined;
 
   // Shared flow screens

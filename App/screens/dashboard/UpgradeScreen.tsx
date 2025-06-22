@@ -69,11 +69,11 @@ export default function UpgradeScreen({ navigation }: Props) {
       if (url) {
         Linking.openURL(url);
       } else {
-        Alert.alert('Error', 'Something went wrong. Please try again.');
+        Alert.alert('Checkout Error', 'Unable to start checkout. Please try again later.');
       }
     } catch (err: any) {
       console.error('🔥 API Error:', err?.response?.data || err.message);
-      Alert.alert('Error', 'Something went wrong. Please try again.');
+      Alert.alert('Checkout Error', 'Unable to start checkout. Please try again later.');
     } finally {
       setLoading(false);
     }

@@ -8,6 +8,9 @@ dotenv.config();
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
 const LOGGING_MODE = process.env.LOGGING_MODE || "gusbug";
+const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || "";
+const STRIPE_SUCCESS_URL = process.env.STRIPE_SUCCESS_URL || "https://example.com/success";
+const STRIPE_CANCEL_URL = process.env.STRIPE_CANCEL_URL || "https://example.com/cancel";
 
 export const incrementReligionPoints = onRequest(async (req, res) => {
   console.log("🔍 Headers received:", req.headers);
@@ -219,6 +222,97 @@ export const generateChallenge = onRequest(async (req, res) => {
       return;
     }
     res.status(500).json({ error: "Gemini failed" });
+  }
+});
+
+export const startSubscriptionCheckout = onRequest(async (req, res) => {
+  const idToken = req.headers.authorization?.split("Bearer ")[1];
+  if (!idToken) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  const { priceId } = req.body || {};
+  if (!priceId) {
+    res.status(400).json({ error: "Missing priceId" });
+    return;
+  }
+
+  try {
+    const decoded = await auth.verifyIdToken(idToken);
+    const params = new URLSearchParams({
+      mode: "subscription",
+      "line_items[0][price]": priceId,
+      "line_items[0][quantity]": "1",
+      client_reference_id: decoded.uid,
+      success_url: STRIPE_SUCCESS_URL,
+      cancel_url: STRIPE_CANCEL_URL,
+    });
+
+    const resp = await fetch("https://api.stripe.com/v1/checkout/sessions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${STRIPE_SECRET_KEY}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: params.toString(),
+    });
+
+    const data: any = await resp.json();
+    if (!resp.ok) {
+      console.error("Stripe error", data);
+      res.status(500).json({ error: "Stripe failed" });
+      return;
+    }
+    res.status(200).json({ url: data.url });
+  } catch (err) {
+    console.error("Subscription checkout error", err);
+    res.status(500).json({ error: "Failed to start checkout" });
+  }
+});
+
+export const startOneTimeTokenCheckout = onRequest(async (req, res) => {
+  const idToken = req.headers.authorization?.split("Bearer ")[1];
+  if (!idToken) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  const { priceId } = req.body || {};
+  if (!priceId) {
+    res.status(400).json({ error: "Missing priceId" });
+    return;
+  }
+
+  try {
+    const decoded = await auth.verifyIdToken(idToken);
+    const params = new URLSearchParams({
+      mode: "payment",
+      "line_items[0][price]": priceId,
+      "line_items[0][quantity]": "1",
+      client_reference_id: decoded.uid,
+      success_url: STRIPE_SUCCESS_URL,
+      cancel_url: STRIPE_CANCEL_URL,
+    });
+
+    const resp = await fetch("https://api.stripe.com/v1/checkout/sessions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${STRIPE_SECRET_KEY}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: params.toString(),
+    });
+    const data: any = await resp.json();
+    if (!resp.ok) {
+      console.error("Stripe error", data);
+      res.status(500).json({ error: "Stripe failed" });
+      return;
+    }
+    res.status(200).json({ url: data.url });
+  } catch (err) {
+    console.error("Token checkout error", err);
+    res.status(500).json({ error: "Failed to start checkout" });
   }
 });
 

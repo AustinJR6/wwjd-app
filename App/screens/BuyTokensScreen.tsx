@@ -67,11 +67,11 @@ export default function BuyTokensScreen({ navigation }: Props) {
       if (url) {
         Linking.openURL(url);
       } else {
-        Alert.alert('Error', 'Unable to start purchase.');
+        Alert.alert('Checkout Error', 'Unable to start checkout. Please try again later.');
       }
     } catch (err) {
       console.error('Purchase error:', err);
-      Alert.alert('Error', 'Unable to start purchase.');
+      Alert.alert('Checkout Error', 'Unable to start checkout. Please try again later.');
     }
   };
 
