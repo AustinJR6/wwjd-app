@@ -37,6 +37,55 @@ exports.generateSpiritualReflection = functions.https.onCall(async (data, contex
       'Something went wrong with Gemini.'
     );
   }
+  });
+
+
+// 💳 createCheckoutSession: Starts a Stripe Checkout session
+exports.createCheckoutSession = functions.https.onRequest(async (req, res) => {
+  const stripe = require('stripe')(functions.config().stripe.secret_key);
+  const { uid, type, amount } = req.body;
+  if (!uid || !type) {
+    res.status(400).json({ error: 'Missing parameters.' });
+    return;
+  }
+  try {
+    let session;
+    if (type === 'subscription') {
+      session = await stripe.checkout.sessions.create({
+        mode: 'subscription',
+        line_items: [
+          {
+            price: functions.config().stripe.subscription_price,
+            quantity: 1,
+          },
+        ],
+        metadata: { userId: uid },
+        success_url: 'https://example.com/success',
+        cancel_url: 'https://example.com/cancel',
+      });
+    } else {
+      session = await stripe.checkout.sessions.create({
+        mode: 'payment',
+        line_items: [
+          {
+            price_data: {
+              currency: 'usd',
+              product_data: { name: 'Token Pack' },
+              unit_amount: Math.round((amount || 0) * 100),
+            },
+            quantity: 1,
+          },
+        ],
+        metadata: { userId: uid },
+        success_url: 'https://example.com/success',
+        cancel_url: 'https://example.com/cancel',
+      });
+    }
+    res.status(200).json({ url: session.url });
+  } catch (err) {
+    console.error('❌ createCheckoutSession error:', err);
+    res.status(500).json({ error: 'Failed to create checkout session.' });
+  }
 });
 
 
