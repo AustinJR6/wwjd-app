@@ -84,6 +84,7 @@ export default function ChallengeScreen() {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
         body: JSON.stringify({
           prompt: `Provide a short blessing for a user who reached a ${current}-day spiritual challenge streak in the ${userData.religion || 'Christian'} tradition.`,
+          history: [],
         }),
       });
       const data = await res.json();
@@ -134,11 +135,13 @@ export default function ChallengeScreen() {
         },
         body: JSON.stringify({
           prompt: `Give me a short daily challenge for someone of the ${religion} faith.`,
+          history: [],
         }),
       });
 
       const data = await response.json();
       const newChallenge = data.response || 'Reflect in silence for five minutes today.';
+      console.log('🌟 New Challenge:', newChallenge);
       setChallenge(newChallenge);
 
       await setDocument(`users/${uid}`, {
