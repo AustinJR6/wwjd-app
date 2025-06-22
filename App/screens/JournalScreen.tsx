@@ -25,7 +25,6 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/navigation/RootStackParamList';
 import { getPromptsForReligion } from '@/utils/guidedPrompts';
 import axios from 'axios';
-import * as SecureStore from 'expo-secure-store';
 import { INCREMENT_RELIGION_POINTS_URL } from '@/utils/constants';
 
 export default function JournalScreen() {
@@ -233,7 +232,7 @@ export default function JournalScreen() {
       });
 
       if (userData.religion) {
-        const idToken = await SecureStore.getItemAsync('idToken');
+        const idToken = await getStoredToken();
         if (!idToken) console.warn('Missing idToken for incrementReligionPoints');
         const url = INCREMENT_RELIGION_POINTS_URL;
         console.log('📡 Calling endpoint:', url);

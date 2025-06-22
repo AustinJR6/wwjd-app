@@ -20,7 +20,6 @@ import { ensureAuth } from '@/utils/authGuard';
 import { useChallengeStore } from '@/state/challengeStore';
 import * as SafeStore from '@/utils/secureStore';
 import axios from 'axios';
-import * as SecureStore from 'expo-secure-store';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/navigation/RootStackParamList';
@@ -260,7 +259,7 @@ export default function ChallengeScreen() {
     });
 
     if (userData.religion) {
-      const idToken = await SecureStore.getItemAsync('idToken');
+      const idToken = await getStoredToken();
       if (!idToken) console.warn('Missing idToken for incrementReligionPoints');
       const url = INCREMENT_RELIGION_POINTS_URL;
       console.log('📡 Calling endpoint:', url);
