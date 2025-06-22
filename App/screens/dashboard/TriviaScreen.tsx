@@ -1,3 +1,4 @@
+import CustomText from '@/components/common/CustomText';
 import React, { useEffect, useState } from 'react';
 import {
   View,
@@ -161,12 +162,12 @@ export default function TriviaScreen() {
   return (
     <ScreenContainer>
       <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.title}>Trivia Challenge</Text>
+        <CustomText style={styles.title}>Trivia Challenge</CustomText>
 
         {loading ? (
           <ActivityIndicator size="large" color={theme.colors.primary} />
         ) : (
-          <Text style={styles.story}>{story}</Text>
+          <CustomText style={styles.story}>{story}</CustomText>
         )}
 
         {!loading && (

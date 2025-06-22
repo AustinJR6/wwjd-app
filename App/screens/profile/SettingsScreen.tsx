@@ -1,5 +1,6 @@
+import CustomText from '@/components/common/CustomText';
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Switch, Alert, LayoutAnimation } from 'react-native';
+import { View,  StyleSheet, Switch, Alert, LayoutAnimation } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import Constants from 'expo-constants';
 import ScreenContainer from "@/components/theme/ScreenContainer";
@@ -77,11 +78,11 @@ export default function SettingsScreen() {
     <ScreenContainer>
       <View style={styles.center}>
         <View style={styles.row}>
-          <Text style={styles.text}>Night Mode</Text>
+          <CustomText style={styles.text}>Night Mode</CustomText>
           <Switch value={nightMode} onValueChange={toggleNight} />
         </View>
         <View style={styles.row}>
-          <Text style={styles.text}>Enable Reflection Reminder</Text>
+          <CustomText style={styles.text}>Enable Reflection Reminder</CustomText>
           <Switch
             value={reminderEnabled}
             onValueChange={async (v) => {
@@ -96,7 +97,7 @@ export default function SettingsScreen() {
         </View>
         {reminderEnabled && (
           <View style={styles.row}>
-            <Text style={styles.text}>Time of Reminder</Text>
+            <CustomText style={styles.text}>Time of Reminder</CustomText>
             <DateTimePicker
               value={new Date(`1970-01-01T${reminderTime}:00`)}
               mode="time"
@@ -138,7 +139,7 @@ export default function SettingsScreen() {
             />
           </>
         )}
-        <Text style={styles.version}>v{Constants.expoConfig?.version}</Text>
+        <CustomText style={styles.version}>v{Constants.expoConfig?.version}</CustomText>
       </View>
     </ScreenContainer>
   );

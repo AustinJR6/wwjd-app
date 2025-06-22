@@ -18,7 +18,7 @@ export default function Background({ children }: { children: React.ReactNode }) 
   return (
     <View style={styles.wrapper}>
       <LinearGradient
-        colors={assets.bgGradient}
+        colors={assets.bgGradient as [string, string]}
         style={StyleSheet.absoluteFill}
       />
       <View style={styles.content}>{children}</View>

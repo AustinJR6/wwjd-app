@@ -1,5 +1,6 @@
+import CustomText from '@/components/common/CustomText';
 import React from 'react'
-import { Modal as RNModal, View, Text, StyleSheet, TouchableOpacity } from 'react-native'
+import { Modal as RNModal, View,  StyleSheet, TouchableOpacity } from 'react-native'
 import { useTheme } from "@/components/theme/theme"
 
 interface ModalProps {
@@ -50,10 +51,10 @@ export default function Modal({ visible, title, onClose, children }: ModalProps)
     <RNModal animationType="slide" transparent visible={visible}>
       <View style={styles.overlay}>
         <View style={styles.container}>
-          {title && <Text style={styles.title}>{title}</Text>}
+          {title && <CustomText style={styles.title}>{title}</CustomText>}
           <View style={styles.content}>{children}</View>
           <TouchableOpacity onPress={onClose} style={styles.close}>
-            <Text style={styles.closeText}>Close</Text>
+            <CustomText style={styles.closeText}>Close</CustomText>
           </TouchableOpacity>
         </View>
       </View>

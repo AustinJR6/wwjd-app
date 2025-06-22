@@ -1,3 +1,4 @@
+import CustomText from '@/components/common/CustomText';
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -47,7 +48,7 @@ export default function JoinOrganizationScreen() {
         row: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, borderBottomWidth: 1, borderColor: theme.colors.border }, // ✅ added missing 'row' style
         infoWrap: { flex: 1, marginRight: 8 }, // ✅ added missing 'infoWrap' style
         name: { fontSize: 16, fontWeight: '600', color: theme.colors.text }, // ✅ added missing 'name' style
-        meta: { color: theme.colors.fadedText, fontSize: 14 }, // ✅ added missing 'meta' style
+        meta: { color: theme.colors.fadedText, fontSize: 14 },
       }),
     [theme],
   );
@@ -125,7 +126,7 @@ export default function JoinOrganizationScreen() {
 
   return (
     <ScreenContainer>
-      <Text style={styles.title}>Join an Organization</Text>
+      <CustomText style={styles.title}>Join an Organization</CustomText>
       <TextInput
         style={styles.input}
         placeholder="Search by name"
@@ -139,11 +140,11 @@ export default function JoinOrganizationScreen() {
         renderItem={({ item }) => (
           <View style={styles.row}>
             <View style={styles.infoWrap}>
-              <Text style={styles.name}>{item.name}</Text>
-              <Text style={styles.meta}>Tier: {item.tier}</Text>
-              <Text style={styles.meta}>
+              <CustomText style={styles.name}>{item.name}</CustomText>
+              <CustomText style={styles.meta}>Tier: {item.tier}</CustomText>
+              <CustomText style={styles.meta}>
                 Seats: {item.members?.length || 0} / {item.seatLimit}
-              </Text>
+              </CustomText>
             </View>
             <Button title="Join" onPress={() => joinOrg(item)} />
           </View>

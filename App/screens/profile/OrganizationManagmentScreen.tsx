@@ -1,3 +1,4 @@
+import CustomText from '@/components/common/CustomText';
 import React, { useEffect, useState } from 'react';
 import {
   View,
@@ -148,26 +149,26 @@ export default function OrganizationManagementScreen() {
   if (!org) {
     return (
       <ScreenContainer>
-        <Text style={styles.title}>No organization found</Text>
+        <CustomText style={styles.title}>No organization found</CustomText>
       </ScreenContainer>
     );
   }
 
   return (
     <ScreenContainer>
-      <Text style={styles.title}>{org.name}</Text>
-      <Text style={styles.subtitle}>Tier: {org.tier}</Text>
-      <Text style={styles.subtitle}>
+      <CustomText style={styles.title}>{org.name}</CustomText>
+      <CustomText style={styles.subtitle}>Tier: {org.tier}</CustomText>
+      <CustomText style={styles.subtitle}>
         Seats Used: {org.members?.length || 0} / {org.seatLimit}
-      </Text>
+      </CustomText>
 
-      <Text style={styles.sectionTitle}>Members</Text>
+      <CustomText style={styles.sectionTitle}>Members</CustomText>
       <FlatList
         data={org.members || []}
         keyExtractor={(item) => item}
         renderItem={({ item }) => (
           <View style={styles.row}>
-            <Text style={styles.memberText}>{item}</Text>
+            <CustomText style={styles.memberText}>{item}</CustomText>
             <Button title="Remove" onPress={() => removeMember(item)} />
           </View>
         )}

@@ -1,3 +1,4 @@
+import CustomText from '@/components/common/CustomText';
 import React, { useState } from 'react';
 import {
   View,
@@ -87,7 +88,7 @@ export default function OrganizationSignupScreen({ navigation }: Props) {
 
   return (
     <ScreenContainer>
-      <Text style={styles.title}>Create Organization</Text>
+      <CustomText style={styles.title}>Create Organization</CustomText>
 
       <TextInput
         style={styles.input}
@@ -96,7 +97,7 @@ export default function OrganizationSignupScreen({ navigation }: Props) {
         onChangeText={setName}
       />
 
-      <Text style={styles.label}>Select Plan:</Text>
+      <CustomText style={styles.label}>Select Plan:</CustomText>
       <View style={styles.buttonGroup}>
         <Button
           title="Enterprise"

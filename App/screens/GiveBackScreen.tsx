@@ -1,5 +1,6 @@
+import CustomText from '@/components/common/CustomText';
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Alert, Linking } from 'react-native';
+import { View,  StyleSheet, Alert, Linking } from 'react-native';
 import Button from '@/components/common/Button';
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { useTheme } from "@/components/theme/theme";
@@ -79,12 +80,12 @@ export default function GiveBackScreen({ navigation }: Props) {
   return (
     <ScreenContainer>
       <View style={styles.content}>
-        <Text style={styles.title}>Give Back</Text>
-        <Text style={styles.subtitle}>
+        <CustomText style={styles.title}>Give Back</CustomText>
+        <CustomText style={styles.subtitle}>
           Your donations help others receive spiritual guidance, food support, and emotional healing.
-        </Text>
+        </CustomText>
 
-        <Text style={styles.section}>Make a One-Time Gift:</Text>
+        <CustomText style={styles.section}>Make a One-Time Gift:</CustomText>
 
         <View style={styles.buttonGroup}>
           <Button title="$2" onPress={() => handleDonation(2)} disabled={donating} />
@@ -92,9 +93,9 @@ export default function GiveBackScreen({ navigation }: Props) {
           <Button title="$10" onPress={() => handleDonation(10)} disabled={donating} />
         </View>
 
-        <Text style={styles.note}>
+        <CustomText style={styles.note}>
           Thank you for walking in love. Every gift reflects the heart of Christ.
-        </Text>
+        </CustomText>
 
         <View style={styles.backWrap}>
           <Button title="Back to Home" onPress={() => navigation.navigate('Home')} />

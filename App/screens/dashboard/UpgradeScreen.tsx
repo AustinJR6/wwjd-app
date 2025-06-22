@@ -1,5 +1,6 @@
+import CustomText from '@/components/common/CustomText';
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Alert, Linking } from 'react-native';
+import { View,  StyleSheet, Alert, Linking } from 'react-native';
 import Button from '@/components/common/Button';
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { useTheme } from "@/components/theme/theme";
@@ -7,6 +8,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from "@/navigation/RootStackParamList";
 import { useUser } from '@/hooks/useUser';
 import * as SecureStore from 'expo-secure-store';
+import { getStoredToken } from '@/services/authService';
 import { createStripeCheckout } from '@/services/apiService';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Upgrade'>;
@@ -80,17 +82,17 @@ export default function UpgradeScreen({ navigation }: Props) {
   return (
     <ScreenContainer>
       <View style={styles.content}>
-        <Text style={styles.title}>OneVine+ Membership</Text>
-        <Text style={styles.subtitle}>Experience the full blessing</Text>
+        <CustomText style={styles.title}>OneVine+ Membership</CustomText>
+        <CustomText style={styles.subtitle}>Experience the full blessing</CustomText>
 
         <View style={styles.benefitsBox}>
-          <Text style={styles.benefit}>✅ Unlimited Religion AI questions</Text>
-          <Text style={styles.benefit}>✅ Full Confessional access</Text>
-          <Text style={styles.benefit}>✅ Personalized journaling prompts</Text>
-          <Text style={styles.benefit}>✅ Early access to new features</Text>
+          <CustomText style={styles.benefit}>✅ Unlimited Religion AI questions</CustomText>
+          <CustomText style={styles.benefit}>✅ Full Confessional access</CustomText>
+          <CustomText style={styles.benefit}>✅ Personalized journaling prompts</CustomText>
+          <CustomText style={styles.benefit}>✅ Early access to new features</CustomText>
         </View>
 
-        <Text style={styles.price}>$9.99 / month</Text>
+        <CustomText style={styles.price}>$9.99 / month</CustomText>
 
         <View style={styles.buttonWrap}>
           <Button title="Join OneVine+" onPress={handleUpgrade} disabled={loading} />

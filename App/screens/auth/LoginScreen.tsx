@@ -1,5 +1,6 @@
+import CustomText from '@/components/common/CustomText';
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import { View,  StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { showGracefulError } from '@/utils/gracefulError';
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import TextField from "@/components/TextField";
@@ -83,7 +84,7 @@ export default function LoginScreen() {
           color={theme.colors.primary}
         />
       )}
-      <Text style={styles.title}>Welcome Back</Text>
+      <CustomText style={styles.title}>Welcome Back</CustomText>
 
       <TextField
         label="Email"
@@ -101,27 +102,27 @@ export default function LoginScreen() {
       />
 
       <Button title="Log In" onPress={handleLogin} loading={loading} />
-      <Text
+      <CustomText
         style={styles.link}
         onPress={handleForgotPassword}
       >
         Forgot Password?
-      </Text>
+      </CustomText>
 
 
-      <Text
+      <CustomText
         style={styles.link}
         onPress={() => navigation.navigate('Signup')}
       >
         Don’t have an account? Sign up
-      </Text>
+      </CustomText>
 
-      <Text
+      <CustomText
         style={styles.link}
         onPress={() => navigation.navigate('OrganizationSignup')}
       >
         Want to register your organization? Click here
-      </Text>
+      </CustomText>
     </ScreenContainer>
   );
 }

@@ -1,3 +1,4 @@
+import CustomText from '@/components/common/CustomText';
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -120,7 +121,7 @@ export default function SubmitProofScreen() {
 
   return (
     <ScreenContainer>
-      <Text style={styles.title}>Submit Challenge Proof</Text>
+      <CustomText style={styles.title}>Submit Challenge Proof</CustomText>
 
       <TextInput
         style={styles.input}
@@ -132,9 +133,9 @@ export default function SubmitProofScreen() {
       <Button title="Pick Image" onPress={pickImage} />
 
       {image && (
-        <Text style={styles.filename}>
+        <CustomText style={styles.filename}>
           Selected: {image.fileName || image.uri.split('/').pop()}
-        </Text>
+        </CustomText>
       )}
 
       <View style={styles.buttonWrap}>

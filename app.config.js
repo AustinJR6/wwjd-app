@@ -1,7 +1,8 @@
 // app.config.js
 export default {
-  name: "wwjd-app",
-  slug: "wwjd-app",
+  name: "OneVine",
+  slug: "onevine-app",
+  owner: "whippybuckle",
   version: "1.0.0",
   orientation: "portrait",
   icon: "./assets/OneVineIcon.png",
@@ -41,7 +42,7 @@ export default {
   ],
   extra: {
     eas: {
-      projectId: "4e9fc79d-ed33-4fc3-8e71-5533c8872160", // ✅ Required for EAS build linkage
+      projectId: "bbf209be-1b48-4f76-a496-9d4fcd8339fd",
     },
   },
 };

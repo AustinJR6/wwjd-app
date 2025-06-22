@@ -1,5 +1,6 @@
+import CustomText from '@/components/common/CustomText';
 import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Animated } from 'react-native';
+import { View,  StyleSheet, Animated } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Button from '@/components/common/Button';
 import { useNavigation } from '@react-navigation/native';
@@ -61,11 +62,11 @@ export default function WelcomeScreen() {
 
   return (
     <LinearGradient colors={[theme.colors.primary, theme.colors.surface]} style={styles.container}>
-      <Text style={styles.loginLink} onPress={() => navigation.replace('Login')}>
+      <CustomText style={styles.loginLink} onPress={() => navigation.replace('Login')}>
         Already have an account? Go to Login
-      </Text>
+      </CustomText>
       {/* Image removed if asset missing to prevent crash */}
-      <Text style={styles.title}>Welcome to OneVine</Text>
+      <CustomText style={styles.title}>Welcome to OneVine</CustomText>
       <View style={styles.buttons}>
         <View style={styles.buttonWrap}>
           <Button title="Log In" onPress={() => navigation.navigate('Login')} />

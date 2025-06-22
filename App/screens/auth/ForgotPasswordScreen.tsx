@@ -1,5 +1,6 @@
+import CustomText from '@/components/common/CustomText';
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Alert } from 'react-native';
+import { View,  StyleSheet, Alert } from 'react-native';
 import ScreenContainer from '@/components/theme/ScreenContainer';
 import TextField from '@/components/TextField';
 import Button from '@/components/common/Button';
@@ -41,7 +42,7 @@ export default function ForgotPasswordScreen() {
 
   return (
     <ScreenContainer>
-      <Text style={styles.title}>Reset Password</Text>
+      <CustomText style={styles.title}>Reset Password</CustomText>
       <TextField label="Email" value={email} onChangeText={setEmail} placeholder="you@example.com" />
       <Button title="Send Reset Link" onPress={handleReset} loading={loading} />
     </ScreenContainer>

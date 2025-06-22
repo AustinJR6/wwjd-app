@@ -1,5 +1,6 @@
+import CustomText from '@/components/common/CustomText';
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Alert } from 'react-native';
+import { View,  StyleSheet, Alert } from 'react-native';
 import ScreenContainer from '@/components/theme/ScreenContainer';
 import TextField from '@/components/TextField';
 import Button from '@/components/common/Button';
@@ -89,7 +90,7 @@ export default function ProfileScreen() {
         <TextField label="Username" value={username} onChangeText={setUsername} />
         <TextField label="Region" value={region} onChangeText={setRegion} />
 
-        <Text style={styles.label}>Religion</Text>
+        <CustomText style={styles.label}>Religion</CustomText>
         <View style={styles.pickerWrapper}>
           <Picker
             selectedValue={religion}
@@ -102,9 +103,9 @@ export default function ProfileScreen() {
           </Picker>
         </View>
 
-        <Text style={styles.info}>Points: {points}</Text>
-        <Text style={styles.info}>Subscribed: {user?.isSubscribed ? 'Yes' : 'No'}</Text>
-        <Text style={styles.info}>Tokens: {tokens}</Text>
+        <CustomText style={styles.info}>Points: {points}</CustomText>
+        <CustomText style={styles.info}>Subscribed: {user?.isSubscribed ? 'Yes' : 'No'}</CustomText>
+        <CustomText style={styles.info}>Tokens: {tokens}</CustomText>
 
         <Button title="Save Changes" onPress={handleSave} loading={saving} />
       </View>

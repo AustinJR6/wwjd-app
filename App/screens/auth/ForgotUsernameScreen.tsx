@@ -1,5 +1,6 @@
+import CustomText from '@/components/common/CustomText';
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Alert } from 'react-native';
+import { View,  StyleSheet, Alert } from 'react-native';
 import ScreenContainer from '@/components/theme/ScreenContainer';
 import TextField from '@/components/TextField';
 import Button from '@/components/common/Button';
@@ -68,11 +69,11 @@ export default function ForgotUsernameScreen() {
 
   return (
     <ScreenContainer>
-      <Text style={styles.title}>Find Your Email</Text>
+      <CustomText style={styles.title}>Find Your Email</CustomText>
       <TextField label="Name" value={name} onChangeText={setName} placeholder="Your name" />
       <TextField label="Region" value={region} onChangeText={setRegion} placeholder="Region" />
       <Button title="Lookup" onPress={handleLookup} loading={loading} />
-      {email && <Text style={styles.result}>Email: {email}</Text>}
+      {email && <CustomText style={styles.result}>Email: {email}</CustomText>}
     </ScreenContainer>
   );
 }

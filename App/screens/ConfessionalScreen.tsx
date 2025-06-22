@@ -1,3 +1,4 @@
+import CustomText from '@/components/common/CustomText';
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -134,7 +135,7 @@ export default function ConfessionalScreen() {
   return (
     <ScreenContainer>
       <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.title}>Confessional</Text>
+        <CustomText style={styles.title}>Confessional</CustomText>
         <TextInput
           style={styles.input}
           placeholder="What's on your heart?"
@@ -142,13 +143,13 @@ export default function ConfessionalScreen() {
           onChangeText={setText}
           multiline
         />
-        <Text style={styles.systemMsg}>This conversation is private and vanishes when you leave.</Text>
+        <CustomText style={styles.systemMsg}>This conversation is private and vanishes when you leave.</CustomText>
         <View style={styles.buttonWrap}>
           <Button title="Send" onPress={handleConfess} disabled={loading || messages.length >= 10} />
         </View>
         {loading && <ActivityIndicator size="large" color={theme.colors.primary} />}
         {messages.map((m, idx) => (
-          <Text key={idx} style={styles.response}>{m.sender === 'user' ? 'You: ' : ''}{m.text}</Text>
+          <CustomText key={idx} style={styles.response}>{m.sender === 'user' ? 'You: ' : ''}{m.text}</CustomText>
         ))}
       </ScrollView>
     </ScreenContainer>

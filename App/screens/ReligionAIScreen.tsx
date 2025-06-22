@@ -1,3 +1,4 @@
+import CustomText from '@/components/common/CustomText';
 import React, { useState } from 'react';
 import {
   View,
@@ -194,11 +195,11 @@ export default function ReligionAIScreen() {
   return (
     <ScreenContainer>
       <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.title}>Ask for Guidance</Text>
+        <CustomText style={styles.title}>Ask for Guidance</CustomText>
 
         {isSubscribed && (
           <View style={styles.subscriptionBanner}>
-            <Text style={styles.subscriptionText}>💎 OneVine+ Unlimited Chat Enabled</Text>
+            <CustomText style={styles.subscriptionText}>💎 OneVine+ Unlimited Chat Enabled</CustomText>
             <Button title="Clear Conversation" onPress={handleClear} color={theme.colors.accent} />
           </View>
         )}
@@ -218,7 +219,7 @@ export default function ReligionAIScreen() {
         {loading && <ActivityIndicator size="large" color={theme.colors.primary} />}
 
         {messages.map((msg, idx) => (
-          <Text key={idx} style={styles.answer}>{msg}</Text>
+          <CustomText key={idx} style={styles.answer}>{msg}</CustomText>
         ))}
       </ScrollView>
     </ScreenContainer>
