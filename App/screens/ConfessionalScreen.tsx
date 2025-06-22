@@ -104,6 +104,7 @@ export default function ConfessionalScreen() {
                    'Spiritual Guide';
 
       const idToken = await getStoredToken();
+      if (!idToken) console.warn('Missing idToken for askGeminiSimple');
       const conversation = messages
         .map((m) => `${m.sender === 'user' ? 'User' : role}: ${m.text}`)
         .join('\n');

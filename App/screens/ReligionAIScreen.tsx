@@ -81,6 +81,7 @@ export default function ReligionAIScreen() {
     }
 
     let idToken = await getStoredToken();
+    if (!idToken) console.warn('Missing idToken for ReligionAI fetch');
     const userId = await SafeStore.getItem('userId');
     if (!idToken || !userId) {
       Alert.alert('Login Required', 'Please log in again.');
@@ -152,6 +153,7 @@ export default function ReligionAIScreen() {
 
       // Reuse the token instead of fetching it again
       idToken = idToken || (await getStoredToken());
+      if (!idToken) console.warn('Missing idToken for ReligionAI request');
       const response = await fetch(ASK_GEMINI_V2, {
         method: 'POST',
         headers: {
