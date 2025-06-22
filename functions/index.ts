@@ -10,16 +10,19 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
 const LOGGING_MODE = process.env.LOGGING_MODE || "gusbug";
 
 export const incrementReligionPoints = onRequest(async (req, res) => {
+  console.log("🔍 Headers received:", req.headers);
+
   const idToken = req.headers.authorization?.split("Bearer ")[1];
   if (!idToken) {
-    console.error("❌ Gus Bug Alert: Missing ID token in header. 🐞");
-    res.status(401).json({ error: "Unauthorized — Gus bug stole the token!" });
+    console.error("❌ Gus Bug Alert: No ID token provided.");
+    res.status(401).send("Unauthorized: Missing ID token.");
     return;
   }
+
   let decoded: admin.auth.DecodedIdToken;
   try {
     decoded = await auth.verifyIdToken(idToken);
-    console.log(`✅ Gus Bug Authenticated: ${decoded.uid} is legit! 🎯`);
+    console.log(`✅ Gus Bug Authenticated: ${decoded.uid}`);
     const { religion, points } = req.body;
 
     if (
