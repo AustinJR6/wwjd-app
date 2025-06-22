@@ -8,28 +8,28 @@ export default {
   icon: "./assets/OneVineIcon.png",
   userInterfaceStyle: "light",
   splash: {
-    image: "./assets/OneVineIcon.png", // ← Match `app.json`
+    image: "./assets/OneVineIcon.png",
     resizeMode: "contain",
     backgroundColor: "#ffffff",
   },
   updates: {
     fallbackToCacheTimeout: 0,
-    url: "https://u.expo.dev/bbf209be-1b48-4f76-a496-9d4fcd8339fd", // ← Add this from app.json
+    url: "https://u.expo.dev/bbf209be-1b48-4f76-a496-9d4fcd8339fd",
   },
   assetBundlePatterns: ["**/*"],
   ios: {
     supportsTablet: true,
-    bundleIdentifier: "com.lysara.onevine", // ← Add this from app.json
+    bundleIdentifier: "com.lysara.onevine",
     infoPlist: {
       ITSAppUsesNonExemptEncryption: false,
     },
   },
   android: {
     jsEngine: "jsc",
-    package: "com.lysara.onevine", // ← Match app.json for consistency
+    package: "com.lysara.onevine",
   },
   web: {
-    favicon: "./assets/OneVineIcon.png", // ← Match icon for consistency
+    favicon: "./assets/OneVineIcon.png",
   },
   plugins: [
     [
@@ -47,7 +47,7 @@ export default {
       projectId: "bbf209be-1b48-4f76-a496-9d4fcd8339fd",
     },
     firebase: {
-      projectId: "onevine-app", // ← Add this from app.json
+      projectId: "onevine-app",
     },
   },
 };
