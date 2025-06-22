@@ -168,7 +168,7 @@ export const generateChallenge = onRequest(async (req, res) => {
     return;
   }
 
-  const { history = [] } = req.body || {};
+  const { history = [], seed = Date.now() } = req.body || {};
 
   try {
     const decoded = await auth.verifyIdToken(idToken);
@@ -186,6 +186,8 @@ export const generateChallenge = onRequest(async (req, res) => {
       .map((c, i) => `#${i + 1}: ${c}`)
       .join("\n");
 
+    const randomizer = `Seed:${seed}`;
+
     const fullPrompt = `\nYou are a spiritual guide helping users grow in faith.\n\nDo NOT repeat or closely resemble any of the following recent challenges:\n${avoid}\n\nNow generate a new, unique, and creative spiritual challenge inspired by Christian teachings.\nMake it practical, soul-stirring, and concise.\nRespond ONLY with the new challenge text.`;
 
     const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
@@ -198,7 +200,7 @@ export const generateChallenge = onRequest(async (req, res) => {
       })),
     });
 
-    const result = await chat.sendMessage(fullPrompt);
+    const result = await chat.sendMessage(`${fullPrompt}\n${randomizer}`);
     const text = result?.response?.text?.() ?? "No response text returned.";
 
     const updated = [...recent.slice(-4), text];
@@ -312,6 +314,53 @@ export const startOneTimeTokenCheckout = onRequest(async (req, res) => {
     res.status(200).json({ url: data.url });
   } catch (err) {
     console.error("Token checkout error", err);
+    res.status(500).json({ error: "Failed to start checkout" });
+  }
+});
+
+export const startCheckoutSession = onRequest(async (req, res) => {
+  console.log("📦 Stripe payload:", req.body);
+  const idToken = req.headers.authorization?.split("Bearer ")[1];
+  if (!idToken) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  const { priceId, success_url, cancel_url, mode = "payment" } = req.body || {};
+  if (!priceId || !success_url || !cancel_url) {
+    res.status(400).json({ error: "Missing required fields" });
+    return;
+  }
+
+  try {
+    const decoded = await auth.verifyIdToken(idToken);
+    const params = new URLSearchParams({
+      mode,
+      "line_items[0][price]": priceId,
+      "line_items[0][quantity]": "1",
+      success_url,
+      cancel_url,
+      "metadata[userId]": decoded.uid,
+    });
+
+    const resp = await fetch("https://api.stripe.com/v1/checkout/sessions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${STRIPE_SECRET_KEY}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: params.toString(),
+    });
+
+    const data: any = await resp.json();
+    if (!resp.ok) {
+      console.error("Stripe error", data);
+      res.status(500).json({ error: "Stripe failed" });
+      return;
+    }
+    res.status(200).json({ url: data.url });
+  } catch (err) {
+    console.error("Checkout session error", err);
     res.status(500).json({ error: "Failed to start checkout" });
   }
 });

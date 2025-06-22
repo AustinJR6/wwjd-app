@@ -136,7 +136,7 @@ export default function ConfessionalScreen() {
       try {
         data = JSON.parse(textResp);
       } catch (err) {
-        console.error('Invalid JSON from Confessional:', textResp);
+        console.error('Invalid JSON from Confessional:', err, textResp);
         showGracefulError();
         return;
       }
