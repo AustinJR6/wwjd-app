@@ -8,25 +8,28 @@ export default {
   icon: "./assets/OneVineIcon.png",
   userInterfaceStyle: "light",
   splash: {
-    image: "./assets/splash.png",
+    image: "./assets/OneVineIcon.png", // ← Match `app.json`
     resizeMode: "contain",
     backgroundColor: "#ffffff",
   },
   updates: {
     fallbackToCacheTimeout: 0,
+    url: "https://u.expo.dev/bbf209be-1b48-4f76-a496-9d4fcd8339fd", // ← Add this from app.json
   },
   assetBundlePatterns: ["**/*"],
   ios: {
     supportsTablet: true,
+    bundleIdentifier: "com.lysara.onevine", // ← Add this from app.json
+    infoPlist: {
+      ITSAppUsesNonExemptEncryption: false,
+    },
   },
   android: {
     jsEngine: "jsc",
-    compileSdkVersion: 35,
-    targetSdkVersion: 35,
-    package: "com.whippybuckle.onevine", // ✅ REQUIRED for EAS builds
+    package: "com.lysara.onevine", // ← Match app.json for consistency
   },
   web: {
-    favicon: "./assets/favicon.png",
+    favicon: "./assets/OneVineIcon.png", // ← Match icon for consistency
   },
   plugins: [
     [
@@ -35,14 +38,16 @@ export default {
         android: {
           compileSdkVersion: 35,
           targetSdkVersion: 35,
-          // kotlinVersion is intentionally omitted
         },
       },
     ],
   ],
   extra: {
     eas: {
-      projectId: "bbf209be-1b48-4f76-a496-9d4fcd8339fd", // ✅ Required for EAS build linkage
+      projectId: "bbf209be-1b48-4f76-a496-9d4fcd8339fd",
+    },
+    firebase: {
+      projectId: "onevine-app", // ← Add this from app.json
     },
   },
 };
