@@ -178,7 +178,7 @@ export default function JournalScreen() {
     authenticateAndLoad();
   }, []);
 
-  const startGuided = async () => {
+  const handleGuidedJournal = async () => {
     const p = getPromptsForReligion(religion || '');
     setPrompts(p);
     setGuidedMode(true);
@@ -201,8 +201,11 @@ export default function JournalScreen() {
       });
       const data = await res.json();
       setGuidedText(data.response || '');
+      console.log('🎉 Gus Bug: Gemini text received.');
+      Alert.alert('Guided Prompt Ready', 'Gemini has provided a suggestion.');
     } catch (err) {
       console.error('❌ Guided journal error:', err);
+      showGracefulError();
     }
   };
 
@@ -222,7 +225,7 @@ export default function JournalScreen() {
     }
   };
 
-  const saveEntry = async () => {
+  const handleSaveEntry = async () => {
     if (!entry.trim()) return;
     setSaving(true);
     try {
@@ -266,6 +269,7 @@ export default function JournalScreen() {
       }
 
       Alert.alert('Saved!', 'Your reflection has been saved.');
+      console.log('🎉 Gus Bug: Journal entry saved.');
       setEntry('');
       setEmotion('');
       setTags('');
@@ -326,8 +330,8 @@ export default function JournalScreen() {
               onChangeText={setTags}
             />
 
-            <Button title={saving ? 'Saving…' : 'Save Entry'} onPress={saveEntry} disabled={saving} />
-            <Button title="Start Guided Journal" onPress={startGuided} />
+            <Button title={saving ? 'Saving…' : 'Save Entry'} onPress={handleSaveEntry} disabled={saving} />
+            <Button title="Start Guided Journal" onPress={handleGuidedJournal} />
           </>
         ) : (
           <>
