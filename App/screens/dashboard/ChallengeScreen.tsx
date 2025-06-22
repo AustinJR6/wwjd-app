@@ -17,7 +17,7 @@ import { useUser } from '@/hooks/useUser';
 import { getStoredToken } from '@/services/authService';
 import { ensureAuth } from '@/utils/authGuard';
 import { useChallengeStore } from '@/state/challengeStore';
-import * as SecureStore from 'expo-secure-store';
+import * as SafeStore from '@/utils/secureStore';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/navigation/RootStackParamList';
@@ -91,7 +91,7 @@ export default function ChallengeScreen() {
   const fetchChallenge = async () => {
     try {
       let idToken = await getStoredToken();
-      const userId = await SecureStore.getItemAsync('userId');
+      const userId = await SafeStore.getItem('userId');
       if (!idToken || !userId) {
         Alert.alert('Login Required', 'Please log in again.');
         navigation.replace('Login');
@@ -155,7 +155,7 @@ export default function ChallengeScreen() {
     }
 
     const idToken = await getStoredToken();
-    const userId = await SecureStore.getItemAsync('userId');
+    const userId = await SafeStore.getItem('userId');
     if (!idToken || !userId) {
       Alert.alert('Login Required', 'Please log in again.');
       navigation.replace('Login');

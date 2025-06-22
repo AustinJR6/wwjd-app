@@ -3,7 +3,7 @@ import { View, ActivityIndicator, Text } from 'react-native';
 import ErrorBoundary from './App/components/common/ErrorBoundary';
 import { useFonts, Poppins_600SemiBold } from '@expo-google-fonts/poppins';
 import { Merriweather_400Regular } from '@expo-google-fonts/merriweather';
-import * as SecureStore from 'expo-secure-store';
+import * as SafeStore from '@/utils/secureStore';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useUser } from '@/hooks/useUser';
@@ -69,12 +69,12 @@ export default function App() {
     const initialize = async () => {
       console.log('🔑 Checking saved auth credentials');
       try {
-        const uid = await SecureStore.getItemAsync('userId');
+        const uid = await SafeStore.getItem('userId');
         const token = await getStoredToken();
         if (uid && token) {
           await loadUser(uid);
           console.log('✅ Authenticated user', uid);
-          const hasSeen = await SecureStore.getItemAsync(`hasSeenOnboarding-${uid}`);
+          const hasSeen = await SafeStore.getItem(`hasSeenOnboarding-${uid}`);
           const route = hasSeen === 'true' ? 'Quote' : 'Onboarding';
           console.log('🔀 Initial route', route);
           setInitialRoute(route);

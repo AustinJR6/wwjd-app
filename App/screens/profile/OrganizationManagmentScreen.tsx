@@ -13,7 +13,7 @@ import { getStoredToken } from '@/services/authService';
 import ScreenContainer from '@/components/theme/ScreenContainer';
 import { useTheme } from '@/components/theme/theme';
 import { ensureAuth } from '@/utils/authGuard';
-import * as SecureStore from 'expo-secure-store';
+import * as SafeStore from '@/utils/secureStore';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/navigation/RootStackParamList';
@@ -70,8 +70,8 @@ export default function OrganizationManagementScreen() {
 
   useEffect(() => {
     const checkAccess = async () => {
-      const admin = await SecureStore.getItemAsync('isAdmin');
-      const manager = await SecureStore.getItemAsync('isOrgManager');
+      const admin = await SafeStore.getItem('isAdmin');
+      const manager = await SafeStore.getItem('isOrgManager');
       if (admin !== 'true' && manager !== 'true') {
         Alert.alert('Access Denied', 'This feature is for OneVine+ or Org Managers only.');
         navigation.goBack();
@@ -87,7 +87,7 @@ export default function OrganizationManagementScreen() {
   const loadOrg = async () => {
     if (!user) return;
     const idToken = await getStoredToken();
-    const userId = await SecureStore.getItemAsync('userId');
+    const userId = await SafeStore.getItem('userId');
     if (!idToken || !userId) {
       Alert.alert('Login Required', 'Please log in again.');
       navigation.replace('Login');
@@ -114,7 +114,7 @@ export default function OrganizationManagementScreen() {
   const removeMember = async (uid: string) => {
     if (!org?.id) return;
     const idToken = await getStoredToken();
-    const userId = await SecureStore.getItemAsync('userId');
+    const userId = await SafeStore.getItem('userId');
     if (!idToken || !userId) {
       Alert.alert('Login Required', 'Please log in again.');
       navigation.replace('Login');

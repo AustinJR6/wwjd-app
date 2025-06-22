@@ -10,7 +10,7 @@ import { loadUser } from "@/services/userService";
 import { useUserStore } from "@/state/userStore";
 import { SCREENS } from "@/navigation/screens";
 import { useTheme } from "@/components/theme/theme";
-import * as SecureStore from 'expo-secure-store';
+import * as SafeStore from '@/utils/secureStore';
 import { Picker } from '@react-native-picker/picker';
 import type { RootStackParamList } from "@/navigation/RootStackParamList";
 
@@ -32,7 +32,7 @@ export default function OnboardingScreen() {
     if (user) return;
     async function fetchUser() {
       try {
-        const uid = await SecureStore.getItemAsync('userId');
+        const uid = await SafeStore.getItem('userId');
         if (uid) {
           await loadUser(uid);
         }
@@ -65,7 +65,7 @@ export default function OnboardingScreen() {
           organizationId: organization || undefined,
         });
         await completeOnboarding(user.uid);
-        await SecureStore.setItemAsync(`hasSeenOnboarding-${user.uid}`, 'true');
+        await SafeStore.setItem(`hasSeenOnboarding-${user.uid}`, 'true');
 
         navigation.reset({
           index: 0,

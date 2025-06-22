@@ -6,7 +6,7 @@ import ScreenContainer from "@/components/theme/ScreenContainer";
 import TextField from "@/components/TextField";
 import Button from "@/components/common/Button";
 import { login, resetPassword } from "@/services/authService";
-import * as SecureStore from 'expo-secure-store';
+import * as SafeStore from '@/utils/secureStore';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTheme } from "@/components/theme/theme";
@@ -26,10 +26,10 @@ export default function LoginScreen() {
     try {
       const result = await login(email, password);
       if (result.localId) {
-        await SecureStore.setItemAsync('userId', result.localId);
-        await SecureStore.setItemAsync('idToken', result.idToken);
+        await SafeStore.setItem('userId', result.localId);
+        await SafeStore.setItem('idToken', result.idToken);
 
-        const hasSeen = await SecureStore.getItemAsync(
+        const hasSeen = await SafeStore.getItem(
           `hasSeenOnboarding-${result.localId}`
         );
         navigation.replace(hasSeen === 'true' ? 'Home' : 'Onboarding');

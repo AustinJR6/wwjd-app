@@ -1,22 +1,41 @@
 import * as Notifications from 'expo-notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Constants from 'expo-constants';
+
+const isExpoGo = Constants.appOwnership === 'expo';
 
 const STORAGE_KEY = 'reflectionReminderId';
 
 export async function scheduleReflectionReminder(time: string) {
-  const [hour, minute] = time.split(':').map((t) => parseInt(t, 10));
-  const id = await Notifications.scheduleNotificationAsync({
-    content: { title: 'OneVine Reflection', body: randomMessage() },
-    trigger: { hour, minute, repeats: true, type: 'daily' } as any,
-  });
-  await AsyncStorage.setItem(STORAGE_KEY, id);
+  if (isExpoGo) {
+    console.log('🔕 scheduleReflectionReminder skipped in Expo Go');
+    return;
+  }
+  try {
+    const [hour, minute] = time.split(':').map((t) => parseInt(t, 10));
+    const id = await Notifications.scheduleNotificationAsync({
+      content: { title: 'OneVine Reflection', body: randomMessage() },
+      trigger: { hour, minute, repeats: true, type: 'daily' } as any,
+    });
+    await AsyncStorage.setItem(STORAGE_KEY, id);
+  } catch (err) {
+    console.warn('Failed to schedule notification', err);
+  }
 }
 
 export async function cancelReflectionReminder() {
-  const id = await AsyncStorage.getItem(STORAGE_KEY);
-  if (id) {
-    await Notifications.cancelScheduledNotificationAsync(id);
+  if (isExpoGo) {
     await AsyncStorage.removeItem(STORAGE_KEY);
+    return;
+  }
+  try {
+    const id = await AsyncStorage.getItem(STORAGE_KEY);
+    if (id) {
+      await Notifications.cancelScheduledNotificationAsync(id);
+      await AsyncStorage.removeItem(STORAGE_KEY);
+    }
+  } catch (err) {
+    console.warn('Failed to cancel notification', err);
   }
 }
 

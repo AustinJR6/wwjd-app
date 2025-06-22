@@ -1,4 +1,4 @@
-import * as SecureStore from 'expo-secure-store';
+import * as SafeStore from '@/utils/secureStore';
 import { getStoredToken } from '@/services/authService';
 
 /**
@@ -7,7 +7,7 @@ import { getStoredToken } from '@/services/authService';
  */
 export async function ensureAuth(expectedUid?: string): Promise<string | null> {
   const [uid, token] = await Promise.all([
-    SecureStore.getItemAsync('userId'),
+    SafeStore.getItem('userId'),
     getStoredToken(),
   ]);
 

@@ -1,10 +1,10 @@
 import { create } from 'zustand';
 import { getDocument, setDocument } from '@/services/firestoreService';
-import * as SecureStore from 'expo-secure-store';
+import * as SafeStore from '@/utils/secureStore';
 import { ensureAuth } from '@/utils/authGuard';
 
 async function getUid(): Promise<string | null> {
-  return await SecureStore.getItemAsync('userId');
+  return await SafeStore.getItem('userId');
 }
 
 interface ChallengeStore {
