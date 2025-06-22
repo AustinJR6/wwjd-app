@@ -53,7 +53,7 @@ export const syncSubscriptionStatus = async () => {
   if (!uid) return;
   const sub = await getDocument(`subscriptions/${uid}`);
   const isSubscribed = !!sub && sub.active === true;
-  console.log('💎 WWJD+ Status:', isSubscribed);
+  console.log('💎 OneVine+ Status:', isSubscribed);
   if (isSubscribed) {
     await setDocument(`tokens/${uid}`, { count: 9999 });
   }

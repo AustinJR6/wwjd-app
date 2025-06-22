@@ -89,7 +89,14 @@ export default function ChallengeScreen() {
           }),
         })
       );
-      const data = await res.json();
+      const textResp = await res.text();
+      let data: any;
+      try {
+        data = JSON.parse(textResp);
+      } catch (err) {
+        console.error('Invalid JSON from milestone blessing:', textResp);
+        return;
+      }
       const blessing = data.response || "You’ve walked with discipline and devotion. This is your blessing.";
       Alert.alert('Blessing!', `${blessing}\nYou earned ${reward} Grace Tokens.`);
     } catch (err) {
@@ -143,7 +150,15 @@ export default function ChallengeScreen() {
         })
       );
 
-      const data = await response.json();
+      const text = await response.text();
+      let data: any;
+      try {
+        data = JSON.parse(text);
+      } catch (err) {
+        console.error('Invalid JSON from generateChallenge:', text);
+        showGracefulError();
+        return;
+      }
       const newChallenge = data.response || 'Reflect in silence for five minutes today.';
       console.log('🌟 New Challenge:', newChallenge);
       setChallenge(newChallenge);

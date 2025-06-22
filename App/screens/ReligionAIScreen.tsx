@@ -130,7 +130,7 @@ export default function ReligionAIScreen() {
       const cost = 5;
       const subscribed = userData.isSubscribed || (subDoc?.active === true);
       setIsSubscribed(subscribed);
-      console.log('💎 WWJD+ Status:', subscribed);
+      console.log('💎 OneVine+ Status:', subscribed);
 
       const religion = userData.religion || 'Spiritual Guide';
       const promptRole = religion === 'Christianity' ? 'Jesus' :
@@ -199,7 +199,15 @@ export default function ReligionAIScreen() {
         })
       );
 
-      const data = await response.json();
+      const text = await response.text();
+      let data: any;
+      try {
+        data = JSON.parse(text);
+      } catch (err) {
+        console.error('Invalid JSON from ReligionAI:', text);
+        showGracefulError();
+        return;
+      }
       const answer = data?.response || 'I am always with you. Trust in Me.';
       console.log('📖 ReligionAI input:', question);
       console.log('🙏 ReligionAI reply:', answer);

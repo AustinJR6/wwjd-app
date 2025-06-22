@@ -131,7 +131,15 @@ export default function ConfessionalScreen() {
         })
       );
 
-      const data = await res.json();
+      const textResp = await res.text();
+      let data: any;
+      try {
+        data = JSON.parse(textResp);
+      } catch (err) {
+        console.error('Invalid JSON from Confessional:', textResp);
+        showGracefulError();
+        return;
+      }
       const answer = data.response || 'You are forgiven. Walk in peace.';
       console.log('✝️ Confessional input:', text);
       console.log('🕊️ Confessional AI reply:', answer);
