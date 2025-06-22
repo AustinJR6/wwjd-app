@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.handleStripeWebhookV2 = exports.askGeminiV2 = void 0;
+exports.incrementReligionPoints = exports.handleStripeWebhookV2 = exports.askGeminiV2 = void 0;
 const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config({ path: ".env.functions" });
 const https_1 = require("firebase-functions/v2/https");
@@ -137,5 +137,35 @@ exports.createCheckoutSession = (0, https_1.onRequest)(async (req, res) => {
     catch (err) {
         console.error("❌ createCheckoutSession error:", err.message);
         res.status(500).json({ error: "Failed to create checkout session." });
+    }
+});
+
+/**
+ * 🔐 incrementReligionPoints: Safely update religion totals
+ */
+exports.incrementReligionPoints = (0, https_1.onRequest)(async (req, res) => {
+    const idToken = req.headers.authorization?.split("Bearer ")[1];
+    if (!idToken) {
+        res.status(401).send("Unauthorized – no token");
+        return;
+    }
+    try {
+        await firebase_1.auth.verifyIdToken(idToken);
+        const { religion, points } = req.body;
+        if (typeof religion !== "string" || typeof points !== "number" || points <= 0 || points > 100) {
+            res.status(400).send("Invalid input.");
+            return;
+        }
+        const ref = firebase_1.db.collection("religions").doc(religion);
+        await firebase_1.db.runTransaction(async (t) => {
+            const snap = await t.get(ref);
+            const current = snap.exists ? (snap.data().totalPoints || 0) : 0;
+            t.set(ref, { totalPoints: current + points }, { merge: true });
+        });
+        res.status(200).send({ message: "Points updated" });
+    }
+    catch (err) {
+        console.error("🔥 Religion update failed:", err.message);
+        res.status(500).send("Internal error");
     }
 });

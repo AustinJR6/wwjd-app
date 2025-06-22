@@ -16,6 +16,7 @@ import ScreenContainer from '@/components/theme/ScreenContainer';
 import { useTheme } from '@/components/theme/theme';
 import { ASK_GEMINI_SIMPLE } from '@/utils/constants';
 import { getDocument, setDocument } from '@/services/firestoreService';
+import { callFunction } from '@/services/functionService';
 import { ensureAuth } from '@/utils/authGuard';
 
 export default function TriviaScreen() {
@@ -133,9 +134,9 @@ export default function TriviaScreen() {
         });
 
         if (userData.religion) {
-          const relData = await getDocument(`religions/${userData.religion}`);
-          await setDocument(`religions/${userData.religion}`, {
-            totalPoints: (relData?.totalPoints || 0) + earned,
+          await callFunction('incrementReligionPoints', {
+            religion: userData.religion,
+            points: earned,
           });
         }
 
