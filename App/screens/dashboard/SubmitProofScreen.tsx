@@ -16,7 +16,7 @@ import { getStoredToken } from '@/services/authService';
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { useTheme } from "@/components/theme/theme";
 import { ensureAuth } from '@/utils/authGuard';
-import * as SecureStore from 'expo-secure-store';
+import * as SafeStore from '@/utils/secureStore';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/navigation/RootStackParamList';
@@ -57,7 +57,7 @@ export default function SubmitProofScreen() {
 
   useEffect(() => {
     const checkAccess = async () => {
-      const sub = await SecureStore.getItemAsync('isSubscribed');
+      const sub = await SafeStore.getItem('isSubscribed');
       if (sub !== 'true') {
         Alert.alert('Access Denied', 'This feature is for OneVine+ or Org Managers only.');
         navigation.goBack();
@@ -85,7 +85,7 @@ export default function SubmitProofScreen() {
     }
 
     const idToken = await getStoredToken();
-    const userId = await SecureStore.getItemAsync('userId');
+    const userId = await SafeStore.getItem('userId');
     if (!idToken || !userId) {
       Alert.alert('Login Required', 'Please log in again.');
       navigation.replace('Login');

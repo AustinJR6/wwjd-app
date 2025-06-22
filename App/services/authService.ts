@@ -1,5 +1,5 @@
 import axios from 'axios';
-import * as SecureStore from 'expo-secure-store';
+import * as SafeStore from '@/utils/secureStore';
 
 const API_KEY = process.env.EXPO_PUBLIC_FIREBASE_API_KEY;
 const BASE_URL = 'https://identitytoolkit.googleapis.com/v1';
@@ -41,10 +41,10 @@ export async function login(email: string, password: string): Promise<AuthRespon
 
 // ✅ Logout
 export async function logout(): Promise<void> {
-  await SecureStore.deleteItemAsync('idToken');
-  await SecureStore.deleteItemAsync('refreshToken');
-  await SecureStore.deleteItemAsync('userId');
-  await SecureStore.deleteItemAsync('email');
+  await SafeStore.deleteItem('idToken');
+  await SafeStore.deleteItem('refreshToken');
+  await SafeStore.deleteItem('userId');
+  await SafeStore.deleteItem('email');
 }
 
 // ✅ Trigger password reset email
@@ -75,7 +75,7 @@ export async function changePassword(newPassword: string): Promise<void> {
 
 // ✅ Refresh ID token using the stored refreshToken
 export async function refreshIdToken(): Promise<string> {
-  const refreshToken = await SecureStore.getItemAsync('refreshToken');
+  const refreshToken = await SafeStore.getItem('refreshToken');
   if (!refreshToken) {
     throw new Error('Missing refresh token');
   }
@@ -87,16 +87,16 @@ export async function refreshIdToken(): Promise<string> {
     },
   );
   const { id_token, refresh_token, user_id, email } = res.data;
-  await SecureStore.setItemAsync('idToken', id_token);
-  await SecureStore.setItemAsync('refreshToken', refresh_token);
-  if (user_id) await SecureStore.setItemAsync('userId', String(user_id));
-  if (email) await SecureStore.setItemAsync('email', email);
+  await SafeStore.setItem('idToken', id_token);
+  await SafeStore.setItem('refreshToken', refresh_token);
+  if (user_id) await SafeStore.setItem('userId', String(user_id));
+  if (email) await SafeStore.setItem('email', email);
   return id_token as string;
 }
 
 // ✅ Get stored token (if any) and refresh if expired
 export async function getStoredToken(): Promise<string | null> {
-  let token = await SecureStore.getItemAsync('idToken');
+  let token = await SafeStore.getItem('idToken');
   if (!token) {
     console.warn('🚫 idToken missing from SecureStore');
     return null;
@@ -124,9 +124,9 @@ export async function getStoredToken(): Promise<string | null> {
 
 // ✅ Save token securely
 async function storeAuth(auth: AuthResponse) {
-  await SecureStore.setItemAsync('idToken', auth.idToken);
-  await SecureStore.setItemAsync('refreshToken', auth.refreshToken);
-  await SecureStore.setItemAsync('userId', auth.localId);
-  await SecureStore.setItemAsync('email', auth.email);
+  await SafeStore.setItem('idToken', auth.idToken);
+  await SafeStore.setItem('refreshToken', auth.refreshToken);
+  await SafeStore.setItem('userId', auth.localId);
+  await SafeStore.setItem('email', auth.email);
 }
 

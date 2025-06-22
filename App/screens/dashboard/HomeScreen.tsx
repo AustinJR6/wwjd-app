@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import CustomText from '@/components/CustomText';
 import { View, StyleSheet, ScrollView } from 'react-native';
 import Button from '@/components/common/Button';
-import * as SecureStore from 'expo-secure-store';
+import * as SafeStore from '@/utils/secureStore';
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { useTheme } from "@/components/theme/theme";
 import { getTokenCount, syncSubscriptionStatus } from "@/utils/TokenManager";
@@ -24,8 +24,8 @@ export default function HomeScreen({ navigation }: Props) {
       await syncSubscriptionStatus(); // updates Firestore token state
       setTokens(t);
       setSubscribed(t >= 9999); // 9999 token cap implies OneVine+ sub
-      const adminFlag = await SecureStore.getItemAsync('isAdmin');
-      const managerFlag = await SecureStore.getItemAsync('isOrgManager');
+      const adminFlag = await SafeStore.getItem('isAdmin');
+      const managerFlag = await SafeStore.getItem('isOrgManager');
       setIsAdmin(adminFlag === 'true');
       setIsOrgManager(managerFlag === 'true');
     };

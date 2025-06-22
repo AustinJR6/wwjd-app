@@ -7,8 +7,8 @@ import { useTheme } from "@/components/theme/theme";
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from "@/navigation/RootStackParamList";
 import { useUser } from '@/hooks/useUser';
-import * as SecureStore from 'expo-secure-store';
 import { createStripeCheckout } from '@/services/apiService';
+import * as SafeStore from '@/utils/secureStore';
 import { getStoredToken } from '@/services/authService';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Upgrade'>;
@@ -53,7 +53,7 @@ export default function UpgradeScreen({ navigation }: Props) {
 
     try {
       const idToken = await getStoredToken();
-      const userId = await SecureStore.getItemAsync('userId');
+      const userId = await SafeStore.getItem('userId');
       if (!idToken || !userId) {
         Alert.alert('Login Required', 'Please log in again.');
         navigation.replace('Login');
