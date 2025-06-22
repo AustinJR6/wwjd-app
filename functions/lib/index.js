@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.incrementReligionPoints = exports.handleStripeWebhookV2 = exports.askGeminiV2 = void 0;
+exports.completeChallenge = exports.incrementReligionPoints = exports.handleStripeWebhookV2 = exports.askGeminiV2 = void 0;
 const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config({ path: ".env.functions" });
 const https_1 = require("firebase-functions/v2/https");
@@ -167,5 +167,55 @@ exports.incrementReligionPoints = (0, https_1.onRequest)(async (req, res) => {
     catch (err) {
         console.error("🔥 Religion update failed:", err.message);
         res.status(500).send("Internal error");
+    }
+});
+
+/**
+ * 🎯 completeChallenge: Validate and record challenge completion
+ */
+exports.completeChallenge = (0, https_1.onRequest)(async (req, res) => {
+    const idToken = req.headers.authorization?.split("Bearer ")[1];
+    if (!idToken) {
+        res.status(401).send("Unauthorized");
+        return;
+    }
+    try {
+        const decoded = await firebase_1.auth.verifyIdToken(idToken);
+        const uid = decoded.uid;
+        const userRef = firebase_1.db.collection("users").doc(uid);
+        const snap = await userRef.get();
+        const data = snap.exists ? snap.data() : {};
+        const today = new Date().toISOString().slice(0, 10);
+        let history = data.dailyChallengeHistory || { date: today, completed: 0, skipped: 0 };
+        if (history.date !== today) {
+            history = { date: today, completed: 0, skipped: 0 };
+        }
+        const limit = data.isSubscribed ? 3 : 1;
+        if (history.completed >= limit && !req.body.useToken) {
+            res.status(400).json({ error: "limit" });
+            return;
+        }
+        if (history.completed >= limit && req.body.useToken) {
+            const tokenRef = firebase_1.db.collection("tokens").doc(uid);
+            const tSnap = await tokenRef.get();
+            const current = tSnap.exists ? (tSnap.data().count || 0) : 0;
+            if (current <= 0) {
+                res.status(400).json({ error: "no_tokens" });
+                return;
+            }
+            await tokenRef.set({ count: current - 1 }, { merge: true });
+        }
+        history.completed += 1;
+        const updates = { dailyChallengeHistory: history, individualPoints: (data.individualPoints || 0) + 5 };
+        if (data.lastStreakDate !== today) {
+            updates.streak = (data.streak || 0) + 1;
+            updates.lastStreakDate = today;
+        }
+        await userRef.set(updates, { merge: true });
+        res.status(200).json({ streak: updates.streak || data.streak || 0 });
+    }
+    catch (err) {
+        console.error("completeChallenge error", err.message);
+        res.status(500).send("error");
     }
 });
