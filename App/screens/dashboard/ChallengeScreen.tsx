@@ -67,11 +67,14 @@ export default function ChallengeScreen() {
     try {
       const userData = await getDocument(`users/${uid}`) || {};
       const granted = userData.streakMilestones || {};
-      if (granted[current]) return;
+      const key = `m${current}`;
+      if (granted[key]) return;
       const reward = current >= 30 ? 10 : current >= 14 ? 7 : 5;
       const tokens = await getTokenCount();
       await setTokenCount(tokens + reward);
-      await setDocument(`users/${uid}`, { [`streakMilestones.${current}`]: true });
+      await setDocument(`users/${uid}`, {
+        streakMilestones: { ...granted, [key]: true },
+      });
 
       const idToken = await getStoredToken();
       const res = await fetch(ASK_GEMINI_SIMPLE, {
@@ -179,6 +182,15 @@ export default function ChallengeScreen() {
     try {
       await setTokenCount(tokens - cost);
       setCanSkip(true);
+      const uid = await ensureAuth(user?.uid);
+      if (uid) {
+        const userData = await getDocument(`users/${uid}`) || {};
+        const today = new Date().toISOString().slice(0, 10);
+        let history = userData.dailyChallengeHistory || { date: today, completed: 0, skipped: 0 };
+        if (history.date !== today) history = { date: today, completed: 0, skipped: 0 };
+        history.skipped += 1;
+        await setDocument(`users/${uid}`, { dailyChallengeHistory: history });
+      }
       fetchChallenge();
     } catch (error: any) {
       console.error('🔥 API Error:', error?.response?.data || error.message);
@@ -190,13 +202,55 @@ export default function ChallengeScreen() {
     const uid = await ensureAuth(user?.uid);
     if (!uid) return;
 
-    const newStreak = incrementStreak();
+    const userData = await getDocument(`users/${uid}`) || {};
+
+    const today = new Date().toISOString().slice(0, 10);
+    let history = userData.dailyChallengeHistory || { date: today, completed: 0, skipped: 0 };
+    if (history.date !== today) {
+      history = { date: today, completed: 0, skipped: 0 };
+    }
+
+    const limit = userData.isSubscribed ? 3 : 1;
+    let useToken = false;
+    if (history.completed >= limit) {
+      const tokens = await getTokenCount();
+      if (tokens <= 0) {
+        Alert.alert('Daily Limit Reached', 'You\u2019ve completed all allowed challenges today.');
+        return;
+      }
+      const confirmed = await new Promise<boolean>((resolve) => {
+        Alert.alert(
+          'Use 1 Token to Continue?',
+          'You\u2019ve hit today\u2019s limit. Spend a token for another challenge?',
+          [
+            { text: 'Cancel', onPress: () => resolve(false), style: 'cancel' },
+            { text: 'Yes', onPress: () => resolve(true) },
+          ],
+        );
+      });
+      if (!confirmed) return;
+      await setTokenCount(tokens - 1);
+      useToken = true;
+    }
+
+    history.completed += 1;
+    await setDocument(`users/${uid}`, { dailyChallengeHistory: history });
+    try {
+      await callFunction('completeChallenge', { useToken });
+    } catch (err) {
+      console.error('Backend validation failed:', err);
+    }
+
+    let newStreak = userData.streak || 0;
+    if (userData.lastStreakDate !== today) {
+      newStreak = incrementStreak();
+      await setDocument(`users/${uid}`, { lastStreakDate: today, streak: newStreak });
+      await checkMilestoneReward(newStreak);
+    }
 
     const currentTokens = await getTokenCount();
     await setTokenCount(currentTokens + 1);
-    await checkMilestoneReward(newStreak);
 
-    const userData = await getDocument(`users/${uid}`) || {};
     await setDocument(`users/${uid}`, {
       individualPoints: (userData.individualPoints || 0) + 5,
     });
@@ -216,6 +270,7 @@ export default function ChallengeScreen() {
     }
 
     Alert.alert('Great job!', 'Challenge completed.');
+    fetchChallenge();
   };
 
   useEffect(() => {
