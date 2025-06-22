@@ -85,7 +85,11 @@ export default function ConfessionalScreen() {
       return;
     }
 
-    if (messages.length >= 10) return;
+    if (messages.length >= 30)
+      Alert.alert(
+        'Conversation full',
+        'Try a fresh start for a new conversation.',
+      );
 
     setLoading(true);
     try {
@@ -129,7 +133,13 @@ export default function ConfessionalScreen() {
 
       const data = await res.json();
       const answer = data.response || 'You are forgiven. Walk in peace.';
-      setMessages((prev) => [...prev, { sender: 'user', text }, { sender: 'ai', text: answer }]);
+      console.log('✝️ Confessional input:', text);
+      console.log('🕊️ Confessional AI reply:', answer);
+      setMessages((prev) => [
+        ...prev,
+        { sender: 'user', text },
+        { sender: 'ai', text: answer },
+      ]);
       setText('');
     } catch (err) {
       console.error('❌ Confession error:', err);
@@ -152,7 +162,7 @@ export default function ConfessionalScreen() {
         />
         <CustomText style={styles.systemMsg}>This conversation is private and vanishes when you leave.</CustomText>
         <View style={styles.buttonWrap}>
-          <Button title="Send" onPress={handleConfess} disabled={loading || messages.length >= 10} />
+          <Button title="Send" onPress={handleConfess} disabled={loading} />
         </View>
         {loading && <ActivityIndicator size="large" color={theme.colors.primary} />}
         {messages.map((m, idx) => (
