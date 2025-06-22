@@ -122,13 +122,15 @@ export default function ReligionAIScreen() {
       }
 
       const userData = await getDocument(`users/${uid}`) || {};
+      const subDoc = await getDocument(`subscriptions/${uid}`);
       const lastAsk = userData.lastFreeAsk?.toDate?.();
       const now = new Date();
       const oneDay = 24 * 60 * 60 * 1000;
       const canAskFree = !lastAsk || now.getTime() - lastAsk.getTime() > oneDay;
       const cost = 5;
-      const subscribed = userData.isSubscribed;
+      const subscribed = userData.isSubscribed || (subDoc?.active === true);
       setIsSubscribed(subscribed);
+      console.log('💎 WWJD+ Status:', subscribed);
 
       const religion = userData.religion || 'Spiritual Guide';
       const promptRole = religion === 'Christianity' ? 'Jesus' :

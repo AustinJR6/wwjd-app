@@ -77,9 +77,9 @@ export default function LeaderboardsScreen() {
       const religionSnap = await queryCollection('religions', 'totalPoints');
       const orgSnap = await queryCollection('organizations', 'totalPoints');
 
-      setIndividuals(userSnap);
-      setReligions(religionSnap);
-      setOrganizations(orgSnap);
+      setIndividuals(userSnap.slice(0, 10));
+      setReligions(religionSnap.slice(0, 10));
+      setOrganizations(orgSnap.slice(0, 10));
     } catch (err) {
       console.error('🔥 Error loading leaderboards:', err);
     } finally {
