@@ -19,7 +19,6 @@ import { getDocument, setDocument } from '@/services/firestoreService';
 import { callFunction } from '@/services/functionService';
 import { ensureAuth } from '@/utils/authGuard';
 import axios from 'axios';
-import * as SecureStore from 'expo-secure-store';
 
 export default function TriviaScreen() {
   const theme = useTheme();
@@ -137,7 +136,7 @@ export default function TriviaScreen() {
         });
 
         if (userData.religion) {
-          const idToken = await SecureStore.getItemAsync('idToken');
+          const idToken = await getStoredToken();
           if (!idToken) console.warn('Missing idToken for incrementReligionPoints');
           const url = INCREMENT_RELIGION_POINTS_URL;
           console.log('📡 Calling endpoint:', url);
