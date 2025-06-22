@@ -199,6 +199,8 @@ export default function ReligionAIScreen() {
 
       const data = await response.json();
       const answer = data?.response || 'I am always with you. Trust in Me.';
+      console.log('📖 ReligionAI input:', question);
+      console.log('🙏 ReligionAI reply:', answer);
 
       let updatedMessages: string[];
       if (subscribed) {

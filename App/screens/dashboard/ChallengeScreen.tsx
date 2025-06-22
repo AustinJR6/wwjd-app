@@ -11,7 +11,7 @@ import ScreenContainer from "@/components/theme/ScreenContainer";
 import { useTheme } from "@/components/theme/theme";
 import { getTokenCount, setTokenCount } from "@/utils/TokenManager";
 import { showGracefulError } from '@/utils/gracefulError';
-import { ASK_GEMINI_SIMPLE } from "@/utils/constants";
+import { ASK_GEMINI_SIMPLE, GENERATE_CHALLENGE_URL } from "@/utils/constants";
 import { getDocument, setDocument } from '@/services/firestoreService';
 import { callFunction, incrementReligionPoints } from '@/services/functionService';
 import { useUser } from '@/hooks/useUser';
@@ -130,7 +130,7 @@ export default function ChallengeScreen() {
       // Reuse the token instead of fetching it again
       idToken = idToken || (await getStoredToken());
       const response = await sendRequestWithGusBugLogging(() =>
-        fetch(ASK_GEMINI_SIMPLE, {
+        fetch(GENERATE_CHALLENGE_URL, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

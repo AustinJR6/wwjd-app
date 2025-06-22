@@ -75,7 +75,7 @@ export const completeChallenge = onRequest(async (req, res) => {
   }
 });
 
-export const askGeminiV2 = onRequest(async (req, res) => {
+export const askGeminiSimple = onRequest(async (req, res) => {
   const idToken = req.headers.authorization?.split("Bearer ")[1];
   if (!idToken) {
     console.error("❌ Gus Bug Alert: Missing ID token in header. 🐞");
@@ -88,6 +88,87 @@ export const askGeminiV2 = onRequest(async (req, res) => {
   let decoded: admin.auth.DecodedIdToken;
   try {
     decoded = await auth.verifyIdToken(idToken);
+    const uid = decoded.uid;
+    console.log(`✅ Gus Bug Authenticated: ${uid} is legit! 🎯`);
+
+    const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+
+    const chat = await model.startChat({
+      history: (history as any[]).map((msg) => ({
+        role: msg.role,
+        parts: [{ text: msg.text }],
+      })),
+    });
+
+    const result = await chat.sendMessage(prompt);
+    const text = result?.response?.text?.() ?? "No response text returned.";
+
+    res.status(200).json({ response: text });
+  } catch (err: any) {
+    console.error("🛑 Gus Bug Tampered Token: Couldn't verify. 🧙‍♂️✨", err);
+    if (err.code === "auth/argument-error") {
+      res.status(401).json({
+        error: "Unauthorized — Gus bug cast an invalid token spell.",
+      });
+      return;
+    }
+    res.status(500).json({ error: "Gemini failed" });
+  }
+});
+
+export const askGeminiV2 = onRequest(async (req, res) => {
+  const idToken = req.headers.authorization?.split("Bearer ")[1];
+  if (!idToken) {
+    console.error("❌ Gus Bug Alert: Missing ID token in header. 🐞");
+    res.status(401).json({ error: "Unauthorized — Gus bug stole the token!" });
+    return;
+  }
+
+  const { prompt = "", history = [] } = req.body || {};
+
+  try {
+    const decoded = await auth.verifyIdToken(idToken);
+    console.log(`✅ GeminiV2 user: ${decoded.uid}`);
+
+    const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+
+    const chat = await model.startChat({
+      history: (history as any[]).map((msg) => ({
+        role: msg.role,
+        parts: [{ text: msg.text }],
+      })),
+    });
+
+    const result = await chat.sendMessage(prompt);
+    const text = result?.response?.text?.() ?? "No response text returned.";
+
+    res.status(200).json({ response: text });
+  } catch (err: any) {
+    console.error("🛑 Gus Bug Tampered Token: Couldn't verify. 🧙‍♂️✨", err);
+    if (err.code === "auth/argument-error") {
+      res.status(401).json({
+        error: "Unauthorized — Gus bug cast an invalid token spell.",
+      });
+      return;
+    }
+    res.status(500).json({ error: "Gemini failed" });
+  }
+});
+
+export const generateChallenge = onRequest(async (req, res) => {
+  const idToken = req.headers.authorization?.split("Bearer ")[1];
+  if (!idToken) {
+    console.error("❌ Gus Bug Alert: Missing ID token in header. 🐞");
+    res.status(401).json({ error: "Unauthorized — Gus bug stole the token!" });
+    return;
+  }
+
+  const { history = [] } = req.body || {};
+
+  try {
+    const decoded = await auth.verifyIdToken(idToken);
     const uid = decoded.uid;
     console.log(`✅ Gus Bug Authenticated: ${uid} is legit! 🎯`);
 
