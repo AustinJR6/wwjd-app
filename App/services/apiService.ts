@@ -1,5 +1,9 @@
 import axios from 'axios';
-import { GEMINI_API_URL, STRIPE_API_URL } from '@/config/apiConfig';
+import {
+  GEMINI_API_URL,
+  STRIPE_SUB_CHECKOUT_URL,
+  STRIPE_TOKEN_CHECKOUT_URL,
+} from '@/config/apiConfig';
 import { getStoredToken } from './authService';
 import { sendRequestWithGusBugLogging } from '@/utils/gusBugLogger';
 
@@ -49,11 +53,19 @@ export async function createStripeCheckout(
       Authorization: `Bearer ${idToken}`,
       'Content-Type': 'application/json',
     };
+    const endpoint =
+      options.type === 'subscription'
+        ? STRIPE_SUB_CHECKOUT_URL
+        : STRIPE_TOKEN_CHECKOUT_URL;
     const res = await sendRequestWithGusBugLogging(() =>
-      axios.post<StripeCheckoutResponse>(STRIPE_API_URL, {
-        uid,
-        ...options,
-      }, { headers })
+      axios.post<StripeCheckoutResponse>(
+        endpoint,
+        {
+          uid,
+          ...options,
+        },
+        { headers },
+      )
     );
     return res.data.url;
   } catch (err: any) {

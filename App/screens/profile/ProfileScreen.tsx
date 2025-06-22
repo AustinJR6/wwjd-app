@@ -12,6 +12,9 @@ import { getDocument, setDocument } from '@/services/firestoreService';
 import { updateUserFields } from '@/services/userService';
 import { useTheme } from '@/components/theme/theme';
 import { ensureAuth } from '@/utils/authGuard';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '@/navigation/RootStackParamList';
 
 const RELIGIONS = ['Christianity', 'Islam', 'Judaism', 'Buddhism', 'Hinduism'];
 
@@ -19,6 +22,7 @@ export default function ProfileScreen() {
   const { user } = useUser();
   const updateUser = useUserStore((s) => s.updateUser);
   const theme = useTheme();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [username, setUsername] = useState(user?.displayName || '');
   const [region, setRegion] = useState(user?.region || '');
   const [religion, setReligion] = useState(user?.religion || RELIGIONS[0]);
@@ -114,6 +118,7 @@ export default function ProfileScreen() {
         <CustomText style={styles.info}>Organization: {organization || 'None'}</CustomText>
 
         <Button title="Save Changes" onPress={handleSave} loading={saving} />
+        <Button title="Change Password" onPress={() => navigation.navigate('ChangePassword')} />
       </View>
     </ScreenContainer>
   );

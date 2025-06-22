@@ -67,11 +67,11 @@ export default function GiveBackScreen({ navigation }: Props) {
       if (url) {
         Linking.openURL(url);
       } else {
-        Alert.alert('Error', 'Something went wrong. Please try again.');
+        Alert.alert('Checkout Error', 'Unable to start checkout. Please try again later.');
       }
     } catch (err) {
       console.error('Payment error:', err);
-      Alert.alert('Payment Failed', 'Unable to initiate donation.');
+      Alert.alert('Checkout Error', 'Unable to start checkout. Please try again later.');
     } finally {
       setDonating(false);
     }
