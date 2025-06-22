@@ -1,0 +1,5 @@
+app.config.js
+metro.config.js
+eas.json
+babel.config.js
+functions/

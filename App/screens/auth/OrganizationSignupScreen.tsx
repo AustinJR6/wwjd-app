@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import CustomText from '@/components/common/CustomText';
+import CustomText from '@/components/CustomText';
 import {
   View,
   TextInput,

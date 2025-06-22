@@ -1,5 +1,5 @@
 import React from 'react'
-import CustomText from '@/components/common/CustomText';
+import CustomText from '@/components/CustomText';
 import { Modal as RNModal, View, StyleSheet, TouchableOpacity } from 'react-native'
 import { useTheme } from "@/components/theme/theme"
 
