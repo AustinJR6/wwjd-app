@@ -16,6 +16,7 @@ import { useTheme } from "@/components/theme/theme";
 import { showGracefulError } from '@/utils/gracefulError';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { queryCollection, addDocument, getDocument, setDocument } from '@/services/firestoreService';
+import { callFunction } from '@/services/functionService';
 import { ensureAuth } from '@/utils/authGuard';
 import * as SafeStore from '@/utils/secureStore';
 import { getStoredToken } from '@/services/authService';
@@ -229,9 +230,9 @@ export default function JournalScreen() {
       });
 
       if (userData.religion) {
-        const relData = await getDocument(`religions/${userData.religion}`);
-        await setDocument(`religions/${userData.religion}`, {
-          totalPoints: (relData?.totalPoints || 0) + 2,
+        await callFunction('incrementReligionPoints', {
+          religion: userData.religion,
+          points: 2,
         });
       }
 

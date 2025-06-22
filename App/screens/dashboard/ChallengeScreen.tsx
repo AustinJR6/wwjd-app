@@ -13,6 +13,7 @@ import { getTokenCount, setTokenCount } from "@/utils/TokenManager";
 import { showGracefulError } from '@/utils/gracefulError';
 import { ASK_GEMINI_SIMPLE } from "@/utils/constants";
 import { getDocument, setDocument } from '@/services/firestoreService';
+import { callFunction } from '@/services/functionService';
 import { useUser } from '@/hooks/useUser';
 import { getStoredToken } from '@/services/authService';
 import { ensureAuth } from '@/utils/authGuard';
@@ -201,9 +202,9 @@ export default function ChallengeScreen() {
     });
 
     if (userData.religion) {
-      const relData = await getDocument(`religions/${userData.religion}`);
-      await setDocument(`religions/${userData.religion}`, {
-        totalPoints: (relData?.totalPoints || 0) + 5,
+      await callFunction('incrementReligionPoints', {
+        religion: userData.religion,
+        points: 5,
       });
     }
 
