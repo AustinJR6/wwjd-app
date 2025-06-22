@@ -1,6 +1,6 @@
-import axios from 'axios';
-import { getStoredToken, getFreshIdToken } from './authService';
+import { getStoredToken } from './authService';
 import { sendRequestWithGusBugLogging } from '@/utils/gusBugLogger';
+import { sendSecureFirebaseRequest } from '@/utils/firebaseRequest';
 
 const BASE_URL = process.env.EXPO_PUBLIC_FUNCTION_BASE_URL;
 
@@ -39,26 +39,11 @@ export async function incrementReligionPoints(
   religion: string,
   points: number,
 ): Promise<void> {
-  const idToken = await getFreshIdToken();
-  if (!idToken) {
-    console.warn('🚫 incrementReligionPoints without idToken');
-    throw new Error('Missing auth token');
-  }
-
   const url = `${BASE_URL}/incrementReligionPoints`;
   console.log('📡 Calling endpoint:', url);
   try {
     await sendRequestWithGusBugLogging(() =>
-      axios.post(
-        url,
-        { religion, points },
-        {
-          headers: {
-            Authorization: `Bearer ${idToken}`,
-            'Content-Type': 'application/json',
-          },
-        },
-      )
+      sendSecureFirebaseRequest(url, { religion, points })
     );
   } catch (err: any) {
     console.error('🔥 Backend error:', err?.response?.data || err.message);
