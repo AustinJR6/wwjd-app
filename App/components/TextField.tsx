@@ -1,5 +1,6 @@
 import React from 'react';
-import { TextInput, StyleSheet, View, Text } from 'react-native';
+import CustomText from '@/components/common/CustomText';
+import { TextInput, StyleSheet, View} from 'react-native';
 import { useTheme } from '@/components/theme/theme';
 
 interface TextFieldProps {
@@ -40,7 +41,7 @@ export default function TextField({
   );
   return (
     <View style={styles.wrapper}>
-      {label && <Text style={styles.label}>{label}</Text>}
+      {label && <CustomText style={styles.label}>{label}</CustomText>}
       <TextInput
         style={styles.input}
         placeholder={placeholder}

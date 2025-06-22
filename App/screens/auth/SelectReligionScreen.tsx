@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
+import CustomText from '@/components/common/CustomText';
 import {
   View,
-  Text,
   FlatList,
   TouchableOpacity,
   StyleSheet,
@@ -82,7 +82,7 @@ export default function SelectReligionScreen({ navigation }: Props) {
 
   return (
     <ScreenContainer>
-      <Text style={styles.title}>Select Your Faith</Text>
+      <CustomText style={styles.title}>Select Your Faith</CustomText>
       <FlatList
         data={RELIGIONS}
         keyExtractor={(item) => item}
@@ -94,14 +94,14 @@ export default function SelectReligionScreen({ navigation }: Props) {
             ]}
             onPress={() => setSelected(item)}
           >
-            <Text
+            <CustomText
               style={[
                 styles.religionText,
                 selected === item && styles.selectedText
               ]}
             >
               {item}
-            </Text>
+            </CustomText>
           </TouchableOpacity>
         )}
       />

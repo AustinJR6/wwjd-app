@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Alert, TextInput } from 'react-native';
+import CustomText from '@/components/common/CustomText';
+import { View, StyleSheet, Alert, TextInput } from 'react-native';
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import Button from "@/components/common/Button";
 import { useNavigation, CommonActions } from '@react-navigation/native';
@@ -129,8 +130,8 @@ export default function OnboardingScreen() {
 
   return (
     <ScreenContainer>
-      <Text style={styles.title}>Welcome to OneVine 🌿</Text>
-      <Text style={styles.subtitle}>Tell us about yourself:</Text>
+      <CustomText style={styles.title}>Welcome to OneVine 🌿</CustomText>
+      <CustomText style={styles.subtitle}>Tell us about yourself:</CustomText>
 
       <TextInput
         style={styles.input}
@@ -146,7 +147,7 @@ export default function OnboardingScreen() {
         onChangeText={setRegion}
       />
 
-      <Text style={styles.subtitle}>Choose your spiritual lens:</Text>
+      <CustomText style={styles.subtitle}>Choose your spiritual lens:</CustomText>
 
       <View style={styles.pickerWrapper}>
         <Picker
@@ -168,9 +169,9 @@ export default function OnboardingScreen() {
       />
 
       <Button title="Continue" onPress={handleContinue} loading={loading} />
-      <Text style={styles.link} onPress={() => navigation.replace('Login')}>
+      <CustomText style={styles.link} onPress={() => navigation.replace('Login')}>
         Already have an account? Log in
-      </Text>
+      </CustomText>
     </ScreenContainer>
   );
 }

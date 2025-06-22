@@ -16,10 +16,8 @@ This project uses **React Native (via Expo)** and is powered by **Firebase** for
 ## 🧰 Tech Stack
 
 - **React Native** (with Expo)
-- **Firebase Web SDK**
-  - `firebase/app`, `firebase/auth`, `firebase/firestore`
-  - Anonymous Auth for guest use
-  - Firestore for user journals and token tracking
+- **Firebase via REST API**
+  - Authentication and Firestore access using HTTP endpoints
 - **Google Gemini / OpenAI GPT**
   - Faith-aligned reflection prompts
 - **Stripe**
@@ -34,8 +32,8 @@ This project uses **React Native (via Expo)** and is powered by **Firebase** for
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/AustinJR6/wwjd-app.git
-cd wwjd-app
+git clone https://github.com/AustinJR6/onevine-app.git
+cd onevine-app
 2. Install Dependencies
 bash
 Copy
@@ -47,9 +45,7 @@ Create a Firebase project
 
 Enable Anonymous Authentication
 
-Set up Firestore
-
-Firebase Setup uses the Expo-compatible Web SDK via the `firebase` package.
+Set up Firestore using the REST API endpoints (no Firebase SDK needed)
 
 ### Environment Variables
 
@@ -57,7 +53,7 @@ Create a `.env` file in the project root with the following entry so the app can
 reach your deployed Firebase functions from any network:
 
 ```env
-EXPO_PUBLIC_FUNCTION_BASE_URL=https://us-central1-wwjd-app.cloudfunctions.net
+EXPO_PUBLIC_FUNCTION_BASE_URL=https://us-central1-onevine-app.cloudfunctions.net
 ```
 📱 Key Features
 ✝️ 🕉️ ☪️ 🕎 Multi-Faith Reflection AI
@@ -89,7 +85,7 @@ Organization leaderboards (e.g., churches, mosques, temples)
 bash
 Copy
 Edit
-wwjd-app/
+onevine-app/
 ├── app/                  # App entry points and routing
 ├── components/           # Shared UI components
 ├── screens/              # Major app pages (Ask, Journal, Trivia)
@@ -119,7 +115,7 @@ OneVine is rooted in the belief that truth and love transcend labels. Whether Ch
 Austin Rittenhouse – Founder, developer
 
 🛠 Development Notes
-All Firebase integrations now use the Firebase Web SDK initialized in `App/config/firebase.ts`.
+All Firebase integrations now use the REST API—see `App/services` for details.
 
 Stripe subscription flow is being integrated with Firebase webhook handling
 

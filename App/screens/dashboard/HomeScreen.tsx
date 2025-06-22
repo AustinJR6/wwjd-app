@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import CustomText from '@/components/common/CustomText';
+import { View, StyleSheet, ScrollView } from 'react-native';
 import Button from '@/components/common/Button';
 import * as SecureStore from 'expo-secure-store';
 import ScreenContainer from "@/components/theme/ScreenContainer";
@@ -79,14 +80,14 @@ export default function HomeScreen({ navigation }: Props) {
   return (
     <ScreenContainer>
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <Text style={styles.title}>Welcome to OneVine</Text>
-        <Text style={styles.subtitle}>Grow in Faith Daily</Text>
+        <CustomText style={styles.title}>Welcome to OneVine</CustomText>
+        <CustomText style={styles.subtitle}>Grow in Faith Daily</CustomText>
 
         <View style={styles.statusBox}>
           {subscribed ? (
-            <Text style={styles.subscribed}>🌟 OneVine+ Active</Text>
+            <CustomText style={styles.subscribed}>🌟 OneVine+ Active</CustomText>
           ) : (
-            <Text style={styles.tokenInfo}>🎟️ Tokens: {tokens}</Text>
+            <CustomText style={styles.tokenInfo}>🎟️ Tokens: {tokens}</CustomText>
           )}
         </View>
 

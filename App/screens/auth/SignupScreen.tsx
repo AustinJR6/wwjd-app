@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Alert } from 'react-native';
+import CustomText from '@/components/common/CustomText';
+import { View, StyleSheet, Alert } from 'react-native';
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import TextField from "@/components/TextField";
 import Button from "@/components/common/Button";
@@ -59,7 +60,7 @@ export default function SignupScreen() {
 
   return (
     <ScreenContainer>
-      <Text style={styles.title}>Create an Account</Text>
+      <CustomText style={styles.title}>Create an Account</CustomText>
 
       <TextField
         label="Email"
@@ -78,19 +79,19 @@ export default function SignupScreen() {
 
       <Button title="Sign Up" onPress={handleSignup} loading={loading} />
 
-      <Text
+      <CustomText
         style={styles.link}
         onPress={() => navigation.navigate('Login')}
       >
         Already have an account? Log in
-      </Text>
+      </CustomText>
 
-      <Text
+      <CustomText
         style={styles.link}
         onPress={() => navigation.navigate('OrganizationSignup')}
       >
         Want to register your organization? Click here
-      </Text>
+      </CustomText>
     </ScreenContainer>
   );
 }

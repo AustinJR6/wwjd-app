@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet, Alert, Linking } from 'react-native';
+import CustomText from '@/components/common/CustomText';
+import { View, StyleSheet, Alert, Linking } from 'react-native';
 import Button from '@/components/common/Button';
 import { useUser } from '@/hooks/useUser';
 import { createStripeCheckout } from '@/services/apiService';
@@ -77,27 +78,27 @@ export default function BuyTokensScreen({ navigation }: Props) {
   return (
     <ScreenContainer>
       <View style={styles.content}>
-        <Text style={styles.title}>Buy Grace Tokens</Text>
-        <Text style={styles.subtitle}>Use tokens for extra asks and confessions</Text>
+        <CustomText style={styles.title}>Buy Grace Tokens</CustomText>
+        <CustomText style={styles.subtitle}>Use tokens for extra asks and confessions</CustomText>
 
         <View style={styles.pack}>
-          <Text style={styles.amount}>
-            5 Tokens — <Text style={styles.price}>$1.99</Text>
-          </Text>
+          <CustomText style={styles.amount}>
+            5 Tokens — <CustomText style={styles.price}>$1.99</CustomText>
+          </CustomText>
           <Button title="Buy 5 Tokens" onPress={() => purchase(5)} />
         </View>
 
         <View style={styles.pack}>
-          <Text style={styles.amount}>
-            15 Tokens — <Text style={styles.price}>$4.99</Text>
-          </Text>
+          <CustomText style={styles.amount}>
+            15 Tokens — <CustomText style={styles.price}>$4.99</CustomText>
+          </CustomText>
           <Button title="Buy 15 Tokens" onPress={() => purchase(15)} />
         </View>
 
         <View style={styles.pack}>
-          <Text style={styles.amount}>
-            40 Tokens — <Text style={styles.price}>$9.99</Text>
-          </Text>
+          <CustomText style={styles.amount}>
+            40 Tokens — <CustomText style={styles.price}>$9.99</CustomText>
+          </CustomText>
           <Button title="Buy 40 Tokens" onPress={() => purchase(40)} />
         </View>
 

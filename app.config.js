@@ -2,6 +2,7 @@
 export default {
   name: "OneVine",
   slug: "onevine-app",
+  owner: "whippybuckle",
   version: "1.0.0",
   orientation: "portrait",
   icon: "./assets/OneVineIcon.png",
