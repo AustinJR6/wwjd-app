@@ -5,6 +5,7 @@ import ScreenContainer from '@/components/theme/ScreenContainer';
 import TextField from '@/components/TextField';
 import Button from '@/components/common/Button';
 import { queryCollection } from '@/services/firestoreService';
+import { ensureAuth } from '@/utils/authGuard';
 import { useTheme } from '@/components/theme/theme';
 
 export default function ForgotUsernameScreen() {
@@ -51,6 +52,12 @@ export default function ForgotUsernameScreen() {
       Alert.alert('Missing Info', 'Please enter your name and region.');
       return;
     }
+    const uid = await ensureAuth();
+    if (!uid) {
+      Alert.alert('Login Required', 'Please log in first.');
+      return;
+    }
+
     setLoading(true);
     try {
       const users = await queryCollection('users');
