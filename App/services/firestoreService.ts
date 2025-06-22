@@ -71,6 +71,9 @@ export async function getDocument(path: string): Promise<any | null> {
     return res.data ? decodeData(res.data.fields) : null;
   } catch (err: any) {
     if (err.response?.status === 404) return null;
+    if (err.response?.status === 403) {
+      console.error('❌ Firestore permission error:', err.response.data);
+    }
     console.error('Firestore getDocument error:', {
       url: `${BASE_URL}/${path}`,
       status: err.response?.status,
@@ -96,6 +99,9 @@ export async function setDocument(path: string, data: any): Promise<void> {
       { headers }
     );
   } catch (err: any) {
+    if (err.response?.status === 403) {
+      console.error('❌ Firestore permission error:', err.response.data);
+    }
     console.error('Firestore setDocument error:', {
       url,
       status: err.response?.status,
@@ -123,6 +129,9 @@ export async function addDocument(collectionPath: string, data: any): Promise<st
     const name: string = res.data.name;
     return name.split('/').pop() as string;
   } catch (err: any) {
+    if (err.response?.status === 403) {
+      console.error('❌ Firestore permission error:', err.response.data);
+    }
     console.error('Firestore addDocument error:', {
       url: `${BASE_URL}/${collectionPath}`,
       status: err.response?.status,
@@ -170,6 +179,9 @@ export async function queryCollection(
     return docs;
   } catch (err: any) {
     if (err.response?.status === 404) return [];
+    if (err.response?.status === 403) {
+      console.error('❌ Firestore permission error:', err.response.data);
+    }
     console.error('Firestore queryCollection error:', {
       url,
       status: err.response?.status,
