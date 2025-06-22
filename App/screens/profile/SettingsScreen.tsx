@@ -69,9 +69,14 @@ export default function SettingsScreen() {
   };
 
   const handleLogout = async () => {
-    await logout();
-    clearUser();
-    navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+    try {
+      await logout();
+      clearUser();
+      navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+    } catch (err) {
+      console.error('\u274C Sign out failed:', err);
+      Alert.alert('Logout Error', 'Could not sign out. Please try again.');
+    }
   };
 
   return (
