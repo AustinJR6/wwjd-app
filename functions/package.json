@@ -1,16 +1,11 @@
 {
   "name": "functions",
   "description": "Cloud Functions for Firebase",
-"scripts": {
-  "clean": "rimraf lib",
-  "build": "npm run clean && tsc",
-  "serve": "npm run build && firebase emulators:start --only functions",
-  "shell": "firebase functions:shell",
-  "deploy": "npm run build && firebase deploy --only functions",
-  "logs": "firebase functions:log",
-  "lint": "echo 'Linting skipped'"
-},
-
+  "scripts": {
+    "clean": "rimraf lib",
+    "build": "npm run clean && tsc",
+    "deploy": "npm run build && firebase deploy --only functions"
+  },
   "main": "lib/index.js",
   "engines": {
     "node": "20"
