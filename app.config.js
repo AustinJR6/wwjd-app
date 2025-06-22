@@ -47,7 +47,7 @@ export default {
       projectId: "bbf209be-1b48-4f76-a496-9d4fcd8339fd",
     },
     firebase: {
-      projectId: "onevine-app",
+      projectId: "wwjd-app",
     },
   },
 };
