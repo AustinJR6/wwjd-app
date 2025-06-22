@@ -82,6 +82,7 @@ export default function TriviaScreen() {
 
     try {
       const idToken = await getStoredToken();
+      if (!idToken) console.warn('Missing idToken for askGeminiSimple');
       const response = await fetch(ASK_GEMINI_SIMPLE, {
         method: 'POST',
         headers: {
@@ -137,6 +138,7 @@ export default function TriviaScreen() {
 
         if (userData.religion) {
           const idToken = await SecureStore.getItemAsync('idToken');
+          if (!idToken) console.warn('Missing idToken for incrementReligionPoints');
           const url = INCREMENT_RELIGION_POINTS_URL;
           console.log('📡 Calling endpoint:', url);
           try {

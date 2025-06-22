@@ -79,6 +79,7 @@ export default function ChallengeScreen() {
       });
 
       const idToken = await getStoredToken();
+      if (!idToken) console.warn('Missing idToken for askGeminiSimple');
       const res = await fetch(ASK_GEMINI_SIMPLE, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
@@ -97,6 +98,7 @@ export default function ChallengeScreen() {
   const fetchChallenge = async () => {
     try {
       let idToken = await getStoredToken();
+      if (!idToken) console.warn('Missing idToken for fetchChallenge');
       const userId = await SafeStore.getItem('userId');
       if (!idToken || !userId) {
         Alert.alert('Login Required', 'Please log in again.');
@@ -259,6 +261,7 @@ export default function ChallengeScreen() {
 
     if (userData.religion) {
       const idToken = await SecureStore.getItemAsync('idToken');
+      if (!idToken) console.warn('Missing idToken for incrementReligionPoints');
       const url = INCREMENT_RELIGION_POINTS_URL;
       console.log('📡 Calling endpoint:', url);
       try {

@@ -234,6 +234,7 @@ export default function JournalScreen() {
 
       if (userData.religion) {
         const idToken = await SecureStore.getItemAsync('idToken');
+        if (!idToken) console.warn('Missing idToken for incrementReligionPoints');
         const url = INCREMENT_RELIGION_POINTS_URL;
         console.log('📡 Calling endpoint:', url);
         try {
