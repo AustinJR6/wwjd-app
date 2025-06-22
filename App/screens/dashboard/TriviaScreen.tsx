@@ -18,6 +18,8 @@ import { ASK_GEMINI_SIMPLE } from '@/utils/constants';
 import { getDocument, setDocument } from '@/services/firestoreService';
 import { callFunction } from '@/services/functionService';
 import { ensureAuth } from '@/utils/authGuard';
+import axios from 'axios';
+import * as SecureStore from 'expo-secure-store';
 
 export default function TriviaScreen() {
   const theme = useTheme();
@@ -134,10 +136,22 @@ export default function TriviaScreen() {
         });
 
         if (userData.religion) {
-          await callFunction('incrementReligionPoints', {
-            religion: userData.religion,
-            points: earned,
-          });
+          const idToken = await SecureStore.getItemAsync('idToken');
+          try {
+            await axios.post(
+              'https://us-central1-wwjd-app.cloudfunctions.net/incrementReligionPoints',
+              { religion: userData.religion, points: earned },
+              { headers: { Authorization: `Bearer ${idToken}` } }
+            );
+          } catch (err: any) {
+            if (err.response?.status === 404) {
+              console.error('❌ Cloud Function not deployed or wrong URL');
+            } else if (err.response?.status === 401) {
+              console.error('❌ Unauthorized – invalid or missing token');
+            } else {
+              console.error('🔥 Challenge point error:', err.message);
+            }
+          }
         }
 
         if (userData.organizationId) {

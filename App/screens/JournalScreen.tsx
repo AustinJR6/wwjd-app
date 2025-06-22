@@ -24,6 +24,8 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/navigation/RootStackParamList';
 import { getPromptsForReligion } from '@/utils/guidedPrompts';
+import axios from 'axios';
+import * as SecureStore from 'expo-secure-store';
 
 export default function JournalScreen() {
   const theme = useTheme();
@@ -230,10 +232,22 @@ export default function JournalScreen() {
       });
 
       if (userData.religion) {
-        await callFunction('incrementReligionPoints', {
-          religion: userData.religion,
-          points: 2,
-        });
+        const idToken = await SecureStore.getItemAsync('idToken');
+        try {
+          await axios.post(
+            'https://us-central1-wwjd-app.cloudfunctions.net/incrementReligionPoints',
+            { religion: userData.religion, points: 2 },
+            { headers: { Authorization: `Bearer ${idToken}` } }
+          );
+        } catch (err: any) {
+          if (err.response?.status === 404) {
+            console.error('❌ Cloud Function not deployed or wrong URL');
+          } else if (err.response?.status === 401) {
+            console.error('❌ Unauthorized – invalid or missing token');
+          } else {
+            console.error('🔥 Challenge point error:', err.message);
+          }
+        }
       }
 
       if (userData.organizationId) {

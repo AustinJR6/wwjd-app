@@ -1,5 +1,9 @@
 const functions = require('firebase-functions');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
+const admin = require("firebase-admin");
+if (!admin.apps.length) {
+  admin.initializeApp();
+}
 
 // 🔐 Your Gemini API key is securely stored as a Firebase config variable
 const geminiApiKey = functions.config().gemini.api_key;
@@ -216,3 +220,34 @@ exports.createCheckoutSession = functions.https.onRequest(async (req, res) => {
 
 
 
+// 🔐 incrementReligionPoints: Safely update religion totals
+exports.incrementReligionPoints = functions.https.onRequest(async (req, res) => {
+  const idToken = req.headers.authorization?.split('Bearer ')[1];
+  if (!idToken) {
+    res.status(401).send('Unauthorized – no token');
+    return;
+  }
+  try {
+    await admin.auth().verifyIdToken(idToken);
+    const { religion, points } = req.body;
+    if (
+      typeof religion !== 'string' ||
+      typeof points !== 'number' ||
+      points <= 0 ||
+      points > 100
+    ) {
+      res.status(400).send('Invalid input.');
+      return;
+    }
+    const ref = admin.firestore().collection('religions').doc(religion);
+    await admin.firestore().runTransaction(async (t) => {
+      const snap = await t.get(ref);
+      const current = snap.exists ? snap.data().totalPoints || 0 : 0;
+      t.set(ref, { totalPoints: current + points }, { merge: true });
+    });
+    res.status(200).send({ message: 'Points updated' });
+  } catch (err) {
+    console.error('🔥 Religion update failed:', err.message);
+    res.status(500).send('Internal error');
+  }
+});

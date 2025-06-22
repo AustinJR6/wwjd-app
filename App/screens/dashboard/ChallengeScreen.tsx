@@ -19,6 +19,8 @@ import { getStoredToken } from '@/services/authService';
 import { ensureAuth } from '@/utils/authGuard';
 import { useChallengeStore } from '@/state/challengeStore';
 import * as SafeStore from '@/utils/secureStore';
+import axios from 'axios';
+import * as SecureStore from 'expo-secure-store';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/navigation/RootStackParamList';
@@ -256,10 +258,22 @@ export default function ChallengeScreen() {
     });
 
     if (userData.religion) {
-      await callFunction('incrementReligionPoints', {
-        religion: userData.religion,
-        points: 5,
-      });
+      const idToken = await SecureStore.getItemAsync('idToken');
+      try {
+        await axios.post(
+          'https://us-central1-wwjd-app.cloudfunctions.net/incrementReligionPoints',
+          { religion: userData.religion, points: 5 },
+          { headers: { Authorization: `Bearer ${idToken}` } }
+        );
+      } catch (err: any) {
+        if (err.response?.status === 404) {
+          console.error('❌ Cloud Function not deployed or wrong URL');
+        } else if (err.response?.status === 401) {
+          console.error('❌ Unauthorized – invalid or missing token');
+        } else {
+          console.error('🔥 Challenge point error:', err.message);
+        }
+      }
     }
 
     if (userData.organizationId) {
