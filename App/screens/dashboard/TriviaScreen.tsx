@@ -17,6 +17,7 @@ import { useTheme } from '@/components/theme/theme';
 import { ASK_GEMINI_SIMPLE } from '@/utils/constants';
 import { getDocument, setDocument } from '@/services/firestoreService';
 import { callFunction, incrementReligionPoints } from '@/services/functionService';
+import { sendRequestWithGusBugLogging } from '@/utils/gusBugLogger';
 import { ensureAuth } from '@/utils/authGuard';
 
 export default function TriviaScreen() {
@@ -81,17 +82,19 @@ export default function TriviaScreen() {
     try {
       const idToken = await getStoredToken();
       if (!idToken) console.warn('Missing idToken for askGeminiSimple');
-      const response = await fetch(ASK_GEMINI_SIMPLE, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${idToken}`
-        },
-        body: JSON.stringify({
-          prompt: `Give me a short moral story originally from any major world religion. Replace all real names and locations with fictional ones so that it seems to come from a different culture. Keep the meaning and lesson intact. After the story, add two lines: RELIGION: <religion> and STORY: <story name>.`,
-          history: [],
+      const response = await sendRequestWithGusBugLogging(() =>
+        fetch(ASK_GEMINI_SIMPLE, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${idToken}`,
+          },
+          body: JSON.stringify({
+            prompt: `Give me a short moral story originally from any major world religion. Replace all real names and locations with fictional ones so that it seems to come from a different culture. Keep the meaning and lesson intact. After the story, add two lines: RELIGION: <religion> and STORY: <story name>.`,
+            history: [],
+          }),
         })
-      });
+      );
 
       const data = await response.json();
       const [cleanStory, info] = data.response.split('\nRELIGION:');

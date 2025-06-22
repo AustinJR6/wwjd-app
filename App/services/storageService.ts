@@ -1,4 +1,5 @@
 import { getStoredToken } from './authService';
+import { sendRequestWithGusBugLogging } from '@/utils/gusBugLogger';
 
 const BUCKET = process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET;
 
@@ -13,14 +14,16 @@ export async function uploadImage(fileUri: string, path: string): Promise<string
   const blob = await response.blob();
   const uploadUrl = `https://firebasestorage.googleapis.com/v0/b/${BUCKET}/o?name=${encodeURIComponent(path)}`;
 
-  const res = await fetch(uploadUrl, {
-    method: 'POST',
-    headers: {
-      'Content-Type': blob.type || 'application/octet-stream',
-      Authorization: `Bearer ${idToken}`,
-    },
-    body: blob,
-  });
+  const res = await sendRequestWithGusBugLogging(() =>
+    fetch(uploadUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': blob.type || 'application/octet-stream',
+        Authorization: `Bearer ${idToken}`,
+      },
+      body: blob,
+    })
+  );
 
   if (!res.ok) {
     if (res.status === 403) {

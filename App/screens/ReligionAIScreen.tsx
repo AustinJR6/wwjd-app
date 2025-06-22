@@ -21,6 +21,7 @@ import * as SafeStore from '@/utils/secureStore';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/navigation/RootStackParamList';
+import { sendRequestWithGusBugLogging } from '@/utils/gusBugLogger';
 
 export default function ReligionAIScreen() {
   const theme = useTheme();
@@ -158,19 +159,21 @@ export default function ReligionAIScreen() {
         role: m.startsWith('User:') ? 'user' : 'model',
         text: m.replace(/^[^:]+:\s*/, ''),
       }));
-      const response = await fetch(ASK_GEMINI_V2, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${idToken}`,
-        },
-        body: JSON.stringify({
-          prompt: `You are a ${promptRole} of the ${religion} faith. ` +
-            `Answer the user using teachings from that tradition and cite any ` +
-            `relevant scriptures.\n${conversationContext}\nUser: ${question}\n${promptRole}:`,
-          history: historyMsgs,
-        }),
-      });
+      const response = await sendRequestWithGusBugLogging(() =>
+        fetch(ASK_GEMINI_V2, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${idToken}`,
+          },
+          body: JSON.stringify({
+            prompt: `You are a ${promptRole} of the ${religion} faith. ` +
+              `Answer the user using teachings from that tradition and cite any ` +
+              `relevant scriptures.\n${conversationContext}\nUser: ${question}\n${promptRole}:`,
+            history: historyMsgs,
+          }),
+        })
+      );
 
       const data = await response.json();
       const answer = data?.response || 'I am always with you. Trust in Me.';

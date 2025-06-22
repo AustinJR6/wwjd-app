@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { getStoredToken } from './authService';
+import { sendRequestWithGusBugLogging } from '@/utils/gusBugLogger';
 
 const PROJECT_ID = process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID;
 const BASE_URL = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents`;
@@ -67,7 +68,7 @@ export async function getDocument(path: string): Promise<any | null> {
   const headers = await authHeaders();
   try {
     const url = `${BASE_URL}/${path}`;
-    const res = await axios.get(url, { headers });
+    const res = await sendRequestWithGusBugLogging(() => axios.get(url, { headers }));
     return res.data ? decodeData(res.data.fields) : null;
   } catch (err: any) {
     if (err.response?.status === 404) return null;
@@ -93,10 +94,12 @@ export async function setDocument(path: string, data: any): Promise<void> {
     .join('&');
   const url = `${BASE_URL}/${path}${mask ? `?${mask}` : ''}`;
   try {
-    await axios.patch(
-      url,
-      { fields: encodeData(data) },
-      { headers }
+    await sendRequestWithGusBugLogging(() =>
+      axios.patch(
+        url,
+        { fields: encodeData(data) },
+        { headers }
+      )
     );
   } catch (err: any) {
     if (err.response?.status === 403) {
@@ -121,10 +124,12 @@ export async function addDocument(collectionPath: string, data: any): Promise<st
   const headers = await authHeaders();
   try {
     const url = `${BASE_URL}/${collectionPath}`;
-    const res = await axios.post(
-      url,
-      { fields: encodeData(data) },
-      { headers }
+    const res = await sendRequestWithGusBugLogging(() =>
+      axios.post(
+        url,
+        { fields: encodeData(data) },
+        { headers }
+      )
     );
     const name: string = res.data.name;
     return name.split('/').pop() as string;
@@ -168,10 +173,12 @@ export async function queryCollection(
   }
   const url = `${BASE_URL}:runQuery`;
   try {
-    const res = await axios.post(
-      url,
-      { structuredQuery },
-      { headers }
+    const res = await sendRequestWithGusBugLogging(() =>
+      axios.post(
+        url,
+        { structuredQuery },
+        { headers }
+      )
     );
     const docs = (res.data as any[])
       .filter((d) => d.document)
