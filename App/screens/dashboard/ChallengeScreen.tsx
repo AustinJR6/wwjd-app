@@ -261,12 +261,12 @@ export default function ChallengeScreen() {
     await setTokenCount(currentTokens + 1);
 
     await setDocument(`users/${uid}`, {
-      individualPoints: (userData.individualPoints || 0) + 5,
+      individualPoints: (userData.individualPoints || 0) + 2,
     });
 
     if (userData.religion) {
       try {
-        await incrementReligionPoints(userData.religion, 5);
+        await incrementReligionPoints(userData.religion, 2);
       } catch (err: any) {
         console.error('🔥 Backend error:', err.response?.data || err.message);
       }
@@ -274,9 +274,11 @@ export default function ChallengeScreen() {
 
     if (userData.organizationId) {
       const orgData = await getDocument(`organizations/${userData.organizationId}`);
+      const newTotal = (orgData?.totalPoints || 0) + 2;
       await setDocument(`organizations/${userData.organizationId}`, {
-        totalPoints: (orgData?.totalPoints || 0) + 5,
+        totalPoints: newTotal,
       });
+      console.log(`🏛️ Added points to org ${userData.organizationId}:`, newTotal);
     }
 
     Alert.alert('Great job!', 'Challenge completed.');

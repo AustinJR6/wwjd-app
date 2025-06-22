@@ -276,9 +276,11 @@ export default function JournalScreen() {
 
       if (userData.organizationId) {
         const orgData = await getDocument(`organizations/${userData.organizationId}`);
+        const newTotal = (orgData?.totalPoints || 0) + 2;
         await setDocument(`organizations/${userData.organizationId}`, {
-          totalPoints: (orgData?.totalPoints || 0) + 2,
+          totalPoints: newTotal,
         });
+        console.log(`🏛️ Added points to org ${userData.organizationId}:`, newTotal);
       }
 
       Alert.alert('✅ Journal Saved', 'Your reflection has been securely stored.');

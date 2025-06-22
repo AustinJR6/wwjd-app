@@ -224,5 +224,16 @@ export const generateChallenge = onRequest(async (req, res) => {
 
 export const handleStripeWebhookV2 = onRequest(async (req, res) => {
   console.log('💰 Gus Bug Webhook triggered. No auth needed!');
+  const event = req.body;
+  if (event?.type === 'checkout.session.completed') {
+    const uid = event.data?.object?.client_reference_id as string | undefined;
+    if (uid) {
+      console.log('✅ Stripe checkout completed for', uid);
+      await db.doc(`subscriptions/${uid}`).set({ active: true }, { merge: true });
+      await db.doc(`users/${uid}`).set({ isSubscribed: true }, { merge: true });
+    } else {
+      console.warn('⚠️ Missing uid in Stripe webhook payload');
+    }
+  }
   res.status(200).send({ received: true });
 });

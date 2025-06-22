@@ -6,7 +6,9 @@ export const getTokenCount = async () => {
   if (!uid) return 0;
 
   const snapshot = await getDocument(`tokens/${uid}`);
-  return snapshot && snapshot.count ? snapshot.count : 0;
+  const count = snapshot && snapshot.count ? snapshot.count : 0;
+  console.log('🪙 Token count:', count);
+  return count;
 };
 
 export const setTokenCount = async (count: number) => {
@@ -14,6 +16,7 @@ export const setTokenCount = async (count: number) => {
   if (!uid) return;
 
   await setDocument(`tokens/${uid}`, { count });
+  console.log('🪙 Token count:', count);
 };
 
 export const consumeToken = async () => {
@@ -50,6 +53,7 @@ export const syncSubscriptionStatus = async () => {
   if (!uid) return;
   const sub = await getDocument(`subscriptions/${uid}`);
   const isSubscribed = !!sub && sub.active === true;
+  console.log('💎 WWJD+ Status:', isSubscribed);
   if (isSubscribed) {
     await setDocument(`tokens/${uid}`, { count: 9999 });
   }

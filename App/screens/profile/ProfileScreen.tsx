@@ -24,6 +24,7 @@ export default function ProfileScreen() {
   const [religion, setReligion] = useState(user?.religion || RELIGIONS[0]);
   const [tokens, setTokens] = useState(0);
   const [points, setPoints] = useState(0);
+  const [organization, setOrganization] = useState<string>('');
   const [saving, setSaving] = useState(false);
 
   const styles = React.useMemo(
@@ -60,6 +61,10 @@ export default function ProfileScreen() {
       setTokens(tokenCount);
       if (profile) {
         setPoints(profile.individualPoints || 0);
+        if (profile.organizationId) {
+          const org = await getDocument(`organizations/${profile.organizationId}`);
+          setOrganization(org?.name || '');
+        }
       }
     } catch (err) {
       console.error('Profile load error', err);
@@ -106,6 +111,7 @@ export default function ProfileScreen() {
         <CustomText style={styles.info}>Points: {points}</CustomText>
         <CustomText style={styles.info}>Subscribed: {user?.isSubscribed ? 'Yes' : 'No'}</CustomText>
         <CustomText style={styles.info}>Tokens: {tokens}</CustomText>
+        <CustomText style={styles.info}>Organization: {organization || 'None'}</CustomText>
 
         <Button title="Save Changes" onPress={handleSave} loading={saving} />
       </View>
