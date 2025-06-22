@@ -15,8 +15,9 @@ import ScreenContainer from "@/components/theme/ScreenContainer";
 import { useTheme } from "@/components/theme/theme";
 import { showGracefulError } from '@/utils/gracefulError';
 import * as LocalAuthentication from 'expo-local-authentication';
-import { queryCollection, addDocument, getDocument, setDocument } from '@/services/firestoreService';
-import { callFunction, incrementReligionPoints } from '@/services/functionService';
+import { querySubcollection, addDocument, getDocument, setDocument } from '@/services/firestoreService';
+import { incrementReligionPoints } from '@/services/functionService';
+import { ASK_GEMINI_SIMPLE } from '@/utils/constants';
 import { ensureAuth } from '@/utils/authGuard';
 import * as SafeStore from '@/utils/secureStore';
 import { getStoredToken } from '@/services/authService';
@@ -158,11 +159,11 @@ export default function JournalScreen() {
           return;
         }
 
-        const list = await queryCollection(
-          'journalEntries',
+        const list = await querySubcollection(
+          `users/${uid}`,
+          'journals',
           'createdAt',
-          'DESCENDING',
-          { fieldPath: 'userId', op: 'EQUAL', value: uid }
+          'DESCENDING'
         );
         setEntries(list);
         const userData = await getDocument(`users/${uid}`);
@@ -177,13 +178,32 @@ export default function JournalScreen() {
     authenticateAndLoad();
   }, []);
 
-  const startGuided = () => {
+  const startGuided = async () => {
     const p = getPromptsForReligion(religion || '');
     setPrompts(p);
     setGuidedMode(true);
     setCurrentStep(0);
     setResponses([]);
     setGuidedText('');
+    const prompt = p[0] || 'Share what is on your heart today.';
+    try {
+      const idToken = await getStoredToken();
+      const uid = await ensureAuth();
+      if (!idToken || !uid) return;
+      console.log('🔮 Starting guided journal with prompt:', prompt);
+      const res = await fetch(ASK_GEMINI_SIMPLE, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({ prompt, history: [] }),
+      });
+      const data = await res.json();
+      setGuidedText(data.response || '');
+    } catch (err) {
+      console.error('❌ Guided journal error:', err);
+    }
   };
 
   const handleNextPrompt = () => {
@@ -216,7 +236,8 @@ export default function JournalScreen() {
 
       const userData = await getDocument(`users/${uid}`) || {};
 
-      await addDocument('journalEntries', {
+      console.log('📤 Saving journal entry for UID:', uid);
+      await addDocument(`users/${uid}/journals`, {
         userId: uid,
         content: entry,
         emotion: emotion || 'neutral',
@@ -249,7 +270,7 @@ export default function JournalScreen() {
       setEmotion('');
       setTags('');
 
-      const list = await queryCollection('journalEntries', 'createdAt', 'DESCENDING', { fieldPath: 'userId', op: 'EQUAL', value: uid });
+      const list = await querySubcollection(`users/${uid}`, 'journals', 'createdAt', 'DESCENDING');
       setEntries(list);
     } catch (err: any) {
       console.error('🔥 API Error:', err?.response?.data || err.message);

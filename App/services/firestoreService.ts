@@ -198,3 +198,46 @@ export async function queryCollection(
     return [];
   }
 }
+
+export async function querySubcollection(
+  parentPath: string,
+  collection: string,
+  orderByField?: string,
+  direction: 'DESCENDING' | 'ASCENDING' = 'DESCENDING'
+): Promise<any[]> {
+  const headers = await authHeaders();
+  const structuredQuery: any = {
+    from: [{ collectionId: collection }],
+  };
+  if (orderByField) {
+    structuredQuery.orderBy = [
+      { field: { fieldPath: orderByField }, direction },
+    ];
+  }
+  const url = `${BASE_URL}/${parentPath}:runQuery`;
+  try {
+    const res = await sendRequestWithGusBugLogging(() =>
+      axios.post(
+        url,
+        { structuredQuery },
+        { headers }
+      )
+    );
+    const docs = (res.data as any[])
+      .filter((d) => d.document)
+      .map((d) => ({ id: d.document.name.split('/').pop(), ...decodeData(d.document.fields) }));
+    return docs;
+  } catch (err: any) {
+    if (err.response?.status === 404) return [];
+    if (err.response?.status === 403) {
+      console.error('❌ Firestore permission error:', err.response.data);
+    }
+    console.error('Firestore querySubcollection error:', {
+      url,
+      status: err.response?.status,
+      data: err.response?.data,
+      message: err.message,
+    });
+    return [];
+  }
+}
