@@ -87,16 +87,27 @@ export default function LeaderboardsScreen() {
     }
   };
 
-  const renderList = (title: string, data: any[], keyName: string, valueName: string) => (
+  const renderList = (
+    title: string,
+    data: any[],
+    keyName: string,
+    valueName: string,
+  ) => (
     <View style={styles.section}>
       <CustomText style={styles.sectionTitle}>{title}</CustomText>
-      {data.map((item, index) => (
-        <View key={item.id || index} style={styles.row}>
-          <CustomText style={styles.rank}>{index + 1}.</CustomText>
-          <CustomText style={styles.name}>{item[keyName]}</CustomText>
-          <CustomText style={styles.points}>{item[valueName]} pts</CustomText>
-        </View>
-      ))}
+      {data.length === 0 ? (
+        <CustomText>No leaders yet!</CustomText>
+      ) : (
+        data.map((item, index) => (
+          <View key={item.id || index} style={styles.row}>
+            <CustomText style={styles.rank}>{index + 1}.</CustomText>
+            <CustomText style={styles.name}>
+              {item[keyName] || item.displayName || item.email}
+            </CustomText>
+            <CustomText style={styles.points}>{item[valueName]} pts</CustomText>
+          </View>
+        ))
+      )}
     </View>
   );
 
