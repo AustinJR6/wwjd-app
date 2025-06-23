@@ -230,27 +230,41 @@ export const generateChallenge = onRequest(async (req, res) => {
 });
 
 export const startSubscriptionCheckout = onRequest(async (req, res) => {
+  console.log("📦 Stripe payload:", req.body);
+  console.log(
+    "🔐 Stripe Secret:",
+    process.env.STRIPE_SECRET_KEY ? "\u2713 set" : "\u2717 missing",
+  );
   const idToken = req.headers.authorization?.split("Bearer ")[1];
   if (!idToken) {
     res.status(401).json({ error: "Unauthorized" });
     return;
   }
 
-  const { priceId } = req.body || {};
-  if (!priceId) {
-    res.status(400).json({ error: "Missing priceId" });
+  const { userId, priceId, success_url, cancel_url } = req.body || {};
+  if (!userId || !priceId || !success_url || !cancel_url) {
+    res.status(400).json({ error: "Missing required fields" });
+    return;
+  }
+
+  if (!STRIPE_SECRET_KEY) {
+    console.error("❌ Stripe secret key missing");
+    res.status(500).json({ error: "Stripe secret not configured" });
     return;
   }
 
   try {
     const decoded = await auth.verifyIdToken(idToken);
+    if (decoded.uid !== userId) {
+      console.warn("⚠️ UID mismatch between token and payload");
+    }
     const params = new URLSearchParams({
       mode: "subscription",
       "line_items[0][price]": priceId,
       "line_items[0][quantity]": "1",
-      client_reference_id: decoded.uid,
-      success_url: STRIPE_SUCCESS_URL,
-      cancel_url: STRIPE_CANCEL_URL,
+      success_url,
+      cancel_url,
+      "metadata[userId]": userId,
     });
 
     const resp = await fetch("https://api.stripe.com/v1/checkout/sessions", {
@@ -264,39 +278,53 @@ export const startSubscriptionCheckout = onRequest(async (req, res) => {
 
     const data: any = await resp.json();
     if (!resp.ok) {
-      console.error("Stripe error", data);
-      res.status(500).json({ error: "Stripe failed" });
+      console.error("❌ Stripe Error:", data);
+      res.status(500).json({ error: data.error || "Stripe failed" });
       return;
     }
     res.status(200).json({ url: data.url });
   } catch (err) {
     console.error("Subscription checkout error", err);
-    res.status(500).json({ error: "Failed to start checkout" });
+    res.status(500).json({ error: (err as any)?.message || "Failed to start checkout" });
   }
 });
 
 export const startOneTimeTokenCheckout = onRequest(async (req, res) => {
+  console.log("📦 Stripe payload:", req.body);
+  console.log(
+    "🔐 Stripe Secret:",
+    process.env.STRIPE_SECRET_KEY ? "\u2713 set" : "\u2717 missing",
+  );
   const idToken = req.headers.authorization?.split("Bearer ")[1];
   if (!idToken) {
     res.status(401).json({ error: "Unauthorized" });
     return;
   }
 
-  const { priceId } = req.body || {};
-  if (!priceId) {
-    res.status(400).json({ error: "Missing priceId" });
+  const { userId, priceId, success_url, cancel_url } = req.body || {};
+  if (!userId || !priceId || !success_url || !cancel_url) {
+    res.status(400).json({ error: "Missing required fields" });
+    return;
+  }
+
+  if (!STRIPE_SECRET_KEY) {
+    console.error("❌ Stripe secret key missing");
+    res.status(500).json({ error: "Stripe secret not configured" });
     return;
   }
 
   try {
     const decoded = await auth.verifyIdToken(idToken);
+    if (decoded.uid !== userId) {
+      console.warn("⚠️ UID mismatch between token and payload");
+    }
     const params = new URLSearchParams({
       mode: "payment",
       "line_items[0][price]": priceId,
       "line_items[0][quantity]": "1",
-      client_reference_id: decoded.uid,
-      success_url: STRIPE_SUCCESS_URL,
-      cancel_url: STRIPE_CANCEL_URL,
+      success_url,
+      cancel_url,
+      "metadata[userId]": userId,
     });
 
     const resp = await fetch("https://api.stripe.com/v1/checkout/sessions", {
@@ -309,40 +337,53 @@ export const startOneTimeTokenCheckout = onRequest(async (req, res) => {
     });
     const data: any = await resp.json();
     if (!resp.ok) {
-      console.error("Stripe error", data);
-      res.status(500).json({ error: "Stripe failed" });
+      console.error("❌ Stripe Error:", data);
+      res.status(500).json({ error: data.error || "Stripe failed" });
       return;
     }
     res.status(200).json({ url: data.url });
   } catch (err) {
     console.error("Token checkout error", err);
-    res.status(500).json({ error: "Failed to start checkout" });
+    res.status(500).json({ error: (err as any)?.message || "Failed to start checkout" });
   }
 });
 
 export const startCheckoutSession = onRequest(async (req, res) => {
   console.log("📦 Stripe payload:", req.body);
+  console.log(
+    "🔐 Stripe Secret:",
+    process.env.STRIPE_SECRET_KEY ? "\u2713 set" : "\u2717 missing",
+  );
   const idToken = req.headers.authorization?.split("Bearer ")[1];
   if (!idToken) {
     res.status(401).json({ error: "Unauthorized" });
     return;
   }
 
-  const { priceId, success_url, cancel_url, mode = "payment" } = req.body || {};
-  if (!priceId || !success_url || !cancel_url) {
+  const { userId, priceId, success_url, cancel_url, mode = "payment" } = req.body || {};
+  if (!userId || !priceId || !success_url || !cancel_url) {
     res.status(400).json({ error: "Missing required fields" });
+    return;
+  }
+
+  if (!STRIPE_SECRET_KEY) {
+    console.error("❌ Stripe secret key missing");
+    res.status(500).json({ error: "Stripe secret not configured" });
     return;
   }
 
   try {
     const decoded = await auth.verifyIdToken(idToken);
+    if (decoded.uid !== userId) {
+      console.warn("⚠️ UID mismatch between token and payload");
+    }
     const params = new URLSearchParams({
       mode,
       "line_items[0][price]": priceId,
       "line_items[0][quantity]": "1",
       success_url,
       cancel_url,
-      "metadata[userId]": decoded.uid,
+      "metadata[userId]": userId,
     });
 
     const resp = await fetch("https://api.stripe.com/v1/checkout/sessions", {
@@ -356,14 +397,14 @@ export const startCheckoutSession = onRequest(async (req, res) => {
 
     const data: any = await resp.json();
     if (!resp.ok) {
-      console.error("Stripe error", data);
-      res.status(500).json({ error: "Stripe failed" });
+      console.error("❌ Stripe Error:", data);
+      res.status(500).json({ error: data.error || "Stripe failed" });
       return;
     }
     res.status(200).json({ url: data.url });
   } catch (err) {
     console.error("Checkout session error", err);
-    res.status(500).json({ error: "Failed to start checkout" });
+    res.status(500).json({ error: (err as any)?.message || "Failed to start checkout" });
   }
 });
 

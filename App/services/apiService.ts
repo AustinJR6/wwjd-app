@@ -69,8 +69,8 @@ export async function createStripeCheckout(
     if (err.response?.status === 403) {
       console.error('❌ Firestore permission error:', err.response.data);
     }
-    console.error('Stripe API error:', err);
-    throw new Error('Unable to start checkout.');
+    console.error('Stripe API error:', err.response?.data || err.message);
+    throw new Error(err.response?.data?.error || 'Unable to start checkout.');
   }
 }
 
