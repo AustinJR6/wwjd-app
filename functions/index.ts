@@ -13,7 +13,12 @@ const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || "";
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || "";
 const STRIPE_SUCCESS_URL = process.env.STRIPE_SUCCESS_URL || "https://example.com/success";
 const STRIPE_CANCEL_URL = process.env.STRIPE_CANCEL_URL || "https://example.com/cancel";
-const stripe = new Stripe(STRIPE_SECRET_KEY, { apiVersion: "2025-02-24.acacia" });
+const stripe = new Stripe(
+  STRIPE_SECRET_KEY,
+  {
+    apiVersion: "2022-11-15",
+  } as any,
+);
 
 export const incrementReligionPoints = onRequest(async (req, res) => {
   console.log("🔍 Headers received:", req.headers);
