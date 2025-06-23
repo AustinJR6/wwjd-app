@@ -4,10 +4,17 @@ import * as admin from "firebase-admin";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import Stripe from "stripe";
 import * as dotenv from "dotenv";
+import * as logger from "firebase-functions/logger";
 
+dotenv.config();
 dotenv.config({ path: ".env.functions" });
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
+if (!GEMINI_API_KEY) {
+  logger.error("❌ GEMINI_API_KEY missing. Set this in your environment.");
+} else {
+  logger.info("✅ GEMINI_API_KEY loaded");
+}
 const LOGGING_MODE = process.env.LOGGING_MODE || "gusbug";
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || "";
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || "";
@@ -19,6 +26,19 @@ const stripe = new Stripe(
     apiVersion: "2022-11-15",
   } as any,
 );
+
+function createGeminiModel() {
+  if (!GEMINI_API_KEY) {
+    throw new Error("GEMINI_API_KEY is not configured");
+  }
+  try {
+    const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+    return genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+  } catch (err) {
+    logger.error("Failed to initialize GoogleGenerativeAI", err);
+    throw err;
+  }
+}
 
 export const incrementReligionPoints = onRequest(async (req, res) => {
   console.log("🔍 Headers received:", req.headers);
@@ -96,35 +116,38 @@ export const askGeminiSimple = onRequest(async (req, res) => {
 
   const { prompt = "", history = [] } = req.body || {};
 
-  let decoded: admin.auth.DecodedIdToken;
   try {
-    decoded = await auth.verifyIdToken(idToken);
+    const decoded = await auth.verifyIdToken(idToken);
     const uid = decoded.uid;
-    console.log(`✅ Gus Bug Authenticated: ${uid} is legit! 🎯`);
+    logger.info(`✅ askGeminiSimple user: ${uid}`);
 
-    const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
-
-    const chat = await model.startChat({
-      history: (history as any[]).map((msg) => ({
-        role: msg.role,
-        parts: [{ text: msg.text }],
-      })),
-    });
-
-    const result = await chat.sendMessage(prompt);
-    const text = result?.response?.text?.() ?? "No response text returned.";
+    let text = "";
+    try {
+      const model = createGeminiModel();
+      const chat = await model.startChat({
+        history: (history as any[]).map((msg) => ({
+          role: msg.role,
+          parts: [{ text: msg.text }],
+        })),
+      });
+      const result = await chat.sendMessage(prompt);
+      text = result?.response?.text?.() ?? "No response text returned.";
+    } catch (gemErr) {
+      console.error("Gemini request failed", gemErr);
+      res.status(500).json({ error: "Gemini request failed" });
+      return;
+    }
 
     res.status(200).json({ response: text });
   } catch (err: any) {
-    console.error("🛑 Gus Bug Tampered Token: Couldn't verify. 🧙‍♂️✨", err);
+    console.error("🛑 Gemini Simple auth or processing error", err);
     if (err.code === "auth/argument-error") {
       res.status(401).json({
         error: "Unauthorized — Gus bug cast an invalid token spell.",
       });
       return;
     }
-    res.status(500).json({ error: "Gemini failed" });
+    res.status(500).json({ error: err.message || "Gemini failed" });
   }
 });
 
@@ -140,20 +163,24 @@ export const askGeminiV2 = onRequest(async (req, res) => {
 
   try {
     const decoded = await auth.verifyIdToken(idToken);
-    console.log(`✅ GeminiV2 user: ${decoded.uid}`);
+    logger.info(`✅ askGeminiV2 user: ${decoded.uid}`);
 
-    const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
-
-    const chat = await model.startChat({
-      history: (history as any[]).map((msg) => ({
-        role: msg.role,
-        parts: [{ text: msg.text }],
-      })),
-    });
-
-    const result = await chat.sendMessage(prompt);
-    const text = result?.response?.text?.() ?? "No response text returned.";
+    let text = "";
+    try {
+      const model = createGeminiModel();
+      const chat = await model.startChat({
+        history: (history as any[]).map((msg) => ({
+          role: msg.role,
+          parts: [{ text: msg.text }],
+        })),
+      });
+      const result = await chat.sendMessage(prompt);
+      text = result?.response?.text?.() ?? "No response text returned.";
+    } catch (gemErr) {
+      console.error("Gemini V2 request failed", gemErr);
+      res.status(500).json({ error: "Gemini request failed" });
+      return;
+    }
 
     res.status(200).json({ response: text });
   } catch (err: any) {
@@ -207,7 +234,7 @@ export const generateChallenge = onRequest(async (req, res) => {
   try {
     const decoded = await auth.verifyIdToken(idToken);
     const uid = decoded.uid;
-    console.log(`✅ Gus Bug Authenticated: ${uid} is legit! 🎯`);
+    logger.info(`✅ generateChallenge user: ${uid}`);
 
     const userRef = db.collection("users").doc(uid);
     const snap = await userRef.get();
@@ -226,18 +253,22 @@ export const generateChallenge = onRequest(async (req, res) => {
       "Generate a new, unique, and creative spiritual challenge inspired by Christian teachings.";
     const fullPrompt = `${basePrompt}\n\nDo NOT repeat or closely resemble any of the following recent challenges:\n${avoid}\n\nRespond ONLY with the new challenge text.`;
 
-    const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
-
-    const chat = await model.startChat({
-      history: (history as any[]).map((msg) => ({
-        role: msg.role,
-        parts: [{ text: msg.text }],
-      })),
-    });
-
-    const result = await chat.sendMessage(`${fullPrompt}\n${randomizer}`);
-    const text = result?.response?.text?.() ?? "No response text returned.";
+    let text = "";
+    try {
+      const model = createGeminiModel();
+      const chat = await model.startChat({
+        history: (history as any[]).map((msg) => ({
+          role: msg.role,
+          parts: [{ text: msg.text }],
+        })),
+      });
+      const result = await chat.sendMessage(`${fullPrompt}\n${randomizer}`);
+      text = result?.response?.text?.() ?? "No response text returned.";
+    } catch (gemErr) {
+      console.error("Gemini generateChallenge failed", gemErr);
+      res.status(500).json({ error: "Gemini request failed" });
+      return;
+    }
 
     const updated = [...recent.slice(-4), text];
     await userRef.set(
