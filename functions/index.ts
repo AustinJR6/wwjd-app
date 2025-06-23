@@ -659,6 +659,59 @@ export const startOneTimeTokenCheckout = onRequest(async (req, res) => {
   }
 });
 
+export const startDonationCheckout = onRequest(async (req, res) => {
+  logger.info("💖 startDonationCheckout payload", req.body);
+  const idToken = req.headers.authorization?.split("Bearer ")[1];
+  if (!idToken) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  const { userId, amount } = req.body || {};
+  if (!userId || typeof amount !== "number" || amount <= 0) {
+    res.status(400).json({ error: "Missing required fields" });
+    return;
+  }
+
+  if (!STRIPE_SECRET_KEY) {
+    logger.error("❌ Stripe secret key missing");
+    res.status(500).json({ error: "Stripe secret not configured" });
+    return;
+  }
+
+  try {
+    const decoded = await auth.verifyIdToken(idToken);
+    if (decoded.uid !== userId) {
+      logger.warn("⚠️ UID mismatch between token and payload");
+    }
+    logger.info(`📨 Creating donation session for ${userId} amount $${amount}`);
+    const session = await stripe.checkout.sessions.create({
+      mode: "payment",
+      line_items: [
+        {
+          price_data: {
+            currency: "usd",
+            product_data: { name: "OneVine Donation" },
+            unit_amount: Math.round(amount * 100),
+          },
+          quantity: 1,
+        },
+      ],
+      success_url: STRIPE_SUCCESS_URL,
+      cancel_url: STRIPE_CANCEL_URL,
+      client_reference_id: userId,
+      metadata: { uid: userId, donationAmount: amount },
+    });
+    logger.info(`✅ Donation session created ${session.id}`);
+    res.status(200).json({ url: session.url });
+  } catch (err) {
+    logger.error("Donation checkout error", err);
+    res
+      .status(500)
+      .json({ error: (err as any)?.message || "Failed to start donation" });
+  }
+});
+
 export const startCheckoutSession = onRequest(async (req, res) => {
   logger.info("📦 startCheckoutSession payload", req.body);
   logger.info(
