@@ -5,7 +5,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import Stripe from "stripe";
 import * as dotenv from "dotenv";
 
-dotenv.config();
+dotenv.config({ path: ".env.functions" });
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
 const LOGGING_MODE = process.env.LOGGING_MODE || "gusbug";
