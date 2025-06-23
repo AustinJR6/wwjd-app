@@ -2,6 +2,7 @@ import { onRequest } from "firebase-functions/v2/https";
 import { auth, db } from "./firebase";
 import * as admin from "firebase-admin";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import Stripe from "stripe";
 import * as dotenv from "dotenv";
 
 dotenv.config();
@@ -9,8 +10,10 @@ dotenv.config();
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
 const LOGGING_MODE = process.env.LOGGING_MODE || "gusbug";
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || "";
+const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || "";
 const STRIPE_SUCCESS_URL = process.env.STRIPE_SUCCESS_URL || "https://example.com/success";
 const STRIPE_CANCEL_URL = process.env.STRIPE_CANCEL_URL || "https://example.com/cancel";
+const stripe = new Stripe(STRIPE_SECRET_KEY, { apiVersion: "2025-02-24.acacia" });
 
 export const incrementReligionPoints = onRequest(async (req, res) => {
   console.log("🔍 Headers received:", req.headers);
@@ -149,13 +152,39 @@ export const askGeminiV2 = onRequest(async (req, res) => {
 
     res.status(200).json({ response: text });
   } catch (err: any) {
-    console.error("🛑 Gus Bug Tampered Token: Couldn't verify. 🧙‍♂️✨", err);
+    console.error("🛑 Gus Bug Tampered Token: Couldn't verify or Gemini failed", err);
     if (err.code === "auth/argument-error") {
       res.status(401).json({
         error: "Unauthorized — Gus bug cast an invalid token spell.",
       });
       return;
     }
+
+    if (process.env.EXPO_PUBLIC_OPENAI_API_KEY) {
+      try {
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${process.env.EXPO_PUBLIC_OPENAI_API_KEY}`,
+          },
+          body: JSON.stringify({
+            model: 'gpt-3.5-turbo',
+            messages: [
+              ...((history as any[]).map((msg) => ({ role: msg.role, content: msg.text }))),
+              { role: 'user', content: prompt },
+            ],
+          }),
+        });
+        const data: any = await response.json();
+        const text = data?.choices?.[0]?.message?.content || 'No OpenAI response';
+        res.status(200).json({ response: text });
+        return;
+      } catch (openErr) {
+        console.error('OpenAI fallback failed', openErr);
+      }
+    }
+
     res.status(500).json({ error: "Gemini failed" });
   }
 });
@@ -410,9 +439,22 @@ export const startCheckoutSession = onRequest(async (req, res) => {
 
 export const handleStripeWebhookV2 = onRequest(async (req, res) => {
   console.log('💰 Gus Bug Webhook triggered. No auth needed!');
-  const event = req.body;
+  const sig = req.headers['stripe-signature'] as string | undefined;
+  if (!sig) {
+    console.error('❌ Missing Stripe signature header');
+    res.status(400).send('Signature required');
+    return;
+  }
+  let event: Stripe.Event;
+  try {
+    event = stripe.webhooks.constructEvent(req.rawBody, sig, STRIPE_WEBHOOK_SECRET);
+  } catch (err) {
+    console.error('❌ Stripe signature verification failed', err);
+    res.status(400).send('Webhook signature mismatch');
+    return;
+  }
   if (event?.type === 'checkout.session.completed') {
-    const uid = event.data?.object?.client_reference_id as string | undefined;
+    const uid = (event.data?.object as any)?.client_reference_id as string | undefined;
     if (uid) {
       console.log('✅ Stripe checkout completed for', uid);
       await db.doc(`subscriptions/${uid}`).set({ active: true }, { merge: true });

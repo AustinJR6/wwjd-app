@@ -2,6 +2,7 @@
 .env
 .env.*
 !.env.example
+!.env.functions.example
 
 # Node modules and build artifacts
 node_modules/
