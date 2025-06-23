@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { GEMINI_API_URL, STRIPE_CHECKOUT_URL } from '@/config/apiConfig';
+import { GEMINI_API_URL, STRIPE_CHECKOUT_URL, DONATION_CHECKOUT_URL } from '@/config/apiConfig';
 import { STRIPE_SUCCESS_URL, STRIPE_CANCEL_URL } from '@/config/stripeConfig';
 import { getStoredToken } from './authService';
 import { sendRequestWithGusBugLogging } from '@/utils/gusBugLogger';
@@ -71,6 +71,33 @@ export async function createStripeCheckout(
     }
     console.error('Stripe API error:', err.response?.data || err.message);
     throw new Error(err.response?.data?.error || 'Unable to start checkout.');
+  }
+}
+
+export async function startDonationCheckout(
+  uid: string,
+  amount: number,
+): Promise<string> {
+  const idToken = await getStoredToken();
+  if (!idToken) {
+    console.error('🚫 Missing idToken for startDonationCheckout');
+    throw new Error('Missing auth token');
+  }
+  try {
+    const headers = {
+      Authorization: `Bearer ${idToken}`,
+      'Content-Type': 'application/json',
+    };
+    const payload = { userId: uid, amount };
+    const res = await sendRequestWithGusBugLogging(() =>
+      axios.post<StripeCheckoutResponse>(DONATION_CHECKOUT_URL, payload, {
+        headers,
+      })
+    );
+    return res.data.url;
+  } catch (err: any) {
+    console.error('Stripe donation error:', err.response?.data || err.message);
+    throw new Error(err.response?.data?.error || 'Unable to start donation.');
   }
 }
 

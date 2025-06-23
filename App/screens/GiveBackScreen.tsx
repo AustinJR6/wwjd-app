@@ -7,8 +7,7 @@ import { useTheme } from "@/components/theme/theme";
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from "@/navigation/RootStackParamList";
 import { useUser } from '@/hooks/useUser';
-import { createStripeCheckout } from '@/services/apiService';
-import { PRICE_IDS } from '@/config/stripeConfig';
+import { startDonationCheckout } from '@/services/apiService';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'GiveBack'>;
 
@@ -60,16 +59,7 @@ export default function GiveBackScreen({ navigation }: Props) {
     try {
       if (!user) return;
 
-      const priceId =
-        amount === 2
-          ? PRICE_IDS.DONATE_2
-          : amount === 5
-          ? PRICE_IDS.DONATE_5
-          : PRICE_IDS.DONATE_10;
-      const url = await createStripeCheckout(user.uid, {
-        type: 'one-time',
-        priceId,
-      });
+      const url = await startDonationCheckout(user.uid, amount);
 
       if (url) {
         Linking.openURL(url);
@@ -89,19 +79,23 @@ export default function GiveBackScreen({ navigation }: Props) {
       <View style={styles.content}>
         <CustomText style={styles.title}>Give Back</CustomText>
         <CustomText style={styles.subtitle}>
-          Your donations help others receive spiritual guidance, food support, and emotional healing.
+          Your support fuels OneVine’s mission to spread compassion and growth.
         </CustomText>
 
         <CustomText style={styles.section}>Make a One-Time Gift:</CustomText>
 
         <View style={styles.buttonGroup}>
-          <Button title="$2" onPress={() => handleDonation(2)} disabled={donating} />
           <Button title="$5" onPress={() => handleDonation(5)} disabled={donating} />
           <Button title="$10" onPress={() => handleDonation(10)} disabled={donating} />
+          <Button title="$25" onPress={() => handleDonation(25)} disabled={donating} />
+          <Button title="$50" onPress={() => handleDonation(50)} disabled={donating} />
         </View>
 
         <CustomText style={styles.note}>
           Thank you for walking in love. Every gift reflects the heart of Christ.
+        </CustomText>
+        <CustomText style={styles.note}>
+          Donations are collected securely and will support community initiatives, charities, and platform growth.
         </CustomText>
 
         <View style={styles.backWrap}>
