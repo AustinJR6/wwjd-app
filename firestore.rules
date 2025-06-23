@@ -6,6 +6,9 @@ service cloud.firestore {
     match /users/{userId}/journals/{journalId} {
       allow read, write: if request.auth.uid == userId;
     }
+    match /users/{userId}/journalEntries/{entryId} {
+      allow read, write: if request.auth.uid == userId;
+    }
 
     // \u{1F5E3} ReligionAI chat history
     match /users/{userId}/religionAI/history {
