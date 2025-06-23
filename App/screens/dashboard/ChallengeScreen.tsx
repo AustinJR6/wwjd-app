@@ -195,18 +195,26 @@ export default function ChallengeScreen() {
     let history = userData.dailyChallengeHistory || { date: today, completed: 0, skipped: 0 };
     if (history.date !== today) history = { date: today, completed: 0, skipped: 0 };
 
-    const free = history.skipped === 0;
+    const now = new Date();
+    let weekStart = userData.skipWeekStart ? new Date(userData.skipWeekStart) : now;
+    let skipCount = userData.skipCountThisWeek || 0;
+    if (!userData.skipWeekStart || now.getTime() - weekStart.getTime() > 7 * 24 * 60 * 60 * 1000) {
+      skipCount = 0;
+      weekStart = now;
+    }
+
+    const cost = skipCount === 0 ? 0 : Math.pow(2, skipCount);
     let tokens = await getTokenCount();
-    if (!free && tokens <= 0) {
-      Alert.alert('Out of Tokens', 'You need a token to skip.');
+    if (cost > 0 && tokens < cost) {
+      Alert.alert('Out of Tokens', `You need ${cost} tokens to skip.`);
       return;
     }
 
     let confirmed = true;
-    if (!free) {
+    if (cost > 0) {
       confirmed = await new Promise((resolve) => {
         Alert.alert(
-          'Use 1 Token to Skip?',
+          `Use ${cost} Tokens to Skip?`,
           'Are you sure you want to skip the current challenge?',
           [
             { text: 'Cancel', onPress: () => resolve(false), style: 'cancel' },
@@ -219,13 +227,18 @@ export default function ChallengeScreen() {
     if (!confirmed) return;
 
     try {
-      if (!free) {
-        await setTokenCount(tokens - 1);
-        tokens -= 1;
+      if (cost > 0) {
+        await setTokenCount(tokens - cost);
+        tokens -= cost;
       }
       setCanSkip(true);
       history.skipped += 1;
-      await setDocument(`users/${uid}`, { dailyChallengeHistory: history });
+      skipCount += 1;
+      await setDocument(`users/${uid}`, {
+        dailyChallengeHistory: history,
+        skipCountThisWeek: skipCount,
+        skipWeekStart: weekStart.toISOString(),
+      });
       fetchChallenge(true);
     } catch (error: any) {
       console.error('🔥 API Error:', error?.response?.data || error.message);
