@@ -24,8 +24,14 @@ service cloud.firestore {
     match /users/{userId} {
       // Public read access for leaderboards
       allow read: if true;
-      // Only the owner may write their data
-      allow write: if request.auth != null && request.auth.uid == userId;
+      // Allow document creation/deletion by the owner
+      allow create, delete: if request.auth != null && request.auth.uid == userId;
+      // Updates are allowed only if protected fields are unchanged
+      allow update: if request.auth != null && request.auth.uid == userId
+        && request.resource.data.xpPoints == resource.data.xpPoints
+        && request.resource.data.streakCount == resource.data.streakCount
+        && request.resource.data.lastCheckIn == resource.data.lastCheckIn
+        && request.resource.data.longestStreak == resource.data.longestStreak;
     }
 
     // \u{1FA99} Token docs inside user

@@ -16,7 +16,7 @@ import { useTheme } from "@/components/theme/theme";
 import { showGracefulError } from '@/utils/gracefulError';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { querySubcollection, addDocument, getDocument, setDocument } from '@/services/firestoreService';
-import { incrementReligionPoints } from '@/services/functionService';
+import { callFunction, incrementReligionPoints } from '@/services/functionService';
 import { ASK_GEMINI_SIMPLE } from '@/utils/constants';
 import { ensureAuth } from '@/utils/authGuard';
 import * as SafeStore from '@/utils/secureStore';
@@ -246,6 +246,12 @@ export default function JournalScreen() {
       await setDocument(`users/${uid}`, {
         individualPoints: (userData.individualPoints || 0) + 2,
       });
+
+      try {
+        await callFunction('updateStreakAndXP', { type: 'journal' });
+      } catch (err) {
+        console.error('Streak update failed:', err);
+      }
 
       if (userData.religion) {
         try {
