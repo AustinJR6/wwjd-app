@@ -16,6 +16,11 @@ export async function isSubscribed(uid: string): Promise<boolean> {
   return subDoc?.active === true;
 }
 
+// Alias used by various screens
+export async function checkIfUserIsSubscribed(uid: string): Promise<boolean> {
+  return isSubscribed(uid);
+}
+
 export async function saveMessage(
   uid: string,
   role: 'user' | 'assistant',
