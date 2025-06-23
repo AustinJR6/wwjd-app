@@ -20,12 +20,19 @@ const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || "";
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || "";
 const STRIPE_SUCCESS_URL = process.env.STRIPE_SUCCESS_URL || "https://example.com/success";
 const STRIPE_CANCEL_URL = process.env.STRIPE_CANCEL_URL || "https://example.com/cancel";
-const stripe = new Stripe(
-  STRIPE_SECRET_KEY,
-  {
-    apiVersion: "2022-11-15",
-  } as any,
-);
+
+if (!STRIPE_SECRET_KEY) {
+  logger.error("❌ STRIPE_SECRET_KEY missing. Set this in your environment.");
+} else {
+  logger.info("✅ STRIPE_SECRET_KEY loaded");
+}
+if (!STRIPE_WEBHOOK_SECRET) {
+  logger.warn("⚠️ STRIPE_WEBHOOK_SECRET not set. Webhook verification will fail.");
+}
+
+const stripe = new Stripe(STRIPE_SECRET_KEY, {
+  apiVersion: "2023-10-16",
+} as any);
 
 function createGeminiModel() {
   if (!GEMINI_API_KEY) {
@@ -295,10 +302,10 @@ export const generateChallenge = onRequest(async (req, res) => {
 });
 
 export const startSubscriptionCheckout = onRequest(async (req, res) => {
-  console.log("📦 Stripe payload:", req.body);
-  console.log(
+  logger.info("📦 startSubscriptionCheckout payload", req.body);
+  logger.info(
     "🔐 Stripe Secret:",
-    process.env.STRIPE_SECRET_KEY ? "\u2713 set" : "\u2717 missing",
+    STRIPE_SECRET_KEY ? "\u2713 set" : "\u2717 missing",
   );
   const idToken = req.headers.authorization?.split("Bearer ")[1];
   if (!idToken) {
@@ -313,7 +320,7 @@ export const startSubscriptionCheckout = onRequest(async (req, res) => {
   }
 
   if (!STRIPE_SECRET_KEY) {
-    console.error("❌ Stripe secret key missing");
+    logger.error("❌ Stripe secret key missing");
     res.status(500).json({ error: "Stripe secret not configured" });
     return;
   }
@@ -321,44 +328,31 @@ export const startSubscriptionCheckout = onRequest(async (req, res) => {
   try {
     const decoded = await auth.verifyIdToken(idToken);
     if (decoded.uid !== userId) {
-      console.warn("⚠️ UID mismatch between token and payload");
+      logger.warn("⚠️ UID mismatch between token and payload");
     }
-    const params = new URLSearchParams({
+    const session = await stripe.checkout.sessions.create({
       mode: "subscription",
-      "line_items[0][price]": priceId,
-      "line_items[0][quantity]": "1",
+      line_items: [{ price: priceId, quantity: 1 }],
       success_url,
       cancel_url,
-      "metadata[userId]": userId,
+      client_reference_id: userId,
+      metadata: { uid: userId },
     });
-
-    const resp = await fetch("https://api.stripe.com/v1/checkout/sessions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${STRIPE_SECRET_KEY}`,
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: params.toString(),
-    });
-
-    const data: any = await resp.json();
-    if (!resp.ok) {
-      console.error("❌ Stripe Error:", data);
-      res.status(500).json({ error: data.error || "Stripe failed" });
-      return;
-    }
-    res.status(200).json({ url: data.url });
+    logger.info(`✅ Stripe session created ${session.id}`);
+    res.status(200).json({ url: session.url });
   } catch (err) {
     console.error("Subscription checkout error", err);
-    res.status(500).json({ error: (err as any)?.message || "Failed to start checkout" });
+    res
+      .status(500)
+      .json({ error: (err as any)?.message || "Failed to start checkout" });
   }
 });
 
 export const startOneTimeTokenCheckout = onRequest(async (req, res) => {
-  console.log("📦 Stripe payload:", req.body);
-  console.log(
+  logger.info("📦 startOneTimeTokenCheckout payload", req.body);
+  logger.info(
     "🔐 Stripe Secret:",
-    process.env.STRIPE_SECRET_KEY ? "\u2713 set" : "\u2717 missing",
+    STRIPE_SECRET_KEY ? "\u2713 set" : "\u2717 missing",
   );
   const idToken = req.headers.authorization?.split("Bearer ")[1];
   if (!idToken) {
@@ -373,7 +367,7 @@ export const startOneTimeTokenCheckout = onRequest(async (req, res) => {
   }
 
   if (!STRIPE_SECRET_KEY) {
-    console.error("❌ Stripe secret key missing");
+    logger.error("❌ Stripe secret key missing");
     res.status(500).json({ error: "Stripe secret not configured" });
     return;
   }
@@ -381,43 +375,31 @@ export const startOneTimeTokenCheckout = onRequest(async (req, res) => {
   try {
     const decoded = await auth.verifyIdToken(idToken);
     if (decoded.uid !== userId) {
-      console.warn("⚠️ UID mismatch between token and payload");
+      logger.warn("⚠️ UID mismatch between token and payload");
     }
-    const params = new URLSearchParams({
+    const session = await stripe.checkout.sessions.create({
       mode: "payment",
-      "line_items[0][price]": priceId,
-      "line_items[0][quantity]": "1",
+      line_items: [{ price: priceId, quantity: 1 }],
       success_url,
       cancel_url,
-      "metadata[userId]": userId,
+      client_reference_id: userId,
+      metadata: { uid: userId },
     });
-
-    const resp = await fetch("https://api.stripe.com/v1/checkout/sessions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${STRIPE_SECRET_KEY}`,
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: params.toString(),
-    });
-    const data: any = await resp.json();
-    if (!resp.ok) {
-      console.error("❌ Stripe Error:", data);
-      res.status(500).json({ error: data.error || "Stripe failed" });
-      return;
-    }
-    res.status(200).json({ url: data.url });
+    logger.info(`✅ Stripe session created ${session.id}`);
+    res.status(200).json({ url: session.url });
   } catch (err) {
     console.error("Token checkout error", err);
-    res.status(500).json({ error: (err as any)?.message || "Failed to start checkout" });
+    res
+      .status(500)
+      .json({ error: (err as any)?.message || "Failed to start checkout" });
   }
 });
 
 export const startCheckoutSession = onRequest(async (req, res) => {
-  console.log("📦 Stripe payload:", req.body);
-  console.log(
+  logger.info("📦 startCheckoutSession payload", req.body);
+  logger.info(
     "🔐 Stripe Secret:",
-    process.env.STRIPE_SECRET_KEY ? "\u2713 set" : "\u2717 missing",
+    STRIPE_SECRET_KEY ? "\u2713 set" : "\u2717 missing",
   );
   const idToken = req.headers.authorization?.split("Bearer ")[1];
   if (!idToken) {
@@ -432,7 +414,7 @@ export const startCheckoutSession = onRequest(async (req, res) => {
   }
 
   if (!STRIPE_SECRET_KEY) {
-    console.error("❌ Stripe secret key missing");
+    logger.error("❌ Stripe secret key missing");
     res.status(500).json({ error: "Stripe secret not configured" });
     return;
   }
@@ -440,36 +422,23 @@ export const startCheckoutSession = onRequest(async (req, res) => {
   try {
     const decoded = await auth.verifyIdToken(idToken);
     if (decoded.uid !== userId) {
-      console.warn("⚠️ UID mismatch between token and payload");
+      logger.warn("⚠️ UID mismatch between token and payload");
     }
-    const params = new URLSearchParams({
+    const session = await stripe.checkout.sessions.create({
       mode,
-      "line_items[0][price]": priceId,
-      "line_items[0][quantity]": "1",
+      line_items: [{ price: priceId, quantity: 1 }],
       success_url,
       cancel_url,
-      "metadata[userId]": userId,
+      client_reference_id: userId,
+      metadata: { uid: userId },
     });
-
-    const resp = await fetch("https://api.stripe.com/v1/checkout/sessions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${STRIPE_SECRET_KEY}`,
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-      body: params.toString(),
-    });
-
-    const data: any = await resp.json();
-    if (!resp.ok) {
-      console.error("❌ Stripe Error:", data);
-      res.status(500).json({ error: data.error || "Stripe failed" });
-      return;
-    }
-    res.status(200).json({ url: data.url });
+    logger.info(`✅ Stripe session created ${session.id}`);
+    res.status(200).json({ url: session.url });
   } catch (err) {
     console.error("Checkout session error", err);
-    res.status(500).json({ error: (err as any)?.message || "Failed to start checkout" });
+    res
+      .status(500)
+      .json({ error: (err as any)?.message || "Failed to start checkout" });
   }
 });
 
