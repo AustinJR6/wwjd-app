@@ -13,7 +13,12 @@ import { getTokenCount, setTokenCount } from "@/utils/TokenManager";
 import { showGracefulError } from '@/utils/gracefulError';
 import { ASK_GEMINI_SIMPLE, GENERATE_CHALLENGE_URL } from "@/utils/constants";
 import { getDocument, setDocument } from '@/services/firestoreService';
-import { callFunction, incrementReligionPoints } from '@/services/functionService';
+import {
+  callFunction,
+  incrementReligionPoints,
+  createMultiDayChallenge,
+  completeChallengeDay,
+} from '@/services/functionService';
 import { useUser } from '@/hooks/useUser';
 import { getStoredToken } from '@/services/authService';
 import { ensureAuth } from '@/utils/authGuard';
@@ -52,6 +57,7 @@ export default function ChallengeScreen() {
     [theme],
   );
   const [challenge, setChallenge] = useState('');
+  const [activeMulti, setActiveMulti] = useState<any | null>(null);
   const [loading, setLoading] = useState(false);
   const [canSkip, setCanSkip] = useState(true);
   const streak = useChallengeStore((s) => s.streak);
@@ -117,6 +123,15 @@ export default function ChallengeScreen() {
 
       const uid = await ensureAuth(user?.uid);
       if (!uid) return;
+
+      const active = await getDocument(`users/${uid}/activeChallenge`);
+      if (active && !active.isComplete) {
+        setActiveMulti(active);
+        setLoading(false);
+        return;
+      } else {
+        setActiveMulti(null);
+      }
 
       setLoading(true);
 
@@ -246,9 +261,34 @@ export default function ChallengeScreen() {
     }
   };
 
+  const handleStartMultiDay = async () => {
+    const uid = await ensureAuth(user?.uid);
+    if (!uid) return;
+
+    try {
+      await createMultiDayChallenge('Provide a 3-day gratitude challenge.', 3);
+      fetchChallenge(true);
+    } catch (err) {
+      console.error('Failed to start multi-day challenge:', err);
+      showGracefulError();
+    }
+  };
+
   const handleComplete = async () => {
     const uid = await ensureAuth(user?.uid);
     if (!uid) return;
+
+    if (activeMulti) {
+      try {
+        await completeChallengeDay();
+        Alert.alert('Nice!', `Day ${activeMulti.currentDay} completed.`);
+        fetchChallenge(true);
+      } catch (err) {
+        console.error('Multi-day complete error:', err);
+        showGracefulError();
+      }
+      return;
+    }
 
     const userData = await getDocument(`users/${uid}`) || {};
 
@@ -335,14 +375,30 @@ export default function ChallengeScreen() {
       <ScrollView contentContainerStyle={styles.container}>
         <CustomText style={styles.title}>Daily Challenge</CustomText>
         <CustomText style={styles.streak}>Streak: {streak} days</CustomText>
-        {loading ? (
+        {activeMulti ? (
+          <>
+            <CustomText style={styles.challengeText}>
+              Day {activeMulti.currentDay} of {activeMulti.totalDays}
+            </CustomText>
+            <CustomText style={styles.challenge}>{activeMulti.challengeText}</CustomText>
+          </>
+        ) : loading ? (
           <ActivityIndicator size="large" color={theme.colors.primary} />
         ) : (
           <CustomText style={styles.challenge}>{challenge}</CustomText>
         )}
         <View style={styles.buttonWrap}>
-          {canSkip && <Button title="Skip Challenge" onPress={handleSkip} />}
-          <Button title="Mark Completed" onPress={handleComplete} />
+          {!activeMulti && canSkip && (
+            <Button title="Skip Challenge" onPress={handleSkip} />
+          )}
+          {activeMulti ? (
+            <Button title="Complete Day" onPress={handleComplete} />
+          ) : (
+            <Button title="Mark Completed" onPress={handleComplete} />
+          )}
+          {!activeMulti && (
+            <Button title="Start 3-Day Challenge" onPress={handleStartMultiDay} />
+          )}
         </View>
       </ScrollView>
     </ScreenContainer>

@@ -195,6 +195,164 @@ export const completeChallenge = onRequest(async (req, res) => {
   }
 });
 
+export const createMultiDayChallenge = onRequest(async (req, res) => {
+  const idToken = req.headers.authorization?.split("Bearer ")[1];
+  if (!idToken) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  const { prompt = "", days = 1, basePoints = 10 } = req.body || {};
+  if (typeof days !== "number" || days < 1 || days > 7) {
+    res.status(400).json({ error: "days must be between 1 and 7" });
+    return;
+  }
+
+  try {
+    const decoded = await auth.verifyIdToken(idToken);
+    const uid = decoded.uid;
+    const userRef = db.collection("users").doc(uid);
+    const challengeRef = db.doc(`users/${uid}/activeChallenge`);
+
+    const basePrompt =
+      prompt.trim() ||
+      `Generate a ${days}-day spiritual challenge. Give concise instructions for each day.`;
+
+    let text = "";
+    try {
+      const model = createGeminiModel();
+      const chat = await model.startChat({ history: [] });
+      const result = await chat.sendMessage(basePrompt);
+      text = result?.response?.text?.() || "";
+    } catch (err) {
+      logger.error("Gemini createMultiDayChallenge failed", err);
+      res.status(500).json({ error: "Gemini request failed" });
+      return;
+    }
+
+    text = text.trim();
+    if (!text) {
+      res.status(500).json({ error: "Empty challenge" });
+      return;
+    }
+
+    await challengeRef.set(
+      {
+        challengeText: text,
+        totalDays: days,
+        currentDay: 1,
+        startDate: admin.firestore.FieldValue.serverTimestamp(),
+        lastCompleted: null,
+        completedDays: [],
+        isComplete: false,
+        basePoints,
+        doubleBonusEligible: true,
+      },
+      { merge: true },
+    );
+
+    await userRef.set(
+      {
+        lastChallenge: admin.firestore.FieldValue.serverTimestamp(),
+        lastChallengeText: text,
+      },
+      { merge: true },
+    );
+
+    res.status(200).json({ challengeText: text });
+  } catch (err: any) {
+    logger.error("createMultiDayChallenge error", err);
+    res.status(500).json({ error: err.message || "Failed" });
+  }
+});
+
+export const completeChallengeDay = onRequest(async (req, res) => {
+  const idToken = req.headers.authorization?.split("Bearer ")[1];
+  if (!idToken) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  try {
+    const decoded = await auth.verifyIdToken(idToken);
+    const uid = decoded.uid;
+    const challengeRef = db.doc(`users/${uid}/activeChallenge`);
+    const userRef = db.collection("users").doc(uid);
+
+    let bonus = 0;
+
+    await db.runTransaction(async (t) => {
+      const snap = await t.get(challengeRef);
+      if (!snap.exists) {
+        throw new Error("NO_CHALLENGE");
+      }
+      const data = snap.data() || {};
+      if (data.isComplete) {
+        throw new Error("ALREADY_COMPLETE");
+      }
+
+      const now = admin.firestore.Timestamp.now();
+      const last: admin.firestore.Timestamp | null = data.lastCompleted || null;
+      let doubleBonusEligible = data.doubleBonusEligible !== false;
+      if (last) {
+        const diff = now.toMillis() - last.toMillis();
+        if (diff > 48 * 60 * 60 * 1000) {
+          doubleBonusEligible = false;
+        }
+        if (diff < 12 * 60 * 60 * 1000) {
+          throw new Error("ALREADY_COMPLETED_TODAY");
+        }
+      }
+
+      const currentDay = data.currentDay || 1;
+      const totalDays = data.totalDays || 1;
+      const completed: number[] = Array.isArray(data.completedDays)
+        ? data.completedDays
+        : [];
+      if (completed.includes(currentDay)) {
+        throw new Error("DAY_ALREADY_COMPLETED");
+      }
+
+      completed.push(currentDay);
+      const newCurrent = currentDay + 1;
+      const isComplete = newCurrent > totalDays;
+
+      t.set(
+        challengeRef,
+        {
+          completedDays: completed,
+          currentDay: newCurrent,
+          lastCompleted: now,
+          isComplete,
+          doubleBonusEligible,
+        },
+        { merge: true },
+      );
+
+      const logRef = challengeRef.collection("challengeLogs").doc();
+      t.set(logRef, { day: currentDay, timestamp: now });
+
+      const basePoints = data.basePoints || 10;
+      let points = basePoints;
+      if (isComplete && doubleBonusEligible && completed.length === totalDays) {
+        bonus = basePoints * totalDays;
+        points += bonus;
+      }
+
+      t.update(userRef, {
+        individualPoints: admin.firestore.FieldValue.increment(points),
+      });
+    });
+
+    await updateStreakAndXPInternal(uid, "challenge");
+
+    res.status(200).json({ message: "Day completed", bonusAwarded: bonus });
+  } catch (err: any) {
+    logger.error("completeChallengeDay error", err);
+    res.status(500).json({ error: err.message || "Failed" });
+  }
+});
+
 export const askGeminiSimple = onRequest(async (req, res) => {
   const idToken = req.headers.authorization?.split("Bearer ")[1];
   if (!idToken) {

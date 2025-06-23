@@ -50,3 +50,11 @@ export async function incrementReligionPoints(
     throw err;
   }
 }
+
+export async function createMultiDayChallenge(prompt: string, days: number) {
+  return await callFunction('createMultiDayChallenge', { prompt, days });
+}
+
+export async function completeChallengeDay() {
+  return await callFunction('completeChallengeDay', {});
+}
