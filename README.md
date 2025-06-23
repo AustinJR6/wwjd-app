@@ -119,7 +119,25 @@ All Firebase integrations now use the REST API—see `App/services` for details.
 
 Stripe subscription flow is being integrated with Firebase webhook handling
 
+
 Onboarding uses anonymous login, upgraded to email if subscribed
+
+## 📚 Codex Prompt Library
+
+Prompts used for Codex and Copilot live in the `codexPrompts` Firestore collection.
+You can manage them locally with `functions/codexPrompts.ts`:
+
+```bash
+# Add a new prompt
+cd functions
+npx ts-node codexPrompts.ts add "Fix Gemini Calls" AI "Resolve Gemini auth" "gemini,ai"
+
+# Export all prompts to Markdown
+npm run build
+node lib/codexPrompts.js export ../PromptLibrary.md
+```
+
+The export command creates `PromptLibrary.md` with prompts grouped by category.
 
 🙏 Contributing
 We welcome faith leaders, engineers, designers, and visionaries to collaborate.
