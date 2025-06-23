@@ -22,6 +22,13 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/navigation/RootStackParamList';
 import { sendRequestWithGusBugLogging } from '@/utils/gusBugLogger';
+import {
+  saveMessage,
+  fetchFullHistory,
+  clearHistory,
+  trimHistory,
+  ChatMessage,
+} from '@/services/chatHistoryService';
 
 export default function ReligionAIScreen() {
   const theme = useTheme();
@@ -69,7 +76,7 @@ export default function ReligionAIScreen() {
     [theme],
   );
   const [question, setQuestion] = useState('');
-  const [messages, setMessages] = useState<string[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
   const [isSubscribed, setIsSubscribed] = useState(false);
   const { user } = useUser();
@@ -77,18 +84,19 @@ export default function ReligionAIScreen() {
 
   useEffect(() => {
     const loadHistory = async () => {
-      if (!user?.uid || !user.isSubscribed) {
+      if (!user?.uid) {
         setIsSubscribed(false);
         return;
       }
-      setIsSubscribed(true);
       const uid = await ensureAuth(user.uid);
       if (!uid) return;
       try {
-        const history = await getDocument(`users/${uid}/religionAI/history`);
-        if (history?.messages) {
-          setMessages(history.messages as string[]);
-        }
+        const userData = await getDocument(`users/${uid}`) || {};
+        const subDoc = await getDocument(`subscriptions/${uid}`);
+        const subscribed = userData.isSubscribed || (subDoc?.active === true);
+        setIsSubscribed(subscribed);
+        const hist = await fetchFullHistory(uid);
+        setMessages(hist);
       } catch (err) {
         console.error('Failed to load ReligionAI history', err);
       }
@@ -171,26 +179,21 @@ export default function ReligionAIScreen() {
         }
       }
 
-      let conversationContext = '';
-      if (subscribed) {
-        conversationContext = messages.join('\n');
-      }
 
+      const history = await fetchFullHistory(uid);
       idToken = idToken || (await getStoredToken());
       if (!idToken) {
         showGracefulError('Login required. Please sign in again.');
         setLoading(false);
         return;
       }
-      const historyMsgs = messages.map((m) => ({
-        role: m.startsWith('User:') ? 'user' : 'model',
-        text: m.replace(/^[^:]+:\s*/, ''),
+      const historyMsgs = history.map((m) => ({
+        role: m.role === 'user' ? 'user' : 'model',
+        text: m.text,
       }));
 
       const prompt =
-        `You are a ${promptRole} of the ${religion} faith. ` +
-        `Answer the user using teachings from that tradition and cite any relevant scriptures.\n` +
-        `${conversationContext}\nUser: ${question}\n${promptRole}:`;
+        `You are a ${promptRole} of the ${religion} faith. Answer the user using teachings from that tradition and cite any relevant scriptures.\n${question}`;
       console.log('📡 Sending Gemini prompt:', prompt);
       console.log('👤 Role:', promptRole);
 
@@ -216,18 +219,14 @@ export default function ReligionAIScreen() {
       console.log('📖 ReligionAI input:', question);
       console.log('🙏 ReligionAI reply:', answer);
 
-      let updatedMessages: string[];
-      if (subscribed) {
-        updatedMessages = [...messages, `User: ${question}`, `${promptRole}: ${answer}`];
-        setMessages(updatedMessages);
-        await setDocument(`users/${uid}/religionAI/history`, {
-          messages: updatedMessages,
-          updatedAt: new Date().toISOString(),
-        });
-      } else {
-        updatedMessages = [`User: ${question}`, `${promptRole}: ${answer}`];
-        setMessages(updatedMessages);
+      await saveMessage(uid, 'user', question);
+      await saveMessage(uid, 'assistant', answer);
+      let newMessages = [...history, { role: 'user', text: question }, { role: 'assistant', text: answer }];
+      if (!subscribed) {
+        await trimHistory(uid, 10);
+        newMessages = await fetchFullHistory(uid);
       }
+      setMessages(newMessages);
 
       setQuestion('');
     } catch (err: any) {
@@ -248,10 +247,7 @@ export default function ReligionAIScreen() {
           const uid = await ensureAuth(user?.uid);
           if (uid) {
             try {
-              await setDocument(`users/${uid}/religionAI/history`, {
-                messages: [],
-                updatedAt: new Date().toISOString(),
-              });
+              await clearHistory(uid);
             } catch (err) {
               console.error('Failed to clear ReligionAI history', err);
             }
@@ -288,7 +284,13 @@ export default function ReligionAIScreen() {
         {loading && <ActivityIndicator size="large" color={theme.colors.primary} />}
 
         {messages.map((msg, idx) => (
-          <CustomText key={idx} style={styles.answer}>{msg}</CustomText>
+          <CustomText
+            key={idx}
+            style={msg.role === 'user' ? styles.userMsg : styles.answer}
+          >
+            {msg.role === 'user' ? 'You: ' : ''}
+            {msg.text}
+          </CustomText>
         ))}
       </ScrollView>
     </ScreenContainer>
