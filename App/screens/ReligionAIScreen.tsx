@@ -30,7 +30,7 @@ import {
   clearHistory,
   clearTempReligionChat,
   ChatMessage,
-  isSubscribed,
+  checkIfUserIsSubscribed,
 } from '@/services/chatHistoryService';
 
 export default function ReligionAIScreen() {
@@ -69,10 +69,12 @@ export default function ReligionAIScreen() {
         }, // ✅ added missing 'title' style
         subscriptionBanner: {
           padding: 12,
-          backgroundColor: theme.colors.surface,
+          backgroundColor: '#FAF3DD', // light gold tone
           borderRadius: 8,
           marginBottom: 12,
           alignItems: 'center',
+          borderWidth: 1,
+          borderColor: '#E6E6FA', // lavender
         }, // ✅ added missing 'subscriptionBanner' style
         subscriptionText: { marginBottom: 8, color: theme.colors.text }, // ✅ added missing 'subscriptionText' style
       }),
@@ -95,7 +97,7 @@ export default function ReligionAIScreen() {
       if (!uid) return;
       try {
         const userData = await getDocument(`users/${uid}`) || {};
-        const subscribed = await isSubscribed(uid);
+        const subscribed = await checkIfUserIsSubscribed(uid);
         setIsSubscribed(subscribed);
         const hist = await fetchHistory(uid, subscribed);
         setMessages(hist);
@@ -156,7 +158,7 @@ export default function ReligionAIScreen() {
       const oneDay = 24 * 60 * 60 * 1000;
       const canAskFree = !lastAsk || now.getTime() - lastAsk.getTime() > oneDay;
       const cost = 5;
-      const subscribed = await isSubscribed(uid);
+      const subscribed = await checkIfUserIsSubscribed(uid);
       setIsSubscribed(subscribed);
       console.log('💎 OneVine+ Status:', subscribed);
 
@@ -289,9 +291,10 @@ export default function ReligionAIScreen() {
           </View>
         ) : (
           <View style={styles.subscriptionBanner}>
-            <CustomText style={styles.subscriptionText}>Memory is only saved for OneVine+ members.</CustomText>
+            <CustomText style={styles.subscriptionText}>📖 Only OneVine+ members can save their spiritual conversations.</CustomText>
+            <CustomText style={styles.subscriptionText}>✨ Unlock your growing archive of wisdom and connection.</CustomText>
             <Button
-              title="Unlock Your Spiritual Archive ✨"
+              title="Upgrade to OneVine+ ✨"
               onPress={() => navigation.navigate('Upgrade')}
               color={theme.colors.accent}
             />
