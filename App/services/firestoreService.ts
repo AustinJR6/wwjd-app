@@ -147,6 +147,26 @@ export async function addDocument(collectionPath: string, data: any): Promise<st
   }
 }
 
+export async function deleteDocument(path: string): Promise<void> {
+  const headers = await authHeaders();
+  const url = `${BASE_URL}/${path}`;
+  try {
+    await sendRequestWithGusBugLogging(() => axios.delete(url, { headers }));
+  } catch (err: any) {
+    if (err.response?.status === 404) return;
+    if (err.response?.status === 403) {
+      console.error('❌ Firestore permission error:', err.response.data);
+    }
+    console.error('Firestore deleteDocument error:', {
+      url,
+      status: err.response?.status,
+      data: err.response?.data,
+      message: err.message,
+    });
+    throw err;
+  }
+}
+
 export async function queryCollection(
   collection: string,
   orderByField?: string,
