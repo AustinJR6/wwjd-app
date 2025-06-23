@@ -24,7 +24,9 @@ import { getStoredToken } from '@/services/authService';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/navigation/RootStackParamList';
-import { getPromptsForReligion } from '@/utils/guidedPrompts';
+import { Picker } from '@react-native-picker/picker';
+import { JOURNAL_STAGES, JOURNAL_PROMPTS } from '@/utils/journalStages';
+import type { JournalStage } from '@/types';
 
 export default function JournalScreen() {
   const theme = useTheme();
@@ -124,10 +126,9 @@ export default function JournalScreen() {
   const [tags, setTags] = useState('');
   const [religion, setReligion] = useState('');
   const [guidedMode, setGuidedMode] = useState(false);
-  const [prompts, setPrompts] = useState<string[]>([]);
-  const [currentStep, setCurrentStep] = useState(0);
-  const [responses, setResponses] = useState<string[]>([]);
-  const [guidedText, setGuidedText] = useState('');
+  const [stage, setStage] = useState<JournalStage>('reflection');
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [aiResponse, setAiResponse] = useState('');
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   useEffect(() => {
@@ -161,8 +162,8 @@ export default function JournalScreen() {
 
         const list = await querySubcollection(
           `users/${uid}`,
-          'journals',
-          'createdAt',
+          'journalEntries',
+          'timestamp',
           'DESCENDING'
         );
         setEntries(list);
@@ -179,19 +180,14 @@ export default function JournalScreen() {
   }, []);
 
   const handleGuidedJournal = async () => {
-    console.log("🔮 Start Guided Journal Pressed");
-    const p = getPromptsForReligion(religion || '');
-    setPrompts(p);
+    console.log('🔮 Start Guided Journal Pressed');
+    const prompt = JOURNAL_PROMPTS[stage];
+    setAiPrompt(prompt);
     setGuidedMode(true);
-    setCurrentStep(0);
-    setResponses([]);
-    setGuidedText('');
-    const prompt = p[0] || 'Share what is on your heart today.';
     try {
       const idToken = await getStoredToken();
       const uid = await ensureAuth();
-      if (!idToken || !uid) return;
-      console.log('🔮 Starting guided journal with prompt:', prompt);
+      if (!idToken || !uid) throw new Error('auth');
       const res = await fetch(ASK_GEMINI_SIMPLE, {
         method: 'POST',
         headers: {
@@ -204,46 +200,24 @@ export default function JournalScreen() {
       let data: any;
       try {
         data = JSON.parse(text);
-      } catch (err) {
+      } catch {
         console.error('Invalid JSON from guided journal:', text);
-        showGracefulError();
+        Alert.alert('Guide Unavailable', 'We couldn\u2019t reach our guide right now. Write freely from the heart.');
+        setAiResponse('');
         return;
       }
-      setGuidedText(data.response || '');
+      setAiResponse(data.response || '');
       console.log('🎉 Gus Bug: Gemini text received.');
-      Alert.alert('Guided Prompt Ready', 'Gemini has provided a suggestion.');
     } catch (err) {
       console.error('❌ Guided journal error:', err);
-      showGracefulError();
-    }
-  };
-
-  const handleNextPrompt = () => {
-    if (!guidedText.trim()) return;
-    const updated = [...responses, guidedText.trim()];
-    if (currentStep + 1 < prompts.length) {
-      setResponses(updated);
-      setGuidedText('');
-      setCurrentStep(currentStep + 1);
-    } else {
-      const combined = prompts.map((q, i) => `${q}\n${updated[i]}`).join('\n\n');
-      setEntry(combined);
-      setResponses([]);
-      setGuidedText('');
-      setGuidedMode(false);
-      Alert.alert('✨ Guided Complete', 'Your full entry is now ready to be saved.');
+      Alert.alert('Guide Unavailable', 'We couldn\u2019t reach our guide right now. Write freely from the heart.');
+      setAiResponse('');
     }
   };
 
   const handleSaveEntry = async () => {
     console.log("📝 Save Entry Pressed");
-    if (guidedMode) {
-      Alert.alert(
-        'Guided Journal in Progress',
-        'Please complete the guided prompts before saving.'
-      );
-      return;
-    }
+    // allow saving in guided mode directly
     if (!entry.trim()) {
       Alert.alert('Empty Entry', 'Please write something before saving.');
       return;
@@ -261,13 +235,12 @@ export default function JournalScreen() {
       const userData = await getDocument(`users/${uid}`) || {};
 
       console.log('📤 Saving journal entry for UID:', uid);
-      await addDocument(`users/${uid}/journals`, {
-        userId: uid,
-        content: entry,
-        emotion: emotion || 'neutral',
-        tags: tags ? tags.split(',').map((t) => t.trim()).filter(Boolean) : [],
-        challengeRef: userData.lastChallengeText || null,
-        createdAt: new Date().toISOString(),
+      await addDocument(`users/${uid}/journalEntries`, {
+        stage,
+        aiPrompt,
+        aiResponse,
+        userEntry: entry,
+        timestamp: new Date().toISOString(),
       });
 
       await setDocument(`users/${uid}`, {
@@ -297,7 +270,12 @@ export default function JournalScreen() {
       setEmotion('');
       setTags('');
 
-      const list = await querySubcollection(`users/${uid}`, 'journals', 'createdAt', 'DESCENDING');
+      const list = await querySubcollection(
+        `users/${uid}`,
+        'journalEntries',
+        'timestamp',
+        'DESCENDING'
+      );
       setEntries(list);
     } catch (err: any) {
       console.error('🔥 API Error:', err?.response?.data || err.message);
@@ -325,10 +303,19 @@ export default function JournalScreen() {
       <ScrollView contentContainerStyle={styles.container}>
         {!guidedMode ? (
           <>
-            <CustomText style={styles.prompt}>
-              Today’s Prompt:{' '}
-              <CustomText style={styles.promptBold}>What’s on your heart this morning?</CustomText>
-            </CustomText>
+            <CustomText style={styles.prompt}>Journal Stage</CustomText>
+            <View style={{ borderColor: theme.colors.border, borderWidth: 1, borderRadius: 8, marginBottom: 16 }}>
+              <Picker
+                selectedValue={stage}
+                onValueChange={(v) => setStage(v as JournalStage)}
+              >
+                {JOURNAL_STAGES.map((s) => (
+                  <Picker.Item key={s.key} label={s.label} value={s.key} />
+                ))}
+              </Picker>
+            </View>
+            <CustomText style={styles.prompt}>Today’s Prompt:</CustomText>
+            <CustomText style={styles.promptBold}>What’s on your heart this morning?</CustomText>
 
             <TextInput
               style={styles.input}
@@ -362,20 +349,23 @@ export default function JournalScreen() {
           </>
         ) : (
           <>
-            <CustomText style={styles.prompt}>{prompts[currentStep]}</CustomText>
-            <CustomText style={styles.promptBold}>{`${currentStep + 1} of ${prompts.length}`}</CustomText>
+            {aiResponse ? (
+              <CustomText style={styles.prompt}>{aiResponse}</CustomText>
+            ) : null}
             <TextInput
               style={styles.input}
               multiline
-              placeholder="Your response…"
+              placeholder="Write your reflection…"
               placeholderTextColor={theme.colors.fadedText}
-              value={guidedText}
-              onChangeText={setGuidedText}
+              value={entry}
+              onChangeText={setEntry}
             />
             <Button
-              title={currentStep + 1 === prompts.length ? 'Finish' : 'Next'}
-              onPress={handleNextPrompt}
+              title={saving ? 'Saving…' : 'Save Entry'}
+              onPress={handleSaveEntry}
+              disabled={saving}
             />
+            <Button title="Cancel" onPress={() => { setGuidedMode(false); setAiResponse(''); }} />
           </>
         )}
 
@@ -387,12 +377,12 @@ export default function JournalScreen() {
           <Pressable key={e.id} onPress={() => openEntry(e)}>
             <View style={styles.entryItem}>
               <CustomText style={styles.entryDate}>
-                {e.createdAt?.toDate
-                  ? e.createdAt.toDate().toLocaleString()
+                {e.timestamp?.toDate
+                  ? e.timestamp.toDate().toLocaleString()
                   : '(no date)'}
               </CustomText>
               <CustomText style={styles.entryText}>
-                {e.content.length > 100 ? e.content.slice(0, 100) + '…' : e.content}
+                {e.userEntry.length > 100 ? e.userEntry.slice(0, 100) + '…' : e.userEntry}
               </CustomText>
             </View>
           </Pressable>
@@ -408,12 +398,12 @@ export default function JournalScreen() {
         <View style={styles.modalBackdrop}>
           <View style={styles.modalContent}>
             <CustomText style={styles.modalTitle}>
-              {selectedEntry?.createdAt?.toDate
-                ? selectedEntry.createdAt.toDate().toLocaleString()
+              {selectedEntry?.timestamp?.toDate
+                ? selectedEntry.timestamp.toDate().toLocaleString()
                 : '(no date)'}
             </CustomText>
             <ScrollView>
-              <CustomText style={styles.modalText}>{selectedEntry?.content}</CustomText>
+              <CustomText style={styles.modalText}>{selectedEntry?.userEntry}</CustomText>
             </ScrollView>
             <Button title="Close" onPress={() => setModalVisible(false)} />
           </View>
