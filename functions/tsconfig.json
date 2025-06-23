@@ -10,6 +10,11 @@
     "skipLibCheck": true,
     "resolveJsonModule": true
   },
-  "include": ["index.ts", "firebase.ts", "firestoreSeeder.ts"],
+  "include": [
+    "index.ts",
+    "firebase.ts",
+    "firestoreSeeder.ts",
+    "codexPrompts.ts"
+  ],
   "exclude": ["lib", "dist", "node_modules"]
 }
