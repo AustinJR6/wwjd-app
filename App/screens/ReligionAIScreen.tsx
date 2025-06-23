@@ -6,7 +6,9 @@ import {
   ActivityIndicator,
   StyleSheet,
   Alert,
-  ScrollView} from 'react-native';
+  AppState,
+  ScrollView,
+} from 'react-native';
 import Button from '@/components/common/Button';
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { useTheme } from "@/components/theme/theme";
@@ -24,10 +26,11 @@ import { RootStackParamList } from '@/navigation/RootStackParamList';
 import { sendRequestWithGusBugLogging } from '@/utils/gusBugLogger';
 import {
   saveMessage,
-  fetchFullHistory,
+  fetchHistory,
   clearHistory,
-  trimHistory,
+  clearTempReligionChat,
   ChatMessage,
+  isSubscribed,
 } from '@/services/chatHistoryService';
 
 export default function ReligionAIScreen() {
@@ -92,10 +95,9 @@ export default function ReligionAIScreen() {
       if (!uid) return;
       try {
         const userData = await getDocument(`users/${uid}`) || {};
-        const subDoc = await getDocument(`subscriptions/${uid}`);
-        const subscribed = userData.isSubscribed || (subDoc?.active === true);
+        const subscribed = await isSubscribed(uid);
         setIsSubscribed(subscribed);
-        const hist = await fetchFullHistory(uid);
+        const hist = await fetchHistory(uid, subscribed);
         setMessages(hist);
       } catch (err) {
         console.error('Failed to load ReligionAI history', err);
@@ -103,6 +105,25 @@ export default function ReligionAIScreen() {
     };
 
     loadHistory();
+
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state !== 'active') {
+        const clear = async () => {
+          const uid = await ensureAuth(user?.uid);
+          if (uid) await clearTempReligionChat(uid);
+        };
+        clear();
+      }
+    });
+
+    return () => {
+      sub.remove();
+      const cleanup = async () => {
+        const uid = await ensureAuth(user?.uid);
+        if (uid) await clearTempReligionChat(uid);
+      };
+      cleanup();
+    };
   }, [user]);
 
   const handleAsk = async () => {
@@ -130,13 +151,12 @@ export default function ReligionAIScreen() {
       }
 
       const userData = await getDocument(`users/${uid}`) || {};
-      const subDoc = await getDocument(`subscriptions/${uid}`);
       const lastAsk = userData.lastFreeAsk?.toDate?.();
       const now = new Date();
       const oneDay = 24 * 60 * 60 * 1000;
       const canAskFree = !lastAsk || now.getTime() - lastAsk.getTime() > oneDay;
       const cost = 5;
-      const subscribed = userData.isSubscribed || (subDoc?.active === true);
+      const subscribed = await isSubscribed(uid);
       setIsSubscribed(subscribed);
       console.log('💎 OneVine+ Status:', subscribed);
 
@@ -180,7 +200,7 @@ export default function ReligionAIScreen() {
       }
 
 
-      const history = await fetchFullHistory(uid);
+      const history = await fetchHistory(uid, subscribed);
       idToken = idToken || (await getStoredToken());
       if (!idToken) {
         showGracefulError('Login required. Please sign in again.');
@@ -219,13 +239,9 @@ export default function ReligionAIScreen() {
       console.log('📖 ReligionAI input:', question);
       console.log('🙏 ReligionAI reply:', answer);
 
-      await saveMessage(uid, 'user', question);
-      await saveMessage(uid, 'assistant', answer);
-      let newMessages = [...history, { role: 'user', text: question }, { role: 'assistant', text: answer }];
-      if (!subscribed) {
-        await trimHistory(uid, 10);
-        newMessages = await fetchFullHistory(uid);
-      }
+      await saveMessage(uid, 'user', question, subscribed);
+      await saveMessage(uid, 'assistant', answer, subscribed);
+      const newMessages = await fetchHistory(uid, subscribed);
       setMessages(newMessages);
 
       setQuestion('');
@@ -247,7 +263,11 @@ export default function ReligionAIScreen() {
           const uid = await ensureAuth(user?.uid);
           if (uid) {
             try {
-              await clearHistory(uid);
+              if (isSubscribed) {
+                await clearHistory(uid);
+              } else {
+                await clearTempReligionChat(uid);
+              }
             } catch (err) {
               console.error('Failed to clear ReligionAI history', err);
             }
@@ -262,10 +282,19 @@ export default function ReligionAIScreen() {
       <ScrollView contentContainerStyle={styles.container}>
         <CustomText style={styles.title}>Ask for Guidance</CustomText>
 
-        {isSubscribed && (
+        {isSubscribed ? (
           <View style={styles.subscriptionBanner}>
             <CustomText style={styles.subscriptionText}>💎 OneVine+ Unlimited Chat Enabled</CustomText>
             <Button title="Clear Conversation" onPress={handleClear} color={theme.colors.accent} />
+          </View>
+        ) : (
+          <View style={styles.subscriptionBanner}>
+            <CustomText style={styles.subscriptionText}>Memory is only saved for OneVine+ members.</CustomText>
+            <Button
+              title="Unlock Your Spiritual Archive ✨"
+              onPress={() => navigation.navigate('Upgrade')}
+              color={theme.colors.accent}
+            />
           </View>
         )}
 

@@ -1,4 +1,4 @@
-import { addDocument, querySubcollection } from './firestoreService';
+import { addDocument, querySubcollection, getDocument } from './firestoreService';
 import { deleteDocument } from './firestoreService';
 import { ensureAuth } from '@/utils/authGuard';
 
@@ -9,25 +9,46 @@ export interface ChatMessage {
   timestamp?: string;
 }
 
+export async function isSubscribed(uid: string): Promise<boolean> {
+  const storedUid = await ensureAuth(uid);
+  if (!storedUid) return false;
+  const subDoc = await getDocument(`subscriptions/${storedUid}`);
+  return subDoc?.active === true;
+}
+
 export async function saveMessage(
   uid: string,
   role: 'user' | 'assistant',
   text: string,
+  persistent?: boolean,
 ): Promise<void> {
   const storedUid = await ensureAuth(uid);
   if (!storedUid) return;
-  await addDocument(`religionChats/${storedUid}/messages`, {
+  const usePersistent =
+    typeof persistent === 'boolean' ? persistent : await isSubscribed(storedUid);
+  const basePath = usePersistent
+    ? `religionChats/${storedUid}`
+    : `tempReligionChat/${storedUid}`;
+  await addDocument(`${basePath}/messages`, {
     role,
     text,
     timestamp: new Date().toISOString(),
   });
 }
 
-export async function fetchFullHistory(uid: string): Promise<ChatMessage[]> {
+export async function fetchHistory(
+  uid: string,
+  persistent?: boolean,
+): Promise<ChatMessage[]> {
   const storedUid = await ensureAuth(uid);
   if (!storedUid) return [];
+  const usePersistent =
+    typeof persistent === 'boolean' ? persistent : await isSubscribed(storedUid);
+  const basePath = usePersistent
+    ? `religionChats/${storedUid}`
+    : `tempReligionChat/${storedUid}`;
   return await querySubcollection(
-    `religionChats/${storedUid}`,
+    basePath,
     'messages',
     'timestamp',
     'ASCENDING',
@@ -40,6 +61,15 @@ export async function clearHistory(uid: string): Promise<void> {
   const docs = await querySubcollection(`religionChats/${storedUid}`, 'messages');
   for (const msg of docs) {
     await deleteDocument(`religionChats/${storedUid}/messages/${msg.id}`);
+  }
+}
+
+export async function clearTempReligionChat(uid: string): Promise<void> {
+  const storedUid = await ensureAuth(uid);
+  if (!storedUid) return;
+  const docs = await querySubcollection(`tempReligionChat/${storedUid}`, 'messages');
+  for (const msg of docs) {
+    await deleteDocument(`tempReligionChat/${storedUid}/messages/${msg.id}`);
   }
 }
 
