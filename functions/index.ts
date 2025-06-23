@@ -20,6 +20,9 @@ const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || "";
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || "";
 const STRIPE_SUCCESS_URL = process.env.STRIPE_SUCCESS_URL || "https://example.com/success";
 const STRIPE_CANCEL_URL = process.env.STRIPE_CANCEL_URL || "https://example.com/cancel";
+const STRIPE_20_TOKEN_PRICE_ID = process.env.STRIPE_20_TOKEN_PRICE_ID || "";
+const STRIPE_50_TOKEN_PRICE_ID = process.env.STRIPE_50_TOKEN_PRICE_ID || "";
+const STRIPE_100_TOKEN_PRICE_ID = process.env.STRIPE_100_TOKEN_PRICE_ID || "";
 
 if (!STRIPE_SECRET_KEY) {
   logger.error("❌ STRIPE_SECRET_KEY missing. Set this in your environment.");
@@ -43,6 +46,49 @@ function createGeminiModel() {
     return genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
   } catch (err) {
     logger.error("Failed to initialize GoogleGenerativeAI", err);
+    throw err;
+  }
+}
+
+async function addTokens(uid: string, amount: number): Promise<void> {
+  const userRef = db.collection("users").doc(uid);
+  await db.runTransaction(async (t) => {
+    const snap = await t.get(userRef);
+    const current = snap.exists ? (snap.data()?.tokens ?? 0) : 0;
+    t.set(
+      userRef,
+      {
+        tokens: current + amount,
+        lastTokenUpdate: admin.firestore.FieldValue.serverTimestamp(),
+      },
+      { merge: true },
+    );
+  });
+}
+
+async function deductTokens(uid: string, amount: number): Promise<boolean> {
+  const userRef = db.collection("users").doc(uid);
+  try {
+    await db.runTransaction(async (t) => {
+      const snap = await t.get(userRef);
+      const current = snap.exists ? (snap.data()?.tokens ?? 0) : 0;
+      if (current < amount) {
+        throw new Error("INSUFFICIENT_TOKENS");
+      }
+      t.set(
+        userRef,
+        {
+          tokens: current - amount,
+          lastTokenUpdate: admin.firestore.FieldValue.serverTimestamp(),
+        },
+        { merge: true },
+      );
+    });
+    return true;
+  } catch (err: any) {
+    if (err.message === "INSUFFICIENT_TOKENS") {
+      return false;
+    }
     throw err;
   }
 }
@@ -401,6 +447,124 @@ export const generateDailyChallenge = onRequest(async (req, res) => {
   }
 });
 
+export const skipDailyChallenge = onRequest(async (req, res) => {
+  const idToken = req.headers.authorization?.split("Bearer ")[1];
+  if (!idToken) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  try {
+    const decoded = await auth.verifyIdToken(idToken);
+    const uid = decoded.uid;
+
+    const userRef = db.collection("users").doc(uid);
+
+    let cost = 0;
+    let newSkipCount = 0;
+    let weekStart = new Date();
+
+    const tokenOk = await db.runTransaction(async (t) => {
+      const snap = await t.get(userRef);
+      const data = snap.exists ? snap.data() || {} : {};
+      const now = new Date();
+      weekStart = data.skipWeekStart ? new Date(data.skipWeekStart) : now;
+      newSkipCount = data.skipCountThisWeek || 0;
+      if (!data.skipWeekStart || now.getTime() - weekStart.getTime() > 7 * 24 * 60 * 60 * 1000) {
+        newSkipCount = 0;
+        weekStart = now;
+      }
+      cost = newSkipCount === 0 ? 0 : Math.pow(2, newSkipCount);
+      const tokens = data.tokens || 0;
+      if (tokens < cost) {
+        return false;
+      }
+      t.set(
+        userRef,
+        {
+          tokens: tokens - cost,
+          skipCountThisWeek: newSkipCount + 1,
+          skipWeekStart: weekStart.toISOString(),
+          lastTokenUpdate: admin.firestore.FieldValue.serverTimestamp(),
+        },
+        { merge: true },
+      );
+      return true;
+    });
+
+    if (!tokenOk) {
+      res.status(400).json({ error: "Not enough tokens" });
+      return;
+    }
+
+    // generate new challenge after deduction
+    const prompt = req.body?.prompt || "";
+
+    const historyRef = userRef.collection("challengeHistory");
+    const histSnap = await historyRef
+      .orderBy("timestamp", "desc")
+      .limit(3)
+      .get();
+
+    const recent = histSnap.docs.map((d) => d.data()?.text).filter(Boolean);
+    const avoidList = recent
+      .map((c, i) => `#${i + 1}: ${c}`)
+      .join("\n");
+
+    const basePrompt =
+      prompt.trim() ||
+      "Generate a spiritually meaningful daily challenge that is unique, short, actionable, and not similar to these:";
+    const fullPrompt = `${basePrompt}\n${avoidList}\nReturn only the challenge.`;
+
+    let text = "";
+    try {
+      const model = createGeminiModel();
+      const chat = await model.startChat({ history: [] });
+      const result = await chat.sendMessage(fullPrompt);
+      text = result?.response?.text?.() || "";
+    } catch (gemErr) {
+      console.error("Gemini skipDailyChallenge failed", gemErr);
+      res.status(500).json({ error: "Gemini request failed" });
+      return;
+    }
+
+    text = text.trim();
+    if (!text) {
+      res.status(500).json({ error: "Empty challenge" });
+      return;
+    }
+
+    await historyRef.add({
+      text,
+      timestamp: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    const allSnap = await historyRef.orderBy("timestamp", "desc").get();
+    const docs = allSnap.docs;
+    for (let i = 3; i < docs.length; i++) {
+      await docs[i].ref.delete();
+    }
+
+    await userRef.set(
+      {
+        lastChallenge: admin.firestore.FieldValue.serverTimestamp(),
+        lastChallengeText: text,
+        dailyChallenge: text,
+      },
+      { merge: true },
+    );
+
+    res.status(200).json({ response: text, cost });
+  } catch (err: any) {
+    console.error("🛑 skipDailyChallenge error", err);
+    if (err.code === "auth/argument-error") {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+    res.status(500).json({ error: err.message || "Failed" });
+  }
+});
+
 export const startSubscriptionCheckout = onRequest(async (req, res) => {
   logger.info("📦 startSubscriptionCheckout payload", req.body);
   logger.info(
@@ -559,13 +723,37 @@ export const handleStripeWebhookV2 = onRequest(async (req, res) => {
     return;
   }
   if (event?.type === 'checkout.session.completed') {
-    const uid = (event.data?.object as any)?.client_reference_id as string | undefined;
-    if (uid) {
-      console.log('✅ Stripe checkout completed for', uid);
-      await db.doc(`subscriptions/${uid}`).set({ active: true }, { merge: true });
-      await db.doc(`users/${uid}`).set({ isSubscribed: true }, { merge: true });
-    } else {
+    const session = event.data?.object as Stripe.Checkout.Session;
+    const uid = session.client_reference_id as string | undefined;
+    if (!uid) {
       console.warn('⚠️ Missing uid in Stripe webhook payload');
+    } else {
+      console.log('✅ Stripe checkout completed for', uid);
+      if (session.mode === 'subscription') {
+        await db.doc(`subscriptions/${uid}`).set({ active: true }, { merge: true });
+        await db.doc(`users/${uid}`).set({ isSubscribed: true }, { merge: true });
+      } else {
+        try {
+          const retrieved = await stripe.checkout.sessions.retrieve(session.id, {
+            expand: ['line_items'] as any,
+          });
+          const items = (retrieved.line_items?.data || []) as any[];
+          let total = 0;
+          for (const item of items) {
+            const price = item.price?.id as string | undefined;
+            if (!price) continue;
+            if (price === STRIPE_20_TOKEN_PRICE_ID) total += 20;
+            else if (price === STRIPE_50_TOKEN_PRICE_ID) total += 50;
+            else if (price === STRIPE_100_TOKEN_PRICE_ID) total += 100;
+          }
+          if (total > 0) {
+            await addTokens(uid, total);
+            logger.info(`💰 Added ${total} tokens to ${uid}`);
+          }
+        } catch (err) {
+          logger.error('Token purchase handling failed', err);
+        }
+      }
     }
   }
   res.status(200).send({ received: true });

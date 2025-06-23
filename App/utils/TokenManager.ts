@@ -5,8 +5,8 @@ export const getTokenCount = async () => {
   const uid = await ensureAuth();
   if (!uid) return 0;
 
-  const snapshot = await getDocument(`tokens/${uid}`);
-  const count = snapshot && snapshot.count ? snapshot.count : 0;
+  const snapshot = await getDocument(`users/${uid}`);
+  const count = snapshot && snapshot.tokens ? snapshot.tokens : 0;
   console.log('🪙 Token count:', count);
   return count;
 };
@@ -15,7 +15,7 @@ export const setTokenCount = async (count: number) => {
   const uid = await ensureAuth();
   if (!uid) return;
 
-  await setDocument(`tokens/${uid}`, { count });
+  await setDocument(`users/${uid}`, { tokens: count });
   console.log('🪙 Token count:', count);
 };
 
@@ -55,7 +55,7 @@ export const syncSubscriptionStatus = async () => {
   const isSubscribed = !!sub && sub.active === true;
   console.log('💎 OneVine+ Status:', isSubscribed);
   if (isSubscribed) {
-    await setDocument(`tokens/${uid}`, { count: 9999 });
+    await setDocument(`users/${uid}`, { tokens: 9999 });
   }
 };
 
