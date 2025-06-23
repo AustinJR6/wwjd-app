@@ -407,6 +407,8 @@ export const askGeminiV2 = onRequest(async (req, res) => {
   }
 
   const { prompt = "", history = [] } = req.body || {};
+  logger.info(`📩 askGeminiV2 prompt length: ${prompt.length}`);
+  logger.info(`📜 askGeminiV2 history length: ${(history as any[]).length}`);
 
   try {
     const decoded = await auth.verifyIdToken(idToken);
@@ -423,10 +425,23 @@ export const askGeminiV2 = onRequest(async (req, res) => {
       });
       const result = await chat.sendMessage(prompt);
       text = result?.response?.text?.() ?? "No response text returned.";
+      logger.info("💬 Gemini response:", text);
     } catch (gemErr) {
-      console.error("Gemini V2 request failed", gemErr);
+      logger.error("Gemini V2 request failed", gemErr);
       res.status(500).json({ error: "Gemini request failed" });
       return;
+    }
+
+    try {
+      const subSnap = await db.collection("subscriptions").doc(decoded.uid).get();
+      const subscribed = subSnap.exists && subSnap.data()?.active;
+      const base = subscribed ? "religionChats" : "tempReligionChat";
+      const col = db.collection(base).doc(decoded.uid).collection("messages");
+      await col.add({ role: "user", text: prompt, timestamp: admin.firestore.FieldValue.serverTimestamp() });
+      await col.add({ role: "assistant", text, timestamp: admin.firestore.FieldValue.serverTimestamp() });
+      logger.info(`💾 Saved chat messages to ${base}`);
+    } catch (saveErr) {
+      logger.error("Failed to save assistant message", saveErr);
     }
 
     res.status(200).json({ response: text });
