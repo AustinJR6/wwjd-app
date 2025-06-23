@@ -7,7 +7,9 @@ import {
   StyleSheet,
   Alert,
   AppState,
-  ScrollView,
+  FlatList,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import Button from '@/components/common/Button';
 import ScreenContainer from "@/components/theme/ScreenContainer";
@@ -38,7 +40,18 @@ export default function ReligionAIScreen() {
   const styles = React.useMemo(
     () =>
       StyleSheet.create({
-        container: { paddingBottom: 64 },
+        container: { flex: 1 },
+        chatList: { flexGrow: 1, paddingBottom: 16 },
+        inputRow: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          paddingVertical: 8,
+        },
+        ctaButton: {
+          alignSelf: 'center',
+          padding: 10,
+          width: '80%',
+        },
         input: {
           borderWidth: 1,
           borderColor: theme.colors.accent,
@@ -48,7 +61,6 @@ export default function ReligionAIScreen() {
           backgroundColor: theme.colors.surface,
           color: theme.colors.text,
         },
-        buttonWrap: { marginVertical: 12 },
         message: { marginBottom: 8, color: theme.colors.text },
         userMsg: { fontWeight: 'bold', color: theme.colors.accent },
         systemMsg: { color: theme.colors.fadedText },
@@ -243,8 +255,11 @@ export default function ReligionAIScreen() {
 
       await saveMessage(uid, 'user', question, subscribed);
       await saveMessage(uid, 'assistant', answer, subscribed);
-      const newMessages = await fetchHistory(uid, subscribed);
-      setMessages(newMessages);
+      setMessages((prev) => [
+        ...prev,
+        { role: 'user', text: question },
+        { role: 'assistant', text: answer },
+      ]);
 
       setQuestion('');
     } catch (err: any) {
@@ -281,50 +296,59 @@ export default function ReligionAIScreen() {
 
   return (
     <ScreenContainer>
-      <ScrollView contentContainerStyle={styles.container}>
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
         <CustomText style={styles.title}>Ask for Guidance</CustomText>
 
-        {isSubscribed ? (
+        {!isSubscribed && (
           <View style={styles.subscriptionBanner}>
-            <CustomText style={styles.subscriptionText}>💎 OneVine+ Unlimited Chat Enabled</CustomText>
-            <Button title="Clear Conversation" onPress={handleClear} color={theme.colors.accent} />
-          </View>
-        ) : (
-          <View style={styles.subscriptionBanner}>
-            <CustomText style={styles.subscriptionText}>📖 Only OneVine+ members can save their spiritual conversations.</CustomText>
-            <CustomText style={styles.subscriptionText}>✨ Unlock your growing archive of wisdom and connection.</CustomText>
-            <Button
-              title="Upgrade to OneVine+ ✨"
-              onPress={() => navigation.navigate('Upgrade')}
-              color={theme.colors.accent}
-            />
+            <CustomText style={styles.subscriptionText}>
+              Memory is only saved for OneVine+ members
+            </CustomText>
+            <View style={styles.ctaButton}>
+              <Button
+                title="Upgrade to OneVine+ ✨"
+                onPress={() => navigation.navigate('Upgrade')}
+                color={theme.colors.accent}
+              />
+            </View>
           </View>
         )}
 
-        <TextInput
-          style={styles.input}
-          placeholder="What's on your heart?"
-          value={question}
-          onChangeText={setQuestion}
-          multiline
+        <FlatList
+          data={messages}
+          style={{ flex: 1 }}
+          contentContainerStyle={styles.chatList}
+          renderItem={({ item }) => (
+            <CustomText style={item.role === 'user' ? styles.userMsg : styles.answer}>
+              {item.role === 'user' ? 'You: ' : ''}
+              {item.text}
+            </CustomText>
+          )}
+          keyExtractor={(_, i) => i.toString()}
         />
 
-        <View style={styles.buttonWrap}>
-          <Button title="Ask" onPress={handleAsk} disabled={loading} />
+        <View style={styles.ctaButton}>
+          <Button title="Clear Conversation" onPress={handleClear} color={theme.colors.accent} />
         </View>
 
         {loading && <ActivityIndicator size="large" color={theme.colors.primary} />}
 
-        {messages.map((msg, idx) => (
-          <CustomText
-            key={idx}
-            style={msg.role === 'user' ? styles.userMsg : styles.answer}
-          >
-            {msg.role === 'user' ? 'You: ' : ''}
-            {msg.text}
-          </CustomText>
-        ))}
-      </ScrollView>
+        <View style={styles.inputRow}>
+          <TextInput
+            style={[styles.input, { flex: 1, marginBottom: 0 }]}
+            placeholder="What's on your heart?"
+            value={question}
+            onChangeText={setQuestion}
+            multiline
+          />
+          <View style={{ marginLeft: 8 }}>
+            <Button title="Send" onPress={handleAsk} disabled={loading} />
+          </View>
+        </View>
+      </KeyboardAvoidingView>
     </ScreenContainer>
   );
 }
