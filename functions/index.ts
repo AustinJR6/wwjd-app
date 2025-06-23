@@ -168,7 +168,7 @@ export const generateChallenge = onRequest(async (req, res) => {
     return;
   }
 
-  const { history = [], seed = Date.now() } = req.body || {};
+  const { prompt = "", history = [], seed = Date.now() } = req.body || {};
 
   try {
     const decoded = await auth.verifyIdToken(idToken);
@@ -188,7 +188,9 @@ export const generateChallenge = onRequest(async (req, res) => {
 
     const randomizer = `Seed:${seed}`;
 
-    const fullPrompt = `\nYou are a spiritual guide helping users grow in faith.\n\nDo NOT repeat or closely resemble any of the following recent challenges:\n${avoid}\n\nNow generate a new, unique, and creative spiritual challenge inspired by Christian teachings.\nMake it practical, soul-stirring, and concise.\nRespond ONLY with the new challenge text.`;
+    const basePrompt = prompt.trim() ||
+      "Generate a new, unique, and creative spiritual challenge inspired by Christian teachings.";
+    const fullPrompt = `${basePrompt}\n\nDo NOT repeat or closely resemble any of the following recent challenges:\n${avoid}\n\nRespond ONLY with the new challenge text.`;
 
     const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
