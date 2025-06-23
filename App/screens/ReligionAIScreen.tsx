@@ -11,6 +11,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Button from '@/components/common/Button';
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { useTheme } from "@/components/theme/theme";
@@ -34,6 +35,7 @@ import {
   ChatMessage,
   checkIfUserIsSubscribed,
 } from '@/services/chatHistoryService';
+import { showInterstitialAd } from '@/services/adService';
 
 export default function ReligionAIScreen() {
   const theme = useTheme();
@@ -79,16 +81,19 @@ export default function ReligionAIScreen() {
           marginBottom: 16,
           color: theme.colors.primary,
         }, // ✅ added missing 'title' style
-        subscriptionBanner: {
-          padding: 12,
-          backgroundColor: '#FAF3DD', // light gold tone
+        memoryBanner: {
+          padding: 8,
+          backgroundColor: '#FDEBD0',
           borderRadius: 8,
-          marginBottom: 12,
+          marginBottom: 8,
           alignItems: 'center',
-          borderWidth: 1,
-          borderColor: '#E6E6FA', // lavender
-        }, // ✅ added missing 'subscriptionBanner' style
-        subscriptionText: { marginBottom: 8, color: theme.colors.text }, // ✅ added missing 'subscriptionText' style
+        },
+        upgradeLink: {
+          fontSize: 12,
+          textAlign: 'center',
+          color: '#888',
+          marginTop: 8,
+        },
       }),
     [theme],
   );
@@ -96,6 +101,8 @@ export default function ReligionAIScreen() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
   const [isSubscribed, setIsSubscribed] = useState(false);
+  const [messageCount, setMessageCount] = useState(0);
+  const [showMemoryClearedBanner, setShowMemoryClearedBanner] = useState(false);
   const { user } = useUser();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
@@ -116,6 +123,12 @@ export default function ReligionAIScreen() {
       } catch (err) {
         console.error('Failed to load ReligionAI history', err);
       }
+
+      const clearedFlag = await AsyncStorage.getItem('tempReligionChatCleared');
+      if (clearedFlag) {
+        setShowMemoryClearedBanner(true);
+        await AsyncStorage.removeItem('tempReligionChatCleared');
+      }
     };
 
     loadHistory();
@@ -124,7 +137,10 @@ export default function ReligionAIScreen() {
       if (state !== 'active') {
         const clear = async () => {
           const uid = await ensureAuth(user?.uid);
-          if (uid) await clearTempReligionChat(uid);
+          if (uid) {
+            await clearTempReligionChat(uid);
+            await AsyncStorage.setItem('tempReligionChatCleared', 'true');
+          }
         };
         clear();
       }
@@ -134,7 +150,10 @@ export default function ReligionAIScreen() {
       sub.remove();
       const cleanup = async () => {
         const uid = await ensureAuth(user?.uid);
-        if (uid) await clearTempReligionChat(uid);
+        if (uid) {
+          await clearTempReligionChat(uid);
+          await AsyncStorage.setItem('tempReligionChatCleared', 'true');
+        }
       };
       cleanup();
     };
@@ -261,6 +280,14 @@ export default function ReligionAIScreen() {
         { role: 'assistant', text: answer },
       ]);
 
+      setMessageCount((c) => {
+        const next = c + 1;
+        if (next % 5 === 0 && !subscribed) {
+          showInterstitialAd();
+        }
+        return next;
+      });
+
       setQuestion('');
     } catch (err: any) {
       console.error('🔥 API Error:', err?.response?.data || err.message);
@@ -284,6 +311,8 @@ export default function ReligionAIScreen() {
                 await clearHistory(uid);
               } else {
                 await clearTempReligionChat(uid);
+                await AsyncStorage.setItem('tempReligionChatCleared', 'true');
+                setShowMemoryClearedBanner(true);
               }
             } catch (err) {
               console.error('Failed to clear ReligionAI history', err);
@@ -302,18 +331,11 @@ export default function ReligionAIScreen() {
       >
         <CustomText style={styles.title}>Ask for Guidance</CustomText>
 
-        {!isSubscribed && (
-          <View style={styles.subscriptionBanner}>
-            <CustomText style={styles.subscriptionText}>
-              Memory is only saved for OneVine+ members
+        {showMemoryClearedBanner && (
+          <View style={styles.memoryBanner}>
+            <CustomText>
+              This chat won’t be saved unless you’re subscribed.
             </CustomText>
-            <View style={styles.ctaButton}>
-              <Button
-                title="Upgrade to OneVine+ ✨"
-                onPress={() => navigation.navigate('Upgrade')}
-                color={theme.colors.accent}
-              />
-            </View>
           </View>
         )}
 
@@ -348,6 +370,15 @@ export default function ReligionAIScreen() {
             <Button title="Send" onPress={handleAsk} disabled={loading} />
           </View>
         </View>
+
+        {!isSubscribed && (
+          <CustomText
+            style={styles.upgradeLink}
+            onPress={() => navigation.navigate('Upgrade')}
+          >
+            ✨ Upgrade to OneVine+ to unlock memory + remove ads
+          </CustomText>
+        )}
       </KeyboardAvoidingView>
     </ScreenContainer>
   );
