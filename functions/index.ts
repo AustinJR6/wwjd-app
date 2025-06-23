@@ -93,6 +93,41 @@ async function deductTokens(uid: string, amount: number): Promise<boolean> {
   }
 }
 
+async function updateStreakAndXPInternal(uid: string, type: string) {
+  const userRef = db.collection("users").doc(uid);
+  await db.runTransaction(async (t) => {
+    const snap = await t.get(userRef);
+    const data = snap.exists ? snap.data() || {} : {};
+    const now = admin.firestore.Timestamp.now();
+    const last: admin.firestore.Timestamp | undefined = data.lastCheckIn;
+    const streak = data.streakCount || 0;
+    const xp = data.xpPoints || 0;
+    const longest = data.longestStreak || 0;
+
+    let newStreak = 1;
+    if (last) {
+      const diffMs = now.toMillis() - last.toMillis();
+      const diffDays = diffMs / (1000 * 60 * 60 * 24);
+      if (diffDays < 1) {
+        newStreak = streak; // same day
+      } else if (diffDays < 2) {
+        newStreak = streak + 1;
+      }
+    }
+    const xpEarned = 10;
+    t.set(
+      userRef,
+      {
+        lastCheckIn: now,
+        streakCount: newStreak,
+        xpPoints: xp + xpEarned,
+        longestStreak: Math.max(longest, newStreak),
+      },
+      { merge: true },
+    );
+  });
+}
+
 export const incrementReligionPoints = onRequest(async (req, res) => {
   console.log("🔍 Headers received:", req.headers);
 
@@ -149,7 +184,8 @@ export const completeChallenge = onRequest(async (req, res) => {
   try {
     const decodedToken = await auth.verifyIdToken(idToken);
     console.log(`✅ Gus Bug Authenticated: ${decodedToken.uid} is legit! 🎯`);
-    res.status(200).send({ message: "✅ completeChallenge function is live" });
+    await updateStreakAndXPInternal(decodedToken.uid, "challenge");
+    res.status(200).send({ message: "Streak and XP updated" });
   } catch (err) {
     console.error("🛑 Gus Bug Tampered Token: Couldn't verify. 🧙‍♂️✨", err);
     res.status(401).json({
@@ -810,4 +846,21 @@ export const handleStripeWebhookV2 = onRequest(async (req, res) => {
     }
   }
   res.status(200).send({ received: true });
+});
+
+export const updateStreakAndXP = onRequest(async (req, res) => {
+  const idToken = req.headers.authorization?.split("Bearer ")[1];
+  if (!idToken) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  try {
+    const decoded = await auth.verifyIdToken(idToken);
+    const type = req.body?.type || "general";
+    await updateStreakAndXPInternal(decoded.uid, type);
+    res.status(200).json({ message: "Streak updated" });
+  } catch (err: any) {
+    console.error("updateStreakAndXP error", err);
+    res.status(500).json({ error: err.message || "Failed" });
+  }
 });
