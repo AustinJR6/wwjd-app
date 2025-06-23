@@ -3,6 +3,7 @@ import CustomText from '@/components/CustomText';
 import {
   View,
   TextInput,
+  AppState,
   
   ActivityIndicator,
   StyleSheet,
@@ -18,6 +19,12 @@ import { getStoredToken } from '@/services/authService';
 import { ensureAuth } from '@/utils/authGuard';
 import { showGracefulError } from '@/utils/gracefulError';
 import { sendRequestWithGusBugLogging } from '@/utils/gusBugLogger';
+import {
+  saveTempMessage,
+  fetchTempSession,
+  clearConfessionalSession,
+  TempMessage,
+} from '@/services/confessionalSessionService';
 
 export default function ConfessionalScreen() {
   const theme = useTheme();
@@ -71,13 +78,39 @@ export default function ConfessionalScreen() {
     [theme],
   );
   const [text, setText] = useState('');
-  const [messages, setMessages] = useState<{sender:'user'|'ai', text:string}[]>([]);
+  const [messages, setMessages] = useState<TempMessage[]>([]);
   const [loading, setLoading] = useState(false);
   const { user } = useUser();
 
   useEffect(() => {
-    return () => setMessages([]);
-  }, []);
+    const load = async () => {
+      const uid = await ensureAuth(user?.uid);
+      if (uid) {
+        const hist = await fetchTempSession(uid);
+        setMessages(hist);
+      }
+    };
+    load();
+
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state !== 'active') {
+        const clear = async () => {
+          const uid = await ensureAuth(user?.uid);
+          if (uid) await clearConfessionalSession(uid);
+        };
+        clear();
+      }
+    });
+
+    return () => {
+      sub.remove();
+      const cleanup = async () => {
+        const uid = await ensureAuth(user?.uid);
+        if (uid) await clearConfessionalSession(uid);
+      };
+      cleanup();
+    };
+  }, [user]);
 
   const handleConfess = async () => {
     if (!text.trim()) {
@@ -85,11 +118,6 @@ export default function ConfessionalScreen() {
       return;
     }
 
-    if (messages.length >= 30)
-      Alert.alert(
-        'Conversation full',
-        'Try a fresh start for a new conversation.',
-      );
 
     setLoading(true);
     try {
@@ -115,8 +143,12 @@ export default function ConfessionalScreen() {
         return;
       }
 
-      const historyMsgs = messages.map((m) => ({
-        role: m.sender === 'user' ? 'user' : 'model',
+      const history = await fetchTempSession(uid);
+      if (history.length >= 30) {
+        Alert.alert('Conversation full', 'Try a fresh start for a new conversation.');
+      }
+      const historyMsgs = history.map((m) => ({
+        role: m.role === 'user' ? 'user' : 'model',
         text: m.text,
       }));
 
@@ -146,10 +178,14 @@ export default function ConfessionalScreen() {
       const answer = data.response || 'You are forgiven. Walk in peace.';
       console.log('✝️ Confessional input:', text);
       console.log('🕊️ Confessional AI reply:', answer);
+
+      await saveTempMessage(uid, 'user', text);
+      await saveTempMessage(uid, 'assistant', answer);
+
       setMessages((prev) => [
         ...prev,
-        { sender: 'user', text },
-        { sender: 'ai', text: answer },
+        { role: 'user', text },
+        { role: 'assistant', text: answer },
       ]);
       setText('');
     } catch (err) {
@@ -177,7 +213,7 @@ export default function ConfessionalScreen() {
         </View>
         {loading && <ActivityIndicator size="large" color={theme.colors.primary} />}
         {messages.map((m, idx) => (
-          <CustomText key={idx} style={styles.response}>{m.sender === 'user' ? 'You: ' : ''}{m.text}</CustomText>
+          <CustomText key={idx} style={styles.response}>{m.role === 'user' ? 'You: ' : ''}{m.text}</CustomText>
         ))}
       </ScrollView>
     </ScreenContainer>
