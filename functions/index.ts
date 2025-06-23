@@ -301,6 +301,106 @@ export const generateChallenge = onRequest(async (req, res) => {
   }
 });
 
+export const generateDailyChallenge = onRequest(async (req, res) => {
+  const idToken = req.headers.authorization?.split("Bearer ")[1];
+  if (!idToken) {
+    console.error("❌ Gus Bug Alert: Missing ID token in header. 🐞");
+    res.status(401).json({ error: "Unauthorized — Gus bug stole the token!" });
+    return;
+  }
+
+  const { prompt = "" } = req.body || {};
+
+  try {
+    const decoded = await auth.verifyIdToken(idToken);
+    const uid = decoded.uid;
+    logger.info(`✅ generateDailyChallenge user: ${uid}`);
+
+    const userRef = db.collection("users").doc(uid);
+    const historyRef = userRef.collection("challengeHistory");
+    const histSnap = await historyRef
+      .orderBy("timestamp", "desc")
+      .limit(3)
+      .get();
+
+    const recent = histSnap.docs.map((d) => d.data()?.text).filter(Boolean);
+    const avoidList = recent
+      .map((c, i) => `#${i + 1}: ${c}`)
+      .join("\n");
+
+    const basePrompt =
+      prompt.trim() ||
+      "Generate a spiritually meaningful daily challenge that is unique, short, actionable, and not similar to these:";
+    const fullPrompt = `${basePrompt}\n${avoidList}\nReturn only the challenge.`;
+
+    logger.info("📝 Gemini prompt:", fullPrompt);
+
+    let text = "";
+    try {
+      const model = createGeminiModel();
+      const chat = await model.startChat({ history: [] });
+      const result = await chat.sendMessage(fullPrompt);
+      text = result?.response?.text?.() || "";
+    } catch (gemErr) {
+      console.error("Gemini generateDailyChallenge failed", gemErr);
+      res.status(500).json({ error: "Gemini request failed" });
+      return;
+    }
+
+    text = text.trim();
+    if (!text) {
+      res.status(500).json({ error: "Empty challenge" });
+      return;
+    }
+
+    if (recent.includes(text)) {
+      logger.warn("Duplicate challenge generated, retrying once");
+      try {
+        const model = createGeminiModel();
+        const chat = await model.startChat({ history: [] });
+        const result = await chat.sendMessage(`${fullPrompt}\nEnsure it is different.`);
+        text = result?.response?.text?.() || text;
+        text = text.trim();
+      } catch (retryErr) {
+        console.error("Retry failed", retryErr);
+      }
+    }
+
+    logger.info("🌟 Challenge output:", text);
+
+    await historyRef.add({
+      text,
+      timestamp: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    const allSnap = await historyRef.orderBy("timestamp", "desc").get();
+    const docs = allSnap.docs;
+    for (let i = 3; i < docs.length; i++) {
+      await docs[i].ref.delete();
+    }
+
+    await userRef.set(
+      {
+        lastChallenge: admin.firestore.FieldValue.serverTimestamp(),
+        lastChallengeText: text,
+        dailyChallenge: text,
+      },
+      { merge: true },
+    );
+
+    res.status(200).json({ response: text });
+  } catch (err: any) {
+    console.error("🛑 generateDailyChallenge error", err);
+    if (err.code === "auth/argument-error") {
+      res.status(401).json({
+        error: "Unauthorized — Gus bug cast an invalid token spell.",
+      });
+      return;
+    }
+    res.status(500).json({ error: err.message || "Gemini failed" });
+  }
+});
+
 export const startSubscriptionCheckout = onRequest(async (req, res) => {
   logger.info("📦 startSubscriptionCheckout payload", req.body);
   logger.info(
