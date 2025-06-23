@@ -176,36 +176,40 @@ export default function ReligionAIScreen() {
         conversationContext = messages.join('\n');
       }
 
-      // Reuse the token instead of fetching it again
       idToken = idToken || (await getStoredToken());
-      if (!idToken) console.warn('Missing idToken for ReligionAI request');
+      if (!idToken) {
+        showGracefulError('Login required. Please sign in again.');
+        setLoading(false);
+        return;
+      }
       const historyMsgs = messages.map((m) => ({
         role: m.startsWith('User:') ? 'user' : 'model',
         text: m.replace(/^[^:]+:\s*/, ''),
       }));
-      const response = await sendRequestWithGusBugLogging(() =>
-        fetch(ASK_GEMINI_V2, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${idToken}`,
-          },
-          body: JSON.stringify({
-            prompt: `You are a ${promptRole} of the ${religion} faith. ` +
-              `Answer the user using teachings from that tradition and cite any ` +
-              `relevant scriptures.\n${conversationContext}\nUser: ${question}\n${promptRole}:`,
-            history: historyMsgs,
-          }),
-        })
-      );
 
-      const text = await response.text();
+      const prompt =
+        `You are a ${promptRole} of the ${religion} faith. ` +
+        `Answer the user using teachings from that tradition and cite any relevant scriptures.\n` +
+        `${conversationContext}\nUser: ${question}\n${promptRole}:`;
+      console.log('📡 Sending Gemini prompt:', prompt);
+      console.log('👤 Role:', promptRole);
+
+      const res = await fetch(ASK_GEMINI_V2, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({ prompt, history: historyMsgs }),
+      });
+
+      const text = await res.text();
       let data: any;
       try {
         data = JSON.parse(text);
       } catch (err) {
-        console.error('Invalid JSON from ReligionAI:', text);
-        showGracefulError();
+        console.error('🔥 Gemini parse error:', text);
+        showGracefulError('AI failed to respond. Please try again.');
         return;
       }
       const answer = data?.response || 'I am always with you. Trust in Me.';

@@ -109,35 +109,38 @@ export default function ConfessionalScreen() {
                    'Spiritual Guide';
 
       const idToken = await getStoredToken();
-      if (!idToken) console.warn('Missing idToken for askGeminiSimple');
+      if (!idToken) {
+        showGracefulError('Login required. Please sign in again.');
+        setLoading(false);
+        return;
+      }
+
       const historyMsgs = messages.map((m) => ({
         role: m.sender === 'user' ? 'user' : 'model',
         text: m.text,
       }));
-      const conversation = messages
-        .map((m) => `${m.sender === 'user' ? 'User' : role}: ${m.text}`)
-        .join('\n');
-      const res = await sendRequestWithGusBugLogging(() =>
-        fetch(ASK_GEMINI_SIMPLE, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${idToken}`,
-          },
-          body: JSON.stringify({
-            prompt: `${conversation}\nUser: ${text}\n${role}:`,
-            history: historyMsgs,
-          }),
-        })
-      );
+
+      const prompt =
+        `${role}: You are a spiritual guide hearing confession.\nUser: ${text}\n${role}:`;
+      console.log('📡 Sending Gemini prompt:', prompt);
+      console.log('👤 Role:', role);
+
+      const res = await fetch(ASK_GEMINI_SIMPLE, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({ prompt, history: historyMsgs }),
+      });
 
       const textResp = await res.text();
       let data: any;
       try {
         data = JSON.parse(textResp);
       } catch (err) {
-        console.error('Invalid JSON from Confessional:', err, textResp);
-        showGracefulError();
+        console.error('🔥 Gemini parse error:', textResp);
+        showGracefulError('AI failed to respond. Please try again.');
         return;
       }
       const answer = data.response || 'You are forgiven. Walk in peace.';

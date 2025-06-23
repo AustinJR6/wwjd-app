@@ -134,35 +134,45 @@ export default function ChallengeScreen() {
 
       const religion = userData.religion || 'spiritual';
 
-      // Reuse the token instead of fetching it again
       idToken = idToken || (await getStoredToken());
-      const response = await sendRequestWithGusBugLogging(() =>
-        fetch(GENERATE_CHALLENGE_URL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${idToken}`,
-          },
-          body: JSON.stringify({
-            prompt: `Give me a short daily challenge for someone of the ${religion} faith.`,
-            history: [],
-            seed: Date.now(),
-          }),
-        })
-      );
+      if (!idToken) {
+        showGracefulError('Login required. Please sign in again.');
+        setLoading(false);
+        return;
+      }
 
-      const text = await response.text();
+      const prompt =
+        `Give me a short daily challenge for the ${religion} faith on ${new Date().toDateString()}.`;
+      console.log('📡 Sending Gemini prompt:', prompt);
+      console.log('👤 Role:', religion);
+
+      const res = await fetch(GENERATE_CHALLENGE_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({ prompt, history: [], seed: Date.now() }),
+      });
+      const text = await res.text();
       let data: any;
       try {
         data = JSON.parse(text);
       } catch (err) {
-        console.error('Invalid JSON from generateChallenge:', text);
-        showGracefulError();
+        console.error('🔥 Gemini parse error:', text);
+        showGracefulError('AI failed to respond. Please try again.');
+        setChallenge('Reflect in silence for five minutes today.');
         return;
       }
-      const newChallenge = data.response || 'Reflect in silence for five minutes today.';
-      console.log('🌟 New Challenge:', newChallenge);
-      setChallenge(newChallenge);
+
+      const newChallenge = data.response;
+      if (!newChallenge) {
+        showGracefulError('AI failed to provide a challenge.');
+        setChallenge('Reflect in silence for five minutes today.');
+      } else {
+        console.log('🌟 New Challenge:', newChallenge);
+        setChallenge(newChallenge);
+      }
 
       await setDocument(`users/${uid}`, {
         lastChallenge: new Date().toISOString(),
