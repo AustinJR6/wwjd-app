@@ -4,11 +4,15 @@ import { ensureAuth } from '@/utils/authGuard';
 export const getTokenCount = async () => {
   const uid = await ensureAuth();
   if (!uid) return 0;
-
-  const snapshot = await getDocument(`users/${uid}`);
-  const count = snapshot && snapshot.tokens ? snapshot.tokens : 0;
-  console.log('🪙 Token count:', count);
-  return count;
+  try {
+    const snapshot = await getDocument(`users/${uid}`);
+    const count = snapshot && snapshot.tokens ? snapshot.tokens : 0;
+    console.log('🪙 Token count:', count);
+    return count;
+  } catch (err) {
+    console.error('❌ Token fetch failed:', err);
+    return 0;
+  }
 };
 
 export const setTokenCount = async (count: number) => {
