@@ -1,6 +1,5 @@
-import firebase from 'firebase/compat/app';
-import 'firebase/compat/auth';
 import { GEMINI_API_URL } from '@/config/apiConfig';
+import { getFreshIdToken } from '@/services/authService';
 import { sendRequestWithGusBugLogging } from '@/utils/gusBugLogger';
 
 export type GeminiMessage = { role: 'user' | 'assistant'; text: string };
@@ -18,26 +17,14 @@ export async function sendGeminiPrompt({
   onResponse?: (reply: string) => void;
   onError?: (err: any) => void;
 }): Promise<string | null> {
-  const user = firebase.auth().currentUser;
-  if (!user) {
-    console.warn('No authenticated user for Gemini request');
-    onError?.(new Error('No authenticated user'));
-    return null;
-  }
-
-  let idToken: string | undefined;
+  let idToken: string | null;
   try {
-    idToken = await user.getIdToken();
-    if (!idToken) throw new Error('No ID token');
+    idToken = await getFreshIdToken();
+    if (!idToken) throw new Error('No authenticated user');
   } catch (err) {
-    console.error('Failed to get ID token', err);
-    try {
-      idToken = await user.getIdToken(true);
-    } catch (retryErr) {
-      console.error('ID token retry failed', retryErr);
-      onError?.(retryErr);
-      return null;
-    }
+    console.warn('No authenticated user for Gemini request');
+    onError?.(err instanceof Error ? err : new Error('No authenticated user'));
+    return null;
   }
 
   const headers = {
