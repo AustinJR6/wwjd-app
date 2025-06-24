@@ -1,20 +1,16 @@
 {
   "compilerOptions": {
     "target": "ES2020",
-    "module": "CommonJS",
+    "module": "es2015",
     "lib": ["ES2020"],
     "outDir": "lib",
     "rootDir": ".",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "moduleResolution": "Node"
   },
-  "include": [
-    "index.ts",
-    "firebase.ts",
-    "firestoreSeeder.ts",
-    "codexPrompts.ts"
-  ],
+  "include": ["**/*.ts"],
   "exclude": ["lib", "dist", "node_modules"]
 }
