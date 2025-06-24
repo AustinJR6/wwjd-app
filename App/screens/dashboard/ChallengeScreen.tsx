@@ -151,7 +151,7 @@ export default function ChallengeScreen() {
       });
     } catch (err: any) {
       console.error('🔥 API Error:', err?.response?.data || err.message);
-      showGracefulError();
+      showGracefulError('Unable to load challenge data — please try again later');
     } finally {
       setLoading(false);
     }
@@ -213,7 +213,7 @@ export default function ChallengeScreen() {
       fetchChallenge(true);
     } catch (error: any) {
       console.error('🔥 API Error:', error?.response?.data || error.message);
-      showGracefulError();
+      showGracefulError('Unable to load challenge data — please try again later');
     }
   };
 
