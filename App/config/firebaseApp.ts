@@ -4,8 +4,16 @@ export const FUNCTIONS_BASE_URL = process.env.EXPO_PUBLIC_FUNCTION_BASE_URL || '
 
 import { getStoredToken } from '@/services/authService';
 
-export async function getAuthHeader() {
+export async function getAuthHeaders() {
   const idToken = await getStoredToken();
   if (!idToken) throw new Error('Missing auth token');
-  return { Authorization: `Bearer ${idToken}` };
+  return {
+    Authorization: `Bearer ${idToken}`,
+    'Content-Type': 'application/json',
+  };
+}
+
+export async function getAuthHeader() {
+  const { Authorization } = await getAuthHeaders();
+  return { Authorization };
 }

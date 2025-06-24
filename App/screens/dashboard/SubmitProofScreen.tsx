@@ -12,7 +12,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { uploadImage } from '@/services/storageService';
 import { addDocument } from '@/services/firestoreService';
 import { useUser } from "@/hooks/useUser";
-import { getStoredToken } from '@/services/authService';
+import { getAuthHeaders } from '@/config/firebaseApp';
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { useTheme } from "@/components/theme/theme";
 import { ensureAuth } from '@/utils/authGuard';
@@ -84,9 +84,9 @@ export default function SubmitProofScreen() {
       return;
     }
 
-    const idToken = await getStoredToken();
-    const userId = await SafeStore.getItem('userId');
-    if (!idToken || !userId) {
+    try {
+      await getAuthHeaders();
+    } catch {
       Alert.alert('Login Required', 'Please log in again.');
       navigation.replace('Login');
       return;

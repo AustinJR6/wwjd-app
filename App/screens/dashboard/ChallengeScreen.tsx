@@ -20,11 +20,10 @@ import {
   completeChallengeDay,
 } from '@/services/functionService';
 import { useUser } from '@/hooks/useUser';
-import { getStoredToken } from '@/services/authService';
+import { getAuthHeaders } from '@/config/firebaseApp';
 import { ensureAuth } from '@/utils/authGuard';
 import { useChallengeStore } from '@/state/challengeStore';
 import { sendRequestWithGusBugLogging } from '@/utils/gusBugLogger';
-import * as SafeStore from '@/utils/secureStore';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/navigation/RootStackParamList';
@@ -83,12 +82,11 @@ export default function ChallengeScreen() {
         streakMilestones: { ...granted, [key]: true },
       });
 
-      const idToken = await getStoredToken();
-      if (!idToken) console.warn('Missing idToken for askGeminiSimple');
+      const headers = await getAuthHeaders();
       const res = await sendRequestWithGusBugLogging(() =>
         fetch(ASK_GEMINI_SIMPLE, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${idToken}` },
+          headers,
           body: JSON.stringify({
             prompt: `Provide a short blessing for a user who reached a ${current}-day spiritual challenge streak in the ${userData.religion || 'Christian'} tradition.`,
             history: [],
@@ -112,10 +110,10 @@ export default function ChallengeScreen() {
 
   const fetchChallenge = async (forceNew = false) => {
     try {
-      let idToken = await getStoredToken();
-      if (!idToken) console.warn('Missing idToken for fetchChallenge');
-      const userId = await SafeStore.getItem('userId');
-      if (!idToken || !userId) {
+      let headers;
+      try {
+        headers = await getAuthHeaders();
+      } catch {
         Alert.alert('Login Required', 'Please log in again.');
         navigation.replace('Login');
         return;
@@ -149,13 +147,6 @@ export default function ChallengeScreen() {
 
       const religion = userData.religion || 'spiritual';
 
-      idToken = idToken || (await getStoredToken());
-      if (!idToken) {
-        showGracefulError('Login required. Please sign in again.');
-        setLoading(false);
-        return;
-      }
-
       const prompt =
         `Give me a short daily challenge for the ${religion} faith on ${new Date().toDateString()}.`;
       console.log('📡 Sending Gemini prompt:', prompt);
@@ -163,10 +154,7 @@ export default function ChallengeScreen() {
 
       const res = await fetch(GENERATE_CHALLENGE_URL, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${idToken}`,
-        },
+        headers,
         body: JSON.stringify({ prompt, history: [], seed: Date.now() }),
       });
       const text = await res.text();
