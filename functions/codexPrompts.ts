@@ -1,5 +1,6 @@
 import * as admin from 'firebase-admin';
 import * as fs from 'fs';
+import { fileURLToPath } from 'url';
 import { db } from './firebase';
 
 export interface CodexPrompt {
@@ -47,7 +48,8 @@ export async function exportMarkdown(filePath = 'PromptLibrary.md'): Promise<voi
   fs.writeFileSync(filePath, md, 'utf8');
 }
 
-if (require.main === module) {
+const __filename = fileURLToPath(import.meta.url);
+if (process.argv[1] === __filename) {
   const [command, ...args] = process.argv.slice(2);
   if (command === 'export') {
     const file = args[0] || 'PromptLibrary.md';
