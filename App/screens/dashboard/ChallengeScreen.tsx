@@ -20,10 +20,9 @@ import {
   completeChallengeDay,
 } from '@/services/functionService';
 import { useUser } from '@/hooks/useUser';
-import { getAuthHeaders } from '@/config/firebaseApp';
 import { ensureAuth } from '@/utils/authGuard';
 import { useChallengeStore } from '@/state/challengeStore';
-import { sendRequestWithGusBugLogging } from '@/utils/gusBugLogger';
+import { sendGeminiPrompt } from '@/services/geminiService';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/navigation/RootStackParamList';
@@ -82,26 +81,11 @@ export default function ChallengeScreen() {
         streakMilestones: { ...granted, [key]: true },
       });
 
-      const headers = await getAuthHeaders();
-      const res = await sendRequestWithGusBugLogging(() =>
-        fetch(ASK_GEMINI_SIMPLE, {
-          method: 'POST',
-          headers,
-          body: JSON.stringify({
-            prompt: `Provide a short blessing for a user who reached a ${current}-day spiritual challenge streak in the ${userData.religion || 'Christian'} tradition.`,
-            history: [],
-          }),
-        })
-      );
-      const textResp = await res.text();
-      let data: any;
-      try {
-        data = JSON.parse(textResp);
-      } catch (err) {
-        console.error('Invalid JSON from milestone blessing:', textResp);
-        return;
-      }
-      const blessing = data.response || "You’ve walked with discipline and devotion. This is your blessing.";
+      const blessing = await sendGeminiPrompt({
+        url: ASK_GEMINI_SIMPLE,
+        prompt: `Provide a short blessing for a user who reached a ${current}-day spiritual challenge streak in the ${userData.religion || 'Christian'} tradition.`,
+        history: [],
+      });
       Alert.alert('Blessing!', `${blessing}\nYou earned ${reward} Grace Tokens.`);
     } catch (err) {
       console.error('❌ Milestone reward error:', err);
@@ -110,14 +94,6 @@ export default function ChallengeScreen() {
 
   const fetchChallenge = async (forceNew = false) => {
     try {
-      let headers;
-      try {
-        headers = await getAuthHeaders();
-      } catch {
-        Alert.alert('Login Required', 'Please log in again.');
-        navigation.replace('Login');
-        return;
-      }
 
       const uid = await ensureAuth(user?.uid);
       if (!uid) return;
@@ -152,23 +128,11 @@ export default function ChallengeScreen() {
       console.log('📡 Sending Gemini prompt:', prompt);
       console.log('👤 Role:', religion);
 
-      const res = await fetch(GENERATE_CHALLENGE_URL, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ prompt, history: [], seed: Date.now() }),
+      const newChallenge = await sendGeminiPrompt({
+        url: GENERATE_CHALLENGE_URL,
+        prompt,
+        history: [],
       });
-      const text = await res.text();
-      let data: any;
-      try {
-        data = JSON.parse(text);
-      } catch (err) {
-        console.error('🔥 Gemini parse error:', text);
-        showGracefulError('AI failed to respond. Please try again.');
-        setChallenge('Reflect in silence for five minutes today.');
-        return;
-      }
-
-      const newChallenge = data.response;
       if (!newChallenge) {
         showGracefulError('AI failed to provide a challenge.');
         setChallenge('Reflect in silence for five minutes today.');

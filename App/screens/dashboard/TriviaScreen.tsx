@@ -11,13 +11,12 @@ import {
 } from 'react-native';
 import Button from '@/components/common/Button';
 import { useUser } from '@/hooks/useUser';
-import { getAuthHeaders } from '@/config/firebaseApp';
+import { sendGeminiPrompt } from '@/services/geminiService';
 import ScreenContainer from '@/components/theme/ScreenContainer';
 import { useTheme } from '@/components/theme/theme';
 import { ASK_GEMINI_SIMPLE } from '@/utils/constants';
 import { getDocument, setDocument } from '@/services/firestoreService';
 import { callFunction, incrementReligionPoints } from '@/services/functionService';
-import { sendRequestWithGusBugLogging } from '@/utils/gusBugLogger';
 import { ensureAuth } from '@/utils/authGuard';
 
 export default function TriviaScreen() {
@@ -80,29 +79,12 @@ export default function TriviaScreen() {
     setAnswer('');
 
     try {
-      const headers = await getAuthHeaders();
-      const response = await sendRequestWithGusBugLogging(() =>
-        fetch(ASK_GEMINI_SIMPLE, {
-          method: 'POST',
-          headers,
-          body: JSON.stringify({
-            prompt: `Give me a short moral story originally from any major world religion. Replace all real names and locations with fictional ones so that it seems to come from a different culture. Keep the meaning and lesson intact. After the story, add two lines: RELIGION: <religion> and STORY: <story name>.`,
-            history: [],
-          }),
-        })
-      );
-
-      const text = await response.text();
-      let data: any;
-      try {
-        data = JSON.parse(text);
-      } catch (err) {
-        console.error('Invalid JSON from trivia:', text);
-        Alert.alert('Error', 'Could not load trivia. Please try again later.');
-        setLoading(false);
-        return;
-      }
-      const [cleanStory, info] = data.response.split('\nRELIGION:');
+      const data = await sendGeminiPrompt({
+        url: ASK_GEMINI_SIMPLE,
+        prompt: `Give me a short moral story originally from any major world religion. Replace all real names and locations with fictional ones so that it seems to come from a different culture. Keep the meaning and lesson intact. After the story, add two lines: RELIGION: <religion> and STORY: <story name>.`,
+        history: [],
+      });
+      const [cleanStory, info] = data.split('\nRELIGION:');
       const [religionLine, storyLine] = info?.split('\nSTORY:') || [];
 
       setStory(cleanStory.trim());
