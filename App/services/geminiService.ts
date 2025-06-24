@@ -23,6 +23,7 @@ export async function sendGeminiPrompt({
     if (!idToken) throw new Error('No authenticated user');
   } catch (err) {
     console.warn('No authenticated user for Gemini request');
+    console.error('❌ Gemini token retrieval failed:', err);
     onError?.(err instanceof Error ? err : new Error('No authenticated user'));
     return null;
   }
@@ -37,6 +38,10 @@ export async function sendGeminiPrompt({
     parts: [{ text: m.text }],
   }));
 
+  if (!prompt) {
+    console.warn('⚠️ Empty Gemini prompt');
+  }
+
   try {
     const res = await sendRequestWithGusBugLogging(() =>
       fetch(url, {
@@ -45,6 +50,13 @@ export async function sendGeminiPrompt({
         body: JSON.stringify({ prompt, history: formattedHistory }),
       })
     );
+
+    if (!res.ok) {
+      console.error(
+        `❌ Gemini endpoint error ${res.status} for ${url}`,
+      );
+    }
+
     const text = await res.text();
     let data: any;
     try {
@@ -55,6 +67,9 @@ export async function sendGeminiPrompt({
       return null;
     }
     const reply = data.response || data.reply || '';
+    if (!reply) {
+      console.warn('⚠️ Empty Gemini reply returned');
+    }
     onResponse?.(reply);
     return reply;
   } catch (err: any) {
