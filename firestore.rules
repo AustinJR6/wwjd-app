@@ -1,107 +1,53 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // \u{1F9D8}\u200D\u2642\uFE0F Journal entries
-    match /users/{userId}/journals/{journalId} {
-      allow read, write: if request.auth.uid == userId;
-    }
-    match /users/{userId}/journalEntries/{entryId} {
-      allow read, write: if request.auth.uid == userId;
-    }
-
-    // \u{1F5E3} ReligionAI chat history
-    match /users/{userId}/religionAI/history {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-    }
-
-    // \u{2721}\uFE0F ReligionAI chat messages
-    match /religionChats/{userId}/messages/{msgId} {
-      allow read, write: if request.auth != null &&
-        request.auth.uid == userId &&
-        get(/databases/$(database)/documents/subscriptions/$(userId)).data.active == true;
-    }
-
-    // \u{1F64F} Confessions
-    match /users/{userId}/confessions/{confessionId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-    }
-
-    // \u{1F90D} Ephemeral confessional sessions
-    match /confessionalSessions/{userId}/messages/{msgId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-    }
-
-    // \u{1F54C} Temporary ReligionAI chat for free users
-    match /tempReligionChat/{userId}/messages/{msgId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
-    }
-
-    // \u{1F3C6} Challenge + profile data
+    // User profile data
     match /users/{userId} {
-      // Public read access for leaderboards
-      allow read: if true;
-      // Allow document creation/deletion by the owner
-      allow create, delete: if request.auth != null && request.auth.uid == userId;
-      // Updates are allowed only if protected fields are unchanged
-      allow update: if request.auth != null && request.auth.uid == userId
-        && request.resource.data.xpPoints == resource.data.xpPoints
-        && request.resource.data.streakCount == resource.data.streakCount
-        && request.resource.data.lastCheckIn == resource.data.lastCheckIn
-        && request.resource.data.longestStreak == resource.data.longestStreak;
-    }
-
-    // \u{1FA99} Token docs inside user
-    match /users/{userId}/tokens/{tokenId} {
+      // Allow authenticated user to fully manage their own document
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
-    // \u{1F4DA} Challenge history
-    match /users/{userId}/challengeHistory/{docId} {
+    // Religion chat messages
+    match /religionChats/{userId}/messages/{messageId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
-    // \u{1F4C5} Active multi-day challenge
-    match /users/{userId}/activeChallenge {
-      allow read: if request.auth != null && request.auth.uid == userId;
-    }
-    match /users/{userId}/activeChallenge/challengeLogs/{logId} {
-      allow read: if request.auth != null && request.auth.uid == userId;
+    // Temporary chat collection used before subscribing
+    match /tempReligionChat/{userId}/messages/{messageId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
-    // \u{1FA99} Legacy token docs
-    match /tokens/{uid} {
-      allow read, write: if request.auth != null && request.auth.uid == uid;
+    // Confessional session messages
+    match /confessionalSessions/{userId}/messages/{messageId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
-    // \u{1F9FE} Free ask timestamps
-    match /freeAsk/{uid} {
-      allow read, write: if request.auth != null && request.auth.uid == uid;
-    }
-
-    // \u{1F4F7} Challenge proof submissions
-    match /challengeProofs/{docId} {
-      allow create: if request.auth != null;
-      allow read, update, delete: if request.auth != null && resource.data.uid == request.auth.uid;
-    }
-
-    // \u{1F9FE} Subscriptions
+    // Subscription documents
     match /subscriptions/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
-    // \u{1F3DB} Organizations
-    match /organizations/{orgId} {
-      allow read: if true;
+    // Top level tokens
+    match /tokens/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
-    // \u{1F64B}\u200D\u2642\uFE0F Religions (public)
-    match /religions/{name} {
-      allow read: if true;
-      allow write: if request.auth != null && request.auth.token.admin == true;
+    // Journal entries stored per user
+    match /journalEntries/{userId}/{entryId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
-    // Default deny
+    // Challenge history documents
+    match /challengeHistory/{userId}/{entryId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Active challenge state per user
+    match /activeChallenge/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Default deny all other accesses
     match /{document=**} {
       allow read, write: if false;
     }
