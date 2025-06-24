@@ -20,7 +20,8 @@ import { showGracefulError } from '@/utils/gracefulError';
 import { ASK_GEMINI_V2 } from "@/utils/constants";
 import { getDocument, setDocument } from '@/services/firestoreService';
 import { useUser } from '@/hooks/useUser';
-import { getAuthHeaders } from '@/config/firebaseApp';
+import firebase from 'firebase/compat/app';
+import 'firebase/compat/auth';
 import { ensureAuth } from '@/utils/authGuard';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -164,14 +165,17 @@ export default function ReligionAIScreen() {
       return;
     }
 
-    let headers;
+    let idToken: string | undefined;
     try {
-      headers = await getAuthHeaders();
-    } catch {
-      Alert.alert('Login Required', 'Please log in again.');
-      navigation.replace('Login');
-      return;
+      idToken = await firebase.auth().currentUser?.getIdToken();
+      console.log('ID Token:', idToken);
+    } catch (err) {
+      console.error('Failed to get ID token', err);
     }
+    const headers = {
+      Authorization: `Bearer ${idToken}`,
+      'Content-Type': 'application/json',
+    };
 
     setLoading(true);
 
