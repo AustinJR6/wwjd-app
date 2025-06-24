@@ -84,6 +84,10 @@ export default function TriviaScreen() {
         prompt: `Give me a short moral story originally from any major world religion. Replace all real names and locations with fictional ones so that it seems to come from a different culture. Keep the meaning and lesson intact. After the story, add two lines: RELIGION: <religion> and STORY: <story name>.`,
         history: [],
       });
+      if (!data) {
+        Alert.alert('Error', 'Could not load trivia. Please try again later.');
+        return;
+      }
       const [cleanStory, info] = data.split('\nRELIGION:');
       const [religionLine, storyLine] = info?.split('\nSTORY:') || [];
 

@@ -184,6 +184,11 @@ export default function JournalScreen() {
         prompt,
         history: [],
       });
+      if (!answer) {
+        Alert.alert('Guide Unavailable', 'We couldn\u2019t reach our guide right now. Write freely from the heart.');
+        setAiResponse('');
+        return;
+      }
       setAiResponse(answer);
       console.log('🎉 Gus Bug: Gemini text received.');
     } catch (err) {
