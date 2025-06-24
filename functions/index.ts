@@ -400,9 +400,10 @@ export const askGeminiSimple = onRequest(async (req, res) => {
 
 export const askGeminiV2 = onRequest(async (req, res) => {
   const idToken = req.headers.authorization?.split("Bearer ")[1];
+  logger.debug(`Token prefix: ${idToken ? idToken.slice(0, 10) : "none"}`);
   if (!idToken) {
-    console.error("❌ Gus Bug Alert: Missing ID token in header. 🐞");
-    res.status(401).json({ error: "Unauthorized — Gus bug stole the token!" });
+    logger.error("No ID token provided");
+    res.status(401).json({ error: "Unauthorized – No ID token provided" });
     return;
   }
 
@@ -413,6 +414,7 @@ export const askGeminiV2 = onRequest(async (req, res) => {
   try {
     const decoded = await auth.verifyIdToken(idToken);
     logger.info(`✅ askGeminiV2 user: ${decoded.uid}`);
+    logger.debug(`Decoded UID: ${decoded.uid}`);
 
     let text = "";
     try {
@@ -446,40 +448,8 @@ export const askGeminiV2 = onRequest(async (req, res) => {
 
     res.status(200).json({ response: text });
   } catch (err: any) {
-    console.error("🛑 Gus Bug Tampered Token: Couldn't verify or Gemini failed", err);
-    if (err.code === "auth/argument-error") {
-      res.status(401).json({
-        error: "Unauthorized — Gus bug cast an invalid token spell.",
-      });
-      return;
-    }
-
-    if (process.env.EXPO_PUBLIC_OPENAI_API_KEY) {
-      try {
-        const response = await fetch('https://api.openai.com/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${process.env.EXPO_PUBLIC_OPENAI_API_KEY}`,
-          },
-          body: JSON.stringify({
-            model: 'gpt-3.5-turbo',
-            messages: [
-              ...((history as any[]).map((msg) => ({ role: msg.role, content: msg.text }))),
-              { role: 'user', content: prompt },
-            ],
-          }),
-        });
-        const data: any = await response.json();
-        const text = data?.choices?.[0]?.message?.content || 'No OpenAI response';
-        res.status(200).json({ response: text });
-        return;
-      } catch (openErr) {
-        console.error('OpenAI fallback failed', openErr);
-      }
-    }
-
-    res.status(500).json({ error: "Gemini failed" });
+    logger.error("Token verification failed", err);
+    res.status(401).json({ error: "Unauthorized – Invalid ID token" });
   }
 });
 
