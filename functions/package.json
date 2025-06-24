@@ -5,9 +5,9 @@
   "type": "commonjs",
   "scripts": {
     "clean": "rimraf lib",
-    "build": "npm run clean && tsc",
-    "deploy": "npm run build && firebase deploy --only functions",
-    "start": "npm run build && firebase emulators:start --only functions"
+    "build": "tsc",
+    "deploy": "npm run clean && npm run build && firebase deploy --only functions",
+    "start": "npm run clean && npm run build && firebase emulators:start --only functions"
   },
   "engines": {
     "node": "20"
