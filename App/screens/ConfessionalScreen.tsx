@@ -15,10 +15,9 @@ import { useTheme } from "@/components/theme/theme";
 import { ASK_GEMINI_SIMPLE } from "@/utils/constants";
 import { getDocument } from '@/services/firestoreService';
 import { useUser } from '@/hooks/useUser';
-import { getAuthHeaders } from '@/config/firebaseApp';
 import { ensureAuth } from '@/utils/authGuard';
 import { showGracefulError } from '@/utils/gracefulError';
-import { sendRequestWithGusBugLogging } from '@/utils/gusBugLogger';
+import { sendGeminiPrompt } from '@/services/geminiService';
 import {
   saveTempMessage,
   fetchTempSession,
@@ -136,15 +135,6 @@ export default function ConfessionalScreen() {
                    religion === 'Judaism' ? 'Rabbi' :
                    'Spiritual Guide';
 
-      let headers;
-      try {
-        headers = await getAuthHeaders();
-      } catch {
-        showGracefulError('Login required. Please sign in again.');
-        setLoading(false);
-        return;
-      }
-
       const history = await fetchTempSession(uid);
       if (history.length >= 30) {
         Alert.alert('Conversation full', 'Try a fresh start for a new conversation.');
@@ -159,22 +149,11 @@ export default function ConfessionalScreen() {
       console.log('📡 Sending Gemini prompt:', prompt);
       console.log('👤 Role:', role);
 
-      const res = await fetch(ASK_GEMINI_SIMPLE, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ prompt, history: historyMsgs }),
+      const answer = await sendGeminiPrompt({
+        url: ASK_GEMINI_SIMPLE,
+        prompt,
+        history: historyMsgs,
       });
-
-      const textResp = await res.text();
-      let data: any;
-      try {
-        data = JSON.parse(textResp);
-      } catch (err) {
-        console.error('🔥 Gemini parse error:', textResp);
-        showGracefulError('AI failed to respond. Please try again.');
-        return;
-      }
-      const answer = data.response || 'You are forgiven. Walk in peace.';
       console.log('✝️ Confessional input:', text);
       console.log('🕊️ Confessional AI reply:', answer);
 

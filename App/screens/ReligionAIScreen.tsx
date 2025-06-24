@@ -20,13 +20,11 @@ import { showGracefulError } from '@/utils/gracefulError';
 import { ASK_GEMINI_V2 } from "@/utils/constants";
 import { getDocument, setDocument } from '@/services/firestoreService';
 import { useUser } from '@/hooks/useUser';
-import firebase from 'firebase/compat/app';
-import 'firebase/compat/auth';
 import { ensureAuth } from '@/utils/authGuard';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/navigation/RootStackParamList';
-import { sendRequestWithGusBugLogging } from '@/utils/gusBugLogger';
+import { sendGeminiPrompt } from '@/services/geminiService';
 import {
   saveMessage,
   fetchHistory,
@@ -165,18 +163,6 @@ export default function ReligionAIScreen() {
       return;
     }
 
-    let idToken: string | undefined;
-    try {
-      idToken = await firebase.auth().currentUser?.getIdToken();
-      console.log('ID Token:', idToken);
-    } catch (err) {
-      console.error('Failed to get ID token', err);
-    }
-    const headers = {
-      Authorization: `Bearer ${idToken}`,
-      'Content-Type': 'application/json',
-    };
-
     setLoading(true);
 
     try {
@@ -247,22 +233,11 @@ export default function ReligionAIScreen() {
       console.log('📡 Sending Gemini prompt:', prompt);
       console.log('👤 Role:', promptRole);
 
-      const res = await fetch(ASK_GEMINI_V2, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ prompt, history: historyMsgs }),
+      const answer = await sendGeminiPrompt({
+        url: ASK_GEMINI_V2,
+        prompt,
+        history: historyMsgs,
       });
-
-      const text = await res.text();
-      let data: any;
-      try {
-        data = JSON.parse(text);
-      } catch (err) {
-        console.error('🔥 Gemini parse error:', text);
-        showGracefulError('AI failed to respond. Please try again.');
-        return;
-      }
-      const answer = data?.response || 'I am always with you. Trust in Me.';
       console.log('📖 ReligionAI input:', question);
       console.log('🙏 ReligionAI reply:', answer);
 

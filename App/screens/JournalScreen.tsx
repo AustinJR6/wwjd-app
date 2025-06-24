@@ -19,7 +19,7 @@ import { querySubcollection, addDocument, getDocument, setDocument } from '@/ser
 import { callFunction, incrementReligionPoints } from '@/services/functionService';
 import { ASK_GEMINI_SIMPLE } from '@/utils/constants';
 import { ensureAuth } from '@/utils/authGuard';
-import { getAuthHeaders } from '@/config/firebaseApp';
+import { sendGeminiPrompt } from '@/services/geminiService';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/navigation/RootStackParamList';
@@ -133,13 +133,6 @@ export default function JournalScreen() {
   useEffect(() => {
     async function authenticateAndLoad() {
       try {
-        try {
-          await getAuthHeaders();
-        } catch {
-          Alert.alert('Login Required', 'Please log in again.');
-          navigation.replace('Login');
-          return;
-        }
         const hasHardware = await LocalAuthentication.hasHardwareAsync();
         const isEnrolled = await LocalAuthentication.isEnrolledAsync();
         if (hasHardware && isEnrolled) {
@@ -184,25 +177,14 @@ export default function JournalScreen() {
     setAiPrompt(prompt);
     setGuidedMode(true);
     try {
-      const headers = await getAuthHeaders();
       const uid = await ensureAuth();
       if (!uid) throw new Error('auth');
-      const res = await fetch(ASK_GEMINI_SIMPLE, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ prompt, history: [] }),
+      const answer = await sendGeminiPrompt({
+        url: ASK_GEMINI_SIMPLE,
+        prompt,
+        history: [],
       });
-      const text = await res.text();
-      let data: any;
-      try {
-        data = JSON.parse(text);
-      } catch {
-        console.error('Invalid JSON from guided journal:', text);
-        Alert.alert('Guide Unavailable', 'We couldn\u2019t reach our guide right now. Write freely from the heart.');
-        setAiResponse('');
-        return;
-      }
-      setAiResponse(data.response || '');
+      setAiResponse(answer);
       console.log('🎉 Gus Bug: Gemini text received.');
     } catch (err) {
       console.error('❌ Guided journal error:', err);
@@ -220,13 +202,6 @@ export default function JournalScreen() {
     }
     setSaving(true);
     try {
-      try {
-        await getAuthHeaders();
-      } catch {
-        Alert.alert('Login Required', 'Please log in again.');
-        navigation.replace('Login');
-        return;
-      }
       const uid = await ensureAuth();
       if (!uid) {
         Alert.alert('Login Required', 'Please log in again.');
