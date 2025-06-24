@@ -48,28 +48,4 @@ export async function exportMarkdown(filePath = 'PromptLibrary.md'): Promise<voi
   fs.writeFileSync(filePath, md, 'utf8');
 }
 
-const __filename = fileURLToPath(import.meta.url);
-if (process.argv[1] === __filename) {
-  const [command, ...args] = process.argv.slice(2);
-  if (command === 'export') {
-    const file = args[0] || 'PromptLibrary.md';
-    exportMarkdown(file).then(() => {
-      console.log(`Exported prompts to ${file}`);
-      process.exit(0);
-    });
-  } else if (command === 'add') {
-    const [title, category, promptText, tagStr] = args;
-    if (!title || !category || !promptText) {
-      console.error('Usage: node codexPrompts.js add "Title" "Category" "Prompt" "tag1,tag2"');
-      process.exit(1);
-    }
-    const tags = tagStr ? tagStr.split(',').map(t => t.trim()).filter(Boolean) : [];
-    addPrompt({ title, category, promptText, tags }).then(id => {
-      console.log(`Added prompt ${id}`);
-      process.exit(0);
-    });
-  } else {
-    console.log('Usage: node codexPrompts.js <add|export>');
-    process.exit(1);
-  }
-}
+
