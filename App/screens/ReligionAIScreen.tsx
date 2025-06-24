@@ -21,7 +21,6 @@ import { ASK_GEMINI_V2 } from "@/utils/constants";
 import { getDocument, setDocument } from '@/services/firestoreService';
 import { useUser } from '@/hooks/useUser';
 import { getStoredToken } from '@/services/authService';
-import { firebaseAuth } from "@/config/firebaseApp";
 import { ensureAuth } from '@/utils/authGuard';
 import * as SafeStore from '@/utils/secureStore';
 import { useNavigation } from '@react-navigation/native';
@@ -166,7 +165,7 @@ export default function ReligionAIScreen() {
       return;
     }
 
-    let idToken = firebaseAuth.currentUser ? await firebaseAuth.currentUser.getIdToken() : await getStoredToken();
+    let idToken = await getStoredToken();
     if (!idToken) console.warn('Missing idToken for ReligionAI fetch');
     const userId = await SafeStore.getItem('userId');
     if (!idToken || !userId) {
@@ -235,7 +234,7 @@ export default function ReligionAIScreen() {
 
 
       const history = await fetchHistory(uid, subscribed);
-      idToken = idToken || (firebaseAuth.currentUser ? await firebaseAuth.currentUser.getIdToken() : await getStoredToken());
+      idToken = idToken || await getStoredToken();
       if (!idToken) {
         showGracefulError('Login required. Please sign in again.');
         setLoading(false);

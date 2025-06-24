@@ -1,25 +1,22 @@
-import { getStoredToken } from './authService';
 import { sendRequestWithGusBugLogging } from '@/utils/gusBugLogger';
 import { sendSecureFirebaseRequest } from '@/utils/firebaseRequest';
-
-const BASE_URL = process.env.EXPO_PUBLIC_FUNCTION_BASE_URL;
+import { FUNCTIONS_BASE_URL, getAuthHeader } from '@/config/firebaseApp';
 
 export async function callFunction(name: string, data: any): Promise<any> {
-  const idToken = await getStoredToken();
-  if (!idToken) {
+  let headers;
+  try {
+    headers = await getAuthHeader();
+  } catch {
     console.warn('🚫 Function call without idToken');
     throw new Error('Missing auth token');
   }
 
-  const url = `${BASE_URL}/${name}`;
+  const url = `${FUNCTIONS_BASE_URL}/${name}`;
   console.log('📡 Calling endpoint:', url);
   try {
     const res = await sendRequestWithGusBugLogging(() => fetch(url, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${idToken}`,
-      },
+      headers: { 'Content-Type': 'application/json', ...headers },
       body: JSON.stringify(data ?? {}),
     }));
 
@@ -39,7 +36,7 @@ export async function incrementReligionPoints(
   religion: string,
   points: number,
 ): Promise<void> {
-  const url = `${BASE_URL}/incrementReligionPoints`;
+  const url = `${FUNCTIONS_BASE_URL}/incrementReligionPoints`;
   console.log('📡 Calling endpoint:', url);
   try {
     await sendRequestWithGusBugLogging(() =>
