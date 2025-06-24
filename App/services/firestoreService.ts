@@ -1,9 +1,6 @@
 import axios from 'axios';
-import { getStoredToken } from './authService';
 import { sendRequestWithGusBugLogging } from '@/utils/gusBugLogger';
-
-const PROJECT_ID = process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID;
-const BASE_URL = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents`;
+import { FIRESTORE_BASE_URL, getAuthHeader } from '@/config/firebaseApp';
 
 function encodeValue(value: any): any {
   if (value === null) return { nullValue: null };
@@ -56,18 +53,18 @@ function decodeData(fields: any): any {
 }
 
 async function authHeaders() {
-  const idToken = await getStoredToken();
-  if (!idToken) {
+  try {
+    return await getAuthHeader();
+  } catch {
     console.warn('🚫 Firestore REST call without idToken');
     throw new Error('Missing auth token');
   }
-  return { Authorization: `Bearer ${idToken}` };
 }
 
 export async function getDocument(path: string): Promise<any | null> {
   const headers = await authHeaders();
   try {
-    const url = `${BASE_URL}/${path}`;
+    const url = `${FIRESTORE_BASE_URL}/${path}`;
     const res = await sendRequestWithGusBugLogging(() => axios.get(url, { headers }));
     return res.data ? decodeData(res.data.fields) : null;
   } catch (err: any) {
@@ -76,7 +73,7 @@ export async function getDocument(path: string): Promise<any | null> {
       console.error('❌ Firestore permission error:', err.response.data);
     }
     console.error('Firestore getDocument error:', {
-      url: `${BASE_URL}/${path}`,
+      url: `${FIRESTORE_BASE_URL}/${path}`,
       status: err.response?.status,
       data: err.response?.data,
       message: err.message,
@@ -92,7 +89,7 @@ export async function setDocument(path: string, data: any): Promise<void> {
   const mask = fieldPaths
     .map((k) => `updateMask.fieldPaths=${encodeURIComponent(k)}`)
     .join('&');
-  const url = `${BASE_URL}/${path}${mask ? `?${mask}` : ''}`;
+  const url = `${FIRESTORE_BASE_URL}/${path}${mask ? `?${mask}` : ''}`;
   try {
     await sendRequestWithGusBugLogging(() =>
       axios.patch(
@@ -123,7 +120,7 @@ export async function updateDocument(path: string, data: any): Promise<void> {
 export async function addDocument(collectionPath: string, data: any): Promise<string> {
   const headers = await authHeaders();
   try {
-    const url = `${BASE_URL}/${collectionPath}`;
+    const url = `${FIRESTORE_BASE_URL}/${collectionPath}`;
     const res = await sendRequestWithGusBugLogging(() =>
       axios.post(
         url,
@@ -138,7 +135,7 @@ export async function addDocument(collectionPath: string, data: any): Promise<st
       console.error('❌ Firestore permission error:', err.response.data);
     }
     console.error('Firestore addDocument error:', {
-      url: `${BASE_URL}/${collectionPath}`,
+      url: `${FIRESTORE_BASE_URL}/${collectionPath}`,
       status: err.response?.status,
       data: err.response?.data,
       message: err.message,
@@ -149,7 +146,7 @@ export async function addDocument(collectionPath: string, data: any): Promise<st
 
 export async function deleteDocument(path: string): Promise<void> {
   const headers = await authHeaders();
-  const url = `${BASE_URL}/${path}`;
+  const url = `${FIRESTORE_BASE_URL}/${path}`;
   try {
     await sendRequestWithGusBugLogging(() => axios.delete(url, { headers }));
   } catch (err: any) {
@@ -191,7 +188,7 @@ export async function queryCollection(
       },
     };
   }
-  const url = `${BASE_URL}:runQuery`;
+  const url = `${FIRESTORE_BASE_URL}:runQuery`;
   try {
     const res = await sendRequestWithGusBugLogging(() =>
       axios.post(
@@ -234,7 +231,7 @@ export async function querySubcollection(
       { field: { fieldPath: orderByField }, direction },
     ];
   }
-  const url = `${BASE_URL}/${parentPath}:runQuery`;
+  const url = `${FIRESTORE_BASE_URL}/${parentPath}:runQuery`;
   try {
     const res = await sendRequestWithGusBugLogging(() =>
       axios.post(
