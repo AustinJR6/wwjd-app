@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { sendRequestWithGusBugLogging } from '@/utils/gusBugLogger';
-import { FIRESTORE_BASE_URL, getAuthHeader } from '@/config/firebaseApp';
+import { FIRESTORE_BASE_URL, FIRESTORE_PARENT, getAuthHeader } from '@/config/firebaseApp';
+import * as SafeStore from '@/utils/secureStore';
 
 function encodeValue(value: any): any {
   if (value === null) return { nullValue: null };
@@ -70,7 +71,9 @@ export async function getDocument(path: string): Promise<any | null> {
   } catch (err: any) {
     if (err.response?.status === 404) return null;
     if (err.response?.status === 403) {
-      console.error('❌ Firestore permission error:', err.response.data);
+      const uid = await SafeStore.getItem('userId');
+      console.error(`❌ Firestore permission error on ${path} for user ${uid}:`, err.response.data);
+      return null;
     }
     console.error('Firestore getDocument error:', {
       url: `${FIRESTORE_BASE_URL}/${path}`,
@@ -100,7 +103,9 @@ export async function setDocument(path: string, data: any): Promise<void> {
     );
   } catch (err: any) {
     if (err.response?.status === 403) {
-      console.error('❌ Firestore permission error:', err.response.data);
+      const uid = await SafeStore.getItem('userId');
+      console.error(`❌ Firestore permission error on ${path} for user ${uid}:`, err.response.data);
+      return;
     }
     console.error('Firestore setDocument error:', {
       url,
@@ -132,7 +137,9 @@ export async function addDocument(collectionPath: string, data: any): Promise<st
     return name.split('/').pop() as string;
   } catch (err: any) {
     if (err.response?.status === 403) {
-      console.error('❌ Firestore permission error:', err.response.data);
+      const uid = await SafeStore.getItem('userId');
+      console.error(`❌ Firestore permission error on ${collectionPath} for user ${uid}:`, err.response.data);
+      return '';
     }
     console.error('Firestore addDocument error:', {
       url: `${FIRESTORE_BASE_URL}/${collectionPath}`,
@@ -152,7 +159,9 @@ export async function deleteDocument(path: string): Promise<void> {
   } catch (err: any) {
     if (err.response?.status === 404) return;
     if (err.response?.status === 403) {
-      console.error('❌ Firestore permission error:', err.response.data);
+      const uid = await SafeStore.getItem('userId');
+      console.error(`❌ Firestore permission error on ${path} for user ${uid}:`, err.response.data);
+      return;
     }
     console.error('Firestore deleteDocument error:', {
       url,
@@ -204,7 +213,9 @@ export async function queryCollection(
   } catch (err: any) {
     if (err.response?.status === 404) return [];
     if (err.response?.status === 403) {
-      console.error('❌ Firestore permission error:', err.response.data);
+      const uid = await SafeStore.getItem('userId');
+      console.error(`❌ Firestore permission error on query ${collection} for user ${uid}:`, err.response.data);
+      return [];
     }
     console.error('Firestore queryCollection error:', {
       url,
@@ -231,14 +242,14 @@ export async function querySubcollection(
       { field: { fieldPath: orderByField }, direction },
     ];
   }
-  const url = `${FIRESTORE_BASE_URL}/${parentPath}:runQuery`;
+  const url = `${FIRESTORE_BASE_URL}:runQuery`;
+  const body = {
+    structuredQuery,
+    parent: `${FIRESTORE_PARENT}/${parentPath}`,
+  };
   try {
     const res = await sendRequestWithGusBugLogging(() =>
-      axios.post(
-        url,
-        { structuredQuery },
-        { headers }
-      )
+      axios.post(url, body, { headers })
     );
     const docs = (res.data as any[])
       .filter((d) => d.document)
@@ -247,7 +258,9 @@ export async function querySubcollection(
   } catch (err: any) {
     if (err.response?.status === 404) return [];
     if (err.response?.status === 403) {
-      console.error('❌ Firestore permission error:', err.response.data);
+      const uid = await SafeStore.getItem('userId');
+      console.error(`❌ Firestore permission error on query ${parentPath}/${collection} for user ${uid}:`, err.response.data);
+      return [];
     }
     console.error('Firestore querySubcollection error:', {
       url,

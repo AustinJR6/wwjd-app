@@ -7,6 +7,7 @@ import {
   ScrollView
 } from 'react-native';
 import { queryCollection } from '@/services/firestoreService';
+import { showGracefulError } from '@/utils/gracefulError';
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { useTheme } from "@/components/theme/theme";
 import { ensureAuth } from '@/utils/authGuard';
@@ -82,6 +83,7 @@ export default function LeaderboardsScreen() {
       setOrganizations(orgSnap.slice(0, 10));
     } catch (err) {
       console.error('🔥 Error loading leaderboards:', err);
+      showGracefulError('Unable to load leaderboard — please try again later');
     } finally {
       setLoading(false);
     }
