@@ -19,8 +19,7 @@ import { querySubcollection, addDocument, getDocument, setDocument } from '@/ser
 import { callFunction, incrementReligionPoints } from '@/services/functionService';
 import { ASK_GEMINI_SIMPLE } from '@/utils/constants';
 import { ensureAuth } from '@/utils/authGuard';
-import * as SafeStore from '@/utils/secureStore';
-import { getStoredToken } from '@/services/authService';
+import { getAuthHeaders } from '@/config/firebaseApp';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/navigation/RootStackParamList';
@@ -134,9 +133,9 @@ export default function JournalScreen() {
   useEffect(() => {
     async function authenticateAndLoad() {
       try {
-        const idToken = await getStoredToken();
-        const userId = await SafeStore.getItem('userId');
-        if (!idToken || !userId) {
+        try {
+          await getAuthHeaders();
+        } catch {
           Alert.alert('Login Required', 'Please log in again.');
           navigation.replace('Login');
           return;
@@ -185,15 +184,12 @@ export default function JournalScreen() {
     setAiPrompt(prompt);
     setGuidedMode(true);
     try {
-      const idToken = await getStoredToken();
+      const headers = await getAuthHeaders();
       const uid = await ensureAuth();
-      if (!idToken || !uid) throw new Error('auth');
+      if (!uid) throw new Error('auth');
       const res = await fetch(ASK_GEMINI_SIMPLE, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${idToken}`,
-        },
+        headers,
         body: JSON.stringify({ prompt, history: [] }),
       });
       const text = await res.text();
@@ -224,9 +220,15 @@ export default function JournalScreen() {
     }
     setSaving(true);
     try {
-      const idToken = await getStoredToken();
+      try {
+        await getAuthHeaders();
+      } catch {
+        Alert.alert('Login Required', 'Please log in again.');
+        navigation.replace('Login');
+        return;
+      }
       const uid = await ensureAuth();
-      if (!idToken || !uid) {
+      if (!uid) {
         Alert.alert('Login Required', 'Please log in again.');
         navigation.replace('Login');
         return;

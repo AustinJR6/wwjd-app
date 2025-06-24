@@ -12,7 +12,7 @@ import { useUser } from '@/hooks/useUser';
 import ScreenContainer from '@/components/theme/ScreenContainer';
 import { useTheme } from '@/components/theme/theme';
 import { queryCollection, setDocument, getDocument } from '@/services/firestoreService';
-import { getStoredToken } from '@/services/authService';
+import { getAuthHeaders } from '@/config/firebaseApp';
 import { ensureAuth } from '@/utils/authGuard';
 import * as SafeStore from '@/utils/secureStore';
 import { useNavigation } from '@react-navigation/native';
@@ -63,9 +63,9 @@ export default function JoinOrganizationScreen() {
 
   const fetchOrgs = async () => {
     try {
-      const idToken = await getStoredToken();
-      const userId = await SafeStore.getItem('userId');
-      if (!idToken || !userId) {
+      try {
+        await getAuthHeaders();
+      } catch {
         Alert.alert('Login Required', 'Please log in again.');
         navigation.replace('Login');
         return;
@@ -93,9 +93,9 @@ export default function JoinOrganizationScreen() {
 
   const joinOrg = async (org: any) => {
     if (!user) return;
-    const idToken = await getStoredToken();
-    const userId = await SafeStore.getItem('userId');
-    if (!idToken || !userId) {
+    try {
+      await getAuthHeaders();
+    } catch {
       Alert.alert('Login Required', 'Please log in again.');
       navigation.replace('Login');
       return;

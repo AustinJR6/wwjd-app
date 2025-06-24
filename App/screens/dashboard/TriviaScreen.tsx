@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import Button from '@/components/common/Button';
 import { useUser } from '@/hooks/useUser';
-import { getStoredToken } from '@/services/authService';
+import { getAuthHeaders } from '@/config/firebaseApp';
 import ScreenContainer from '@/components/theme/ScreenContainer';
 import { useTheme } from '@/components/theme/theme';
 import { ASK_GEMINI_SIMPLE } from '@/utils/constants';
@@ -80,15 +80,11 @@ export default function TriviaScreen() {
     setAnswer('');
 
     try {
-      const idToken = await getStoredToken();
-      if (!idToken) console.warn('Missing idToken for askGeminiSimple');
+      const headers = await getAuthHeaders();
       const response = await sendRequestWithGusBugLogging(() =>
         fetch(ASK_GEMINI_SIMPLE, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${idToken}`,
-          },
+          headers,
           body: JSON.stringify({
             prompt: `Give me a short moral story originally from any major world religion. Replace all real names and locations with fictional ones so that it seems to come from a different culture. Keep the meaning and lesson intact. After the story, add two lines: RELIGION: <religion> and STORY: <story name>.`,
             history: [],

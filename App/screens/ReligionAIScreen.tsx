@@ -20,9 +20,8 @@ import { showGracefulError } from '@/utils/gracefulError';
 import { ASK_GEMINI_V2 } from "@/utils/constants";
 import { getDocument, setDocument } from '@/services/firestoreService';
 import { useUser } from '@/hooks/useUser';
-import { getStoredToken } from '@/services/authService';
+import { getAuthHeaders } from '@/config/firebaseApp';
 import { ensureAuth } from '@/utils/authGuard';
-import * as SafeStore from '@/utils/secureStore';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/navigation/RootStackParamList';
@@ -165,10 +164,10 @@ export default function ReligionAIScreen() {
       return;
     }
 
-    let idToken = await getStoredToken();
-    if (!idToken) console.warn('Missing idToken for ReligionAI fetch');
-    const userId = await SafeStore.getItem('userId');
-    if (!idToken || !userId) {
+    let headers;
+    try {
+      headers = await getAuthHeaders();
+    } catch {
       Alert.alert('Login Required', 'Please log in again.');
       navigation.replace('Login');
       return;
@@ -234,12 +233,6 @@ export default function ReligionAIScreen() {
 
 
       const history = await fetchHistory(uid, subscribed);
-      idToken = idToken || await getStoredToken();
-      if (!idToken) {
-        showGracefulError('Login required. Please sign in again.');
-        setLoading(false);
-        return;
-      }
       const historyMsgs = history.map((m) => ({
         role: m.role === 'user' ? 'user' : 'model',
         text: m.text,
@@ -252,10 +245,7 @@ export default function ReligionAIScreen() {
 
       const res = await fetch(ASK_GEMINI_V2, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${idToken}`,
-        },
+        headers,
         body: JSON.stringify({ prompt, history: historyMsgs }),
       });
 

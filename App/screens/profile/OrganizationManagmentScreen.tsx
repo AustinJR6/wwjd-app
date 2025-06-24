@@ -9,7 +9,7 @@ import {
 import Button from '@/components/common/Button';
 import { getDocument, setDocument } from '@/services/firestoreService';
 import { useUser } from '@/hooks/useUser';
-import { getStoredToken } from '@/services/authService';
+import { getAuthHeaders } from '@/config/firebaseApp';
 import ScreenContainer from '@/components/theme/ScreenContainer';
 import { useTheme } from '@/components/theme/theme';
 import { ensureAuth } from '@/utils/authGuard';
@@ -86,9 +86,9 @@ export default function OrganizationManagementScreen() {
 
   const loadOrg = async () => {
     if (!user) return;
-    const idToken = await getStoredToken();
-    const userId = await SafeStore.getItem('userId');
-    if (!idToken || !userId) {
+    try {
+      await getAuthHeaders();
+    } catch {
       Alert.alert('Login Required', 'Please log in again.');
       navigation.replace('Login');
       return;
@@ -113,9 +113,9 @@ export default function OrganizationManagementScreen() {
 
   const removeMember = async (uid: string) => {
     if (!org?.id) return;
-    const idToken = await getStoredToken();
-    const userId = await SafeStore.getItem('userId');
-    if (!idToken || !userId) {
+    try {
+      await getAuthHeaders();
+    } catch {
       Alert.alert('Login Required', 'Please log in again.');
       navigation.replace('Login');
       return;

@@ -15,7 +15,7 @@ import { useTheme } from "@/components/theme/theme";
 import { ASK_GEMINI_SIMPLE } from "@/utils/constants";
 import { getDocument } from '@/services/firestoreService';
 import { useUser } from '@/hooks/useUser';
-import { getStoredToken } from '@/services/authService';
+import { getAuthHeaders } from '@/config/firebaseApp';
 import { ensureAuth } from '@/utils/authGuard';
 import { showGracefulError } from '@/utils/gracefulError';
 import { sendRequestWithGusBugLogging } from '@/utils/gusBugLogger';
@@ -136,8 +136,10 @@ export default function ConfessionalScreen() {
                    religion === 'Judaism' ? 'Rabbi' :
                    'Spiritual Guide';
 
-      const idToken = await getStoredToken();
-      if (!idToken) {
+      let headers;
+      try {
+        headers = await getAuthHeaders();
+      } catch {
         showGracefulError('Login required. Please sign in again.');
         setLoading(false);
         return;
@@ -159,10 +161,7 @@ export default function ConfessionalScreen() {
 
       const res = await fetch(ASK_GEMINI_SIMPLE, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${idToken}`,
-        },
+        headers,
         body: JSON.stringify({ prompt, history: historyMsgs }),
       });
 

@@ -10,7 +10,7 @@ import { useUser } from '@/hooks/useUser';
 import { createStripeCheckout } from '@/services/apiService';
 import { PRICE_IDS } from '@/config/stripeConfig';
 import * as SafeStore from '@/utils/secureStore';
-import { getStoredToken } from '@/services/authService';
+import { getAuthHeaders } from '@/config/firebaseApp';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Upgrade'>;
 
@@ -53,9 +53,9 @@ export default function UpgradeScreen({ navigation }: Props) {
     setLoading(true);
 
     try {
-      const idToken = await getStoredToken();
-      const userId = await SafeStore.getItem('userId');
-      if (!idToken || !userId) {
+      try {
+        await getAuthHeaders();
+      } catch {
         Alert.alert('Login Required', 'Please log in again.');
         navigation.replace('Login');
         return;

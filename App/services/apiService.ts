@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { GEMINI_API_URL, STRIPE_CHECKOUT_URL, DONATION_CHECKOUT_URL } from '@/config/apiConfig';
 import { STRIPE_SUCCESS_URL, STRIPE_CANCEL_URL } from '@/config/stripeConfig';
-import { getStoredToken } from './authService';
+import { getAuthHeaders } from '@/config/firebaseApp';
 import { sendRequestWithGusBugLogging } from '@/utils/gusBugLogger';
 
 type AskGeminiResponse = {
@@ -12,19 +12,20 @@ type StripeCheckoutResponse = {
   url: string;
 };
 
-export async function askGemini(prompt: string): Promise<string> {
-  const idToken = await getStoredToken();
-  if (!idToken) {
+export async function askGemini(
+  prompt: string,
+  history: { role: string; text: string }[] = [],
+): Promise<string> {
+  let headers;
+  try {
+    headers = await getAuthHeaders();
+  } catch {
     console.error('🚫 Missing idToken for askGemini');
     throw new Error('Missing auth token');
   }
   try {
-    const headers = {
-      Authorization: `Bearer ${idToken}`,
-      'Content-Type': 'application/json',
-    };
     const res = await sendRequestWithGusBugLogging(() =>
-      axios.post<AskGeminiResponse>(GEMINI_API_URL, { prompt }, { headers })
+      axios.post<AskGeminiResponse>(GEMINI_API_URL, { prompt, history }, { headers })
     );
     return res.data.reply;
   } catch (err: any) {
@@ -40,16 +41,14 @@ export async function createStripeCheckout(
   uid: string,
   options: { type: 'subscription' | 'one-time'; priceId: string }
 ): Promise<string> {
-  const idToken = await getStoredToken();
-  if (!idToken) {
+  let headers;
+  try {
+    headers = await getAuthHeaders();
+  } catch {
     console.error('🚫 Missing idToken for createStripeCheckout');
     throw new Error('Missing auth token');
   }
   try {
-    const headers = {
-      Authorization: `Bearer ${idToken}`,
-      'Content-Type': 'application/json',
-    };
     const payload = {
       userId: uid,
       priceId: options.priceId,
@@ -78,16 +77,14 @@ export async function startDonationCheckout(
   uid: string,
   amount: number,
 ): Promise<string> {
-  const idToken = await getStoredToken();
-  if (!idToken) {
+  let headers;
+  try {
+    headers = await getAuthHeaders();
+  } catch {
     console.error('🚫 Missing idToken for startDonationCheckout');
     throw new Error('Missing auth token');
   }
   try {
-    const headers = {
-      Authorization: `Bearer ${idToken}`,
-      'Content-Type': 'application/json',
-    };
     const payload = { userId: uid, amount };
     const res = await sendRequestWithGusBugLogging(() =>
       axios.post<StripeCheckoutResponse>(DONATION_CHECKOUT_URL, payload, {
