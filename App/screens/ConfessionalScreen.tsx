@@ -154,6 +154,10 @@ export default function ConfessionalScreen() {
         prompt,
         history: historyMsgs,
       });
+      if (!answer) {
+        showGracefulError('Could not process your confession.');
+        return;
+      }
       console.log('✝️ Confessional input:', text);
       console.log('🕊️ Confessional AI reply:', answer);
 

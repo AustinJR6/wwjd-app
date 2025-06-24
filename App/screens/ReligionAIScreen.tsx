@@ -238,6 +238,10 @@ export default function ReligionAIScreen() {
         prompt,
         history: historyMsgs,
       });
+      if (!answer) {
+        showGracefulError();
+        return;
+      }
       console.log('📖 ReligionAI input:', question);
       console.log('🙏 ReligionAI reply:', answer);
 

@@ -86,7 +86,11 @@ export default function ChallengeScreen() {
         prompt: `Provide a short blessing for a user who reached a ${current}-day spiritual challenge streak in the ${userData.religion || 'Christian'} tradition.`,
         history: [],
       });
-      Alert.alert('Blessing!', `${blessing}\nYou earned ${reward} Grace Tokens.`);
+      if (blessing) {
+        Alert.alert('Blessing!', `${blessing}\nYou earned ${reward} Grace Tokens.`);
+      } else {
+        Alert.alert('Blessing!', `You earned ${reward} Grace Tokens.`);
+      }
     } catch (err) {
       console.error('❌ Milestone reward error:', err);
     }
@@ -143,7 +147,7 @@ export default function ChallengeScreen() {
 
       await setDocument(`users/${uid}`, {
         lastChallenge: new Date().toISOString(),
-        lastChallengeText: newChallenge,
+        lastChallengeText: newChallenge || '',
       });
     } catch (err: any) {
       console.error('🔥 API Error:', err?.response?.data || err.message);
