@@ -2,6 +2,7 @@ import axios from 'axios';
 import { sendRequestWithGusBugLogging } from '@/utils/gusBugLogger';
 import { FIRESTORE_BASE_URL, FIRESTORE_PARENT, getAuthHeader } from '@/config/firebaseApp';
 import * as SafeStore from '@/utils/secureStore';
+import { signOutAndRetry } from '@/services/authService';
 
 function encodeValue(value: any): any {
   if (value === null) return { nullValue: null };
@@ -77,19 +78,12 @@ export async function getDocument(path: string): Promise<any | null> {
     const res = await sendRequestWithGusBugLogging(() => axios.get(url, { headers }));
     return res.data ? decodeData(res.data.fields) : null;
   } catch (err: any) {
+    console.warn(`❌ Firestore REST error on ${path}:`, err.response?.data || err.message);
     if (err.response?.status === 404) return null;
     if (err.response?.status === 403) {
-      const uid = await SafeStore.getItem('userId');
-      console.error(`❌ Firestore permission error on ${path} for user ${uid}:`, err.response.data);
+      await signOutAndRetry();
       return null;
     }
-    console.error('Firestore getDocument error:', {
-      url: `${FIRESTORE_BASE_URL}/${path}`,
-      headers,
-      status: err.response?.status,
-      data: err.response?.data,
-      message: err.message,
-    });
     throw new Error(err.response?.data?.error?.message || 'Firestore error');
   }
 }
@@ -112,18 +106,11 @@ export async function setDocument(path: string, data: any): Promise<void> {
       )
     );
   } catch (err: any) {
+    console.warn(`❌ Firestore REST error on ${path}:`, err.response?.data || err.message);
     if (err.response?.status === 403) {
-      const uid = await SafeStore.getItem('userId');
-      console.error(`❌ Firestore permission error on ${path} for user ${uid}:`, err.response.data);
+      await signOutAndRetry();
       return;
     }
-    console.error('Firestore setDocument error:', {
-      url,
-      headers,
-      status: err.response?.status,
-      data: err.response?.data,
-      message: err.message,
-    });
     throw err;
   }
 }
@@ -148,18 +135,11 @@ export async function addDocument(collectionPath: string, data: any): Promise<st
     const name: string = res.data.name;
     return name.split('/').pop() as string;
   } catch (err: any) {
+    console.warn(`❌ Firestore REST error on ${collectionPath}:`, err.response?.data || err.message);
     if (err.response?.status === 403) {
-      const uid = await SafeStore.getItem('userId');
-      console.error(`❌ Firestore permission error on ${collectionPath} for user ${uid}:`, err.response.data);
+      await signOutAndRetry();
       return '';
     }
-    console.error('Firestore addDocument error:', {
-      url: `${FIRESTORE_BASE_URL}/${collectionPath}`,
-      headers,
-      status: err.response?.status,
-      data: err.response?.data,
-      message: err.message,
-    });
     throw err;
   }
 }
@@ -171,19 +151,12 @@ export async function deleteDocument(path: string): Promise<void> {
   try {
     await sendRequestWithGusBugLogging(() => axios.delete(url, { headers }));
   } catch (err: any) {
+    console.warn(`❌ Firestore REST error on ${path}:`, err.response?.data || err.message);
     if (err.response?.status === 404) return;
     if (err.response?.status === 403) {
-      const uid = await SafeStore.getItem('userId');
-      console.error(`❌ Firestore permission error on ${path} for user ${uid}:`, err.response.data);
+      await signOutAndRetry();
       return;
     }
-    console.error('Firestore deleteDocument error:', {
-      url,
-      headers,
-      status: err.response?.status,
-      data: err.response?.data,
-      message: err.message,
-    });
     throw err;
   }
 }
@@ -227,19 +200,12 @@ export async function queryCollection(
       .map((d) => ({ id: d.document.name.split('/').pop(), ...decodeData(d.document.fields) }));
     return docs;
   } catch (err: any) {
+    console.warn(`❌ Firestore REST error on ${collection}:`, err.response?.data || err.message);
     if (err.response?.status === 404) return [];
     if (err.response?.status === 403) {
-      const uid = await SafeStore.getItem('userId');
-      console.error(`❌ Firestore permission error on query ${collection} for user ${uid}:`, err.response.data);
+      await signOutAndRetry();
       return [];
     }
-    console.error('Firestore queryCollection error:', {
-      url,
-      headers,
-      status: err.response?.status,
-      data: err.response?.data,
-      message: err.message,
-    });
     return [];
   }
 }
@@ -275,19 +241,12 @@ export async function querySubcollection(
       .map((d) => ({ id: d.document.name.split('/').pop(), ...decodeData(d.document.fields) }));
     return docs;
   } catch (err: any) {
+    console.warn(`❌ Firestore REST error on ${parentPath}/${collection}:`, err.response?.data || err.message);
     if (err.response?.status === 404) return [];
     if (err.response?.status === 403) {
-      const uid = await SafeStore.getItem('userId');
-      console.error(`❌ Firestore permission error on query ${parentPath}/${collection} for user ${uid}:`, err.response.data);
+      await signOutAndRetry();
       return [];
     }
-    console.error('Firestore querySubcollection error:', {
-      url,
-      headers,
-      status: err.response?.status,
-      data: err.response?.data,
-      message: err.message,
-    });
     return [];
   }
 }

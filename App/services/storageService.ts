@@ -1,5 +1,6 @@
 import { getAuthHeaders } from '@/config/firebaseApp';
 import { sendRequestWithGusBugLogging } from '@/utils/gusBugLogger';
+import { signOutAndRetry } from '@/services/authService';
 
 const BUCKET = process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET;
 
@@ -26,12 +27,10 @@ export async function uploadImage(fileUri: string, path: string): Promise<string
 
   if (!res.ok) {
     const errorText = await res.text();
+    console.warn(`❌ Firestore REST error on ${uploadUrl}:`, errorText);
     if (res.status === 403) {
-      console.error('❌ Firestore permission error:', {
-        url: uploadUrl,
-        headers,
-        response: errorText,
-      });
+      await signOutAndRetry();
+      return '' as any;
     }
     throw new Error(errorText || 'Upload failed');
   }

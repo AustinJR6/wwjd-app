@@ -141,3 +141,14 @@ async function storeAuth(auth: AuthResponse) {
   await SafeStore.setItem('email', auth.email);
 }
 
+let authFailureCount = 0;
+
+export async function signOutAndRetry(): Promise<void> {
+  authFailureCount += 1;
+  if (authFailureCount >= 2) {
+    console.warn('🚪 Signing out due to repeated auth failures');
+    await logout();
+    authFailureCount = 0;
+  }
+}
+

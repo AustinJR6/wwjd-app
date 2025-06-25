@@ -61,6 +61,13 @@ export default function App() {
   const [showAnim, setShowAnim] = useState(true);
 
   useEffect(() => {
+    (async () => {
+      const preview = await getStoredToken();
+      console.log('🧪 Auth token preview:', preview);
+    })();
+  }, []);
+
+  useEffect(() => {
     if (fontsLoaded) {
       console.log('✅ Fonts loaded');
     }
