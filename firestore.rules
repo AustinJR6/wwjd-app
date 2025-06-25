@@ -45,7 +45,7 @@ service cloud.firestore {
     }
 
     // Active challenge state per user
-    match /activeChallenges/{userId} {
+    match /users/{userId}/activeChallenge {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
