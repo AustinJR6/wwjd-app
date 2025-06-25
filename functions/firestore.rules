@@ -35,17 +35,17 @@ service cloud.firestore {
     }
 
     // Journal entries stored per user
-    match /journalEntries/{userId}/{entryId} {
+    match /users/{userId}/journalEntries/{entryId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
     // Challenge history documents
-    match /challengeHistory/{userId}/{entryId} {
+    match /users/{userId}/challengeHistory/{entryId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
     // Active challenge state per user
-    match /users/{userId}/activeChallenge {
+    match /activeChallenges/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
