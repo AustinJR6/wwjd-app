@@ -3,6 +3,7 @@ import { STRIPE_CHECKOUT_URL, DONATION_CHECKOUT_URL } from '@/config/apiConfig';
 import { STRIPE_SUCCESS_URL, STRIPE_CANCEL_URL } from '@/config/stripeConfig';
 import { getAuthHeaders } from '@/config/firebaseApp';
 import { sendRequestWithGusBugLogging } from '@/utils/gusBugLogger';
+import { signOutAndRetry } from '@/services/authService';
 
 type StripeCheckoutResponse = {
   url: string;
@@ -37,10 +38,11 @@ export async function createStripeCheckout(
     );
     return res.data.url;
   } catch (err: any) {
+    console.warn('❌ Firestore REST error on createStripeCheckout:', err.response?.data || err.message);
     if (err.response?.status === 403) {
-      console.error('❌ Firestore permission error:', err.response.data);
+      await signOutAndRetry();
+      throw new Error('Auth failed');
     }
-    console.error('Stripe API error:', err.response?.data || err.message);
     throw new Error(err.response?.data?.error || 'Unable to start checkout.');
   }
 }
@@ -65,7 +67,11 @@ export async function startDonationCheckout(
     );
     return res.data.url;
   } catch (err: any) {
-    console.error('Stripe donation error:', err.response?.data || err.message);
+    console.warn('❌ Firestore REST error on startDonationCheckout:', err.response?.data || err.message);
+    if (err.response?.status === 403) {
+      await signOutAndRetry();
+      throw new Error('Auth failed');
+    }
     throw new Error(err.response?.data?.error || 'Unable to start donation.');
   }
 }
