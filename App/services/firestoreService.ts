@@ -62,7 +62,15 @@ async function authHeaders() {
   }
 }
 
+function warnIfInvalidPath(path: string, expectEven: boolean) {
+  const segments = path.split('/').filter(Boolean);
+  if ((segments.length % 2 === 0) !== expectEven) {
+    console.warn(`⚠️ Firestore path mismatch: ${path}`);
+  }
+}
+
 export async function getDocument(path: string): Promise<any | null> {
+  warnIfInvalidPath(path, true);
   const headers = await authHeaders();
   try {
     const url = `${FIRESTORE_BASE_URL}/${path}`;
@@ -87,6 +95,7 @@ export async function getDocument(path: string): Promise<any | null> {
 }
 
 export async function setDocument(path: string, data: any): Promise<void> {
+  warnIfInvalidPath(path, true);
   const headers = await authHeaders();
   const fieldPaths = Object.keys(data)
     .filter((k) => /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(k));
@@ -125,6 +134,7 @@ export async function updateDocument(path: string, data: any): Promise<void> {
 }
 
 export async function addDocument(collectionPath: string, data: any): Promise<string> {
+  warnIfInvalidPath(collectionPath, false);
   const headers = await authHeaders();
   try {
     const url = `${FIRESTORE_BASE_URL}/${collectionPath}`;
@@ -155,6 +165,7 @@ export async function addDocument(collectionPath: string, data: any): Promise<st
 }
 
 export async function deleteDocument(path: string): Promise<void> {
+  warnIfInvalidPath(path, true);
   const headers = await authHeaders();
   const url = `${FIRESTORE_BASE_URL}/${path}`;
   try {
@@ -183,6 +194,7 @@ export async function queryCollection(
   direction: 'DESCENDING' | 'ASCENDING' = 'DESCENDING',
   filter?: { fieldPath: string; op: 'EQUAL' | 'LESS_THAN' | 'LESS_THAN_OR_EQUAL' | 'GREATER_THAN' | 'GREATER_THAN_OR_EQUAL'; value: any }
 ): Promise<any[]> {
+  warnIfInvalidPath(collection, false);
   const headers = await authHeaders();
   const structuredQuery: any = {
     from: [{ collectionId: collection }],
@@ -238,6 +250,8 @@ export async function querySubcollection(
   orderByField?: string,
   direction: 'DESCENDING' | 'ASCENDING' = 'DESCENDING'
 ): Promise<any[]> {
+  warnIfInvalidPath(parentPath, true);
+  warnIfInvalidPath(`${parentPath}/${collection}`, false);
   const headers = await authHeaders();
   const structuredQuery: any = {
     from: [{ collectionId: collection }],
