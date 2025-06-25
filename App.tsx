@@ -8,7 +8,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useUser } from '@/hooks/useUser';
 import { loadUser } from '@/services/userService';
-import { getStoredToken } from './App/services/authService';
+import { getStoredToken, initAuthState } from './App/services/authService';
 import StartupAnimation from './App/components/common/StartupAnimation';
 
 import { RootStackParamList } from './App/navigation/RootStackParamList';
@@ -75,6 +75,7 @@ export default function App() {
 
   useEffect(() => {
     const initialize = async () => {
+      await initAuthState();
       console.log('🔑 Checking saved auth credentials');
       try {
         const uid = await SafeStore.getItem('userId');

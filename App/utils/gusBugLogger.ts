@@ -1,4 +1,4 @@
-import { signOutAndRetry } from '@/services/authService';
+import { signOutAndRetry, getIdToken, logTokenIssue } from '@/services/authService';
 
 export const LOGGING_MODE = process.env.EXPO_PUBLIC_LOGGING_MODE || 'gusbug';
 
@@ -15,7 +15,13 @@ export async function sendRequestWithGusBugLogging<T>(
       } else {
         console.warn('Request failed with auth error');
       }
-      await signOutAndRetry();
+      try {
+        await getIdToken(true);
+        return await requestFn();
+      } catch (err) {
+        await logTokenIssue('gusBugRetry', true);
+        await signOutAndRetry();
+      }
     } else if (LOGGING_MODE === 'gusbug') {
       console.log('🎉 Gus Bug cleared the path. Request successful!');
     }
@@ -28,7 +34,13 @@ export async function sendRequestWithGusBugLogging<T>(
       } else {
         console.warn('Request failed with auth error');
       }
-      await signOutAndRetry();
+      try {
+        await getIdToken(true);
+        return await requestFn();
+      } catch (e) {
+        await logTokenIssue('gusBugCatch', true);
+        await signOutAndRetry();
+      }
     }
     throw err;
   }

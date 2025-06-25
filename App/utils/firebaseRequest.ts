@@ -1,17 +1,20 @@
 import axios from 'axios';
-import { getFreshIdToken } from '@/services/authService';
+import { getIdToken, logTokenIssue } from '@/services/authService';
+import { sendRequestWithGusBugLogging } from '@/utils/gusBugLogger';
 
 export async function sendSecureFirebaseRequest(url: string, data: any) {
-  const idToken = await getFreshIdToken();
+  const idToken = await getIdToken();
   if (!idToken) {
-    console.warn('🚫 sendSecureFirebaseRequest without idToken');
+    await logTokenIssue('sendSecureFirebaseRequest', false);
     throw new Error('Missing auth token');
   }
   console.log('📤 Sending ID token in Authorization header');
-  return axios.post(url, data, {
-    headers: {
-      Authorization: `Bearer ${idToken}`,
-      'Content-Type': 'application/json',
-    },
-  });
+  return sendRequestWithGusBugLogging(() =>
+    axios.post(url, data, {
+      headers: {
+        Authorization: `Bearer ${idToken}`,
+        'Content-Type': 'application/json',
+      },
+    })
+  );
 }
