@@ -25,12 +25,15 @@ export async function uploadImage(fileUri: string, path: string): Promise<string
   );
 
   if (!res.ok) {
+    const errorText = await res.text();
     if (res.status === 403) {
-      const text = await res.text();
-      console.error('❌ Firestore permission error:', text);
+      console.error('❌ Firestore permission error:', {
+        url: uploadUrl,
+        headers,
+        response: errorText,
+      });
     }
-    const text = await res.text();
-    throw new Error(text || 'Upload failed');
+    throw new Error(errorText || 'Upload failed');
   }
 
   return getDownloadUrl(path);
