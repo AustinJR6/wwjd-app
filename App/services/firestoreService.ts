@@ -77,6 +77,7 @@ export async function getDocument(path: string): Promise<any | null> {
     }
     console.error('Firestore getDocument error:', {
       url: `${FIRESTORE_BASE_URL}/${path}`,
+      headers,
       status: err.response?.status,
       data: err.response?.data,
       message: err.message,
@@ -109,6 +110,7 @@ export async function setDocument(path: string, data: any): Promise<void> {
     }
     console.error('Firestore setDocument error:', {
       url,
+      headers,
       status: err.response?.status,
       data: err.response?.data,
       message: err.message,
@@ -143,6 +145,7 @@ export async function addDocument(collectionPath: string, data: any): Promise<st
     }
     console.error('Firestore addDocument error:', {
       url: `${FIRESTORE_BASE_URL}/${collectionPath}`,
+      headers,
       status: err.response?.status,
       data: err.response?.data,
       message: err.message,
@@ -165,6 +168,7 @@ export async function deleteDocument(path: string): Promise<void> {
     }
     console.error('Firestore deleteDocument error:', {
       url,
+      headers,
       status: err.response?.status,
       data: err.response?.data,
       message: err.message,
@@ -219,6 +223,7 @@ export async function queryCollection(
     }
     console.error('Firestore queryCollection error:', {
       url,
+      headers,
       status: err.response?.status,
       data: err.response?.data,
       message: err.message,
@@ -264,6 +269,7 @@ export async function querySubcollection(
     }
     console.error('Firestore querySubcollection error:', {
       url,
+      headers,
       status: err.response?.status,
       data: err.response?.data,
       message: err.message,
