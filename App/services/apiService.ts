@@ -3,7 +3,7 @@ import { STRIPE_CHECKOUT_URL, DONATION_CHECKOUT_URL } from '@/config/apiConfig';
 import { STRIPE_SUCCESS_URL, STRIPE_CANCEL_URL } from '@/config/stripeConfig';
 import { getAuthHeaders } from '@/config/firebaseApp';
 import { sendRequestWithGusBugLogging } from '@/utils/gusBugLogger';
-import { signOutAndRetry } from '@/services/authService';
+import { signOutAndRetry, logTokenIssue } from '@/services/authService';
 
 type StripeCheckoutResponse = {
   url: string;
@@ -18,7 +18,7 @@ export async function createStripeCheckout(
   try {
     headers = await getAuthHeaders();
   } catch {
-    console.error('🚫 Missing idToken for createStripeCheckout');
+    await logTokenIssue('createStripeCheckout', false);
     throw new Error('Missing auth token');
   }
   try {
@@ -55,7 +55,7 @@ export async function startDonationCheckout(
   try {
     headers = await getAuthHeaders();
   } catch {
-    console.error('🚫 Missing idToken for startDonationCheckout');
+    await logTokenIssue('startDonationCheckout', false);
     throw new Error('Missing auth token');
   }
   try {

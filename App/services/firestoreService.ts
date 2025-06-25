@@ -1,8 +1,7 @@
 import axios from 'axios';
 import { sendRequestWithGusBugLogging } from '@/utils/gusBugLogger';
 import { FIRESTORE_BASE_URL, FIRESTORE_PARENT, getAuthHeader } from '@/config/firebaseApp';
-import * as SafeStore from '@/utils/secureStore';
-import { signOutAndRetry } from '@/services/authService';
+import { signOutAndRetry, getIdToken, logTokenIssue } from '@/services/authService';
 
 function encodeValue(value: any): any {
   if (value === null) return { nullValue: null };
@@ -58,8 +57,14 @@ async function authHeaders() {
   try {
     return await getAuthHeader();
   } catch {
-    console.warn('🚫 Firestore REST call without idToken');
-    throw new Error('Missing auth token');
+    await logTokenIssue('firestore authHeaders', false);
+    try {
+      await getIdToken(true);
+      return await getAuthHeader();
+    } catch {
+      await logTokenIssue('firestore authHeaders', true);
+      throw new Error('Missing auth token');
+    }
   }
 }
 

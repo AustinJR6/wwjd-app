@@ -1,6 +1,6 @@
 import { getAuthHeaders } from '@/config/firebaseApp';
 import { sendRequestWithGusBugLogging } from '@/utils/gusBugLogger';
-import { signOutAndRetry } from '@/services/authService';
+import { signOutAndRetry, logTokenIssue } from '@/services/authService';
 
 const BUCKET = process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET;
 
@@ -9,7 +9,7 @@ export async function uploadImage(fileUri: string, path: string): Promise<string
   try {
     headers = await getAuthHeaders();
   } catch {
-    console.warn('🚫 Storage upload without idToken');
+    await logTokenIssue('storage upload', false);
     throw new Error('Missing auth token');
   }
 

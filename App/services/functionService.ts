@@ -1,13 +1,14 @@
 import { sendRequestWithGusBugLogging } from '@/utils/gusBugLogger';
 import { sendSecureFirebaseRequest } from '@/utils/firebaseRequest';
 import { FUNCTIONS_BASE_URL, getAuthHeader } from '@/config/firebaseApp';
+import { logTokenIssue } from '@/services/authService';
 
 export async function callFunction(name: string, data: any): Promise<any> {
   let headers;
   try {
     headers = await getAuthHeader();
   } catch {
-    console.warn('🚫 Function call without idToken');
+    await logTokenIssue('function call', false);
     throw new Error('Missing auth token');
   }
 

@@ -1,6 +1,27 @@
 import axios from 'axios';
 import * as SafeStore from '@/utils/secureStore';
 
+let cachedIdToken: string | null = null;
+let cachedRefreshToken: string | null = null;
+let cachedUserId: string | null = null;
+
+// Rehydrate token values from SecureStore
+export async function initAuthState() {
+  cachedIdToken = await SafeStore.getItem('idToken');
+  cachedRefreshToken = await SafeStore.getItem('refreshToken');
+  cachedUserId = await SafeStore.getItem('userId');
+}
+
+export async function logTokenIssue(context: string, refreshAttempted: boolean) {
+  const storedToken = cachedIdToken ?? (await SafeStore.getItem('idToken'));
+  const uid = cachedUserId ?? (await SafeStore.getItem('userId'));
+  console.warn(`🔐 Token issue during ${context}`, {
+    uid,
+    hasStoredToken: !!storedToken,
+    refreshAttempted,
+  });
+}
+
 const API_KEY = process.env.EXPO_PUBLIC_FIREBASE_API_KEY;
 const BASE_URL = 'https://identitytoolkit.googleapis.com/v1';
 
@@ -45,6 +66,9 @@ export async function logout(): Promise<void> {
   await SafeStore.deleteItem('refreshToken');
   await SafeStore.deleteItem('userId');
   await SafeStore.deleteItem('email');
+  cachedIdToken = null;
+  cachedRefreshToken = null;
+  cachedUserId = null;
 }
 
 // ✅ Trigger password reset email
@@ -75,8 +99,10 @@ export async function changePassword(newPassword: string): Promise<void> {
 
 // ✅ Refresh ID token using the stored refreshToken
 export async function refreshIdToken(): Promise<string> {
-  const refreshToken = await SafeStore.getItem('refreshToken');
+  const refreshToken =
+    cachedRefreshToken ?? (await SafeStore.getItem('refreshToken'));
   if (!refreshToken) {
+    await logTokenIssue('refreshIdToken', false);
     throw new Error('Missing refresh token');
   }
   const res = await axios.post(
@@ -91,14 +117,17 @@ export async function refreshIdToken(): Promise<string> {
   await SafeStore.setItem('refreshToken', refresh_token);
   if (user_id) await SafeStore.setItem('userId', String(user_id));
   if (email) await SafeStore.setItem('email', email);
+  cachedIdToken = id_token as string;
+  cachedRefreshToken = refresh_token as string;
+  if (user_id) cachedUserId = String(user_id);
   return id_token as string;
 }
 
 // ✅ Get stored token (if any) and refresh if expired
 export async function getStoredToken(): Promise<string | null> {
-  let token = await SafeStore.getItem('idToken');
+  let token = cachedIdToken ?? (await SafeStore.getItem('idToken'));
   if (!token) {
-    console.warn('🚫 idToken missing from SecureStore');
+    await logTokenIssue('idToken retrieval', false);
     return null;
   }
   try {
@@ -129,8 +158,17 @@ export async function getFreshIdToken(): Promise<string | null> {
     return token;
   } catch (err) {
     console.warn('Unable to force refresh token', err);
+    await logTokenIssue('getFreshIdToken', true);
     return getStoredToken();
   }
+}
+
+// Centralized method to fetch a valid ID token
+export async function getIdToken(forceRefresh = false): Promise<string | null> {
+  if (forceRefresh) {
+    return getFreshIdToken();
+  }
+  return getStoredToken();
 }
 
 // ✅ Save token securely
@@ -139,6 +177,9 @@ async function storeAuth(auth: AuthResponse) {
   await SafeStore.setItem('refreshToken', auth.refreshToken);
   await SafeStore.setItem('userId', auth.localId);
   await SafeStore.setItem('email', auth.email);
+  cachedIdToken = auth.idToken;
+  cachedRefreshToken = auth.refreshToken;
+  cachedUserId = auth.localId;
 }
 
 let authFailureCount = 0;
