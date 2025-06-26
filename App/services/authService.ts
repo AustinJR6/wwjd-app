@@ -165,10 +165,24 @@ export async function getFreshIdToken(): Promise<string | null> {
 
 // Centralized method to fetch a valid ID token
 export async function getIdToken(forceRefresh = false): Promise<string | null> {
-  if (forceRefresh) {
-    return getFreshIdToken();
+  const uid = cachedUserId ?? (await SafeStore.getItem('userId'));
+  if (!uid) {
+    console.warn('No user signed in – skipping token request.');
+    await logTokenIssue('getIdToken', false);
+    return null;
   }
-  return getStoredToken();
+  if (forceRefresh) {
+    const token = await getFreshIdToken();
+    if (!token) {
+      await logTokenIssue('getIdToken', true);
+    }
+    return token;
+  }
+  const token = await getStoredToken();
+  if (!token) {
+    await logTokenIssue('getIdToken', false);
+  }
+  return token;
 }
 
 // ✅ Save token securely

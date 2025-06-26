@@ -10,6 +10,7 @@ import { useUser } from '@/hooks/useUser';
 import { loadUser } from '@/services/userService';
 import { getStoredToken, initAuthState } from './App/services/authService';
 import StartupAnimation from './App/components/common/StartupAnimation';
+import Constants from 'expo-constants';
 
 import { RootStackParamList } from './App/navigation/RootStackParamList';
 import { useTheme } from './App/components/theme/theme';
@@ -22,6 +23,12 @@ import ForgotPasswordScreen from './App/screens/auth/ForgotPasswordScreen';
 import ForgotUsernameScreen from './App/screens/auth/ForgotUsernameScreen';
 import OnboardingScreen from './App/screens/auth/OnboardingScreen';
 import SelectReligionScreen from './App/screens/auth/SelectReligionScreen';
+
+if (!Constants.expoConfig?.extra?.developmentClient) {
+  console.warn(
+    "\u26A0\uFE0F You’re running in Expo Go — some features like push notifications and Firebase Auth may not work as expected. Please use a development build for full functionality."
+  );
+}
 import OrganizationSignupScreen from './App/screens/auth/OrganizationSignupScreen';
 
 // Dashboard Screens
