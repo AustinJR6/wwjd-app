@@ -26,7 +26,7 @@ import SelectReligionScreen from './App/screens/auth/SelectReligionScreen';
 
 if (!Constants.expoConfig?.extra?.developmentClient) {
   console.warn(
-    "\u26A0\uFE0F You’re running in Expo Go — some features like push notifications and Firebase Auth may not work as expected. Please use a development build for full functionality."
+    '⚠️ Expo Go detected. Push notifications and Firebase Auth may be partially unsupported. Use a dev build for full functionality.',
   );
 }
 import OrganizationSignupScreen from './App/screens/auth/OrganizationSignupScreen';

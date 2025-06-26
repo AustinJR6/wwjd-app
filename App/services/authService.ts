@@ -167,7 +167,7 @@ export async function getFreshIdToken(): Promise<string | null> {
 export async function getIdToken(forceRefresh = false): Promise<string | null> {
   const uid = cachedUserId ?? (await SafeStore.getItem('userId'));
   if (!uid) {
-    console.warn('No user signed in – skipping token request.');
+    console.warn('No authenticated user found. Skipping token request.');
     await logTokenIssue('getIdToken', false);
     return null;
   }
