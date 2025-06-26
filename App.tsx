@@ -7,6 +7,7 @@ import * as SafeStore from '@/utils/secureStore';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useUser } from '@/hooks/useUser';
+import { useAuth } from '@/hooks/useAuth';
 import { loadUser } from '@/services/userService';
 import { getStoredToken, initAuthState } from './App/services/authService';
 import StartupAnimation from './App/components/common/StartupAnimation';
@@ -64,7 +65,7 @@ export default function App() {
     Merriweather_400Regular,
   });
   const [initialRoute, setInitialRoute] = useState<keyof RootStackParamList | undefined>();
-  const [checkingAuth, setCheckingAuth] = useState(true);
+  const { authReady } = useAuth();
   const [showAnim, setShowAnim] = useState(true);
 
   useEffect(() => {
@@ -105,7 +106,7 @@ export default function App() {
         console.error('❌ Auth load error:', err);
         setInitialRoute('Login');
       } finally {
-        setCheckingAuth(false);
+        // authReady flag handled in auth store
       }
     };
 
@@ -119,7 +120,7 @@ export default function App() {
     }
   }, [user]);
 
-  if (!fontsLoaded || checkingAuth || (!initialRoute && user)) {
+  if (!fontsLoaded || !authReady || (!initialRoute && user)) {
     return (
       <View
         style={{

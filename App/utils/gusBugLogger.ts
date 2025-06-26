@@ -1,4 +1,4 @@
-import { signOutAndRetry, getIdToken, logTokenIssue } from '@/services/authService';
+import { signOutAndRetry, checkAndRefreshIdToken, logTokenIssue } from '@/services/authService';
 
 export const LOGGING_MODE = process.env.EXPO_PUBLIC_LOGGING_MODE || 'gusbug';
 
@@ -16,7 +16,7 @@ export async function sendRequestWithGusBugLogging<T>(
         console.warn('Request failed with auth error');
       }
       try {
-        await getIdToken(true);
+        await checkAndRefreshIdToken();
         return await requestFn();
       } catch (err) {
         await logTokenIssue('gusBugRetry', true);
@@ -35,7 +35,7 @@ export async function sendRequestWithGusBugLogging<T>(
         console.warn('Request failed with auth error');
       }
       try {
-        await getIdToken(true);
+        await checkAndRefreshIdToken();
         return await requestFn();
       } catch (e) {
         await logTokenIssue('gusBugCatch', true);

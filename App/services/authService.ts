@@ -1,5 +1,7 @@
 import axios from 'axios';
 import * as SafeStore from '@/utils/secureStore';
+import { useAuthStore } from '@/state/authStore';
+import { useUserStore } from '@/state/userStore';
 
 let cachedIdToken: string | null = null;
 let cachedRefreshToken: string | null = null;
@@ -10,6 +12,22 @@ export async function initAuthState() {
   cachedIdToken = await SafeStore.getItem('idToken');
   cachedRefreshToken = await SafeStore.getItem('refreshToken');
   cachedUserId = await SafeStore.getItem('userId');
+
+  if (cachedRefreshToken && (!cachedIdToken || !(await checkAndRefreshIdToken()))) {
+    try {
+      cachedIdToken = await refreshIdToken();
+    } catch {
+      cachedIdToken = null;
+      cachedRefreshToken = null;
+    }
+  }
+
+  const setAuth = useAuthStore.getState().setAuth;
+  const setAuthReady = useAuthStore.getState().setAuthReady;
+  if (cachedIdToken && cachedRefreshToken && cachedUserId) {
+    setAuth({ idToken: cachedIdToken, refreshToken: cachedRefreshToken, uid: cachedUserId });
+  }
+  setAuthReady(true);
 }
 
 export async function logTokenIssue(context: string, refreshAttempted: boolean) {
@@ -69,6 +87,8 @@ export async function logout(): Promise<void> {
   cachedIdToken = null;
   cachedRefreshToken = null;
   cachedUserId = null;
+  useAuthStore.getState().clearAuth();
+  useUserStore.getState().clearUser();
 }
 
 // ✅ Trigger password reset email
@@ -120,6 +140,11 @@ export async function refreshIdToken(): Promise<string> {
   cachedIdToken = id_token as string;
   cachedRefreshToken = refresh_token as string;
   if (user_id) cachedUserId = String(user_id);
+  useAuthStore.getState().setAuth({
+    idToken: id_token as string,
+    refreshToken: refresh_token as string,
+    uid: cachedUserId as string,
+  });
   return id_token as string;
 }
 
@@ -149,6 +174,11 @@ export async function getStoredToken(): Promise<string | null> {
     }
   }
   return token;
+}
+
+// ✅ Check token expiry and refresh if needed
+export async function checkAndRefreshIdToken(): Promise<string | null> {
+  return getStoredToken();
 }
 
 // ✅ Always refresh and return a valid ID token
@@ -194,16 +224,15 @@ async function storeAuth(auth: AuthResponse) {
   cachedIdToken = auth.idToken;
   cachedRefreshToken = auth.refreshToken;
   cachedUserId = auth.localId;
+  useAuthStore.getState().setAuth({
+    idToken: auth.idToken,
+    refreshToken: auth.refreshToken,
+    uid: auth.localId,
+  });
 }
 
-let authFailureCount = 0;
-
 export async function signOutAndRetry(): Promise<void> {
-  authFailureCount += 1;
-  if (authFailureCount >= 2) {
-    console.warn('🚪 Signing out due to repeated auth failures');
-    await logout();
-    authFailureCount = 0;
-  }
+  console.warn('🚪 Signing out due to auth failure');
+  await logout();
 }
 

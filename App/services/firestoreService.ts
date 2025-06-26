@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { sendRequestWithGusBugLogging } from '@/utils/gusBugLogger';
 import { FIRESTORE_BASE_URL, FIRESTORE_PARENT, getAuthHeader } from '@/config/firebaseApp';
-import { signOutAndRetry, getIdToken, logTokenIssue } from '@/services/authService';
+import { signOutAndRetry, checkAndRefreshIdToken, logTokenIssue } from '@/services/authService';
 
 function encodeValue(value: any): any {
   if (value === null) return { nullValue: null };
@@ -59,7 +59,7 @@ async function authHeaders() {
   } catch {
     await logTokenIssue('firestore authHeaders', false);
     try {
-      await getIdToken(true);
+      await checkAndRefreshIdToken();
       return await getAuthHeader();
     } catch {
       await logTokenIssue('firestore authHeaders', true);
