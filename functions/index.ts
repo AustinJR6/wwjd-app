@@ -1,4 +1,5 @@
 import { onRequest } from "firebase-functions/v2/https";
+import * as functions from "firebase-functions";
 import { auth, db } from "./firebase";
 import * as admin from "firebase-admin";
 import { GoogleGenerativeAI } from "@google/generative-ai";
@@ -1063,3 +1064,18 @@ export const seedFirestore = onRequest(async (_req, res) => {
     res.status(500).json({ error: err.message || 'Failed to seed Firestore' });
   }
 });
+
+export const createSubscriptionOnSignup = functions.auth
+  .user()
+  .onCreate(async (user) => {
+    const subRef = db.collection("subscriptions").doc(user.uid);
+    const snap = await subRef.get();
+    if (!snap.exists) {
+      await subRef.set({
+        active: false,
+        tier: "free",
+        subscribedAt: admin.firestore.FieldValue.serverTimestamp(),
+        expiresAt: null,
+      });
+    }
+  });
