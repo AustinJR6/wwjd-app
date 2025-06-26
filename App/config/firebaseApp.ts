@@ -3,18 +3,15 @@ export const FIRESTORE_PARENT = `projects/${process.env.EXPO_PUBLIC_FIREBASE_PRO
 
 export const FUNCTIONS_BASE_URL = process.env.EXPO_PUBLIC_FUNCTION_BASE_URL || '';
 
-import { getIdToken } from '@/services/authService';
-
-export async function getAuthHeaders() {
-  const idToken = await getIdToken();
-  if (!idToken) throw new Error('Missing auth token');
-  return {
-    Authorization: `Bearer ${idToken}`,
-    'Content-Type': 'application/json',
-  };
-}
+import { checkAndRefreshIdToken } from '@/services/authService';
 
 export async function getAuthHeader() {
-  const { Authorization } = await getAuthHeaders();
-  return { Authorization };
+  const token = await checkAndRefreshIdToken();
+  if (!token) throw new Error('User not authenticated');
+  return { Authorization: `Bearer ${token}` };
+}
+
+export async function getAuthHeaders() {
+  const { Authorization } = await getAuthHeader();
+  return { Authorization, 'Content-Type': 'application/json' };
 }
