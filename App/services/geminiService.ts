@@ -43,6 +43,7 @@ export async function sendGeminiPrompt({
   }
 
   try {
+    console.log('➡️ Gemini request to', url);
     const res = await sendRequestWithGusBugLogging(() =>
       fetch(url, {
         method: 'POST',
@@ -51,13 +52,13 @@ export async function sendGeminiPrompt({
       })
     );
 
-    if (!res.ok) {
-      console.error(
-        `❌ Gemini endpoint error ${res.status} for ${url}`,
-      );
-    }
-
     const text = await res.text();
+
+    if (!res.ok) {
+      console.error(`❌ Gemini endpoint error ${res.status} for ${url}`);
+      console.log('🔻 Gemini error body:', text);
+      onError?.(new Error(`Gemini error ${res.status}`));
+    }
     let data: any;
     try {
       data = JSON.parse(text);
