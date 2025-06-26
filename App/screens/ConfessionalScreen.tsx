@@ -24,6 +24,7 @@ import {
   clearConfessionalSession,
   TempMessage,
 } from '@/services/confessionalSessionService';
+import AuthGate from '@/components/AuthGate';
 
 export default function ConfessionalScreen() {
   const theme = useTheme();
@@ -179,6 +180,7 @@ export default function ConfessionalScreen() {
   };
 
   return (
+    <AuthGate>
     <ScreenContainer>
       <ScrollView contentContainerStyle={styles.container}>
         <CustomText style={styles.title}>Confessional</CustomText>
@@ -199,6 +201,7 @@ export default function ConfessionalScreen() {
         ))}
       </ScrollView>
     </ScreenContainer>
+    </AuthGate>
   );
 }
 

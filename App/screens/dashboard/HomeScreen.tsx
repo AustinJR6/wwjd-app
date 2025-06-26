@@ -8,6 +8,7 @@ import { useTheme } from "@/components/theme/theme";
 import { getTokenCount, syncSubscriptionStatus } from "@/utils/TokenManager";
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from "@/navigation/RootStackParamList";
+import AuthGate from '@/components/AuthGate';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
 
@@ -78,6 +79,7 @@ export default function HomeScreen({ navigation }: Props) {
   );
 
   return (
+    <AuthGate>
     <ScreenContainer>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <CustomText style={styles.title}>Welcome to OneVine</CustomText>
@@ -104,6 +106,7 @@ export default function HomeScreen({ navigation }: Props) {
         </View>
       </ScrollView>
     </ScreenContainer>
+    </AuthGate>
   );
 }
 

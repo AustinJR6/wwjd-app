@@ -18,6 +18,7 @@ import { ASK_GEMINI_SIMPLE } from '@/utils/constants';
 import { getDocument, setDocument } from '@/services/firestoreService';
 import { callFunction, incrementReligionPoints } from '@/services/functionService';
 import { ensureAuth } from '@/utils/authGuard';
+import AuthGate from '@/components/AuthGate';
 
 export default function TriviaScreen() {
   const theme = useTheme();
@@ -157,6 +158,7 @@ export default function TriviaScreen() {
   };
 
   return (
+    <AuthGate>
     <ScreenContainer>
       <ScrollView contentContainerStyle={styles.container}>
         <CustomText style={styles.title}>Trivia Challenge</CustomText>
@@ -186,6 +188,7 @@ export default function TriviaScreen() {
         )}
       </ScrollView>
     </ScreenContainer>
+    </AuthGate>
   );
 }
 

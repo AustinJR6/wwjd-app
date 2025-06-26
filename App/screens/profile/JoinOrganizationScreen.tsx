@@ -18,6 +18,7 @@ import * as SafeStore from '@/utils/secureStore';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/navigation/RootStackParamList';
+import AuthGate from '@/components/AuthGate';
 
 export default function JoinOrganizationScreen() {
   const theme = useTheme();
@@ -124,6 +125,7 @@ export default function JoinOrganizationScreen() {
   };
 
   return (
+    <AuthGate>
     <ScreenContainer>
       <CustomText style={styles.title}>Join an Organization</CustomText>
       <TextInput
@@ -150,6 +152,7 @@ export default function JoinOrganizationScreen() {
         )}
       />
     </ScreenContainer>
+    </AuthGate>
   );
 }
 

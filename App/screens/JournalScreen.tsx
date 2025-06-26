@@ -23,6 +23,7 @@ import { sendGeminiPrompt } from '@/services/geminiService';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/navigation/RootStackParamList';
+import AuthGate from '@/components/AuthGate';
 import { Picker } from '@react-native-picker/picker';
 import { JOURNAL_STAGES, JOURNAL_PROMPTS } from '@/utils/journalStages';
 import type { JournalStage } from '@/types';
@@ -287,6 +288,7 @@ export default function JournalScreen() {
   }
 
   return (
+    <AuthGate>
     <ScreenContainer>
       <ScrollView contentContainerStyle={styles.container}>
         {!guidedMode ? (
@@ -398,6 +400,7 @@ export default function JournalScreen() {
         </View>
       </Modal>
     </ScreenContainer>
+    </AuthGate>
   );
 }
 
