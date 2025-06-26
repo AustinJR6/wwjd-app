@@ -1007,3 +1007,59 @@ export const updateStreakAndXP = onRequest(async (req, res) => {
     res.status(500).json({ error: err.message || "Failed" });
   }
 });
+
+async function ensureDocument(
+  path: string,
+  data: Record<string, any>,
+) {
+  const ref = db.doc(path);
+  const snap = await ref.get();
+  if (!snap.exists) {
+    await ref.set(data);
+  }
+}
+
+export const seedFirestore = onRequest(async (_req, res) => {
+  try {
+    await Promise.all([
+      ensureDocument('users/seed-user', { initialized: true }),
+      ensureDocument('subscriptions/seed-user', {
+        active: false,
+        tier: 'free',
+        subscribedAt: admin.firestore.FieldValue.serverTimestamp(),
+        expiresAt: null,
+      }),
+      ensureDocument('tokens/settings', {
+        adRewardAmount: 2,
+        freeAskCooldownHours: 24,
+        freeSkipCooldownHours: 24,
+        freeTokensOnSignup: 5,
+        pricePerToken: 0.05,
+      }),
+      ensureDocument('tokens/seed-user', { tokens: 0 }),
+      ensureDocument('challengeProofs/dummy', { initialized: true }),
+      ensureDocument('freeAsk/seed-user', { initialized: true }),
+      ensureDocument('dailyChallenges/dummy', { placeholder: true }),
+      ensureDocument('activeChallenges/dummy', { placeholder: true }),
+      ensureDocument('completedChallenges/dummy', { placeholder: true }),
+      ensureDocument('religions/dummy', { name: 'Dummy Religion' }),
+      ensureDocument('organizations/dummy', { name: 'Dummy Org' }),
+      ensureDocument(
+        'religionChats/seed-user/messages/welcome',
+        { text: 'Welcome to religion chat!' },
+      ),
+      ensureDocument(
+        'tempReligionChat/seed-user/messages/intro',
+        { text: 'This is a temporary chat placeholder.' },
+      ),
+      ensureDocument(
+        'confessionalSessions/seed-user/messages/first',
+        { text: 'Sample confession message.' },
+      ),
+    ]);
+    res.status(200).json({ message: 'Firestore seeded' });
+  } catch (err: any) {
+    logger.error('seedFirestore failed', err);
+    res.status(500).json({ error: err.message || 'Failed to seed Firestore' });
+  }
+});
