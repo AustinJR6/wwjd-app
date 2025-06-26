@@ -54,6 +54,7 @@ reach your deployed Firebase functions from any network:
 
 ```env
 EXPO_PUBLIC_FUNCTION_BASE_URL=https://us-central1-onevine-app.cloudfunctions.net
+GEMINI_API_KEY=<your Gemini API key>
 ```
 📱 Key Features
 ✝️ 🕉️ ☪️ 🕎 Multi-Faith Reflection AI
