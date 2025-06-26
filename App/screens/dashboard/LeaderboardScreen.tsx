@@ -11,6 +11,7 @@ import { showGracefulError } from '@/utils/gracefulError';
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { useTheme } from "@/components/theme/theme";
 import { ensureAuth } from '@/utils/authGuard';
+import AuthGate from '@/components/AuthGate';
 
 export default function LeaderboardsScreen() {
   const theme = useTheme();
@@ -114,6 +115,7 @@ export default function LeaderboardsScreen() {
   );
 
   return (
+    <AuthGate>
     <ScreenContainer>
       <ScrollView contentContainerStyle={styles.container}>
         <CustomText style={styles.title}>Leaderboards</CustomText>
@@ -128,6 +130,7 @@ export default function LeaderboardsScreen() {
         )}
       </ScrollView>
     </ScreenContainer>
+    </AuthGate>
   );
 }
 

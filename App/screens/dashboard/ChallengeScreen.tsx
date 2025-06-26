@@ -26,6 +26,7 @@ import { sendGeminiPrompt } from '@/services/geminiService';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/navigation/RootStackParamList';
+import AuthGate from '@/components/AuthGate';
 
 export default function ChallengeScreen() {
   const theme = useTheme();
@@ -327,6 +328,7 @@ export default function ChallengeScreen() {
   }, []);
 
   return (
+    <AuthGate>
     <ScreenContainer>
       <ScrollView contentContainerStyle={styles.container}>
         <CustomText style={styles.title}>Daily Challenge</CustomText>
@@ -358,6 +360,7 @@ export default function ChallengeScreen() {
         </View>
       </ScrollView>
     </ScreenContainer>
+    </AuthGate>
   );
 }
 

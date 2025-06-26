@@ -17,6 +17,7 @@ import * as SafeStore from '@/utils/secureStore';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/navigation/RootStackParamList';
+import AuthGate from '@/components/AuthGate';
 
 export default function OrganizationManagementScreen() {
   const theme = useTheme();
@@ -153,6 +154,7 @@ export default function OrganizationManagementScreen() {
   }
 
   return (
+    <AuthGate>
     <ScreenContainer>
       <CustomText style={styles.title}>{org.name}</CustomText>
       <CustomText style={styles.subtitle}>Tier: {org.tier}</CustomText>
@@ -172,6 +174,7 @@ export default function OrganizationManagementScreen() {
         )}
       />
     </ScreenContainer>
+    </AuthGate>
   );
 }
 

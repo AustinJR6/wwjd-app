@@ -24,6 +24,7 @@ import { ensureAuth } from '@/utils/authGuard';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/navigation/RootStackParamList';
+import AuthGate from '@/components/AuthGate';
 import { sendGeminiPrompt } from '@/services/geminiService';
 import {
   saveMessage,
@@ -297,6 +298,7 @@ export default function ReligionAIScreen() {
   };
 
   return (
+    <AuthGate>
     <ScreenContainer>
       <KeyboardAvoidingView
         style={styles.container}
@@ -354,5 +356,6 @@ export default function ReligionAIScreen() {
         )}
       </KeyboardAvoidingView>
     </ScreenContainer>
+    </AuthGate>
   );
 }

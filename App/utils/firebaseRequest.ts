@@ -1,5 +1,6 @@
 import axios from 'axios';
-import { getAuthHeader, logTokenIssue } from '@/services/authService';
+import { getAuthHeader } from '@/config/firebaseApp';
+import { logTokenIssue } from '@/services/authService';
 import { sendRequestWithGusBugLogging } from '@/utils/gusBugLogger';
 
 export async function sendSecureFirebaseRequest(url: string, data: any) {
