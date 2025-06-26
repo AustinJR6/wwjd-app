@@ -745,6 +745,8 @@ export const skipDailyChallenge = onRequest(async (req, res) => {
   }
 });
 
+// TODO: startSubscriptionCheckout is unused in the current frontend. Consider
+// removing or wiring it up in a future release.
 export const startSubscriptionCheckout = onRequest(async (req, res) => {
   logger.info("📦 startSubscriptionCheckout payload", req.body);
   logger.info(
@@ -792,6 +794,8 @@ export const startSubscriptionCheckout = onRequest(async (req, res) => {
   }
 });
 
+// TODO: startOneTimeTokenCheckout is unused in the current frontend. Consider
+// removing or wiring it up in a future release.
 export const startOneTimeTokenCheckout = onRequest(async (req, res) => {
   logger.info("📦 startOneTimeTokenCheckout payload", req.body);
   logger.info(
