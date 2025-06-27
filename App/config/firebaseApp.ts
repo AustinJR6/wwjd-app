@@ -3,12 +3,21 @@ export const FIRESTORE_PARENT = `projects/${process.env.EXPO_PUBLIC_FIREBASE_PRO
 
 export const FUNCTIONS_BASE_URL = process.env.EXPO_PUBLIC_FUNCTION_BASE_URL || '';
 
-import { checkAndRefreshIdToken } from '@/services/authService';
+import { useAuthStore } from '@/state/authStore';
 
 export async function getAuthHeader() {
-  const token = await checkAndRefreshIdToken();
-  if (!token) throw new Error('User not authenticated');
-  return { Authorization: `Bearer ${token}` };
+  const { idToken, authReady, refreshIdToken } = useAuthStore.getState();
+
+  if (!authReady) throw new Error('Auth not ready');
+  if (!idToken) {
+    const refreshed = await refreshIdToken();
+    if (!refreshed) throw new Error('Unable to refresh ID token');
+  }
+
+  const finalToken = useAuthStore.getState().idToken;
+  if (!finalToken) throw new Error('Token still unavailable');
+
+  return { Authorization: `Bearer ${finalToken}` };
 }
 
 export async function getAuthHeaders() {
