@@ -16,9 +16,18 @@ export const useAuthStore = create<AuthState>((set) => ({
   refreshToken: null,
   uid: null,
   authReady: false,
-  setAuth: ({ idToken, refreshToken, uid }) => set({ idToken, refreshToken, uid }),
-  clearAuth: () => set({ idToken: null, refreshToken: null, uid: null }),
-  setAuthReady: (authReady) => set({ authReady }),
+  setAuth: ({ idToken, refreshToken, uid }) => {
+    console.log('🔐 setAuth', { uid });
+    set({ idToken, refreshToken, uid });
+  },
+  clearAuth: () => {
+    console.log('🚪 clearAuth');
+    set({ idToken: null, refreshToken: null, uid: null });
+  },
+  setAuthReady: (authReady) => {
+    console.log('✅ authReady', authReady);
+    set({ authReady });
+  },
   refreshIdToken: async () => {
     const service = await import('@/services/authService');
     try {

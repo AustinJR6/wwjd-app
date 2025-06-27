@@ -1,17 +1,13 @@
-import * as SafeStore from '@/utils/secureStore';
-import { getStoredToken } from '@/services/authService';
+import { useAuthStore } from '@/state/authStore';
 
 /**
  * Ensure the user is authenticated and the uid matches if provided.
  * Returns the stored uid when valid, otherwise null.
  */
 export async function ensureAuth(expectedUid?: string): Promise<string | null> {
-  const [uid, token] = await Promise.all([
-    SafeStore.getItem('userId'),
-    getStoredToken(),
-  ]);
+  const { uid, idToken } = useAuthStore.getState();
 
-  if (!uid || !token) {
+  if (!uid || !idToken) {
     console.warn('🚫 Firestore access blocked: missing auth');
     return null;
   }

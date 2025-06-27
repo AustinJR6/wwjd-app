@@ -1,11 +1,6 @@
 import { create } from 'zustand';
 import { getDocument, setDocument } from '@/services/firestoreService';
-import * as SafeStore from '@/utils/secureStore';
 import { ensureAuth } from '@/utils/authGuard';
-
-async function getUid(): Promise<string | null> {
-  return await SafeStore.getItem('userId');
-}
 
 interface ChallengeStore {
   lastCompleted: number | null;

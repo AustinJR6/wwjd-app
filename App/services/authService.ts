@@ -31,11 +31,10 @@ export async function initAuthState() {
 }
 
 export async function logTokenIssue(context: string, refreshAttempted: boolean) {
-  const storedToken = cachedIdToken ?? (await SafeStore.getItem('idToken'));
-  const uid = cachedUserId ?? (await SafeStore.getItem('userId'));
+  const { idToken, uid } = useAuthStore.getState();
   console.warn(`🔐 Token issue during ${context}`, {
     uid,
-    hasStoredToken: !!storedToken,
+    hasToken: !!idToken,
     refreshAttempted,
   });
 }
@@ -119,12 +118,12 @@ export async function changePassword(newPassword: string): Promise<void> {
 
 // ✅ Refresh ID token using the stored refreshToken
 export async function refreshIdToken(): Promise<string> {
-  const refreshToken =
-    cachedRefreshToken ?? (await SafeStore.getItem('refreshToken'));
+  const { refreshToken } = useAuthStore.getState();
   if (!refreshToken) {
     await logTokenIssue('refreshIdToken', false);
     throw new Error('Missing refresh token');
   }
+  console.log('🔄 Refreshing ID token');
   const res = await axios.post(
     `https://securetoken.googleapis.com/v1/token?key=${API_KEY}`,
     {
@@ -145,12 +144,13 @@ export async function refreshIdToken(): Promise<string> {
     refreshToken: refresh_token as string,
     uid: cachedUserId as string,
   });
+  console.log('✅ Token refreshed');
   return id_token as string;
 }
 
 // ✅ Get stored token (if any) and refresh if expired
 export async function getStoredToken(): Promise<string | null> {
-  let token = cachedIdToken ?? (await SafeStore.getItem('idToken'));
+  let token = useAuthStore.getState().idToken;
   if (!token) {
     await logTokenIssue('idToken retrieval', false);
     return null;
@@ -161,7 +161,7 @@ export async function getStoredToken(): Promise<string | null> {
         ? atob(token.split('.')[1])
         : Buffer.from(token.split('.')[1], 'base64').toString('utf8'),
     );
-    if (payload.exp * 1000 < Date.now()) {
+    if (payload.exp * 1000 < Date.now() + 60000) {
       token = await refreshIdToken();
     }
   } catch {
@@ -195,7 +195,7 @@ export async function getFreshIdToken(): Promise<string | null> {
 
 // Centralized method to fetch a valid ID token
 export async function getIdToken(forceRefresh = false): Promise<string | null> {
-  const uid = cachedUserId ?? (await SafeStore.getItem('userId'));
+  const { uid } = useAuthStore.getState();
   if (!uid) {
     console.warn('No authenticated user found. Skipping token request.');
     await logTokenIssue('getIdToken', false);
@@ -229,6 +229,7 @@ async function storeAuth(auth: AuthResponse) {
     refreshToken: auth.refreshToken,
     uid: auth.localId,
   });
+  console.log('🔐 Stored auth for', auth.localId);
 }
 
 export async function signOutAndRetry(): Promise<void> {
