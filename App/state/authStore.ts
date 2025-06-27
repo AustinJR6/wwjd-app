@@ -8,6 +8,7 @@ interface AuthState {
   setAuth: (data: { idToken: string; refreshToken: string; uid: string }) => void
   clearAuth: () => void
   setAuthReady: (ready: boolean) => void
+  refreshIdToken: () => Promise<string | null>
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -18,4 +19,13 @@ export const useAuthStore = create<AuthState>((set) => ({
   setAuth: ({ idToken, refreshToken, uid }) => set({ idToken, refreshToken, uid }),
   clearAuth: () => set({ idToken: null, refreshToken: null, uid: null }),
   setAuthReady: (authReady) => set({ authReady }),
+  refreshIdToken: async () => {
+    const service = await import('@/services/authService');
+    try {
+      const token = await service.refreshIdToken();
+      return token;
+    } catch {
+      return null;
+    }
+  },
 }))
