@@ -1,5 +1,5 @@
 import { GEMINI_API_URL } from '@/config/apiConfig';
-import { getFreshIdToken } from '@/services/authService';
+import { getAuthHeader } from '@/config/firebaseApp';
 import { sendRequestWithGusBugLogging } from '@/utils/gusBugLogger';
 
 export type GeminiMessage = { role: 'user' | 'assistant'; text: string };
@@ -17,10 +17,9 @@ export async function sendGeminiPrompt({
   onResponse?: (reply: string) => void;
   onError?: (err: any) => void;
 }): Promise<string | null> {
-  let idToken: string | null;
+  let headers: { Authorization: string };
   try {
-    idToken = await getFreshIdToken();
-    if (!idToken) throw new Error('No authenticated user');
+    headers = await getAuthHeader();
   } catch (err) {
     console.warn('No authenticated user for Gemini request');
     console.error('❌ Gemini token retrieval failed:', err);
@@ -28,10 +27,7 @@ export async function sendGeminiPrompt({
     return null;
   }
 
-  const headers = {
-    Authorization: `Bearer ${idToken}`,
-    'Content-Type': 'application/json',
-  };
+  headers = { ...headers, 'Content-Type': 'application/json' };
 
   const formattedHistory = history.map((m) => ({
     role: m.role,

@@ -27,9 +27,6 @@ export default function LoginScreen() {
     try {
       const result = await login(email, password);
       if (result.localId) {
-        await SafeStore.setItem('userId', result.localId);
-        await SafeStore.setItem('idToken', result.idToken);
-
         // Load the user profile so the root navigator registers authenticated screens
         await loadUser(result.localId);
 

@@ -7,6 +7,7 @@ import { createStripeCheckout } from '@/services/apiService';
 import { PRICE_IDS } from '@/config/stripeConfig';
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { useTheme } from "@/components/theme/theme";
+import AuthGate from '@/components/AuthGate';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from "@/navigation/RootStackParamList";
 
@@ -83,6 +84,7 @@ export default function BuyTokensScreen({ navigation }: Props) {
   };
 
   return (
+    <AuthGate>
     <ScreenContainer>
       <View style={styles.content}>
         <CustomText style={styles.title}>Buy Grace Tokens</CustomText>
@@ -114,6 +116,7 @@ export default function BuyTokensScreen({ navigation }: Props) {
         </View>
       </View>
     </ScreenContainer>
+    </AuthGate>
   );
 }
 

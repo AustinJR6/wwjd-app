@@ -4,6 +4,7 @@ import { View, StyleSheet, Alert, Linking } from 'react-native';
 import Button from '@/components/common/Button';
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { useTheme } from "@/components/theme/theme";
+import AuthGate from '@/components/AuthGate';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from "@/navigation/RootStackParamList";
 import { useUser } from '@/hooks/useUser';
@@ -75,6 +76,7 @@ export default function GiveBackScreen({ navigation }: Props) {
   };
 
   return (
+    <AuthGate>
     <ScreenContainer>
       <View style={styles.content}>
         <CustomText style={styles.title}>Give Back</CustomText>
@@ -103,6 +105,7 @@ export default function GiveBackScreen({ navigation }: Props) {
         </View>
       </View>
     </ScreenContainer>
+    </AuthGate>
   );
 }
 

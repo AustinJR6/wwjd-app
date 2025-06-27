@@ -6,18 +6,32 @@ export const FUNCTIONS_BASE_URL = process.env.EXPO_PUBLIC_FUNCTION_BASE_URL || '
 import { useAuthStore } from '@/state/authStore';
 
 export async function getAuthHeader() {
-  const { idToken, authReady, refreshIdToken } = useAuthStore.getState();
+  const { idToken, refreshIdToken, authReady } = useAuthStore.getState();
 
   if (!authReady) throw new Error('Auth not ready');
-  if (!idToken) {
-    const refreshed = await refreshIdToken();
-    if (!refreshed) throw new Error('Unable to refresh ID token');
+
+  let token = idToken;
+  if (token) {
+    try {
+      const payload = JSON.parse(
+        typeof atob === 'function'
+          ? atob(token.split('.')[1])
+          : Buffer.from(token.split('.')[1], 'base64').toString('utf8'),
+      );
+      if (payload.exp * 1000 < Date.now() + 60000) {
+        token = null;
+      }
+    } catch {
+      token = null;
+    }
   }
 
-  const finalToken = useAuthStore.getState().idToken;
-  if (!finalToken) throw new Error('Token still unavailable');
+  if (!token) {
+    token = await refreshIdToken();
+    if (!token) throw new Error('Unable to refresh ID token');
+  }
 
-  return { Authorization: `Bearer ${finalToken}` };
+  return { Authorization: `Bearer ${token}` };
 }
 
 export async function getAuthHeaders() {
