@@ -9,7 +9,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useUser } from '@/hooks/useUser';
 import { useAuth } from '@/hooks/useAuth';
-import { loadUser } from '@/services/userService';
+import { loadUser, ensureUserDocExists } from '@/services/userService';
 import { useAuthStore } from '@/state/authStore';
 import { getStoredToken, initAuthState } from './App/services/authService';
 import StartupAnimation from './App/components/common/StartupAnimation';
@@ -91,7 +91,9 @@ export default function App() {
       try {
         const uid = await SafeStore.getItem('userId');
         const token = await getStoredToken();
+        const email = await SafeStore.getItem('email');
         if (uid && token) {
+          await ensureUserDocExists(uid, email ?? undefined);
           await loadUser(uid);
           console.log('✅ Authenticated user', uid);
           const hasSeen = await SafeStore.getItem(`hasSeenOnboarding-${uid}`);

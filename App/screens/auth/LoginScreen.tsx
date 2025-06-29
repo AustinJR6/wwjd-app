@@ -6,7 +6,7 @@ import ScreenContainer from "@/components/theme/ScreenContainer";
 import TextField from "@/components/TextField";
 import Button from "@/components/common/Button";
 import { login, resetPassword } from "@/services/authService";
-import { loadUser } from "@/services/userService";
+import { loadUser, ensureUserDocExists } from "@/services/userService";
 import * as SafeStore from '@/utils/secureStore';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -27,6 +27,7 @@ export default function LoginScreen() {
     try {
       const result = await login(email, password);
       if (result.localId) {
+        await ensureUserDocExists(result.localId, result.email);
         // Load the user profile so the root navigator registers authenticated screens
         await loadUser(result.localId);
 

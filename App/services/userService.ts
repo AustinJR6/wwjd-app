@@ -1,6 +1,8 @@
 import { getDocument, setDocument } from './firestoreService';
 import { useUserStore } from "@/state/userStore";
 import { ensureAuth } from '@/utils/authGuard';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { db } from '@/firebaseClient';
 
 /**
  * Firestore user document structure
@@ -18,11 +20,33 @@ export interface FirestoreUser {
 }
 
 /**
+ * Ensure the user document exists before accessing it
+ */
+export async function ensureUserDocExists(uid: string, email?: string) {
+  try {
+    const ref = doc(db, 'users', uid);
+    const snap = await getDoc(ref);
+    if (!snap.exists()) {
+      const payload: any = { uid, createdAt: Date.now() };
+      if (email) payload.email = email;
+      await setDoc(ref, payload, { merge: true });
+      console.log('📄 Created user doc for', uid);
+    } else {
+      console.log('📄 User doc already exists for', uid);
+    }
+  } catch (err) {
+    console.warn('⚠️ ensureUserDocExists failed', err);
+  }
+}
+
+/**
  * Get user from Firestore and set into userStore
  */
 export async function loadUser(uid: string): Promise<void> {
   const storedUid = await ensureAuth(uid);
   if (!storedUid) return;
+
+  await ensureUserDocExists(storedUid);
 
   const snapshot = await getDocument(`users/${storedUid}`);
 

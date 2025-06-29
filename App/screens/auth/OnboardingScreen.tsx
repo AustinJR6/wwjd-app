@@ -5,8 +5,7 @@ import ScreenContainer from "@/components/theme/ScreenContainer";
 import Button from "@/components/common/Button";
 import { useNavigation, CommonActions } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { completeOnboarding, updateUserFields } from "@/services/userService";
-import { loadUser } from "@/services/userService";
+import { completeOnboarding, updateUserFields, ensureUserDocExists, loadUser } from "@/services/userService";
 import { useUserStore } from "@/state/userStore";
 import { SCREENS } from "@/navigation/screens";
 import { useTheme } from "@/components/theme/theme";
@@ -33,7 +32,9 @@ export default function OnboardingScreen() {
     async function fetchUser() {
       try {
         const uid = await SafeStore.getItem('userId');
+        const email = await SafeStore.getItem('email');
         if (uid) {
+          await ensureUserDocExists(uid, email ?? undefined);
           await loadUser(uid);
         }
       } catch (err) {
