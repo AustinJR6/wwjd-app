@@ -17,7 +17,7 @@ import { getDocument } from '@/services/firestoreService';
 import { useUser } from '@/hooks/useUser';
 import { ensureAuth } from '@/utils/authGuard';
 import { showGracefulError } from '@/utils/gracefulError';
-import { sendGeminiPrompt } from '@/services/geminiService';
+import { sendGeminiPrompt, type GeminiMessage } from '@/services/geminiService';
 import { useAuth } from '@/hooks/useAuth';
 import { useAuthStore } from '@/state/authStore';
 import { getIdToken } from '@/services/authService';
@@ -153,8 +153,8 @@ export default function ConfessionalScreen() {
       if (history.length >= 30) {
         Alert.alert('Conversation full', 'Try a fresh start for a new conversation.');
       }
-      const historyMsgs = history.map((m) => ({
-        role: m.role === 'user' ? 'user' : 'model',
+      const historyMsgs: GeminiMessage[] = history.map((m) => ({
+        role: m.role === 'user' ? 'user' : 'assistant',
         text: m.text,
       }));
 
