@@ -49,7 +49,7 @@ export async function initAuthState(): Promise<void> {
 
       if (firebaseUser) {
         const token = await firebaseUser.getIdToken();
-        const refresh = firebaseUser.refreshToken;
+        const refresh = (firebaseUser as any).refreshToken as string | undefined;
         console.log('🧪 Firebase user', firebaseUser.uid, 'token', token.slice(0, 10));
         const storedUid = await SafeStore.getItem('userId');
 
@@ -61,14 +61,14 @@ export async function initAuthState(): Promise<void> {
         }
 
         await SafeStore.setItem('idToken', token);
-        await SafeStore.setItem('refreshToken', refresh);
+        await SafeStore.setItem('refreshToken', refresh || '');
         await SafeStore.setItem('userId', firebaseUser.uid);
         if (firebaseUser.email) await SafeStore.setItem('email', firebaseUser.email);
 
         cachedIdToken = token;
-        cachedRefreshToken = refresh;
+        cachedRefreshToken = refresh || '';
         cachedUserId = firebaseUser.uid;
-        setAuth({ idToken: token, refreshToken: refresh, uid: firebaseUser.uid });
+        setAuth({ idToken: token, refreshToken: refresh || '', uid: firebaseUser.uid });
       } else {
         await SafeStore.deleteItem('idToken');
         await SafeStore.deleteItem('refreshToken');

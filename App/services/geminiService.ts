@@ -19,7 +19,7 @@ export async function sendGeminiPrompt({
   onResponse?: (reply: string) => void;
   onError?: (err: any) => void;
 }): Promise<string | null> {
-  let headers: { Authorization: string };
+  let headers: Record<string, string>;
   try {
     headers = await getAuthHeader();
     console.log('Current user:', useAuthStore.getState().uid);

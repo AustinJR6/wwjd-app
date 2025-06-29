@@ -17,10 +17,15 @@ export async function uploadImage(fileUri: string, path: string): Promise<string
   const blob = await response.blob();
   const uploadUrl = `https://firebasestorage.googleapis.com/v0/b/${BUCKET}/o?name=${encodeURIComponent(path)}`;
 
+  const uploadHeaders = {
+    ...headers,
+    'Content-Type': blob.type || 'application/octet-stream',
+  };
+
   const res = await sendRequestWithGusBugLogging(() =>
     fetch(uploadUrl, {
       method: 'POST',
-      headers: { 'Content-Type': blob.type || 'application/octet-stream', ...headers },
+      headers: uploadHeaders,
       body: blob,
     })
   );
