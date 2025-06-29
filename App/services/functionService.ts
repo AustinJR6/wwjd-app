@@ -1,3 +1,4 @@
+// 🚫 Do not use @react-native-firebase. This app uses REST-only Firebase architecture.
 import { sendRequestWithGusBugLogging } from '@/utils/gusBugLogger';
 import { sendSecureFirebaseRequest } from '@/utils/firebaseRequest';
 import { FUNCTIONS_BASE_URL, getAuthHeader } from '@/config/firebaseApp';

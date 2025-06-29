@@ -1,3 +1,4 @@
+// 🚫 Do not use @react-native-firebase. This app uses REST-only Firebase architecture.
 import axios from 'axios';
 import { sendRequestWithGusBugLogging } from '@/utils/gusBugLogger';
 import { FIRESTORE_BASE_URL, FIRESTORE_PARENT, getAuthHeader } from '@/config/firebaseApp';
