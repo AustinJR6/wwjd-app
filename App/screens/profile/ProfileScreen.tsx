@@ -16,6 +16,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/navigation/RootStackParamList';
 import AuthGate from '@/components/AuthGate';
+import { useAuth } from '@/hooks/useAuth';
 
 const RELIGIONS = ['Christianity', 'Islam', 'Judaism', 'Buddhism', 'Hinduism'];
 
@@ -23,6 +24,7 @@ export default function ProfileScreen() {
   const { user } = useUser();
   const updateUser = useUserStore((s) => s.updateUser);
   const theme = useTheme();
+  const { authReady, uid } = useAuth();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [username, setUsername] = useState(user?.displayName || '');
   const [region, setRegion] = useState(user?.region || '');
@@ -52,8 +54,13 @@ export default function ProfileScreen() {
   );
 
   useEffect(() => {
+    if (!authReady) return;
+    if (!uid) {
+      navigation.replace('Login');
+      return;
+    }
     loadData();
-  }, []);
+  }, [authReady, uid]);
 
   const loadData = async () => {
     const uid = await ensureAuth(user?.uid);

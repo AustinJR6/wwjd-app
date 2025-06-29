@@ -27,6 +27,7 @@ import { RootStackParamList } from '@/navigation/RootStackParamList';
 import AuthGate from '@/components/AuthGate';
 import { sendGeminiPrompt } from '@/services/geminiService';
 import { useAuthStore } from '@/state/authStore';
+import { useAuth } from '@/hooks/useAuth';
 import { getIdToken } from '@/services/authService';
 import {
   saveMessage,
@@ -107,7 +108,14 @@ export default function ReligionAIScreen() {
   const { user } = useUser();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
+  const { authReady, uid } = useAuth();
+
   useEffect(() => {
+    if (!authReady) return;
+    if (!uid) {
+      navigation.replace('Login');
+      return;
+    }
     const loadHistory = async () => {
       if (!user?.uid) {
         setIsSubscribed(false);
@@ -158,7 +166,7 @@ export default function ReligionAIScreen() {
       };
       cleanup();
     };
-  }, [user]);
+  }, [authReady, uid, user]);
 
   const handleAsk = async () => {
     if (!question.trim()) {

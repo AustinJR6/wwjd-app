@@ -20,6 +20,7 @@ import { callFunction, incrementReligionPoints } from '@/services/functionServic
 import { ASK_GEMINI_SIMPLE } from '@/utils/constants';
 import { ensureAuth } from '@/utils/authGuard';
 import { sendGeminiPrompt } from '@/services/geminiService';
+import { useAuth } from '@/hooks/useAuth';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/navigation/RootStackParamList';
@@ -30,6 +31,7 @@ import type { JournalStage } from '@/types';
 
 export default function JournalScreen() {
   const theme = useTheme();
+  const { authReady, uid } = useAuth();
   const styles = React.useMemo(
     () =>
       StyleSheet.create({
@@ -132,6 +134,11 @@ export default function JournalScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   useEffect(() => {
+    if (!authReady) return;
+    if (!uid) {
+      navigation.replace('Login');
+      return;
+    }
     async function authenticateAndLoad() {
       try {
         const hasHardware = await LocalAuthentication.hasHardwareAsync();
@@ -170,7 +177,7 @@ export default function JournalScreen() {
     }
 
     authenticateAndLoad();
-  }, []);
+  }, [authReady, uid]);
 
   const handleGuidedJournal = async () => {
     console.log('🔮 Start Guided Journal Pressed');

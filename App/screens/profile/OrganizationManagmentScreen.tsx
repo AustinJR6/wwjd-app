@@ -18,9 +18,11 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/navigation/RootStackParamList';
 import AuthGate from '@/components/AuthGate';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function OrganizationManagementScreen() {
   const theme = useTheme();
+  const { authReady, uid } = useAuth();
   const styles = React.useMemo(
     () =>
       StyleSheet.create({
@@ -82,8 +84,13 @@ export default function OrganizationManagementScreen() {
   }, []);
 
   useEffect(() => {
+    if (!authReady) return;
+    if (!uid) {
+      navigation.replace('Login');
+      return;
+    }
     if (user) loadOrg();
-  }, [user]);
+  }, [authReady, uid, user]);
 
   const loadOrg = async () => {
     if (!user) return;

@@ -18,6 +18,7 @@ import { useUser } from '@/hooks/useUser';
 import { ensureAuth } from '@/utils/authGuard';
 import { showGracefulError } from '@/utils/gracefulError';
 import { sendGeminiPrompt } from '@/services/geminiService';
+import { useAuth } from '@/hooks/useAuth';
 import {
   saveTempMessage,
   fetchTempSession,
@@ -28,6 +29,7 @@ import AuthGate from '@/components/AuthGate';
 
 export default function ConfessionalScreen() {
   const theme = useTheme();
+  const { authReady, uid } = useAuth();
   const styles = React.useMemo(
     () =>
       StyleSheet.create({
@@ -83,10 +85,12 @@ export default function ConfessionalScreen() {
   const { user } = useUser();
 
   useEffect(() => {
+    if (!authReady) return;
+    if (!uid) return;
     const load = async () => {
-      const uid = await ensureAuth(user?.uid);
-      if (uid) {
-        const hist = await fetchTempSession(uid);
+      const uidCheck = await ensureAuth(user?.uid);
+      if (uidCheck) {
+        const hist = await fetchTempSession(uidCheck);
         setMessages(hist);
       }
     };
@@ -110,7 +114,7 @@ export default function ConfessionalScreen() {
       };
       cleanup();
     };
-  }, [user]);
+  }, [authReady, uid, user]);
 
   const handleConfess = async () => {
     if (!text.trim()) {

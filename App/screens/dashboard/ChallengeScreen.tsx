@@ -21,6 +21,7 @@ import {
 } from '@/services/functionService';
 import { useUser } from '@/hooks/useUser';
 import { ensureAuth } from '@/utils/authGuard';
+import { useAuth } from '@/hooks/useAuth';
 import { useAuthStore } from '@/state/authStore';
 import { getIdToken } from '@/services/authService';
 import { useChallengeStore } from '@/state/challengeStore';
@@ -65,6 +66,7 @@ export default function ChallengeScreen() {
   const incrementStreak = useChallengeStore((s) => s.incrementStreak);
   const syncStreak = useChallengeStore((s) => s.syncWithFirestore);
   const { user } = useUser();
+  const { authReady, uid } = useAuth();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   const checkMilestoneReward = async (current: number) => {
@@ -332,9 +334,14 @@ export default function ChallengeScreen() {
   };
 
   useEffect(() => {
+    if (!authReady) return;
+    if (!uid) {
+      navigation.replace('Login');
+      return;
+    }
     syncStreak();
     fetchChallenge();
-  }, []);
+  }, [authReady, uid]);
 
   return (
     <AuthGate>
