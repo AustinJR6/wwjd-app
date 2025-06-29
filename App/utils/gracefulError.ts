@@ -10,3 +10,7 @@ export function showGracefulError(msg?: string) {
   const text = msg || defaultMessages[Math.floor(Math.random() * defaultMessages.length)];
   Alert.alert('Oops', text);
 }
+
+export function showPermissionDenied(msg = 'You do not have permission to perform this action.') {
+  Alert.alert('Access Denied', msg);
+}

@@ -1,4 +1,5 @@
 import { signOutAndRetry, checkAndRefreshIdToken, logTokenIssue } from '@/services/authService';
+import { showPermissionDenied } from '@/utils/gracefulError';
 
 export const LOGGING_MODE = process.env.EXPO_PUBLIC_LOGGING_MODE || 'gusbug';
 
@@ -9,7 +10,8 @@ export async function sendRequestWithGusBugLogging<T>(
     const res: any = await requestFn();
 
     const status = res?.status;
-    if (status === 401 || status === 403) {
+    const permError = res?.data?.error?.status === 'PERMISSION_DENIED';
+    if (status === 401 || (status === 403 && !permError)) {
       if (LOGGING_MODE === 'gusbug') {
         console.warn('⚠️ Gus Bug Interception: Backend rejected the token. 🧸🕵️');
       } else {
@@ -22,13 +24,16 @@ export async function sendRequestWithGusBugLogging<T>(
         await logTokenIssue('gusBugRetry', true);
         await signOutAndRetry();
       }
+    } else if (status === 403 && permError) {
+      showPermissionDenied();
     } else if (LOGGING_MODE === 'gusbug') {
       console.log('🎉 Gus Bug cleared the path. Request successful!');
     }
 
     return res;
   } catch (err: any) {
-    if (err?.response?.status === 401 || err?.response?.status === 403) {
+    const permError = err?.response?.data?.error?.status === 'PERMISSION_DENIED';
+    if (err?.response?.status === 401 || (err?.response?.status === 403 && !permError)) {
       if (LOGGING_MODE === 'gusbug') {
         console.warn('⚠️ Gus Bug Interception: Backend rejected the token. 🧸🕵️');
       } else {
@@ -41,6 +46,8 @@ export async function sendRequestWithGusBugLogging<T>(
         await logTokenIssue('gusBugCatch', true);
         await signOutAndRetry();
       }
+    } else if (err?.response?.status === 403 && permError) {
+      showPermissionDenied();
     }
     throw err;
   }
