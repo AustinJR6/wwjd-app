@@ -42,7 +42,7 @@
         "EXPO_PUBLIC_FIREBASE_MSG_SENDER_ID": "402334171334",
         "EXPO_PUBLIC_FIREBASE_APP_ID": "1:402334171334:web:69a89d40732306572757c7",
         "EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID": "G-20W5BML7DM",
-        "EXPO_PUBLIC_FUNCTION_BASE_URL": "https://us-central1-onevine-app.cloudfunctions.net"
+        "EXPO_PUBLIC_API_URL": "https://us-central1-onevine-app.cloudfunctions.net"
       }
     },
     "development-simulator": {

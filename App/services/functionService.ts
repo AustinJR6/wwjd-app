@@ -1,7 +1,7 @@
 // 🚫 Do not use @react-native-firebase. This app uses REST-only Firebase architecture.
 import { sendRequestWithGusBugLogging } from '@/utils/gusBugLogger';
 import { sendSecureFirebaseRequest } from '@/utils/firebaseRequest';
-import { FUNCTIONS_BASE_URL } from '@/config/firebaseApp';
+import { API_URL } from '@/config/firebaseApp';
 import { logTokenIssue, getIdToken } from '@/services/authService';
 import { useAuthStore } from '@/state/authStore';
 
@@ -21,7 +21,7 @@ export async function callFunction(name: string, data: any): Promise<any> {
     throw new Error('Missing auth token');
   }
 
-  const url = `${FUNCTIONS_BASE_URL}/${name}`;
+  const url = `${API_URL}/${name}`;
   console.log('📡 Calling endpoint:', url);
   try {
     const res = await sendRequestWithGusBugLogging(() =>
@@ -48,7 +48,7 @@ export async function incrementReligionPoints(
   religion: string,
   points: number,
 ): Promise<void> {
-  const url = `${FUNCTIONS_BASE_URL}/incrementReligionPoints`;
+  const url = `${API_URL}/incrementReligionPoints`;
   console.log('📡 Calling endpoint:', url);
   try {
     await sendRequestWithGusBugLogging(() =>

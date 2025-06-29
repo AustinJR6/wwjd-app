@@ -2,7 +2,7 @@
 export const FIRESTORE_BASE_URL = `https://firestore.googleapis.com/v1/projects/${process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID}/databases/(default)/documents`;
 export const FIRESTORE_PARENT = `projects/${process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID}/databases/(default)/documents`;
 
-export const FUNCTIONS_BASE_URL = process.env.EXPO_PUBLIC_FUNCTION_BASE_URL || '';
+export const API_URL = process.env.EXPO_PUBLIC_API_URL || '';
 
 import { useAuthStore } from '@/state/authStore';
 import { getIdToken } from '@/services/authService';
