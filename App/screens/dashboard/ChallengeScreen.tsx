@@ -21,6 +21,7 @@ import {
 } from '@/services/functionService';
 import { useUser } from '@/hooks/useUser';
 import { ensureAuth } from '@/utils/authGuard';
+import { firebase } from '@/utils/firebaseShim';
 import { useAuth } from '@/hooks/useAuth';
 import { useAuthStore } from '@/state/authStore';
 import { getIdToken } from '@/services/authService';
@@ -72,7 +73,7 @@ export default function ChallengeScreen() {
   const checkMilestoneReward = async (current: number) => {
     const milestones = [3, 7, 14, 30];
     if (!milestones.includes(current)) return;
-    const uid = await ensureAuth(user?.uid);
+    const uid = await ensureAuth(firebase.auth().currentUser?.uid);
     if (!uid) return;
     try {
       const userData = await getDocument(`users/${uid}`) || {};
@@ -104,7 +105,7 @@ export default function ChallengeScreen() {
   const fetchChallenge = async (forceNew = false) => {
     try {
 
-      const uid = await ensureAuth(user?.uid);
+      const uid = await ensureAuth(firebase.auth().currentUser?.uid);
       if (!uid) return;
 
       const active = await getDocument(`users/${uid}/activeChallenge`);
@@ -137,14 +138,15 @@ export default function ChallengeScreen() {
       console.log('📡 Sending Gemini prompt:', prompt);
       console.log('👤 Role:', religion);
 
-      console.log('Current user:', useAuthStore.getState().uid);
-      const debugToken = await getIdToken();
+      console.log('Current user:', firebase.auth().currentUser?.uid);
+      const debugToken = await firebase.auth().currentUser?.getIdToken(true);
       console.log('ID Token:', debugToken);
 
       const newChallenge = await sendGeminiPrompt({
         url: GENERATE_CHALLENGE_URL,
         prompt,
         history: [],
+        token: debugToken || undefined,
       });
       if (!newChallenge) {
         showGracefulError('AI failed to provide a challenge.');
@@ -167,7 +169,7 @@ export default function ChallengeScreen() {
   };
 
   const handleSkip = async () => {
-    const uid = await ensureAuth(user?.uid);
+    const uid = await ensureAuth(firebase.auth().currentUser?.uid);
     if (!uid) return;
 
     const userData = await getDocument(`users/${uid}`) || {};
@@ -227,7 +229,7 @@ export default function ChallengeScreen() {
   };
 
   const handleStartMultiDay = async () => {
-    const uid = await ensureAuth(user?.uid);
+    const uid = await ensureAuth(firebase.auth().currentUser?.uid);
     if (!uid) return;
 
     try {
@@ -240,7 +242,7 @@ export default function ChallengeScreen() {
   };
 
   const handleComplete = async () => {
-    const uid = await ensureAuth(user?.uid);
+    const uid = await ensureAuth(firebase.auth().currentUser?.uid);
     if (!uid) return;
 
     if (activeMulti) {
@@ -289,8 +291,8 @@ export default function ChallengeScreen() {
     history.completed += 1;
     await setDocument(`users/${uid}`, { dailyChallengeHistory: history });
     try {
-      console.log('Current user:', useAuthStore.getState().uid);
-      const cfToken = await getIdToken();
+      console.log('Current user:', firebase.auth().currentUser?.uid);
+      const cfToken = await firebase.auth().currentUser?.getIdToken(true);
       console.log('ID Token:', cfToken);
       await callFunction('completeChallenge', { useToken });
     } catch (err) {
