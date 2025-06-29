@@ -36,6 +36,7 @@ export async function uploadImage(fileUri: string, path: string): Promise<string
     const errorText = await res.text();
     console.warn(`❌ Firestore REST error on ${uploadUrl}:`, errorText);
     if (res.status === 403) {
+      console.warn('Firestore 403 – not a session issue', errorText);
       showPermissionDenied();
       return '' as any;
     }

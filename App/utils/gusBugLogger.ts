@@ -25,6 +25,7 @@ export async function sendRequestWithGusBugLogging<T>(
         await signOutAndRetry();
       }
     } else if (status === 403 && permError) {
+      console.warn('Firestore 403 – not a session issue', res);
       showPermissionDenied();
     } else if (LOGGING_MODE === 'gusbug') {
       console.log('🎉 Gus Bug cleared the path. Request successful!');
@@ -47,6 +48,7 @@ export async function sendRequestWithGusBugLogging<T>(
         await signOutAndRetry();
       }
     } else if (err?.response?.status === 403 && permError) {
+      console.warn('Firestore 403 – not a session issue', err);
       showPermissionDenied();
     }
     throw err;
