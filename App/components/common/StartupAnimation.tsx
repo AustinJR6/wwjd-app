@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import CustomText from '@/components/CustomText';
 import { View, StyleSheet } from 'react-native';
-import Animated, { useSharedValue, withTiming, useAnimatedStyle } from 'react-native-reanimated';
+import Animated, { useSharedValue, withTiming, useAnimatedStyle, runOnJS } from 'react-native-reanimated';
 import { useTheme } from '@/components/theme/theme';
 
 export default function StartupAnimation({ onDone }: { onDone: () => void }) {
@@ -9,12 +9,14 @@ export default function StartupAnimation({ onDone }: { onDone: () => void }) {
   const opacity = useSharedValue(0);
 
   useEffect(() => {
-    opacity.value = withTiming(1, { duration: 800 }, () => {
-      opacity.value = withTiming(0, { duration: 800 }, () => {
-        if (typeof onDone === 'function') {
-          onDone();
-        }
-      });
+    opacity.value = withTiming(1, { duration: 800 }, (finished) => {
+      if (finished) {
+        opacity.value = withTiming(0, { duration: 800 }, (done) => {
+          if (done && typeof onDone === 'function') {
+            runOnJS(onDone)();
+          }
+        });
+      }
     });
   }, []);
 

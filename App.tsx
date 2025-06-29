@@ -14,6 +14,7 @@ import { useAuthStore } from '@/state/authStore';
 import { getStoredToken, initAuthState } from './App/services/authService';
 import StartupAnimation from './App/components/common/StartupAnimation';
 import Constants from 'expo-constants';
+import { waitForFirebaseAuthReady } from './App/firebaseClient';
 
 import { RootStackParamList } from './App/navigation/RootStackParamList';
 import { useTheme } from './App/components/theme/theme';
@@ -27,11 +28,7 @@ import ForgotUsernameScreen from './App/screens/auth/ForgotUsernameScreen';
 import OnboardingScreen from './App/screens/auth/OnboardingScreen';
 import SelectReligionScreen from './App/screens/auth/SelectReligionScreen';
 
-if (!Constants.expoConfig?.extra?.developmentClient) {
-  console.warn(
-    '⚠️ Expo Go detected. Push notifications and Firebase Auth may be partially unsupported. Use a dev build for full functionality.',
-  );
-}
+const isExpoGo = Constants.appOwnership === 'expo';
 import OrganizationSignupScreen from './App/screens/auth/OrganizationSignupScreen';
 
 // Dashboard Screens
@@ -71,6 +68,14 @@ export default function App() {
   const [showAnim, setShowAnim] = useState(true);
 
   useEffect(() => {
+    if (isExpoGo) {
+      console.warn(
+        '⚠️ Running in Expo Go. Push notifications and Firebase Auth may not work as expected.',
+      );
+    }
+  }, []);
+
+  useEffect(() => {
     (async () => {
       const preview = await getStoredToken();
       console.log('🧪 Auth token preview:', preview);
@@ -86,6 +91,7 @@ export default function App() {
 
   useEffect(() => {
     const initialize = async () => {
+      await waitForFirebaseAuthReady();
       await initAuthState();
       console.log('🔑 Checking saved auth credentials');
       try {

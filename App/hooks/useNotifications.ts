@@ -5,8 +5,7 @@ const isExpoGo = Constants.appOwnership === 'expo';
 
 export async function scheduleDailyNotification(title: string, body: string) {
   if (isExpoGo) {
-    console.log('🔕 Notification skipped in Expo Go');
-    return;
+    console.warn('⚠️ Running in Expo Go. Notification behavior may be limited.');
   }
   try {
     await Notifications.scheduleNotificationAsync({

@@ -8,8 +8,7 @@ const STORAGE_KEY = 'reflectionReminderId';
 
 export async function scheduleReflectionReminder(time: string) {
   if (isExpoGo) {
-    console.log('🔕 scheduleReflectionReminder skipped in Expo Go');
-    return;
+    console.warn('⚠️ Running in Expo Go. Notification behavior may be limited.');
   }
   try {
     const [hour, minute] = time.split(':').map((t) => parseInt(t, 10));
@@ -25,8 +24,7 @@ export async function scheduleReflectionReminder(time: string) {
 
 export async function cancelReflectionReminder() {
   if (isExpoGo) {
-    await AsyncStorage.removeItem(STORAGE_KEY);
-    return;
+    console.warn('⚠️ Running in Expo Go. Notification behavior may be limited.');
   }
   try {
     const id = await AsyncStorage.getItem(STORAGE_KEY);
