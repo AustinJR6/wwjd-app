@@ -21,6 +21,8 @@ import { ASK_GEMINI_SIMPLE } from '@/utils/constants';
 import { ensureAuth } from '@/utils/authGuard';
 import { sendGeminiPrompt } from '@/services/geminiService';
 import { useAuth } from '@/hooks/useAuth';
+import { useAuthStore } from '@/state/authStore';
+import { getIdToken } from '@/services/authService';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/navigation/RootStackParamList';
@@ -160,6 +162,10 @@ export default function JournalScreen() {
           return;
         }
 
+        console.log('Firebase currentUser:', useAuthStore.getState().uid);
+        const tokenPreview = await getIdToken();
+        console.log('ID Token:', tokenPreview);
+
         const list = await querySubcollection(
           `users/${uid}`,
           'journalEntries',
@@ -187,6 +193,9 @@ export default function JournalScreen() {
     try {
       const uid = await ensureAuth();
       if (!uid) throw new Error('auth');
+      console.log('Firebase currentUser:', useAuthStore.getState().uid);
+      const token = await getIdToken();
+      console.log('ID Token:', token);
       const answer = await sendGeminiPrompt({
         url: ASK_GEMINI_SIMPLE,
         prompt,
@@ -221,6 +230,10 @@ export default function JournalScreen() {
         navigation.replace('Login');
         return;
       }
+
+      console.log('Firebase currentUser:', useAuthStore.getState().uid);
+      const token = await getIdToken();
+      console.log('ID Token:', token);
 
       const userData = await getDocument(`users/${uid}`) || {};
 
