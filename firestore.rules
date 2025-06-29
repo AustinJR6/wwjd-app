@@ -1,12 +1,9 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // User profile data
+    // User profile data - only owners can read or write
     match /users/{userId} {
-      // Allow any authenticated user to read for leaderboard
-      allow read: if request.auth != null;
-      // Only owner can modify
-      allow write: if request.auth != null && request.auth.uid == userId;
+      allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
     // Religion chat messages
@@ -53,12 +50,17 @@ service cloud.firestore {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
-    // Journal entries stored per user
+    // Journal entries stored under user subcollection
     match /users/{userId}/journalEntries {
       allow list, read: if request.auth != null && request.auth.uid == userId;
       match /{entryId} {
         allow read, write: if request.auth != null && request.auth.uid == userId;
       }
+    }
+
+    // Legacy top-level journal entries path
+    match /journalEntries/{userId}/{entryId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
     // Challenge history documents
@@ -91,8 +93,9 @@ service cloud.firestore {
       allow list, read, write: if request.auth != null;
     }
 
+    // Public religion information - read only
     match /religion/{religionId} {
-      allow read: if request.auth != null;
+      allow read: if true;
     }
 
     // Challenge proof submissions
