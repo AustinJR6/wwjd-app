@@ -241,7 +241,6 @@ export async function signOutAndRetry(): Promise<void> {
   Alert.alert('Session expired', 'Please sign in again.', [
     {
       text: 'OK',
-      onPress: () => logout(),
     },
   ]);
 }
