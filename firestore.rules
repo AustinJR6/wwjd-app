@@ -1,35 +1,25 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // 🧑‍💼 User profile data - only owners can read/write
+
+    // 🔐 Users - only the owner can read/write their document
     match /users/{userId} {
-      allow create: if request.auth != null && request.auth.uid == userId;
-      allow read, update, delete: if request.auth != null && request.auth.uid == userId;
+      allow create, read, update, delete: if request.auth != null && request.auth.uid == userId;
     }
 
-    // 🛐 Religion chat messages (per user)
+    // 💬 Religion Chats
     match /religionChats/{userId}/messages {
-      allow list, read: if request.auth != null && request.auth.uid == userId;
-      match /{messageId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
-      }
+      allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
-    // ⛪️ Temp religion chat (for unsubscribed users)
+    // 🕊️ Temp Religion Chat (non-subscribed users)
     match /tempReligionChat/{userId}/messages {
-      allow list, read: if request.auth != null && request.auth.uid == userId;
-      match /{messageId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
-      }
+      allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
-    // 🙏 Confessional session messages
+    // 🙏 Confessional Sessions
     match /confessionalSessions/{userId}/messages {
-      allow list, read: if request.auth != null && request.auth.uid == userId;
-      match /{messageId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
-      }
+      allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
     // 💳 Subscriptions
@@ -37,78 +27,76 @@ service cloud.firestore {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
-    // 🪙 Token documents
+    // 🪙 Tokens (user-scoped)
     match /tokens/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
-    // 📊 Global token settings (readable by all authenticated users)
+    // 🪙 Global token settings
     match /tokens/settings {
       allow read: if request.auth != null;
     }
 
-    // 🎁 Free ask usage
+    // 🧮 Free Ask usage tracker
     match /freeAsk/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
-    // 📓 Journal entries stored under user subcollection
-    match /users/{userId}/journalEntries {
-      allow list, read: if request.auth != null && request.auth.uid == userId;
-      match /{entryId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
-      }
+    // 📓 Journal Entries (new nested format)
+    match /users/{userId}/journalEntries/{entryId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
-    // 🧾 Legacy journal entries path (not currently used but preserved)
+    // 📓 Legacy journal path (top-level)
     match /journalEntries/{userId}/{entryId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
-    // 🕰️ Challenge history
+    // 📅 Challenge History (per user)
     match /users/{userId}/challengeHistory/{entryId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
-    // 🧠 Active challenge (per user)
+    // 🔁 Active Challenge (per user)
     match /users/{userId}/activeChallenge {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
-    // 📆 Daily challenges - readable by everyone
+    // 📆 Daily Challenges (read-only)
     match /dailyChallenges/{dayId} {
       allow read: if true;
     }
 
-    // 🟢 Active challenges (public list)
+    // 📊 Active Challenges collection (readable if authed)
     match /activeChallenges/{docId} {
       allow read: if request.auth != null;
     }
 
-    // ✅ Completed challenges (per user)
+    // 🏁 Completed Challenges (per user)
     match /completedChallenges/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
-    // 🏢 Organization documents
+    // 🏢 Organization docs (open to all authed users)
     match /organizations/{orgId} {
-      allow list, read, write: if request.auth != null;
+      allow read, write: if request.auth != null;
     }
 
-    // 📚 Public religion info - open access
+    // 🛐 Public religion content
     match /religion/{religionId} {
       allow read: if true;
     }
 
-    // 📸 Challenge proof submissions
+    // 📸 Challenge Proof submissions
     match /challengeProofs/{proofId} {
       allow write: if request.auth != null && request.resource.data.uid == request.auth.uid;
       allow read: if request.auth != null;
     }
 
-    // 🚫 Catch-all fallback - deny all others
+    // ❌ Catch-all: deny everything else
     match /{document=**} {
       allow read, write: if false;
     }
   }
 }
+
