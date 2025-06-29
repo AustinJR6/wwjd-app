@@ -19,6 +19,8 @@ import { ensureAuth } from '@/utils/authGuard';
 import { showGracefulError } from '@/utils/gracefulError';
 import { sendGeminiPrompt } from '@/services/geminiService';
 import { useAuth } from '@/hooks/useAuth';
+import { useAuthStore } from '@/state/authStore';
+import { getIdToken } from '@/services/authService';
 import {
   saveTempMessage,
   fetchTempSession,
@@ -90,6 +92,9 @@ export default function ConfessionalScreen() {
     const load = async () => {
       const uidCheck = await ensureAuth(user?.uid);
       if (uidCheck) {
+        console.log('Firebase currentUser:', useAuthStore.getState().uid);
+        const preview = await getIdToken();
+        console.log('ID Token:', preview);
         const hist = await fetchTempSession(uidCheck);
         setMessages(hist);
       }
@@ -130,6 +135,10 @@ export default function ConfessionalScreen() {
         setLoading(false);
         return;
       }
+
+      console.log('Firebase currentUser:', useAuthStore.getState().uid);
+      const token = await getIdToken();
+      console.log('ID Token:', token);
 
       const userData = await getDocument(`users/${uid}`);
       const religion = userData.religion || 'Spiritual Guide';
