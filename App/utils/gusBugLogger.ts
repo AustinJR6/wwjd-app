@@ -1,5 +1,6 @@
 import { signOutAndRetry, checkAndRefreshIdToken, logTokenIssue } from '@/services/authService';
 import { showPermissionDenied } from '@/utils/gracefulError';
+import { useAuthStore } from '@/state/authStore';
 
 export const LOGGING_MODE = process.env.EXPO_PUBLIC_LOGGING_MODE || 'gusbug';
 
@@ -12,11 +13,11 @@ export async function sendRequestWithGusBugLogging<T>(
     const status = res?.status;
     const permError = res?.data?.error?.status === 'PERMISSION_DENIED';
     if (status === 401 || (status === 403 && !permError)) {
-      if (LOGGING_MODE === 'gusbug') {
-        console.warn('⚠️ Gus Bug Interception: Backend rejected the token. 🧸🕵️');
-      } else {
-        console.warn('Request failed with auth error');
-      }
+      const { uid } = useAuthStore.getState();
+      console.warn('⚠️ Gus Bug Interception: Backend rejected the token.', {
+        status,
+        uid,
+      });
       try {
         await checkAndRefreshIdToken();
         return await requestFn();
@@ -35,11 +36,11 @@ export async function sendRequestWithGusBugLogging<T>(
   } catch (err: any) {
     const permError = err?.response?.data?.error?.status === 'PERMISSION_DENIED';
     if (err?.response?.status === 401 || (err?.response?.status === 403 && !permError)) {
-      if (LOGGING_MODE === 'gusbug') {
-        console.warn('⚠️ Gus Bug Interception: Backend rejected the token. 🧸🕵️');
-      } else {
-        console.warn('Request failed with auth error');
-      }
+      const { uid } = useAuthStore.getState();
+      console.warn('⚠️ Gus Bug Interception: Backend rejected the token.', {
+        status: err?.response?.status,
+        uid,
+      });
       try {
         await checkAndRefreshIdToken();
         return await requestFn();

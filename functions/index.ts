@@ -6,6 +6,14 @@ import Stripe from "stripe";
 import * as dotenv from "dotenv";
 import * as logger from "firebase-functions/logger";
 
+function logTokenVerificationError(context: string, token: string | undefined, err: any) {
+  logger.error(`${context} token verification failed`, {
+    tokenPrefix: token ? token.slice(0, 10) : "none",
+    errorCode: err?.code,
+    message: err?.message,
+  });
+}
+
 dotenv.config();
 dotenv.config({ path: ".env.functions" });
 
@@ -165,7 +173,7 @@ export const incrementReligionPoints = functions
 
     res.status(200).send({ message: "Points updated" });
   } catch (err: any) {
-    console.error("🛑 Gus Bug Tampered Token: Couldn't verify. 🧙‍♂️✨", err);
+    logTokenVerificationError('incrementReligionPoints', idToken, err);
     if (err.code === "auth/argument-error") {
       res.status(401).json({
         error: "Unauthorized — Gus bug cast an invalid token spell.",
@@ -191,7 +199,7 @@ export const completeChallenge = functions
     await updateStreakAndXPInternal(decodedToken.uid, "challenge");
     res.status(200).send({ message: "Streak and XP updated" });
   } catch (err) {
-    console.error("🛑 Gus Bug Tampered Token: Couldn't verify. 🧙‍♂️✨", err);
+    logTokenVerificationError('completeChallenge', idToken, err);
     res.status(401).json({
       error: "Unauthorized — Gus bug cast an invalid token spell.",
     });
@@ -463,7 +471,7 @@ export const askGeminiV2 = functions
 
     res.status(200).json({ response: text });
   } catch (err: any) {
-    logger.error("Token verification failed", err);
+    logTokenVerificationError('askGeminiV2', idToken, err);
     res.status(401).json({ error: "Unauthorized – Invalid ID token" });
   }
 });
@@ -532,7 +540,7 @@ export const generateChallenge = functions
 
     res.status(200).json({ response: text });
   } catch (err: any) {
-    console.error("🛑 Gus Bug Tampered Token: Couldn't verify. 🧙‍♂️✨", err);
+    logTokenVerificationError('generateChallenge', idToken, err);
     if (err.code === "auth/argument-error") {
       res.status(401).json({
         error: "Unauthorized — Gus bug cast an invalid token spell.",
@@ -756,7 +764,7 @@ export const skipDailyChallenge = functions
 
     res.status(200).json({ response: text, cost });
   } catch (err: any) {
-    console.error("🛑 skipDailyChallenge error", err);
+    logTokenVerificationError('skipDailyChallenge', idToken, err);
     if (err.code === "auth/argument-error") {
       res.status(401).json({ error: "Unauthorized" });
       return;
@@ -809,7 +817,7 @@ export const startSubscriptionCheckout = functions
     logger.info(`✅ Stripe session created ${session.id}`);
     res.status(200).json({ url: session.url });
   } catch (err) {
-    console.error("Subscription checkout error", err);
+    logTokenVerificationError('startSubscriptionCheckout', idToken, err);
     res
       .status(500)
       .json({ error: (err as any)?.message || "Failed to start checkout" });
@@ -860,7 +868,7 @@ export const startOneTimeTokenCheckout = functions
     logger.info(`✅ Stripe session created ${session.id}`);
     res.status(200).json({ url: session.url });
   } catch (err) {
-    console.error("Token checkout error", err);
+    logTokenVerificationError('startOneTimeTokenCheckout', idToken, err);
     res
       .status(500)
       .json({ error: (err as any)?.message || "Failed to start checkout" });
@@ -915,7 +923,7 @@ export const startDonationCheckout = functions
     logger.info(`✅ Donation session created ${session.id}`);
     res.status(200).json({ url: session.url });
   } catch (err) {
-    logger.error("Donation checkout error", err);
+    logTokenVerificationError('startDonationCheckout', idToken, err);
     res
       .status(500)
       .json({ error: (err as any)?.message || "Failed to start donation" });
@@ -964,7 +972,7 @@ export const startCheckoutSession = functions
     logger.info(`✅ Stripe session created ${session.id}`);
     res.status(200).json({ url: session.url });
   } catch (err) {
-    console.error("Checkout session error", err);
+    logTokenVerificationError('startCheckoutSession', idToken, err);
     res
       .status(500)
       .json({ error: (err as any)?.message || "Failed to start checkout" });
@@ -1040,7 +1048,7 @@ export const updateStreakAndXP = functions
     await updateStreakAndXPInternal(decoded.uid, type);
     res.status(200).json({ message: "Streak updated" });
   } catch (err: any) {
-    console.error("updateStreakAndXP error", err);
+    logTokenVerificationError('updateStreakAndXP', idToken, err);
     res.status(500).json({ error: err.message || "Failed" });
   }
 });
