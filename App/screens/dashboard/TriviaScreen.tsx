@@ -19,9 +19,11 @@ import { getDocument, setDocument } from '@/services/firestoreService';
 import { callFunction, incrementReligionPoints } from '@/services/functionService';
 import { ensureAuth } from '@/utils/authGuard';
 import AuthGate from '@/components/AuthGate';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function TriviaScreen() {
   const theme = useTheme();
+  const { authReady, uid } = useAuth();
   const styles = React.useMemo(
     () =>
       StyleSheet.create({
@@ -66,8 +68,12 @@ export default function TriviaScreen() {
   const [revealed, setRevealed] = useState(false);
 
   useEffect(() => {
+    if (!authReady) return;
+    if (!uid) {
+      return;
+    }
     fetchTrivia();
-  }, []);
+  }, [authReady, uid]);
 
   const { user } = useUser();
 

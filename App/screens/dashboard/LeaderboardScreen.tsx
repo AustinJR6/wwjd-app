@@ -12,9 +12,11 @@ import ScreenContainer from "@/components/theme/ScreenContainer";
 import { useTheme } from "@/components/theme/theme";
 import { ensureAuth } from '@/utils/authGuard';
 import AuthGate from '@/components/AuthGate';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function LeaderboardsScreen() {
   const theme = useTheme();
+  const { authReady, uid } = useAuth();
   const styles = React.useMemo(
     () =>
       StyleSheet.create({
@@ -63,8 +65,10 @@ export default function LeaderboardsScreen() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!authReady) return;
+    if (!uid) return;
     fetchData();
-  }, []);
+  }, [authReady, uid]);
 
   const fetchData = async () => {
     setLoading(true);

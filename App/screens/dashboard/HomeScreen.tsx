@@ -9,6 +9,7 @@ import { getTokenCount, syncSubscriptionStatus } from "@/utils/TokenManager";
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from "@/navigation/RootStackParamList";
 import AuthGate from '@/components/AuthGate';
+import { useAuth } from '@/hooks/useAuth';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
 
@@ -19,7 +20,13 @@ export default function HomeScreen({ navigation }: Props) {
   const [isOrgManager, setIsOrgManager] = useState<boolean>(false);
 
   const theme = useTheme();
+  const { authReady, uid } = useAuth();
   useEffect(() => {
+    if (!authReady) return;
+    if (!uid) {
+      navigation.replace('Login');
+      return;
+    }
     const loadData = async () => {
       const t = await getTokenCount();
       await syncSubscriptionStatus(); // updates Firestore token state
@@ -31,7 +38,7 @@ export default function HomeScreen({ navigation }: Props) {
       setIsOrgManager(managerFlag === 'true');
     };
     loadData();
-  }, []);
+  }, [authReady, uid]);
 
   const styles = React.useMemo(
     () =>
