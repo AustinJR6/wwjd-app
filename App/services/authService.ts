@@ -17,7 +17,32 @@ export async function initAuthState(): Promise<void> {
       return;
     }
 
+    // confirm firebase initialized
+    try {
+      const appInstance = auth().app;
+      console.log('✅ Firebase initialized:', appInstance.name, appInstance.options.projectId);
+    } catch (err) {
+      console.error('❌ Firebase initialization check failed', err);
+    }
+
+    let resolved = false;
+    const finalize = () => {
+      if (!resolved) {
+        resolved = true;
+        resolve();
+      }
+    };
+
+    // fallback in case onAuthStateChanged never fires
+    const timeout = setTimeout(() => {
+      console.warn('⏰ onAuthStateChanged timeout');
+      useAuthStore.getState().setAuthReady(true);
+      finalize();
+    }, 10000);
+
     unsubscribeAuth = auth().onAuthStateChanged(async (firebaseUser) => {
+      clearTimeout(timeout);
+      console.log('🔥 onAuthStateChanged fired', firebaseUser ? firebaseUser.uid : null);
       const setAuth = useAuthStore.getState().setAuth;
       const clearAuth = useAuthStore.getState().clearAuth;
       const setAuthReady = useAuthStore.getState().setAuthReady;
@@ -25,6 +50,7 @@ export async function initAuthState(): Promise<void> {
       if (firebaseUser) {
         const token = await firebaseUser.getIdToken();
         const refresh = firebaseUser.refreshToken;
+        console.log('🧪 Firebase user', firebaseUser.uid, 'token', token.slice(0, 10));
         const storedUid = await SafeStore.getItem('userId');
 
         if (storedUid && storedUid !== firebaseUser.uid) {
@@ -55,7 +81,7 @@ export async function initAuthState(): Promise<void> {
       }
 
       setAuthReady(true);
-      resolve();
+      finalize();
     });
   });
 }

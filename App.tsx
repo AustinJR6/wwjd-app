@@ -9,6 +9,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useUser } from '@/hooks/useUser';
 import { useAuth } from '@/hooks/useAuth';
 import { loadUser } from '@/services/userService';
+import { useAuthStore } from '@/state/authStore';
 import { getStoredToken, initAuthState } from './App/services/authService';
 import StartupAnimation from './App/components/common/StartupAnimation';
 import Constants from 'expo-constants';
@@ -112,6 +113,21 @@ export default function App() {
 
     initialize();
   }, []);
+
+  // Fallback to avoid indefinite spinner during testing
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (!useAuthStore.getState().authReady) {
+        console.warn('⏰ authReady fallback');
+        useAuthStore.getState().setAuthReady(true);
+      }
+      if (!initialRoute) {
+        console.warn('⏰ initialRoute fallback -> Login');
+        setInitialRoute('Login');
+      }
+    }, 15000);
+    return () => clearTimeout(timer);
+  }, [initialRoute]);
 
   useEffect(() => {
     if (user) {
