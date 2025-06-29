@@ -3,6 +3,7 @@ import { View, ActivityIndicator, Text } from 'react-native';
 import ErrorBoundary from './App/components/common/ErrorBoundary';
 import { useFonts, Poppins_600SemiBold } from '@expo-google-fonts/poppins';
 import { Merriweather_400Regular } from '@expo-google-fonts/merriweather';
+import { FIREBASE_CONFIG } from './App/firebase';
 import * as SafeStore from '@/utils/secureStore';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -73,6 +74,7 @@ export default function App() {
     (async () => {
       const preview = await getStoredToken();
       console.log('🧪 Auth token preview:', preview);
+      console.log('📦 Firebase project ID:', FIREBASE_CONFIG.projectId);
     })();
   }, []);
 

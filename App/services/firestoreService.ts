@@ -80,6 +80,7 @@ function warnIfInvalidPath(path: string, expectEven: boolean) {
 export async function getDocument(path: string): Promise<any | null> {
   warnIfInvalidPath(path, true);
   const headers = await authHeaders();
+  console.warn('🔥 Attempting Firestore access:', path);
   try {
     const url = `${FIRESTORE_BASE_URL}/${path}`;
     const res = await sendRequestWithGusBugLogging(() => axios.get(url, { headers }));
@@ -99,6 +100,7 @@ export async function getDocument(path: string): Promise<any | null> {
 export async function setDocument(path: string, data: any): Promise<void> {
   warnIfInvalidPath(path, true);
   const headers = await authHeaders();
+  console.warn('🔥 Attempting Firestore access:', path);
   const fieldPaths = Object.keys(data)
     .filter((k) => /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(k));
   const mask = fieldPaths
@@ -132,6 +134,7 @@ export async function updateDocument(path: string, data: any): Promise<void> {
 export async function addDocument(collectionPath: string, data: any): Promise<string> {
   warnIfInvalidPath(collectionPath, false);
   const headers = await authHeaders();
+  console.warn('🔥 Attempting Firestore access:', collectionPath);
   try {
     const url = `${FIRESTORE_BASE_URL}/${collectionPath}`;
     const res = await sendRequestWithGusBugLogging(() =>
@@ -157,6 +160,7 @@ export async function addDocument(collectionPath: string, data: any): Promise<st
 export async function deleteDocument(path: string): Promise<void> {
   warnIfInvalidPath(path, true);
   const headers = await authHeaders();
+  console.warn('🔥 Attempting Firestore access:', path);
   const url = `${FIRESTORE_BASE_URL}/${path}`;
   try {
     await sendRequestWithGusBugLogging(() => axios.delete(url, { headers }));
@@ -180,6 +184,7 @@ export async function queryCollection(
 ): Promise<any[]> {
   warnIfInvalidPath(collection, false);
   const headers = await authHeaders();
+  console.warn('🔥 Attempting Firestore access:', collection);
   const structuredQuery: any = {
     from: [{ collectionId: collection }],
   };
@@ -231,6 +236,7 @@ export async function querySubcollection(
   warnIfInvalidPath(parentPath, true);
   warnIfInvalidPath(`${parentPath}/${collection}`, false);
   const headers = await authHeaders();
+  console.warn('🔥 Attempting Firestore access:', `${parentPath}/${collection}`);
   const structuredQuery: any = {
     from: [{ collectionId: collection }],
   };
