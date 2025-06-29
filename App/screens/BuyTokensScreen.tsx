@@ -64,10 +64,10 @@ export default function BuyTokensScreen({ navigation }: Props) {
     try {
       const priceId =
         amount === 5
-          ? PRICE_IDS.TOKENS_5
+          ? PRICE_IDS.TOKENS_20
           : amount === 15
-          ? PRICE_IDS.TOKENS_15
-          : PRICE_IDS.TOKENS_40;
+          ? PRICE_IDS.TOKENS_50
+          : PRICE_IDS.TOKENS_100;
       const url = await createStripeCheckout(user.uid, {
         type: 'one-time',
         priceId,

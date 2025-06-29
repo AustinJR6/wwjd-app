@@ -25,7 +25,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/navigation/RootStackParamList';
 import AuthGate from '@/components/AuthGate';
-import { sendGeminiPrompt } from '@/services/geminiService';
+import { sendGeminiPrompt, type GeminiMessage } from '@/services/geminiService';
 import { useAuthStore } from '@/state/authStore';
 import { useAuth } from '@/hooks/useAuth';
 import { getIdToken } from '@/services/authService';
@@ -234,9 +234,9 @@ export default function ReligionAIScreen() {
 
 
       const history = await fetchHistory(uid, subscribed);
-      const historyMsgs = history.map((m) => ({
-        role: m.role === 'user' ? 'user' : 'model',
-        text: m.text,
+      const formattedHistory: GeminiMessage[] = history.map((entry) => ({
+        role: entry.role === 'user' ? 'user' : 'assistant',
+        text: entry.text,
       }));
 
       const prompt =
@@ -251,7 +251,7 @@ export default function ReligionAIScreen() {
       const answer = await sendGeminiPrompt({
         url: ASK_GEMINI_V2,
         prompt,
-        history: historyMsgs,
+        history: formattedHistory,
       });
       if (!answer) {
         showGracefulError();
