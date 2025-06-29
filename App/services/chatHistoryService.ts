@@ -34,6 +34,8 @@ export async function saveMessage(
   const basePath = usePersistent
     ? `religionChats/${storedUid}`
     : `tempReligionChat/${storedUid}`;
+  console.warn('🔥 Attempting Firestore access:', `${basePath}/messages`);
+  console.warn('👤 Using UID:', storedUid);
   await addDocument(`${basePath}/messages`, {
     role,
     text,
@@ -52,6 +54,8 @@ export async function fetchHistory(
   const basePath = usePersistent
     ? `religionChats/${storedUid}`
     : `tempReligionChat/${storedUid}`;
+  console.warn('🔥 Attempting Firestore access:', `${basePath}/messages`);
+  console.warn('👤 Using UID:', storedUid);
   return await querySubcollection(
     basePath,
     'messages',
@@ -63,6 +67,8 @@ export async function fetchHistory(
 export async function clearHistory(uid: string): Promise<void> {
   const storedUid = await ensureAuth(uid);
   if (!storedUid) return;
+  console.warn('🔥 Attempting Firestore access:', `religionChats/${storedUid}/messages`);
+  console.warn('👤 Using UID:', storedUid);
   const docs = await querySubcollection(`religionChats/${storedUid}`, 'messages');
   for (const msg of docs) {
     await deleteDocument(`religionChats/${storedUid}/messages/${msg.id}`);
@@ -72,6 +78,8 @@ export async function clearHistory(uid: string): Promise<void> {
 export async function clearTempReligionChat(uid: string): Promise<void> {
   const storedUid = await ensureAuth(uid);
   if (!storedUid) return;
+  console.warn('🔥 Attempting Firestore access:', `tempReligionChat/${storedUid}/messages`);
+  console.warn('👤 Using UID:', storedUid);
   const docs = await querySubcollection(`tempReligionChat/${storedUid}`, 'messages');
   for (const msg of docs) {
     await deleteDocument(`tempReligionChat/${storedUid}/messages/${msg.id}`);
@@ -81,6 +89,8 @@ export async function clearTempReligionChat(uid: string): Promise<void> {
 export async function trimHistory(uid: string, limit: number): Promise<void> {
   const storedUid = await ensureAuth(uid);
   if (!storedUid) return;
+  console.warn('🔥 Attempting Firestore access:', `religionChats/${storedUid}/messages`);
+  console.warn('👤 Using UID:', storedUid);
   const docs = await querySubcollection(
     `religionChats/${storedUid}`,
     'messages',

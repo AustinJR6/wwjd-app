@@ -15,6 +15,8 @@ export async function saveTempMessage(
 ): Promise<void> {
   const storedUid = await ensureAuth(uid);
   if (!storedUid) return;
+  console.warn('🔥 Attempting Firestore access:', `confessionalSessions/${storedUid}/messages`);
+  console.warn('👤 Using UID:', storedUid);
   await addDocument(`confessionalSessions/${storedUid}/messages`, {
     role,
     text,
@@ -25,6 +27,8 @@ export async function saveTempMessage(
 export async function fetchTempSession(uid: string): Promise<TempMessage[]> {
   const storedUid = await ensureAuth(uid);
   if (!storedUid) return [];
+  console.warn('🔥 Attempting Firestore access:', `confessionalSessions/${storedUid}/messages`);
+  console.warn('👤 Using UID:', storedUid);
   return await querySubcollection(
     `confessionalSessions/${storedUid}`,
     'messages',
@@ -36,6 +40,8 @@ export async function fetchTempSession(uid: string): Promise<TempMessage[]> {
 export async function clearConfessionalSession(uid: string): Promise<void> {
   const storedUid = await ensureAuth(uid);
   if (!storedUid) return;
+  console.warn('🔥 Attempting Firestore access:', `confessionalSessions/${storedUid}/messages`);
+  console.warn('👤 Using UID:', storedUid);
   const docs = await querySubcollection(`confessionalSessions/${storedUid}`, 'messages');
   for (const msg of docs) {
     await deleteDocument(`confessionalSessions/${storedUid}/messages/${msg.id}`);

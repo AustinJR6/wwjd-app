@@ -411,6 +411,7 @@ export const askGeminiSimple = functions
 export const askGeminiV2 = functions
   .region("us-central1")
   .https.onRequest(async (req, res) => {
+  console.log("🔍 Headers received:", req.headers);
   const idToken = req.headers.authorization?.split("Bearer ")[1];
   logger.debug(`Token prefix: ${idToken ? idToken.slice(0, 10) : "none"}`);
   if (!idToken) {
@@ -426,6 +427,7 @@ export const askGeminiV2 = functions
   try {
     const decoded = await auth.verifyIdToken(idToken);
     logger.info(`✅ askGeminiV2 user: ${decoded.uid}`);
+    console.log("📛 Decoded userId from token:", decoded.uid);
     logger.debug(`Decoded UID: ${decoded.uid}`);
 
     let text = "";
@@ -451,6 +453,7 @@ export const askGeminiV2 = functions
       const subscribed = subSnap.exists && subSnap.data()?.active;
       const base = subscribed ? "religionChats" : "tempReligionChat";
       const col = db.collection(base).doc(decoded.uid).collection("messages");
+      console.log("🧠 Writing to Firestore path:", `${base}/${decoded.uid}/messages`);
       await col.add({ role: "user", text: prompt, timestamp: admin.firestore.FieldValue.serverTimestamp() });
       await col.add({ role: "assistant", text, timestamp: admin.firestore.FieldValue.serverTimestamp() });
       logger.info(`💾 Saved chat messages to ${base}`);

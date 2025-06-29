@@ -8,11 +8,13 @@ import { useAuthStore } from '@/state/authStore';
 import { getIdToken } from '@/services/authService';
 
 export async function getAuthHeader() {
-  const { authReady } = useAuthStore.getState();
+  const { authReady, uid } = useAuthStore.getState();
 
   if (!authReady) throw new Error('Auth not ready');
 
   const token = await getIdToken(true);
+  console.warn('🪪 ID Token for Firestore access:', token?.slice(0, 20));
+  console.warn('👤 Current auth UID:', uid);
   if (!token) throw new Error('Unable to refresh ID token');
 
   return { Authorization: `Bearer ${token}` };
