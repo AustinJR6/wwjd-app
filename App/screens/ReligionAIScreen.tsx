@@ -26,6 +26,8 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/navigation/RootStackParamList';
 import AuthGate from '@/components/AuthGate';
 import { sendGeminiPrompt } from '@/services/geminiService';
+import { useAuthStore } from '@/state/authStore';
+import { getIdToken } from '@/services/authService';
 import {
   saveMessage,
   fetchHistory,
@@ -233,6 +235,10 @@ export default function ReligionAIScreen() {
         `You are a ${promptRole} of the ${religion} faith. Answer the user using teachings from that tradition and cite any relevant scriptures.\n${question}`;
       console.log('📡 Sending Gemini prompt:', prompt);
       console.log('👤 Role:', promptRole);
+
+      console.log('Current user:', useAuthStore.getState().uid);
+      const debugToken = await getIdToken();
+      console.log('ID Token:', debugToken);
 
       const answer = await sendGeminiPrompt({
         url: ASK_GEMINI_V2,

@@ -1,6 +1,8 @@
 import { GEMINI_API_URL } from '@/config/apiConfig';
 import { getAuthHeader } from '@/config/firebaseApp';
 import { sendRequestWithGusBugLogging } from '@/utils/gusBugLogger';
+import { useAuthStore } from '@/state/authStore';
+import { getIdToken } from '@/services/authService';
 
 export type GeminiMessage = { role: 'user' | 'assistant'; text: string };
 
@@ -20,6 +22,9 @@ export async function sendGeminiPrompt({
   let headers: { Authorization: string };
   try {
     headers = await getAuthHeader();
+    console.log('Current user:', useAuthStore.getState().uid);
+    const debugToken = await getIdToken();
+    console.log('ID Token:', debugToken);
   } catch (err) {
     console.warn('No authenticated user for Gemini request');
     console.error('❌ Gemini token retrieval failed:', err);
