@@ -80,7 +80,7 @@ export default function LeaderboardsScreen() {
       }
 
       const userSnap = await queryCollection('users', 'individualPoints');
-      const religionSnap = await queryCollection('religions', 'totalPoints');
+      const religionSnap = await queryCollection('religion', 'totalPoints');
       const orgSnap = await queryCollection('organizations', 'totalPoints');
 
       setIndividuals(userSnap.slice(0, 10));

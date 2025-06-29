@@ -156,7 +156,7 @@ export const incrementReligionPoints = functions
       return;
     }
 
-    const ref = db.collection("religions").doc(religion);
+    const ref = db.collection("religion").doc(religion);
     await db.runTransaction(async (t: FirebaseFirestore.Transaction) => {
       const snap = await t.get(ref);
       const current = snap.exists ? (snap.data()?.totalPoints ?? 0) : 0;
@@ -1078,7 +1078,7 @@ export const seedFirestore = functions
       ensureDocument('dailyChallenges/dummy', { placeholder: true }),
       ensureDocument('activeChallenges/dummy', { placeholder: true }),
       ensureDocument('completedChallenges/dummy', { placeholder: true }),
-      ensureDocument('religions/dummy', { name: 'Dummy Religion' }),
+      ensureDocument('religion/dummy', { name: 'Dummy Religion' }),
       ensureDocument('organizations/dummy', { name: 'Dummy Org' }),
       ensureDocument(
         'religionChats/seed-user/messages/welcome',
