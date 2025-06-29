@@ -2,32 +2,62 @@ import axios from 'axios';
 import * as SafeStore from '@/utils/secureStore';
 import { useAuthStore } from '@/state/authStore';
 import { useUserStore } from '@/state/userStore';
+import auth from '@react-native-firebase/auth';
 
 let cachedIdToken: string | null = null;
 let cachedRefreshToken: string | null = null;
 let cachedUserId: string | null = null;
 
-// Rehydrate token values from SecureStore
-export async function initAuthState() {
-  cachedIdToken = await SafeStore.getItem('idToken');
-  cachedRefreshToken = await SafeStore.getItem('refreshToken');
-  cachedUserId = await SafeStore.getItem('userId');
-
-  if (cachedRefreshToken && (!cachedIdToken || !(await checkAndRefreshIdToken()))) {
-    try {
-      cachedIdToken = await refreshIdToken();
-    } catch {
-      cachedIdToken = null;
-      cachedRefreshToken = null;
+// Listen for Firebase auth state and sync with secure storage
+let unsubscribeAuth: (() => void) | null = null;
+export async function initAuthState(): Promise<void> {
+  return new Promise((resolve) => {
+    if (unsubscribeAuth) {
+      resolve();
+      return;
     }
-  }
 
-  const setAuth = useAuthStore.getState().setAuth;
-  const setAuthReady = useAuthStore.getState().setAuthReady;
-  if (cachedIdToken && cachedRefreshToken && cachedUserId) {
-    setAuth({ idToken: cachedIdToken, refreshToken: cachedRefreshToken, uid: cachedUserId });
-  }
-  setAuthReady(true);
+    unsubscribeAuth = auth().onAuthStateChanged(async (firebaseUser) => {
+      const setAuth = useAuthStore.getState().setAuth;
+      const clearAuth = useAuthStore.getState().clearAuth;
+      const setAuthReady = useAuthStore.getState().setAuthReady;
+
+      if (firebaseUser) {
+        const token = await firebaseUser.getIdToken();
+        const refresh = firebaseUser.refreshToken;
+        const storedUid = await SafeStore.getItem('userId');
+
+        if (storedUid && storedUid !== firebaseUser.uid) {
+          await SafeStore.deleteItem('idToken');
+          await SafeStore.deleteItem('refreshToken');
+          await SafeStore.deleteItem('userId');
+          await SafeStore.deleteItem('email');
+        }
+
+        await SafeStore.setItem('idToken', token);
+        await SafeStore.setItem('refreshToken', refresh);
+        await SafeStore.setItem('userId', firebaseUser.uid);
+        if (firebaseUser.email) await SafeStore.setItem('email', firebaseUser.email);
+
+        cachedIdToken = token;
+        cachedRefreshToken = refresh;
+        cachedUserId = firebaseUser.uid;
+        setAuth({ idToken: token, refreshToken: refresh, uid: firebaseUser.uid });
+      } else {
+        await SafeStore.deleteItem('idToken');
+        await SafeStore.deleteItem('refreshToken');
+        await SafeStore.deleteItem('userId');
+        await SafeStore.deleteItem('email');
+        cachedIdToken = null;
+        cachedRefreshToken = null;
+        cachedUserId = null;
+        clearAuth();
+      }
+
+      setAuthReady(true);
+      resolve();
+    });
+  });
 }
 
 export async function logTokenIssue(context: string, refreshAttempted: boolean) {
