@@ -80,12 +80,11 @@ service cloud.firestore {
 
     // Public leaderboards
     match /organizations/{orgId} {
-      allow read, write: if request.auth != null;
+      allow read: if request.auth != null;
     }
 
     match /religion/{religionId} {
       allow read: if request.auth != null;
-      allow write: if request.auth != null;
     }
 
     // Challenge proof submissions
