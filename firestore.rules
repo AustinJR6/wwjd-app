@@ -83,9 +83,14 @@ service cloud.firestore {
       allow read, write: if request.auth != null;
     }
 
+    // Read-only religion stats
     match /religions/{religionId} {
       allow read: if request.auth != null;
-      allow write: if request.auth != null;
+    }
+
+    // Completed challenges per user
+    match /completedChallenges/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
     // Challenge proof submissions
