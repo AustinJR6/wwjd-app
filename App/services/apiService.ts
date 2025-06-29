@@ -4,7 +4,8 @@ import { STRIPE_CHECKOUT_URL } from '@/config/apiConfig';
 import { STRIPE_SUCCESS_URL, STRIPE_CANCEL_URL } from '@/config/stripeConfig';
 import { getAuthHeaders } from '@/config/firebaseApp';
 import { sendRequestWithGusBugLogging } from '@/utils/gusBugLogger';
-import { signOutAndRetry, logTokenIssue } from '@/services/authService';
+import { logTokenIssue } from '@/services/authService';
+import { showPermissionDenied } from '@/utils/gracefulError';
 
 type StripeCheckoutResponse = {
   url: string;
@@ -41,8 +42,8 @@ export async function createStripeCheckout(
   } catch (err: any) {
     console.warn('❌ Firestore REST error on createStripeCheckout:', err.response?.data || err.message);
     if (err.response?.status === 403) {
-      await signOutAndRetry();
-      throw new Error('Auth failed');
+      showPermissionDenied();
+      throw new Error('Permission denied');
     }
     throw new Error(err.response?.data?.error || 'Unable to start checkout.');
   }

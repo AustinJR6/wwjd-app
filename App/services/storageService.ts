@@ -1,7 +1,8 @@
 // 🚫 Do not use @react-native-firebase. This app uses REST-only Firebase architecture.
 import { getAuthHeaders } from '@/config/firebaseApp';
 import { sendRequestWithGusBugLogging } from '@/utils/gusBugLogger';
-import { signOutAndRetry, logTokenIssue } from '@/services/authService';
+import { logTokenIssue } from '@/services/authService';
+import { showPermissionDenied } from '@/utils/gracefulError';
 
 const BUCKET = process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET;
 
@@ -35,7 +36,7 @@ export async function uploadImage(fileUri: string, path: string): Promise<string
     const errorText = await res.text();
     console.warn(`❌ Firestore REST error on ${uploadUrl}:`, errorText);
     if (res.status === 403) {
-      await signOutAndRetry();
+      showPermissionDenied();
       return '' as any;
     }
     throw new Error(errorText || 'Upload failed');
