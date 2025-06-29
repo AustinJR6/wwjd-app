@@ -88,6 +88,7 @@ export async function getDocument(path: string): Promise<any | null> {
     console.warn(`❌ Firestore REST error on ${path}:`, err.response?.data || err.message);
     if (err.response?.status === 404) return null;
     if (err.response?.status === 403) {
+      console.warn('Firestore 403 – not a session issue', err);
       showPermissionDenied();
       return null;
     }
@@ -115,6 +116,7 @@ export async function setDocument(path: string, data: any): Promise<void> {
   } catch (err: any) {
     console.warn(`❌ Firestore REST error on ${path}:`, err.response?.data || err.message);
     if (err.response?.status === 403) {
+      console.warn('Firestore 403 – not a session issue', err);
       showPermissionDenied();
       return;
     }
@@ -144,6 +146,7 @@ export async function addDocument(collectionPath: string, data: any): Promise<st
   } catch (err: any) {
     console.warn(`❌ Firestore REST error on ${collectionPath}:`, err.response?.data || err.message);
     if (err.response?.status === 403) {
+      console.warn('Firestore 403 – not a session issue', err);
       showPermissionDenied();
       return '';
     }
@@ -161,6 +164,7 @@ export async function deleteDocument(path: string): Promise<void> {
     console.warn(`❌ Firestore REST error on ${path}:`, err.response?.data || err.message);
     if (err.response?.status === 404) return;
     if (err.response?.status === 403) {
+      console.warn('Firestore 403 – not a session issue', err);
       showPermissionDenied();
       return;
     }
@@ -210,6 +214,7 @@ export async function queryCollection(
     console.warn(`❌ Firestore REST error on ${collection}:`, err.response?.data || err.message);
     if (err.response?.status === 404) return [];
     if (err.response?.status === 403) {
+      console.warn('Firestore 403 – not a session issue', err);
       showPermissionDenied();
       return [];
     }
@@ -251,6 +256,7 @@ export async function querySubcollection(
     console.warn(`❌ Firestore REST error on ${parentPath}/${collection}:`, err.response?.data || err.message);
     if (err.response?.status === 404) return [];
     if (err.response?.status === 403) {
+      console.warn('Firestore 403 – not a session issue', err);
       showPermissionDenied();
       return [];
     }

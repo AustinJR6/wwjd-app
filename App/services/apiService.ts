@@ -42,6 +42,7 @@ export async function createStripeCheckout(
   } catch (err: any) {
     console.warn('❌ Firestore REST error on createStripeCheckout:', err.response?.data || err.message);
     if (err.response?.status === 403) {
+      console.warn('Firestore 403 – not a session issue', err);
       showPermissionDenied();
       throw new Error('Permission denied');
     }
