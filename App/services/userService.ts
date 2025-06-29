@@ -1,8 +1,6 @@
-import { getDocument, setDocument } from './firestoreService';
+import { getDocument, setDocument } from "./firestoreService";
 import { useUserStore } from "@/state/userStore";
-import { ensureAuth } from '@/utils/authGuard';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { db } from '@/firebaseClient';
+import { ensureAuth } from "@/utils/authGuard";
 
 /**
  * Firestore user document structure
@@ -24,18 +22,17 @@ export interface FirestoreUser {
  */
 export async function ensureUserDocExists(uid: string, email?: string) {
   try {
-    const ref = doc(db, 'users', uid);
-    const snap = await getDoc(ref);
-    if (!snap.exists()) {
+    const snap = await getDocument(`users/${uid}`);
+    if (!snap) {
       const payload: any = { uid, createdAt: Date.now() };
       if (email) payload.email = email;
-      await setDoc(ref, payload, { merge: true });
-      console.log('📄 Created user doc for', uid);
+      await setDocument(`users/${uid}`, payload);
+      console.log("📄 Created user doc for", uid);
     } else {
-      console.log('📄 User doc already exists for', uid);
+      console.log("📄 User doc already exists for", uid);
     }
   } catch (err) {
-    console.warn('⚠️ ensureUserDocExists failed', err);
+    console.warn("⚠️ ensureUserDocExists failed", err);
   }
 }
 
@@ -55,15 +52,15 @@ export async function loadUser(uid: string): Promise<void> {
     useUserStore.getState().setUser({
       uid: user.uid,
       email: user.email,
-      displayName: user.displayName ?? '',
+      displayName: user.displayName ?? "",
       isSubscribed: user.isSubscribed,
       religion: user.religion,
-      region: user.region ?? '',
+      region: user.region ?? "",
       organizationId: user.organizationId,
       tokens: 0, // placeholder
     });
   } else {
-    throw new Error('User not found in Firestore.');
+    throw new Error("User not found in Firestore.");
   }
 }
 
@@ -74,8 +71,8 @@ export async function createUserProfile({
   uid,
   email,
   displayName,
-  religion = 'Christian',
-  region = '',
+  religion = "Christian",
+  region = "",
   organizationId,
 }: {
   uid: string;
@@ -123,14 +120,13 @@ export async function completeOnboarding(uid: string) {
  */
 export async function updateUserFields(
   uid: string,
-  updates: Partial<FirestoreUser>
+  updates: Partial<FirestoreUser>,
 ) {
   const storedUid = await ensureAuth(uid);
   if (!storedUid) return;
 
   const filtered = Object.fromEntries(
-    Object.entries(updates).filter(([_, v]) => v !== undefined)
+    Object.entries(updates).filter(([_, v]) => v !== undefined),
   );
   await setDocument(`users/${storedUid}`, filtered);
 }
-
