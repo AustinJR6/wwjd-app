@@ -10,22 +10,24 @@ export async function sendGeminiPrompt({
   prompt,
   history = [],
   url = GEMINI_API_URL,
+  token,
   onResponse,
   onError,
 }: {
   prompt: string;
   history?: GeminiMessage[];
   url?: string;
+  token?: string;
   onResponse?: (reply: string) => void;
   onError?: (err: any) => void;
 }): Promise<string | null> {
   let headers: Record<string, string>;
   try {
-    const token = await getIdToken(true);
-    if (!token) throw new Error('No token');
-    headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
+    const idToken = token || (await getIdToken(true));
+    if (!idToken) throw new Error('No token');
+    headers = { Authorization: `Bearer ${idToken}`, 'Content-Type': 'application/json' };
     console.log('Current user:', useAuthStore.getState().uid);
-    console.log('ID Token:', token);
+    console.log('ID Token:', idToken);
   } catch (err) {
     console.warn('No authenticated user for Gemini request');
     console.error('❌ Gemini token retrieval failed:', err);

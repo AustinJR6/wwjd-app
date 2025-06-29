@@ -16,6 +16,7 @@ import { ASK_GEMINI_SIMPLE } from "@/utils/constants";
 import { getDocument } from '@/services/firestoreService';
 import { useUser } from '@/hooks/useUser';
 import { ensureAuth } from '@/utils/authGuard';
+import { firebase } from '@/utils/firebaseShim';
 import { showGracefulError } from '@/utils/gracefulError';
 import { sendGeminiPrompt, type GeminiMessage } from '@/services/geminiService';
 import { useAuth } from '@/hooks/useAuth';
@@ -90,10 +91,10 @@ export default function ConfessionalScreen() {
     if (!authReady) return;
     if (!uid) return;
     const load = async () => {
-      const uidCheck = await ensureAuth(user?.uid);
+      const uidCheck = await ensureAuth(firebase.auth().currentUser?.uid);
       if (uidCheck) {
-        console.log('Firebase currentUser:', useAuthStore.getState().uid);
-        const preview = await getIdToken();
+        console.log('Firebase currentUser:', firebase.auth().currentUser?.uid);
+        const preview = await firebase.auth().currentUser?.getIdToken(true);
         console.log('ID Token:', preview);
         const hist = await fetchTempSession(uidCheck);
         setMessages(hist);
@@ -104,7 +105,7 @@ export default function ConfessionalScreen() {
     const sub = AppState.addEventListener('change', (state) => {
       if (state !== 'active') {
         const clear = async () => {
-          const uid = await ensureAuth(user?.uid);
+          const uid = await ensureAuth(firebase.auth().currentUser?.uid);
           if (uid) await clearConfessionalSession(uid);
         };
         clear();
@@ -114,7 +115,7 @@ export default function ConfessionalScreen() {
     return () => {
       sub.remove();
       const cleanup = async () => {
-        const uid = await ensureAuth(user?.uid);
+        const uid = await ensureAuth(firebase.auth().currentUser?.uid);
         if (uid) await clearConfessionalSession(uid);
       };
       cleanup();
@@ -130,14 +131,15 @@ export default function ConfessionalScreen() {
 
     setLoading(true);
     try {
-      const uid = await ensureAuth(user?.uid);
+      const currentUser = firebase.auth().currentUser;
+      const uid = await ensureAuth(currentUser?.uid);
       if (!uid) {
         setLoading(false);
         return;
       }
 
-      console.log('Firebase currentUser:', useAuthStore.getState().uid);
-      const token = await getIdToken();
+      console.log('Firebase currentUser:', currentUser?.uid);
+      const token = await currentUser?.getIdToken(true);
       console.log('ID Token:', token);
 
       const userData = await getDocument(`users/${uid}`);
@@ -167,6 +169,7 @@ export default function ConfessionalScreen() {
         url: ASK_GEMINI_SIMPLE,
         prompt,
         history: historyMsgs,
+        token: token || undefined,
       });
       if (!answer) {
         showGracefulError('Could not process your confession.');

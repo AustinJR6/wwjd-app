@@ -19,10 +19,9 @@ import { querySubcollection, addDocument, getDocument, setDocument } from '@/ser
 import { callFunction, incrementReligionPoints } from '@/services/functionService';
 import { ASK_GEMINI_SIMPLE } from '@/utils/constants';
 import { ensureAuth } from '@/utils/authGuard';
+import { firebase } from '@/utils/firebaseShim';
 import { sendGeminiPrompt } from '@/services/geminiService';
 import { useAuth } from '@/hooks/useAuth';
-import { useAuthStore } from '@/state/authStore';
-import { getIdToken } from '@/services/authService';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/navigation/RootStackParamList';
@@ -155,15 +154,15 @@ export default function JournalScreen() {
           }
         }
 
-        const uid = await ensureAuth();
+        const uid = await ensureAuth(firebase.auth().currentUser?.uid);
         if (!uid) {
           Alert.alert('Login Required', 'Please log in again.');
           navigation.replace('Login');
           return;
         }
 
-        console.log('Firebase currentUser:', useAuthStore.getState().uid);
-        const tokenPreview = await getIdToken();
+        console.log('Firebase currentUser:', firebase.auth().currentUser?.uid);
+        const tokenPreview = await firebase.auth().currentUser?.getIdToken(true);
         console.log('ID Token:', tokenPreview);
 
         const list = await querySubcollection(
@@ -191,15 +190,16 @@ export default function JournalScreen() {
     setAiPrompt(prompt);
     setGuidedMode(true);
     try {
-      const uid = await ensureAuth();
+      const uid = await ensureAuth(firebase.auth().currentUser?.uid);
       if (!uid) throw new Error('auth');
-      console.log('Firebase currentUser:', useAuthStore.getState().uid);
-      const token = await getIdToken();
+      console.log('Firebase currentUser:', firebase.auth().currentUser?.uid);
+      const token = await firebase.auth().currentUser?.getIdToken(true);
       console.log('ID Token:', token);
       const answer = await sendGeminiPrompt({
         url: ASK_GEMINI_SIMPLE,
         prompt,
         history: [],
+        token: token || undefined,
       });
       if (!answer) {
         Alert.alert('Guide Unavailable', 'We couldn\u2019t reach our guide right now. Write freely from the heart.');
@@ -224,15 +224,15 @@ export default function JournalScreen() {
     }
     setSaving(true);
     try {
-      const uid = await ensureAuth();
+      const uid = await ensureAuth(firebase.auth().currentUser?.uid);
       if (!uid) {
         Alert.alert('Login Required', 'Please log in again.');
         navigation.replace('Login');
         return;
       }
 
-      console.log('Firebase currentUser:', useAuthStore.getState().uid);
-      const token = await getIdToken();
+      console.log('Firebase currentUser:', firebase.auth().currentUser?.uid);
+      const token = await firebase.auth().currentUser?.getIdToken(true);
       console.log('ID Token:', token);
 
       const userData = await getDocument(`users/${uid}`) || {};
