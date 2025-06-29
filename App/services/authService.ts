@@ -1,89 +1,35 @@
+// 🚫 Do not use @react-native-firebase. This app uses REST-only Firebase architecture.
 import axios from 'axios';
 import * as SafeStore from '@/utils/secureStore';
 import { useAuthStore } from '@/state/authStore';
 import { useUserStore } from '@/state/userStore';
-import auth from '@react-native-firebase/auth';
 
 let cachedIdToken: string | null = null;
 let cachedRefreshToken: string | null = null;
 let cachedUserId: string | null = null;
 
-// Listen for Firebase auth state and sync with secure storage
-let unsubscribeAuth: (() => void) | null = null;
+// Manually initialize auth state from secure storage
 export async function initAuthState(): Promise<void> {
-  return new Promise((resolve) => {
-    if (unsubscribeAuth) {
-      resolve();
-      return;
-    }
+  const setAuth = useAuthStore.getState().setAuth;
+  const setAuthReady = useAuthStore.getState().setAuthReady;
 
-    // confirm firebase initialized
+  const storedToken = await SafeStore.getItem('idToken');
+  const storedRefresh = await SafeStore.getItem('refreshToken');
+  const storedUid = await SafeStore.getItem('userId');
+
+  if (storedToken && storedRefresh && storedUid) {
+    cachedIdToken = storedToken;
+    cachedRefreshToken = storedRefresh;
+    cachedUserId = storedUid;
+    setAuth({ idToken: storedToken, refreshToken: storedRefresh, uid: storedUid });
     try {
-      const appInstance = auth().app;
-      console.log('✅ Firebase initialized:', appInstance.name, appInstance.options.projectId);
+      await checkAndRefreshIdToken();
     } catch (err) {
-      console.error('❌ Firebase initialization check failed', err);
+      console.warn('Unable to refresh token on init', err);
     }
+  }
 
-    let resolved = false;
-    const finalize = () => {
-      if (!resolved) {
-        resolved = true;
-        resolve();
-      }
-    };
-
-    // fallback in case onAuthStateChanged never fires
-    const timeout = setTimeout(() => {
-      console.warn('⏰ onAuthStateChanged timeout');
-      useAuthStore.getState().setAuthReady(true);
-      finalize();
-    }, 10000);
-
-    unsubscribeAuth = auth().onAuthStateChanged(async (firebaseUser) => {
-      clearTimeout(timeout);
-      console.log('🔥 onAuthStateChanged fired', firebaseUser ? firebaseUser.uid : null);
-      const setAuth = useAuthStore.getState().setAuth;
-      const clearAuth = useAuthStore.getState().clearAuth;
-      const setAuthReady = useAuthStore.getState().setAuthReady;
-
-      if (firebaseUser) {
-        const token = await firebaseUser.getIdToken();
-        const refresh = (firebaseUser as any).refreshToken as string | undefined;
-        console.log('🧪 Firebase user', firebaseUser.uid, 'token', token.slice(0, 10));
-        const storedUid = await SafeStore.getItem('userId');
-
-        if (storedUid && storedUid !== firebaseUser.uid) {
-          await SafeStore.deleteItem('idToken');
-          await SafeStore.deleteItem('refreshToken');
-          await SafeStore.deleteItem('userId');
-          await SafeStore.deleteItem('email');
-        }
-
-        await SafeStore.setItem('idToken', token);
-        await SafeStore.setItem('refreshToken', refresh || '');
-        await SafeStore.setItem('userId', firebaseUser.uid);
-        if (firebaseUser.email) await SafeStore.setItem('email', firebaseUser.email);
-
-        cachedIdToken = token;
-        cachedRefreshToken = refresh || '';
-        cachedUserId = firebaseUser.uid;
-        setAuth({ idToken: token, refreshToken: refresh || '', uid: firebaseUser.uid });
-      } else {
-        await SafeStore.deleteItem('idToken');
-        await SafeStore.deleteItem('refreshToken');
-        await SafeStore.deleteItem('userId');
-        await SafeStore.deleteItem('email');
-        cachedIdToken = null;
-        cachedRefreshToken = null;
-        cachedUserId = null;
-        clearAuth();
-      }
-
-      setAuthReady(true);
-      finalize();
-    });
-  });
+  setAuthReady(true);
 }
 
 export async function logTokenIssue(context: string, refreshAttempted: boolean) {

@@ -1,3 +1,4 @@
+// 🚫 Do not use @react-native-firebase. This app uses REST-only Firebase architecture.
 import axios from 'axios';
 import { STRIPE_CHECKOUT_URL, DONATION_CHECKOUT_URL } from '@/config/apiConfig';
 import { STRIPE_SUCCESS_URL, STRIPE_CANCEL_URL } from '@/config/stripeConfig';

@@ -1,3 +1,4 @@
+// 🚫 Do not use @react-native-firebase. This app uses REST-only Firebase architecture.
 import { GEMINI_API_URL } from '@/config/apiConfig';
 import { getAuthHeader } from '@/config/firebaseApp';
 import { sendRequestWithGusBugLogging } from '@/utils/gusBugLogger';

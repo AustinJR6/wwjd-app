@@ -1,3 +1,4 @@
+// 🚫 Do not use @react-native-firebase. This app uses REST-only Firebase architecture.
 import axios from 'axios';
 import { getAuthHeader } from '@/config/firebaseApp';
 import { logTokenIssue, getIdToken } from '@/services/authService';
