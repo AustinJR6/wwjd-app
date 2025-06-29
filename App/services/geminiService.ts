@@ -1,6 +1,5 @@
 // 🚫 Do not use @react-native-firebase. This app uses REST-only Firebase architecture.
 import { GEMINI_API_URL } from '@/config/apiConfig';
-import { getAuthHeader } from '@/config/firebaseApp';
 import { sendRequestWithGusBugLogging } from '@/utils/gusBugLogger';
 import { useAuthStore } from '@/state/authStore';
 import { getIdToken } from '@/services/authService';
@@ -22,18 +21,17 @@ export async function sendGeminiPrompt({
 }): Promise<string | null> {
   let headers: Record<string, string>;
   try {
-    headers = await getAuthHeader();
+    const token = await getIdToken(true);
+    if (!token) throw new Error('No token');
+    headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
     console.log('Current user:', useAuthStore.getState().uid);
-    const debugToken = await getIdToken();
-    console.log('ID Token:', debugToken);
+    console.log('ID Token:', token);
   } catch (err) {
     console.warn('No authenticated user for Gemini request');
     console.error('❌ Gemini token retrieval failed:', err);
     onError?.(err instanceof Error ? err : new Error('No authenticated user'));
     return null;
   }
-
-  headers = { ...headers, 'Content-Type': 'application/json' };
 
   const formattedHistory = history.map((m) => ({
     role: m.role,

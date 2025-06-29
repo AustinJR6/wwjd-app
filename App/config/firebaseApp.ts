@@ -5,32 +5,15 @@ export const FIRESTORE_PARENT = `projects/${process.env.EXPO_PUBLIC_FIREBASE_PRO
 export const FUNCTIONS_BASE_URL = process.env.EXPO_PUBLIC_FUNCTION_BASE_URL || '';
 
 import { useAuthStore } from '@/state/authStore';
+import { getIdToken } from '@/services/authService';
 
 export async function getAuthHeader() {
-  const { idToken, refreshIdToken, authReady } = useAuthStore.getState();
+  const { authReady } = useAuthStore.getState();
 
   if (!authReady) throw new Error('Auth not ready');
 
-  let token = idToken;
-  if (token) {
-    try {
-      const payload = JSON.parse(
-        typeof atob === 'function'
-          ? atob(token.split('.')[1])
-          : Buffer.from(token.split('.')[1], 'base64').toString('utf8'),
-      );
-      if (payload.exp * 1000 < Date.now() + 60000) {
-        token = null;
-      }
-    } catch {
-      token = null;
-    }
-  }
-
-  if (!token) {
-    token = await refreshIdToken();
-    if (!token) throw new Error('Unable to refresh ID token');
-  }
+  const token = await getIdToken(true);
+  if (!token) throw new Error('Unable to refresh ID token');
 
   return { Authorization: `Bearer ${token}` };
 }

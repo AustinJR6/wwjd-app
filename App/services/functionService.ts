@@ -1,17 +1,21 @@
 // 🚫 Do not use @react-native-firebase. This app uses REST-only Firebase architecture.
 import { sendRequestWithGusBugLogging } from '@/utils/gusBugLogger';
 import { sendSecureFirebaseRequest } from '@/utils/firebaseRequest';
-import { FUNCTIONS_BASE_URL, getAuthHeader } from '@/config/firebaseApp';
+import { FUNCTIONS_BASE_URL } from '@/config/firebaseApp';
 import { logTokenIssue, getIdToken } from '@/services/authService';
 import { useAuthStore } from '@/state/authStore';
 
 export async function callFunction(name: string, data: any): Promise<any> {
   let headers;
   try {
-    headers = await getAuthHeader();
+    const token = await getIdToken(true);
+    if (!token) throw new Error('Missing token');
+    headers = {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    };
     console.log('Current user:', useAuthStore.getState().uid);
-    const debugToken = await getIdToken();
-    console.log('ID Token:', debugToken);
+    console.log('ID Token:', token);
   } catch {
     await logTokenIssue('function call', false);
     throw new Error('Missing auth token');
@@ -20,11 +24,13 @@ export async function callFunction(name: string, data: any): Promise<any> {
   const url = `${FUNCTIONS_BASE_URL}/${name}`;
   console.log('📡 Calling endpoint:', url);
   try {
-    const res = await sendRequestWithGusBugLogging(() => fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...headers },
-      body: JSON.stringify(data ?? {}),
-    }));
+    const res = await sendRequestWithGusBugLogging(() =>
+      fetch(url, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(data ?? {}),
+      })
+    );
 
     if (!res.ok) {
       const text = await res.text();
