@@ -1,18 +1,14 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // User profile data - only owners can read or write
+    
+    // 🧑‍💼 User profile data - only owners can read/write
     match /users/{userId} {
-      // Allow authenticated users to create their own user document
       allow create: if request.auth != null && request.auth.uid == userId;
-
-      // Allow read, update and delete only for the owner when the document exists
-      allow read, update, delete: if request.auth != null
-        && request.auth.uid == userId
-        && exists(/databases/$(database)/documents/users/$(request.auth.uid));
+      allow read, update, delete: if request.auth != null && request.auth.uid == userId;
     }
 
-    // Religion chat messages
+    // 🛐 Religion chat messages (per user)
     match /religionChats/{userId}/messages {
       allow list, read: if request.auth != null && request.auth.uid == userId;
       match /{messageId} {
@@ -20,7 +16,7 @@ service cloud.firestore {
       }
     }
 
-    // Temporary chat collection used before subscribing
+    // ⛪️ Temp religion chat (for unsubscribed users)
     match /tempReligionChat/{userId}/messages {
       allow list, read: if request.auth != null && request.auth.uid == userId;
       match /{messageId} {
@@ -28,7 +24,7 @@ service cloud.firestore {
       }
     }
 
-    // Confessional session messages
+    // 🙏 Confessional session messages
     match /confessionalSessions/{userId}/messages {
       allow list, read: if request.auth != null && request.auth.uid == userId;
       match /{messageId} {
@@ -36,27 +32,27 @@ service cloud.firestore {
       }
     }
 
-    // Subscription documents
+    // 💳 Subscriptions
     match /subscriptions/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
-    // Top level tokens
+    // 🪙 Token documents
     match /tokens/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
-    // Global token settings readable by any authenticated user
+    // 📊 Global token settings (readable by all authenticated users)
     match /tokens/settings {
       allow read: if request.auth != null;
     }
 
-    // Free ask usage tracker
+    // 🎁 Free ask usage
     match /freeAsk/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
-    // Journal entries stored under user subcollection
+    // 📓 Journal entries stored under user subcollection
     match /users/{userId}/journalEntries {
       allow list, read: if request.auth != null && request.auth.uid == userId;
       match /{entryId} {
@@ -64,53 +60,53 @@ service cloud.firestore {
       }
     }
 
-    // Legacy top-level journal entries path
+    // 🧾 Legacy journal entries path (not currently used but preserved)
     match /journalEntries/{userId}/{entryId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
-    // Challenge history documents
+    // 🕰️ Challenge history
     match /users/{userId}/challengeHistory/{entryId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
-    // Active challenge state per user
+    // 🧠 Active challenge (per user)
     match /users/{userId}/activeChallenge {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
-    // Daily challenges collection - read only for all users
+    // 📆 Daily challenges - readable by everyone
     match /dailyChallenges/{dayId} {
       allow read: if true;
     }
 
-    // Active challenges collection
+    // 🟢 Active challenges (public list)
     match /activeChallenges/{docId} {
       allow read: if request.auth != null;
     }
 
-    // Completed challenges per user
+    // ✅ Completed challenges (per user)
     match /completedChallenges/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
-    // Organization documents
+    // 🏢 Organization documents
     match /organizations/{orgId} {
       allow list, read, write: if request.auth != null;
     }
 
-    // Public religion information - read only
+    // 📚 Public religion info - open access
     match /religion/{religionId} {
       allow read: if true;
     }
 
-    // Challenge proof submissions
+    // 📸 Challenge proof submissions
     match /challengeProofs/{proofId} {
       allow write: if request.auth != null && request.resource.data.uid == request.auth.uid;
       allow read: if request.auth != null;
     }
 
-    // Default deny all other accesses
+    // 🚫 Catch-all fallback - deny all others
     match /{document=**} {
       allow read, write: if false;
     }
