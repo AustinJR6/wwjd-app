@@ -232,8 +232,15 @@ async function storeAuth(auth: AuthResponse) {
   console.log('🔐 Stored auth for', auth.localId);
 }
 
+import { Alert } from 'react-native';
+
 export async function signOutAndRetry(): Promise<void> {
-  console.warn('🚪 Signing out due to auth failure');
-  await logout();
+  console.warn('🚪 Auth failure detected');
+  Alert.alert('Session expired', 'Please sign in again.', [
+    {
+      text: 'OK',
+      onPress: () => logout(),
+    },
+  ]);
 }
 

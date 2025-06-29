@@ -21,6 +21,8 @@ import {
 } from '@/services/functionService';
 import { useUser } from '@/hooks/useUser';
 import { ensureAuth } from '@/utils/authGuard';
+import { useAuthStore } from '@/state/authStore';
+import { getIdToken } from '@/services/authService';
 import { useChallengeStore } from '@/state/challengeStore';
 import { sendGeminiPrompt } from '@/services/geminiService';
 import { useNavigation } from '@react-navigation/native';
@@ -132,6 +134,10 @@ export default function ChallengeScreen() {
         `Give me a short daily challenge for the ${religion} faith on ${new Date().toDateString()}.`;
       console.log('📡 Sending Gemini prompt:', prompt);
       console.log('👤 Role:', religion);
+
+      console.log('Current user:', useAuthStore.getState().uid);
+      const debugToken = await getIdToken();
+      console.log('ID Token:', debugToken);
 
       const newChallenge = await sendGeminiPrompt({
         url: GENERATE_CHALLENGE_URL,
@@ -281,6 +287,9 @@ export default function ChallengeScreen() {
     history.completed += 1;
     await setDocument(`users/${uid}`, { dailyChallengeHistory: history });
     try {
+      console.log('Current user:', useAuthStore.getState().uid);
+      const cfToken = await getIdToken();
+      console.log('ID Token:', cfToken);
       await callFunction('completeChallenge', { useToken });
     } catch (err) {
       console.error('Backend validation failed:', err);
