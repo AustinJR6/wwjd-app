@@ -11,7 +11,7 @@ import {
   setDoc,
   where,
 } from 'firebase/firestore';
-import { db } from '@/firebaseClient';
+import { db } from '@/firebase';
 import { showPermissionDenied } from '@/utils/gracefulError';
 
 function warnIfInvalidPath(path: string, expectEven: boolean) {

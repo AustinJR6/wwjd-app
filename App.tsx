@@ -15,7 +15,7 @@ import { useAuthStore } from "@/state/authStore";
 import { getStoredToken, initAuthState } from "./App/services/authService";
 import StartupAnimation from "./App/components/common/StartupAnimation";
 import Constants from "expo-constants";
-import { waitForFirebaseAuthReady } from "./App/firebaseClient";
+import { waitForFirebaseAuthReady } from "./App/firebase";
 
 import { RootStackParamList } from "./App/navigation/RootStackParamList";
 import { useTheme } from "./App/components/theme/theme";
