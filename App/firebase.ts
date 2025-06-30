@@ -1,37 +1,29 @@
-import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getAuth, onAuthStateChanged } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
-import { getStorage } from 'firebase/storage';
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { initializeApp, getApps, getApp } from "firebase/app";
+import {
+  initializeAuth,
+  getReactNativePersistence,
+} from "firebase/auth/react-native";
+import { getFirestore } from "firebase/firestore";
+import { getStorage } from "firebase/storage";
+import Constants from "expo-constants";
 
-export const FIREBASE_CONFIG = {
-  apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY as string,
-  authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN as string,
-  projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID as string,
-  storageBucket: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET as string,
-  messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MSG_SENDER_ID as string,
-  appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID as string,
-  measurementId: process.env.EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID as string,
+const firebaseConfig = {
+  apiKey: Constants.expoConfig?.extra?.firebaseApiKey,
+  authDomain: Constants.expoConfig?.extra?.firebaseAuthDomain,
+  projectId: Constants.expoConfig?.extra?.firebaseProjectId,
+  storageBucket: Constants.expoConfig?.extra?.firebaseStorageBucket,
+  messagingSenderId: Constants.expoConfig?.extra?.firebaseMessagingSenderId,
+  appId: Constants.expoConfig?.extra?.firebaseAppId,
 };
 
-const app = getApps().length ? getApp() : initializeApp(FIREBASE_CONFIG);
+const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 
-export const auth = getAuth(app);
-export const db = getFirestore(app);
-export const storage = getStorage(app);
+const auth = initializeAuth(app, {
+  persistence: getReactNativePersistence(AsyncStorage),
+});
 
-let authReadyPromise: Promise<void> | null = null;
+const db = getFirestore(app);
+const storage = getStorage(app);
 
-export function waitForFirebaseAuthReady(): Promise<void> {
-  if (auth.currentUser) return Promise.resolve();
-  if (!authReadyPromise) {
-    authReadyPromise = new Promise((resolve) => {
-      const unsubscribe = onAuthStateChanged(auth, () => {
-        unsubscribe();
-        resolve();
-      });
-    });
-  }
-  return authReadyPromise;
-}
-
-export { app };
+export { app, auth, db, storage };
