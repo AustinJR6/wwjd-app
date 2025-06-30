@@ -1,9 +1,10 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { initializeApp, getApps, getApp } from "firebase/app";
 import {
+  getAuth,
   initializeAuth,
   getReactNativePersistence,
-} from "firebase/auth/react-native";
+} from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 import Constants from "expo-constants";
