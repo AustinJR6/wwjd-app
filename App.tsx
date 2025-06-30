@@ -3,7 +3,6 @@ import { View, ActivityIndicator, Text } from "react-native";
 import ErrorBoundary from "./App/components/common/ErrorBoundary";
 import { useFonts, Poppins_600SemiBold } from "@expo-google-fonts/poppins";
 import { Merriweather_400Regular } from "@expo-google-fonts/merriweather";
-import { FIREBASE_CONFIG } from "./App/firebase";
 import * as SafeStore from "@/utils/secureStore";
 import { NavigationContainer } from "@react-navigation/native";
 import { navigationRef } from "./App/navigation/navigationRef";
@@ -15,7 +14,6 @@ import { useAuthStore } from "@/state/authStore";
 import { getStoredToken, initAuthState } from "./App/services/authService";
 import StartupAnimation from "./App/components/common/StartupAnimation";
 import Constants from "expo-constants";
-import { waitForFirebaseAuthReady } from "./App/firebase";
 
 import { RootStackParamList } from "./App/navigation/RootStackParamList";
 import { useTheme } from "./App/components/theme/theme";
@@ -82,7 +80,6 @@ export default function App() {
     (async () => {
       const preview = await getStoredToken();
       console.log("🧪 Auth token preview:", preview);
-      console.log("📦 Firebase project ID:", FIREBASE_CONFIG.projectId);
     })();
   }, []);
 
@@ -94,7 +91,6 @@ export default function App() {
 
   useEffect(() => {
     const initialize = async () => {
-      await waitForFirebaseAuthReady();
       await initAuthState();
       console.log("🔑 Checking saved auth credentials");
       try {
