@@ -16,7 +16,7 @@ import { getAuthHeaders } from '@/config/firebaseApp';
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { useTheme } from "@/components/theme/theme";
 import { ensureAuth } from '@/utils/authGuard';
-import * as SafeStore from '@/utils/secureStore';
+import * as SecureStore from 'expo-secure-store';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/navigation/RootStackParamList';
@@ -57,7 +57,7 @@ export default function SubmitProofScreen() {
 
   useEffect(() => {
     const checkAccess = async () => {
-      const sub = await SafeStore.getItem('isSubscribed');
+      const sub = await SecureStore.getItemAsync('isSubscribed');
       if (sub !== 'true') {
         Alert.alert('Access Denied', 'This feature is for OneVine+ or Org Managers only.');
         navigation.goBack();

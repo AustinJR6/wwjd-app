@@ -9,7 +9,6 @@ import { RootStackParamList } from "@/navigation/RootStackParamList";
 import { useUser } from '@/hooks/useUser';
 import { createStripeCheckout } from '@/services/apiService';
 import { PRICE_IDS } from '@/config/stripeConfig';
-import * as SafeStore from '@/utils/secureStore';
 import { getAuthHeaders } from '@/config/firebaseApp';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Upgrade'>;

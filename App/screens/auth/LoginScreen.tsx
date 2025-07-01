@@ -7,7 +7,7 @@ import TextField from "@/components/TextField";
 import Button from "@/components/common/Button";
 import { login, resetPassword } from "@/services/authService";
 import { loadUser, ensureUserDocExists } from "@/services/userService";
-import * as SafeStore from '@/utils/secureStore';
+import * as SecureStore from 'expo-secure-store';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTheme } from "@/components/theme/theme";
@@ -31,8 +31,8 @@ export default function LoginScreen() {
         // Load the user profile so the root navigator registers authenticated screens
         await loadUser(result.localId);
 
-        const hasSeen = await SafeStore.getItem(
-          `hasSeenOnboarding-${result.localId}`
+        const hasSeen = await SecureStore.getItemAsync(
+          `hasSeenOnboarding-${result.localId}`,
         );
         navigation.replace(hasSeen === 'true' ? 'Home' : 'Onboarding');
       }

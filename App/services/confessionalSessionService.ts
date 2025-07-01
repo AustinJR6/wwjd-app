@@ -1,4 +1,8 @@
-import { addDocument, querySubcollection, deleteDocument } from './firestoreService';
+import {
+  addDocument,
+  querySubcollection,
+  deleteDocument,
+} from '@/lib/firestore';
 import { ensureAuth } from '@/utils/authGuard';
 
 export interface TempMessage {

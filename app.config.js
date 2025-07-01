@@ -38,6 +38,7 @@ export default {
         android: {
           compileSdkVersion: 35,
           targetSdkVersion: 35,
+          googleServicesFile: "./android/app/google-services.json",
         },
       },
     ],
