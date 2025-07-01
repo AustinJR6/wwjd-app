@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { View, ActivityIndicator, Text } from "react-native";
+import * as Sentry from '@sentry/react-native';
 import ErrorBoundary from "./App/components/common/ErrorBoundary";
 import { useFonts, Poppins_600SemiBold } from "@expo-google-fonts/poppins";
 import { Merriweather_400Regular } from "@expo-google-fonts/merriweather";
@@ -51,6 +52,13 @@ import JournalScreen from "./App/screens/JournalScreen";
 import ConfessionalScreen from "./App/screens/ConfessionalScreen";
 import BuyTokensScreen from "./App/screens/BuyTokensScreen";
 import GiveBackScreen from "./App/screens/GiveBackScreen";
+
+Sentry.init({
+  dsn: 'YOUR_PUBLIC_DSN_HERE',
+  tracesSampleRate: 1.0,
+  enableInExpoDevelopment: true,
+  debug: __DEV__,
+});
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
