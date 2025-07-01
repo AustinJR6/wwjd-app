@@ -2,6 +2,7 @@ import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
+import functions from '@react-native-firebase/functions';
 // Firebase config values now come directly from environment variables.
 const firebaseConfig = {
   apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
@@ -18,5 +19,6 @@ const auth = getAuth(app);
 
 const db = getFirestore(app);
 const storage = getStorage(app);
+const cloudFunctions = functions();
 
-export { app, auth, db, storage };
+export { app, auth, db, storage, cloudFunctions as functions };
