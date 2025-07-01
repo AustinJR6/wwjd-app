@@ -1,9 +1,8 @@
-import { useAuthStore } from '@/state/authStore'
+import { useAuthStore } from '@/state/authStore';
 
 export function useAuth() {
-  const idToken = useAuthStore((s) => s.idToken)
-  const uid = useAuthStore((s) => s.uid)
-  const authReady = useAuthStore((s) => s.authReady)
+  const uid = useAuthStore((s) => s.uid);
+  const authReady = useAuthStore((s) => s.authReady);
 
-  return { idToken, uid, authReady }
+  return { uid, authReady };
 }

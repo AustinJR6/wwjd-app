@@ -16,8 +16,8 @@ This project uses **React Native (via Expo)** and is powered by **Firebase** for
 ## 🧰 Tech Stack
 
 - **React Native** (with Expo)
-- **Firebase via REST API**
-  - Authentication and Firestore access using HTTP endpoints
+- **Firebase via Modular JS SDK**
+  - Authentication, Firestore, and Storage handled by the Firebase Web SDK
 - **Google Gemini / OpenAI GPT**
   - Faith-aligned reflection prompts
 - **Stripe**
@@ -45,7 +45,7 @@ Create a Firebase project
 
 Enable Anonymous Authentication
 
-Set up Firestore using the REST API endpoints (no Firebase SDK needed)
+Enable Email/Password authentication and create your Firestore rules
 
 ### Environment Variables
 
@@ -116,7 +116,7 @@ OneVine is rooted in the belief that truth and love transcend labels. Whether Ch
 Austin Rittenhouse – Founder, developer
 
 🛠 Development Notes
-All Firebase integrations now use the REST API—see `App/services` for details.
+All Firebase integrations now use the Firebase Modular Web SDK—see `App/lib` for details.
 
 Stripe subscription flow is being integrated with Firebase webhook handling
 

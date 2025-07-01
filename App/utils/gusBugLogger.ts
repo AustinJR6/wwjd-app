@@ -1,4 +1,4 @@
-import { signOutAndRetry, checkAndRefreshIdToken, logTokenIssue } from '@/services/authService';
+import { signOutAndRetry, getIdToken, logTokenIssue } from '@/services/authService';
 import { showPermissionDenied } from '@/utils/gracefulError';
 import { useAuthStore } from '@/state/authStore';
 
@@ -19,10 +19,10 @@ export async function sendRequestWithGusBugLogging<T>(
         uid,
       });
       try {
-        await checkAndRefreshIdToken();
+        await getIdToken(true);
         return await requestFn();
       } catch (err) {
-        await logTokenIssue('gusBugRetry', true);
+        logTokenIssue('gusBugRetry');
         await signOutAndRetry();
       }
     } else if (status === 403 && permError) {
@@ -42,10 +42,10 @@ export async function sendRequestWithGusBugLogging<T>(
         uid,
       });
       try {
-        await checkAndRefreshIdToken();
+        await getIdToken(true);
         return await requestFn();
       } catch (e) {
-        await logTokenIssue('gusBugCatch', true);
+        logTokenIssue('gusBugCatch');
         await signOutAndRetry();
       }
     } else if (err?.response?.status === 403 && permError) {

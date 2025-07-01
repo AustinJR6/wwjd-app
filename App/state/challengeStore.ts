@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { getDocument, setDocument } from '@/services/firestoreService';
+import { getDocument, setDocument } from '@/lib/firestore';
 import { ensureAuth } from '@/utils/authGuard';
 
 interface ChallengeStore {

@@ -15,7 +15,7 @@ import ScreenContainer from "@/components/theme/ScreenContainer";
 import { useTheme } from "@/components/theme/theme";
 import { showGracefulError } from '@/utils/gracefulError';
 import * as LocalAuthentication from 'expo-local-authentication';
-import { querySubcollection, addDocument, getDocument, setDocument } from '@/services/firestoreService';
+import { querySubcollection, addDocument, getDocument, setDocument } from '@/lib/firestore';
 import { callFunction, incrementReligionPoints } from '@/services/functionService';
 import { ASK_GEMINI_SIMPLE } from '@/utils/constants';
 import { ensureAuth } from '@/utils/authGuard';

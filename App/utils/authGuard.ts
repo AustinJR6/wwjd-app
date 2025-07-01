@@ -6,9 +6,9 @@ import { signOutAndRetry } from "@/services/authService";
  * Returns the stored uid when valid, otherwise null.
  */
 export async function ensureAuth(expectedUid?: string): Promise<string | null> {
-  const { uid, idToken, refreshIdToken } = useAuthStore.getState();
+  const { uid } = useAuthStore.getState();
 
-  if (!uid || !idToken) {
+  if (!uid) {
     console.warn("🚫 Firestore access blocked: missing auth");
     await signOutAndRetry();
     return null;
@@ -18,12 +18,6 @@ export async function ensureAuth(expectedUid?: string): Promise<string | null> {
     console.warn("🚫 Firestore access blocked: uid mismatch");
     await signOutAndRetry();
     return null;
-  }
-
-  try {
-    await refreshIdToken();
-  } catch (err) {
-    console.warn("Token refresh failed in authGuard", err);
   }
 
   return uid;

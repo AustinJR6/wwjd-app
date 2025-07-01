@@ -3,9 +3,9 @@ import { View, ActivityIndicator } from 'react-native';
 import { useAuth } from '@/hooks/useAuth';
 
 export default function AuthGate({ children }: { children: React.ReactNode }) {
-  const { authReady, idToken, uid } = useAuth();
+  const { authReady, uid } = useAuth();
 
-  if (!authReady || !idToken || !uid) {
+  if (!authReady || !uid) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
         <ActivityIndicator size="large" />

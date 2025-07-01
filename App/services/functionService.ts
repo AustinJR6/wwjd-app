@@ -17,7 +17,7 @@ export async function callFunction(name: string, data: any): Promise<any> {
     console.log('Current user:', useAuthStore.getState().uid);
     console.log('ID Token:', token);
   } catch {
-    await logTokenIssue('function call', false);
+    logTokenIssue('function call');
     throw new Error('Missing auth token');
   }
 

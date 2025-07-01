@@ -1,4 +1,4 @@
-import { getDocument, setDocument } from '@/services/firestoreService';
+import { getDocument, setDocument } from '@/lib/firestore';
 import { ensureAuth } from '@/utils/authGuard';
 
 export const getTokenCount = async () => {
