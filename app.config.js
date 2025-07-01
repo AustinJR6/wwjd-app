@@ -12,10 +12,6 @@ export default {
     resizeMode: "contain",
     backgroundColor: "#ffffff",
   },
-  updates: {
-    fallbackToCacheTimeout: 0,
-    url: "https://u.expo.dev/bbf209be-1b48-4f76-a496-9d4fcd8339fd",
-  },
   assetBundlePatterns: ["**/*"],
   ios: {
     supportsTablet: true,
@@ -31,18 +27,6 @@ export default {
   web: {
     favicon: "./assets/OneVineIcon.png",
   },
-  plugins: [
-    [
-      "expo-build-properties",
-      {
-        android: {
-          compileSdkVersion: 35,
-          targetSdkVersion: 35,
-          googleServicesFile: "./android/app/google-services.json",
-        },
-      },
-    ],
-  ],
   extra: {
     eas: {
       projectId: "bbf209be-1b48-4f76-a496-9d4fcd8339fd",

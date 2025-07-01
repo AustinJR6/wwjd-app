@@ -1,4 +1,3 @@
-// 🚫 Do not use @react-native-firebase. This app uses Firebase Modular SDK architecture with centralized service abstraction.
 import axios from 'axios';
 import { STRIPE_CHECKOUT_URL } from '@/config/apiConfig';
 import { STRIPE_SUCCESS_URL, STRIPE_CANCEL_URL } from '@/config/stripeConfig';

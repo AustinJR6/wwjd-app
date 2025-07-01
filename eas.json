@@ -1,72 +1,22 @@
 {
   "cli": {
-    "version": ">= 16.4.1",
-    "appVersionSource": "remote"
+    "version": ">= 3.17.0"
   },
   "build": {
-    "development": {
-      "developmentClient": true,
-      "distribution": "internal",
-      "channel": "development",
-      "android": {
-        "buildType": "apk"
-      },
-      "env": {
-        "EXPO_PUBLIC_FIREBASE_API_KEY": "AIzaSyAeitpWVBGmPZJ540vgCNZpte_05LPx0Z8",
-        "EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN": "onevine-app.firebaseapp.com",
-        "EXPO_PUBLIC_FIREBASE_PROJECT_ID": "wwjd-app",
-        "EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET": "wwjd-app.appspot.com",
-        "EXPO_PUBLIC_FIREBASE_MSG_SENDER_ID": "402334171334",
-        "EXPO_PUBLIC_FIREBASE_APP_ID": "1:402334171334:android:c6cbf71b2f898df22757c7",
-        "EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID": "G-20W5BML7DM",
-        "EXPO_PUBLIC_API_URL": "https://us-central1-wwjd-app.cloudfunctions.net"
-      }
-    },
-    "preview": {
-      "distribution": "internal",
-      "channel": "preview",
-      "android": {
-        "buildType": "apk"
-      },
-      "ios": {
-        "simulator": true
-      },
-      "env": {
-        "EXPO_PUBLIC_FIREBASE_API_KEY": "AIzaSyAeitpWVBGmPZJ540vgCNZpte_05LPx0Z8",
-        "EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN": "onevine-app.firebaseapp.com",
-        "EXPO_PUBLIC_FIREBASE_PROJECT_ID": "wwjd-app",
-        "EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET": "wwjd-app.appspot.com",
-        "EXPO_PUBLIC_FIREBASE_MSG_SENDER_ID": "402334171334",
-        "EXPO_PUBLIC_FIREBASE_APP_ID": "1:402334171334:android:c6cbf71b2f898df22757c7",
-        "EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID": "G-20W5BML7DM",
-        "EXPO_PUBLIC_API_URL": "https://us-central1-wwjd-app.cloudfunctions.net"
-      }
-    },
     "production": {
       "developmentClient": false,
-      "distribution": "internal",
-      "autoIncrement": true,
-      "channel": "production",
+      "distribution": "store",
       "android": {
-        "buildType": "apk"
+        "buildType": "apk",
+        "gradleCommand": ":app:assembleRelease",
+        "env": {
+          "SENTRY_AUTH_TOKEN": "sntrys_...",
+          "GOOGLE_SERVICES_JSON": "./android/app/google-services.json"
+        }
       },
       "ios": {
         "simulator": false
-      },
-      "env": {
-        "EXPO_PUBLIC_OPENAI_API_KEY": "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",
-        "EXPO_PUBLIC_FIREBASE_API_KEY": "AIzaSyAeitpWVBGmPZJ540vgCNZpte_05LPx0Z8",
-        "EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN": "onevine-app.firebaseapp.com",
-        "EXPO_PUBLIC_FIREBASE_PROJECT_ID": "wwjd-app",
-        "EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET": "wwjd-app.appspot.com",
-        "EXPO_PUBLIC_FIREBASE_MSG_SENDER_ID": "402334171334",
-        "EXPO_PUBLIC_FIREBASE_APP_ID": "1:402334171334:android:c6cbf71b2f898df22757c7",
-        "EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID": "G-20W5BML7DM",
-        "EXPO_PUBLIC_API_URL": "https://us-central1-wwjd-app.cloudfunctions.net"
       }
     }
-  },
-  "submit": {
-    "production": {}
   }
 }
