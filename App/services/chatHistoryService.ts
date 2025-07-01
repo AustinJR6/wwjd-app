@@ -1,5 +1,9 @@
-import { addDocument, querySubcollection, getDocument } from './firestoreService';
-import { deleteDocument } from './firestoreService';
+import {
+  addDocument,
+  querySubcollection,
+  getDocument,
+  deleteDocument,
+} from '@/lib/firestore';
 import { ensureAuth } from '@/utils/authGuard';
 
 export interface ChatMessage {

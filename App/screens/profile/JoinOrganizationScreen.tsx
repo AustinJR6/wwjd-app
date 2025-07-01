@@ -14,7 +14,6 @@ import { useTheme } from '@/components/theme/theme';
 import { queryCollection, setDocument, getDocument } from '@/lib/firestore';
 import { getAuthHeaders } from '@/config/firebaseApp';
 import { ensureAuth } from '@/utils/authGuard';
-import * as SafeStore from '@/utils/secureStore';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/navigation/RootStackParamList';

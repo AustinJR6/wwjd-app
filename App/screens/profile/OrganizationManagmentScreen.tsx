@@ -13,7 +13,7 @@ import { getAuthHeaders } from '@/config/firebaseApp';
 import ScreenContainer from '@/components/theme/ScreenContainer';
 import { useTheme } from '@/components/theme/theme';
 import { ensureAuth } from '@/utils/authGuard';
-import * as SafeStore from '@/utils/secureStore';
+import * as SecureStore from 'expo-secure-store';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/navigation/RootStackParamList';
@@ -73,8 +73,8 @@ export default function OrganizationManagementScreen() {
 
   useEffect(() => {
     const checkAccess = async () => {
-      const admin = await SafeStore.getItem('isAdmin');
-      const manager = await SafeStore.getItem('isOrgManager');
+      const admin = await SecureStore.getItemAsync('isAdmin');
+      const manager = await SecureStore.getItemAsync('isOrgManager');
       if (admin !== 'true' && manager !== 'true') {
         Alert.alert('Access Denied', 'This feature is for OneVine+ or Org Managers only.');
         navigation.goBack();

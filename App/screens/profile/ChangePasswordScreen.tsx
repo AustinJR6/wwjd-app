@@ -9,7 +9,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
 import { RootStackParamList } from '@/navigation/RootStackParamList';
 import { login, changePassword } from '@/services/authService';
-import * as SafeStore from '@/utils/secureStore';
+import * as SecureStore from 'expo-secure-store';
 
 export default function ChangePasswordScreen() {
   const theme = useTheme();
@@ -39,7 +39,7 @@ export default function ChangePasswordScreen() {
     }
     setLoading(true);
     try {
-      const email = await SafeStore.getItem('email');
+      const email = await SecureStore.getItemAsync('email');
       if (!email) throw new Error('Email not found');
       await login(email, currentPw);
       await changePassword(newPw);

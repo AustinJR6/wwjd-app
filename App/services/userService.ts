@@ -1,4 +1,4 @@
-import { getDocument, setDocument } from "./firestoreService";
+import { getDocument, setDocument } from "@/lib/firestore";
 import { useUserStore } from "@/state/userStore";
 import { ensureAuth } from "@/utils/authGuard";
 
