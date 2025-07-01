@@ -54,11 +54,11 @@ import BuyTokensScreen from "./App/screens/BuyTokensScreen";
 import GiveBackScreen from "./App/screens/GiveBackScreen";
 
 Sentry.init({
-  dsn: 'YOUR_PUBLIC_DSN_HERE',
-  tracesSampleRate: 1.0,
-  enableInExpoDevelopment: true,
-  debug: __DEV__,
+  dsn: 'https://your-key@o123456.ingest.sentry.io/your-project-id',
+  tracesSampleRate: 1.0, // Optional, helps capture performance issues
+  debug: __DEV__,        // Only logs debug info in development
 });
+
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
