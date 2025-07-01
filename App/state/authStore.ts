@@ -1,40 +1,21 @@
-import { create } from 'zustand'
+import { create } from 'zustand';
 
 interface AuthState {
-  idToken: string | null
-  refreshToken: string | null
-  uid: string | null
-  authReady: boolean
-  setAuth: (data: { idToken: string; refreshToken: string; uid: string }) => void
-  clearAuth: () => void
-  setAuthReady: (ready: boolean) => void
-  refreshIdToken: () => Promise<string | null>
+  uid: string | null;
+  authReady: boolean;
+  setUid: (uid: string | null) => void;
+  setAuthReady: (ready: boolean) => void;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
-  idToken: null,
-  refreshToken: null,
   uid: null,
   authReady: false,
-  setAuth: ({ idToken, refreshToken, uid }) => {
-    console.log('🔐 setAuth', { uid });
-    set({ idToken, refreshToken, uid });
-  },
-  clearAuth: () => {
-    console.log('🚪 clearAuth');
-    set({ idToken: null, refreshToken: null, uid: null });
+  setUid: (uid) => {
+    console.log('🔐 setUid', { uid });
+    set({ uid });
   },
   setAuthReady: (authReady) => {
     console.log('✅ authReady', authReady);
     set({ authReady });
   },
-  refreshIdToken: async () => {
-    const service = await import('@/services/authService');
-    try {
-      const token = await service.refreshIdToken();
-      return token;
-    } catch {
-      return null;
-    }
-  },
-}))
+}));

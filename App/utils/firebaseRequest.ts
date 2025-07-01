@@ -1,4 +1,3 @@
-// 🚫 Do not use @react-native-firebase. This app uses REST-only Firebase architecture.
 import axios from 'axios';
 import { logTokenIssue, getIdToken } from '@/services/authService';
 import { useAuthStore } from '@/state/authStore';
@@ -10,7 +9,7 @@ export async function sendSecureFirebaseRequest(url: string, data: any) {
     token = await getIdToken(true);
     if (!token) throw new Error('Missing token');
   } catch {
-    await logTokenIssue('sendSecureFirebaseRequest', false);
+    logTokenIssue('sendSecureFirebaseRequest');
     throw new Error('Missing auth token');
   }
   const headers = {

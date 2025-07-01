@@ -9,9 +9,8 @@ import { navigationRef } from "./App/navigation/navigationRef";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { useUser } from "@/hooks/useUser";
 import { useAuth } from "@/hooks/useAuth";
-import { loadUser, ensureUserDocExists } from "@/services/userService";
 import { useAuthStore } from "@/state/authStore";
-import { getStoredToken, initAuthState } from "./App/services/authService";
+import { initAuthState } from "./App/services/authService";
 import StartupAnimation from "./App/components/common/StartupAnimation";
 import Constants from "expo-constants";
 
@@ -76,12 +75,6 @@ export default function App() {
     }
   }, []);
 
-  useEffect(() => {
-    (async () => {
-      const preview = await getStoredToken();
-      console.log("🧪 Auth token preview:", preview);
-    })();
-  }, []);
 
   useEffect(() => {
     if (fontsLoaded) {
@@ -90,37 +83,7 @@ export default function App() {
   }, [fontsLoaded]);
 
   useEffect(() => {
-    const initialize = async () => {
-      await initAuthState();
-      console.log("🔑 Checking saved auth credentials");
-      try {
-        const uid = await SafeStore.getItem("userId");
-        const token = await getStoredToken();
-        const email = await SafeStore.getItem("email");
-        if (uid && token) {
-          await ensureUserDocExists(uid, email ?? undefined);
-          await loadUser(uid);
-          console.log("✅ Authenticated user", uid);
-          const hasSeen = await SafeStore.getItem(`hasSeenOnboarding-${uid}`);
-          const route = hasSeen === "true" ? "Quote" : "Onboarding";
-          console.log("🔀 Initial route", route);
-          setInitialRoute(route);
-
-          const { init } = await import("./App/utils/TokenManager");
-          init?.();
-        } else {
-          console.log("👤 No auth found, routing to Login");
-          setInitialRoute("Login");
-        }
-      } catch (err) {
-        console.error("❌ Auth load error:", err);
-        setInitialRoute("Login");
-      } finally {
-        // authReady flag handled in auth store
-      }
-    };
-
-    initialize();
+    initAuthState();
   }, []);
 
   // Fallback to avoid indefinite spinner during testing
@@ -141,9 +104,14 @@ export default function App() {
   useEffect(() => {
     if (user) {
       console.log("🙋 User state updated:", user.uid);
-      setInitialRoute((prev) => prev ?? "Home");
+      (async () => {
+        const seen = await SafeStore.getItem(`hasSeenOnboarding-${user.uid}`);
+        setInitialRoute(seen === 'true' ? 'Home' : 'Onboarding');
+      })();
+    } else if (authReady) {
+      setInitialRoute('Login');
     }
-  }, [user]);
+  }, [user, authReady]);
 
   if (!fontsLoaded || !authReady || (!initialRoute && user)) {
     return (

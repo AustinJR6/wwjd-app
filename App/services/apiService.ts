@@ -20,7 +20,7 @@ export async function createStripeCheckout(
   try {
     headers = await getAuthHeaders();
   } catch {
-    await logTokenIssue('createStripeCheckout', false);
+    logTokenIssue('createStripeCheckout');
     throw new Error('Missing auth token');
   }
   try {

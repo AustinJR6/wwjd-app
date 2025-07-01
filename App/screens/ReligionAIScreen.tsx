@@ -18,7 +18,7 @@ import { useTheme } from "@/components/theme/theme";
 import { getTokenCount, setTokenCount } from "@/utils/TokenManager";
 import { showGracefulError } from '@/utils/gracefulError';
 import { ASK_GEMINI_V2 } from "@/utils/constants";
-import { getDocument, setDocument } from '@/services/firestoreService';
+import { getDocument, setDocument } from '@/lib/firestore';
 import { useUser } from '@/hooks/useUser';
 import { ensureAuth } from '@/utils/authGuard';
 import { auth } from '@/firebase';

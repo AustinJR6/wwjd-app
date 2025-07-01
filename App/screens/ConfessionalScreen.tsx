@@ -13,7 +13,7 @@ import ScreenContainer from "@/components/theme/ScreenContainer";
 import Button from '@/components/common/Button';
 import { useTheme } from "@/components/theme/theme";
 import { ASK_GEMINI_SIMPLE } from "@/utils/constants";
-import { getDocument } from '@/services/firestoreService';
+import { getDocument } from '@/lib/firestore';
 import { useUser } from '@/hooks/useUser';
 import { ensureAuth } from '@/utils/authGuard';
 import { auth } from '@/firebase';

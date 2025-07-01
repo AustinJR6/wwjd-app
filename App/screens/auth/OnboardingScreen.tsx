@@ -9,7 +9,6 @@ import { completeOnboarding, updateUserFields, ensureUserDocExists, loadUser } f
 import { useUserStore } from "@/state/userStore";
 import { SCREENS } from "@/navigation/screens";
 import { useTheme } from "@/components/theme/theme";
-import * as SafeStore from '@/utils/secureStore';
 import { Picker } from '@react-native-picker/picker';
 import type { RootStackParamList } from "@/navigation/RootStackParamList";
 
@@ -27,22 +26,6 @@ export default function OnboardingScreen() {
   const [organization, setOrganization] = useState('');
   const [loading, setLoading] = useState(false);
 
-  React.useEffect(() => {
-    if (user) return;
-    async function fetchUser() {
-      try {
-        const uid = await SafeStore.getItem('userId');
-        const email = await SafeStore.getItem('email');
-        if (uid) {
-          await ensureUserDocExists(uid, email ?? undefined);
-          await loadUser(uid);
-        }
-      } catch (err) {
-        console.warn('Failed to load user', err);
-      }
-    }
-    fetchUser();
-  }, [user]);
 
   const handleContinue = async () => {
     if (!user) {
