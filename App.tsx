@@ -14,6 +14,8 @@ import { useAuthStore } from "@/state/authStore";
 import { initAuthState } from "./App/services/authService";
 import StartupAnimation from "./App/components/common/StartupAnimation";
 import Constants from "expo-constants";
+import { app } from "./firebaseConfig";
+import { getAuth } from "firebase/auth";
 
 import { RootStackParamList } from "./App/navigation/RootStackParamList";
 import { useTheme } from "./App/components/theme/theme";
@@ -28,6 +30,8 @@ import OnboardingScreen from "./App/screens/auth/OnboardingScreen";
 import SelectReligionScreen from "./App/screens/auth/SelectReligionScreen";
 
 const isExpoGo = Constants.appOwnership === "expo";
+// Initialize Firebase Auth instance
+getAuth(app);
 import OrganizationSignupScreen from "./App/screens/auth/OrganizationSignupScreen";
 
 // Dashboard Screens

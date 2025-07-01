@@ -1,10 +1,11 @@
-import { functions } from '@/firebase';
+import { functions } from '../../firebaseConfig';
+import { httpsCallable } from 'firebase/functions';
 
 export async function callFunction(name: string, data: any): Promise<any> {
   try {
-    const callable = functions.httpsCallable(name);
+    const callable = httpsCallable(functions, name);
     const res = await callable(data);
-    return res.data;
+    return res.data as any;
   } catch (err: any) {
     console.error('🔥 Function error:', err?.message || err);
     throw err;

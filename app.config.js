@@ -1,38 +1,31 @@
-// app.config.js
 export default {
   name: "OneVine",
-  slug: "onevine-app",
-  owner: "whippybuckle",
+  slug: "onevine",
   version: "1.0.0",
+  runtimeVersion: { policy: "appVersion" },
   orientation: "portrait",
-  icon: "./assets/OneVineIcon.png",
-  userInterfaceStyle: "light",
+  icon: "./assets/icon.png",
   splash: {
-    image: "./assets/OneVineIcon.png",
+    image: "./assets/splash.png",
     resizeMode: "contain",
-    backgroundColor: "#ffffff",
+    backgroundColor: "#ffffff"
   },
+  userInterfaceStyle: "light",
   assetBundlePatterns: ["**/*"],
   ios: {
-    supportsTablet: true,
-    bundleIdentifier: "com.lysara.onevine",
-    infoPlist: {
-      ITSAppUsesNonExemptEncryption: false,
-    },
+    supportsTablet: true
   },
   android: {
-    jsEngine: "jsc",
     package: "com.lysara.onevine",
+    googleServicesFile: "./google-services.json"
   },
-  web: {
-    favicon: "./assets/OneVineIcon.png",
-  },
+  plugins: [
+    "@react-native-firebase/app",
+    "expo-dev-client"
+  ],
   extra: {
     eas: {
-      projectId: "bbf209be-1b48-4f76-a496-9d4fcd8339fd",
-    },
-    firebase: {
-      projectId: "wwjd-app",
-    },
-  },
+      projectId: "<your-eas-project-id>"
+    }
+  }
 };
