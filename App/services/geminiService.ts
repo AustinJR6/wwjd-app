@@ -1,4 +1,4 @@
-// 🚫 Do not use @react-native-firebase. This app uses REST-only Firebase architecture.
+// 🚫 Do not use @react-native-firebase. This app uses Firebase Modular SDK architecture with centralized service abstraction.
 import { GEMINI_API_URL } from '@/config/apiConfig';
 import { sendRequestWithGusBugLogging } from '@/utils/gusBugLogger';
 import { useAuthStore } from '@/state/authStore';

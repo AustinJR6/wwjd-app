@@ -6,7 +6,7 @@ Hey bro — here’s a snapshot of the project’s current state, issues I’m f
 
 ## ✅ What’s Working
 
-- Firebase is integrated using the **Firebase REST API**
+- Firebase is integrated using the Modular JavaScript SDK on the client and the Admin SDK on the server.
 - Expo build configuration is stable
 - Cloud Functions deployed:
   - `askGeminiV2`: Gemini endpoint with Firebase auth token validation
