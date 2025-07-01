@@ -1,18 +1,7 @@
-import {
-  addDoc,
-  collection,
-  deleteDoc,
-  doc,
-  getDoc,
-  getDocs,
-  orderBy,
-  query,
-  updateDoc,
-  setDoc,
-  where,
-} from 'firebase/firestore';
-import { db } from '@/firebase';
+import firestore from '@react-native-firebase/firestore';
 import { showPermissionDenied } from '@/utils/gracefulError';
+
+const db = firestore();
 
 function warnIfInvalidPath(path: string, expectEven: boolean) {
   const segments = path.split('/').filter(Boolean);
@@ -22,13 +11,11 @@ function warnIfInvalidPath(path: string, expectEven: boolean) {
 }
 
 function docRef(path: string) {
-  const segments = path.split('/').filter(Boolean) as [string, ...string[]];
-  return doc(db, ...segments);
+  return db.doc(path);
 }
 
 function colRef(path: string) {
-  const segments = path.split('/').filter(Boolean) as [string, ...string[]];
-  return collection(db, ...segments);
+  return db.collection(path);
 }
 
 function mapOp(op: string) {
@@ -52,7 +39,7 @@ export async function getDocument(path: string): Promise<any | null> {
   warnIfInvalidPath(path, true);
   console.warn('🔥 Attempting Firestore access:', path);
   try {
-    const snap = await getDoc(docRef(path));
+    const snap = await docRef(path).get();
     return snap.exists() ? snap.data() : null;
   } catch (err: any) {
     console.warn(`❌ Firestore error on ${path}:`, err.message || err);
@@ -69,7 +56,7 @@ export async function setDocument(path: string, data: any): Promise<void> {
   warnIfInvalidPath(path, true);
   console.warn('🔥 Attempting Firestore access:', path);
   try {
-    await setDoc(docRef(path), data, { merge: true });
+    await docRef(path).set(data, { merge: true });
   } catch (err: any) {
     console.warn(`❌ Firestore error on ${path}:`, err.message || err);
     if (err.code === 'permission-denied') {
@@ -85,7 +72,7 @@ export async function updateDocument(path: string, data: any): Promise<void> {
   warnIfInvalidPath(path, true);
   console.warn('🔥 Attempting Firestore access:', path);
   try {
-    await updateDoc(docRef(path), data);
+    await docRef(path).update(data);
   } catch (err: any) {
     console.warn(`❌ Firestore error on ${path}:`, err.message || err);
     if (err.code === 'permission-denied') {
@@ -101,7 +88,7 @@ export async function addDocument(collectionPath: string, data: any): Promise<st
   warnIfInvalidPath(collectionPath, false);
   console.warn('🔥 Attempting Firestore access:', collectionPath);
   try {
-    const ref = await addDoc(colRef(collectionPath), data);
+    const ref = await colRef(collectionPath).add(data);
     return ref.id;
   } catch (err: any) {
     console.warn(`❌ Firestore error on ${collectionPath}:`, err.message || err);
@@ -118,7 +105,7 @@ export async function deleteDocument(path: string): Promise<void> {
   warnIfInvalidPath(path, true);
   console.warn('🔥 Attempting Firestore access:', path);
   try {
-    await deleteDoc(docRef(path));
+    await docRef(path).delete();
   } catch (err: any) {
     console.warn(`❌ Firestore error on ${path}:`, err.message || err);
     if (err.code === 'permission-denied') {
@@ -140,18 +127,14 @@ export async function queryCollection(
   console.warn('🔥 Attempting Firestore access:', collectionPath);
   try {
     let q: any = colRef(collectionPath);
-    const clauses: any[] = [];
     if (orderByField) {
-      clauses.push(orderBy(orderByField, direction === 'DESCENDING' ? 'desc' : 'asc'));
+      q = q.orderBy(orderByField, direction === 'DESCENDING' ? 'desc' : 'asc');
     }
     if (filter) {
-      clauses.push(where(filter.fieldPath, mapOp(filter.op) as any, filter.value));
+      q = q.where(filter.fieldPath, mapOp(filter.op) as any, filter.value);
     }
-    if (clauses.length) {
-      q = query(q, ...clauses);
-    }
-    const snap = await getDocs(q);
-    return snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) }));
+    const snap = await q.get();
+    return snap.docs.map((d: any) => ({ id: d.id, ...(d.data() as any) }));
   } catch (err: any) {
     console.warn(`❌ Firestore error on ${collectionPath}:`, err.message || err);
     if (err.code === 'permission-denied') {
@@ -173,12 +156,12 @@ export async function querySubcollection(
   warnIfInvalidPath(`${parentPath}/${collectionName}`, false);
   console.warn('🔥 Attempting Firestore access:', `${parentPath}/${collectionName}`);
   try {
-    let q: any = colRef(`${parentPath}/${collectionName}`);
+    let q: any = docRef(parentPath).collection(collectionName);
     if (orderByField) {
-      q = query(q, orderBy(orderByField, direction === 'DESCENDING' ? 'desc' : 'asc'));
+      q = q.orderBy(orderByField, direction === 'DESCENDING' ? 'desc' : 'asc');
     }
-    const snap = await getDocs(q);
-    return snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) }));
+    const snap = await q.get();
+    return snap.docs.map((d: any) => ({ id: d.id, ...(d.data() as any) }));
   } catch (err: any) {
     console.warn(`❌ Firestore error on ${parentPath}/${collectionName}:`, err.message || err);
     if (err.code === 'permission-denied') {
@@ -189,4 +172,3 @@ export async function querySubcollection(
     return [];
   }
 }
-
