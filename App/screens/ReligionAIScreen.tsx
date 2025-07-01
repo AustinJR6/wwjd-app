@@ -21,7 +21,7 @@ import { ASK_GEMINI_V2 } from "@/utils/constants";
 import { getDocument, setDocument } from '@/lib/firestore';
 import { useUser } from '@/hooks/useUser';
 import { ensureAuth } from '@/utils/authGuard';
-import { auth } from '@/firebase';
+import { getToken, getCurrentUserId } from '@/lib/auth';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/navigation/RootStackParamList';
@@ -29,7 +29,6 @@ import AuthGate from '@/components/AuthGate';
 import { sendGeminiPrompt, type GeminiMessage } from '@/services/geminiService';
 import { useAuthStore } from '@/state/authStore';
 import { useAuth } from '@/hooks/useAuth';
-import { getIdToken } from '@/services/authService';
 import {
   saveMessage,
   fetchHistory,
@@ -118,12 +117,12 @@ export default function ReligionAIScreen() {
       return;
     }
     const loadHistory = async () => {
-      const currentUser = auth.currentUser;
-      if (!currentUser?.uid) {
+      const firebaseUid = await getCurrentUserId();
+      if (!firebaseUid) {
         setIsSubscribed(false);
         return;
       }
-      const uid = await ensureAuth(currentUser.uid);
+      const uid = await ensureAuth(firebaseUid);
       if (!uid) return;
       try {
         const userData = await getDocument(`users/${uid}`) || {};
@@ -147,7 +146,7 @@ export default function ReligionAIScreen() {
     const sub = AppState.addEventListener('change', (state) => {
       if (state !== 'active') {
         const clear = async () => {
-          const uid = await ensureAuth(auth.currentUser?.uid);
+          const uid = await ensureAuth(await getCurrentUserId());
           if (uid) {
             await clearTempReligionChat(uid);
             await AsyncStorage.setItem('tempReligionChatCleared', 'true');
@@ -160,7 +159,7 @@ export default function ReligionAIScreen() {
     return () => {
       sub.remove();
       const cleanup = async () => {
-        const uid = await ensureAuth(auth.currentUser?.uid);
+        const uid = await ensureAuth(await getCurrentUserId());
         if (uid) {
           await clearTempReligionChat(uid);
           await AsyncStorage.setItem('tempReligionChatCleared', 'true');
@@ -179,8 +178,8 @@ export default function ReligionAIScreen() {
     setLoading(true);
 
     try {
-      const currentUser = auth.currentUser;
-      const uid = await ensureAuth(currentUser?.uid);
+      const firebaseUid = await getCurrentUserId();
+      const uid = await ensureAuth(firebaseUid ?? undefined);
       if (!uid) {
         setLoading(false);
         return;
@@ -247,8 +246,8 @@ export default function ReligionAIScreen() {
       console.log('📡 Sending Gemini prompt:', prompt);
       console.log('👤 Role:', promptRole);
 
-      console.log('Current user:', auth.currentUser?.uid);
-      const debugToken = await auth.currentUser?.getIdToken(true);
+      console.log('Current user:', await getCurrentUserId());
+      const debugToken = await getToken(true);
       console.log('ID Token:', debugToken);
 
       const answer = await sendGeminiPrompt({
@@ -296,7 +295,7 @@ export default function ReligionAIScreen() {
         text: 'Clear',
         onPress: async () => {
           setMessages([]);
-          const uid = await ensureAuth(auth.currentUser?.uid);
+          const uid = await ensureAuth(await getCurrentUserId());
           if (uid) {
             try {
               if (isSubscribed) {

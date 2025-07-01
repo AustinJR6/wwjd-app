@@ -19,7 +19,7 @@ import { querySubcollection, addDocument, getDocument, setDocument } from '@/lib
 import { callFunction, incrementReligionPoints } from '@/services/functionService';
 import { ASK_GEMINI_SIMPLE } from '@/utils/constants';
 import { ensureAuth } from '@/utils/authGuard';
-import { auth } from '@/firebase';
+import { getToken, getCurrentUserId } from '@/lib/auth';
 import { sendGeminiPrompt } from '@/services/geminiService';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigation } from '@react-navigation/native';
@@ -154,15 +154,15 @@ export default function JournalScreen() {
           }
         }
 
-        const uid = await ensureAuth(auth.currentUser?.uid);
+        const uid = await ensureAuth(await getCurrentUserId());
         if (!uid) {
           Alert.alert('Login Required', 'Please log in again.');
           navigation.replace('Login');
           return;
         }
 
-        console.log('Firebase currentUser:', auth.currentUser?.uid);
-        const tokenPreview = await auth.currentUser?.getIdToken(true);
+        console.log('Firebase currentUser:', await getCurrentUserId());
+        const tokenPreview = await getToken(true);
         console.log('ID Token:', tokenPreview);
 
         const list = await querySubcollection(
@@ -190,10 +190,10 @@ export default function JournalScreen() {
     setAiPrompt(prompt);
     setGuidedMode(true);
     try {
-      const uid = await ensureAuth(auth.currentUser?.uid);
+      const uid = await ensureAuth(await getCurrentUserId());
       if (!uid) throw new Error('auth');
-      console.log('Firebase currentUser:', auth.currentUser?.uid);
-      const token = await auth.currentUser?.getIdToken(true);
+      console.log('Firebase currentUser:', await getCurrentUserId());
+      const token = await getToken(true);
       console.log('ID Token:', token);
       const answer = await sendGeminiPrompt({
         url: ASK_GEMINI_SIMPLE,
@@ -224,15 +224,15 @@ export default function JournalScreen() {
     }
     setSaving(true);
     try {
-      const uid = await ensureAuth(auth.currentUser?.uid);
+      const uid = await ensureAuth(await getCurrentUserId());
       if (!uid) {
         Alert.alert('Login Required', 'Please log in again.');
         navigation.replace('Login');
         return;
       }
 
-      console.log('Firebase currentUser:', auth.currentUser?.uid);
-      const token = await auth.currentUser?.getIdToken(true);
+      console.log('Firebase currentUser:', await getCurrentUserId());
+      const token = await getToken(true);
       console.log('ID Token:', token);
 
       const userData = await getDocument(`users/${uid}`) || {};

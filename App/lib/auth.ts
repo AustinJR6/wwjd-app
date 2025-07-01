@@ -39,3 +39,11 @@ export async function changePassword(newPassword: string) {
 export function getIdToken(forceRefresh = false): Promise<string | null> {
   return auth.currentUser?.getIdToken(forceRefresh) ?? Promise.resolve(null);
 }
+
+export async function getToken(forceRefresh = false): Promise<string | null> {
+  return getIdToken(forceRefresh);
+}
+
+export async function getCurrentUserId(): Promise<string | null> {
+  return auth.currentUser?.uid ?? null;
+}

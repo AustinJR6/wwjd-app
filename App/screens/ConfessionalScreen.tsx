@@ -16,12 +16,11 @@ import { ASK_GEMINI_SIMPLE } from "@/utils/constants";
 import { getDocument } from '@/lib/firestore';
 import { useUser } from '@/hooks/useUser';
 import { ensureAuth } from '@/utils/authGuard';
-import { auth } from '@/firebase';
+import { getToken, getCurrentUserId } from '@/lib/auth';
 import { showGracefulError } from '@/utils/gracefulError';
 import { sendGeminiPrompt, type GeminiMessage } from '@/services/geminiService';
 import { useAuth } from '@/hooks/useAuth';
 import { useAuthStore } from '@/state/authStore';
-import { getIdToken } from '@/services/authService';
 import {
   saveTempMessage,
   fetchTempSession,
@@ -91,10 +90,10 @@ export default function ConfessionalScreen() {
     if (!authReady) return;
     if (!uid) return;
     const load = async () => {
-      const uidCheck = await ensureAuth(auth.currentUser?.uid);
+      const uidCheck = await ensureAuth(await getCurrentUserId());
       if (uidCheck) {
-        console.log('Firebase currentUser:', auth.currentUser?.uid);
-        const preview = await auth.currentUser?.getIdToken(true);
+        console.log('Firebase currentUser:', await getCurrentUserId());
+        const preview = await getToken(true);
         console.log('ID Token:', preview);
         const hist = await fetchTempSession(uidCheck);
         setMessages(hist);
@@ -105,7 +104,7 @@ export default function ConfessionalScreen() {
     const sub = AppState.addEventListener('change', (state) => {
       if (state !== 'active') {
         const clear = async () => {
-          const uid = await ensureAuth(auth.currentUser?.uid);
+          const uid = await ensureAuth(await getCurrentUserId());
           if (uid) await clearConfessionalSession(uid);
         };
         clear();
@@ -115,7 +114,7 @@ export default function ConfessionalScreen() {
     return () => {
       sub.remove();
       const cleanup = async () => {
-        const uid = await ensureAuth(auth.currentUser?.uid);
+        const uid = await ensureAuth(await getCurrentUserId());
         if (uid) await clearConfessionalSession(uid);
       };
       cleanup();
@@ -131,15 +130,14 @@ export default function ConfessionalScreen() {
 
     setLoading(true);
     try {
-      const currentUser = auth.currentUser;
-      const uid = await ensureAuth(currentUser?.uid);
+      const uid = await ensureAuth(await getCurrentUserId());
       if (!uid) {
         setLoading(false);
         return;
       }
 
-      console.log('Firebase currentUser:', currentUser?.uid);
-      const token = await currentUser?.getIdToken(true);
+      console.log('Firebase currentUser:', await getCurrentUserId());
+      const token = await getToken(true);
       console.log('ID Token:', token);
 
       const userData = await getDocument(`users/${uid}`);
