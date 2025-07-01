@@ -1,4 +1,4 @@
-// 🚫 Do not use @react-native-firebase. This app uses REST-only Firebase architecture.
+// 🚫 Do not use @react-native-firebase. This app uses Firebase Modular SDK architecture with centralized service abstraction.
 import { sendRequestWithGusBugLogging } from '@/utils/gusBugLogger';
 import { sendSecureFirebaseRequest } from '@/utils/firebaseRequest';
 import { API_URL } from '@/config/firebaseApp';

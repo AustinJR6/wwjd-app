@@ -116,7 +116,7 @@ OneVine is rooted in the belief that truth and love transcend labels. Whether Ch
 Austin Rittenhouse – Founder, developer
 
 🛠 Development Notes
-All Firebase integrations now use the Firebase Modular Web SDK—see `App/lib` for details.
+All Firebase integrations now use the Firebase Modular Web SDK with a centralized service abstraction. Cloud Functions rely on the Firebase Admin SDK to mirror client behavior.
 
 Stripe subscription flow is being integrated with Firebase webhook handling
 
