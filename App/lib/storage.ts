@@ -1,4 +1,4 @@
-import { storage } from '@/firebase';
+import { storage } from '../../firebaseConfig';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 export async function uploadImage(fileUri: string, path: string): Promise<string> {
