@@ -155,11 +155,6 @@ export default function JournalScreen() {
         }
 
         const uid = await ensureAuth(await getCurrentUserId());
-        if (!uid) {
-          Alert.alert('Login Required', 'Please log in again.');
-          navigation.replace('Login');
-          return;
-        }
 
         console.log('Firebase currentUser:', await getCurrentUserId());
         const tokenPreview = await getToken(true);
@@ -191,7 +186,6 @@ export default function JournalScreen() {
     setGuidedMode(true);
     try {
       const uid = await ensureAuth(await getCurrentUserId());
-      if (!uid) throw new Error('auth');
       console.log('Firebase currentUser:', await getCurrentUserId());
       const token = await getToken(true);
       console.log('ID Token:', token);
@@ -225,11 +219,6 @@ export default function JournalScreen() {
     setSaving(true);
     try {
       const uid = await ensureAuth(await getCurrentUserId());
-      if (!uid) {
-        Alert.alert('Login Required', 'Please log in again.');
-        navigation.replace('Login');
-        return;
-      }
 
       console.log('Firebase currentUser:', await getCurrentUserId());
       const token = await getToken(true);

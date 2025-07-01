@@ -73,7 +73,6 @@ export default function ChallengeScreen() {
     const milestones = [3, 7, 14, 30];
     if (!milestones.includes(current)) return;
     const uid = await ensureAuth(await getCurrentUserId());
-    if (!uid) return;
     try {
       const userData = await getDocument(`users/${uid}`) || {};
       const granted = userData.streakMilestones || {};
@@ -105,7 +104,6 @@ export default function ChallengeScreen() {
     try {
 
       const uid = await ensureAuth(await getCurrentUserId());
-      if (!uid) return;
 
       const active = await getDocument(`users/${uid}/activeChallenge`);
       if (active && !active.isComplete) {
@@ -169,7 +167,6 @@ export default function ChallengeScreen() {
 
   const handleSkip = async () => {
     const uid = await ensureAuth(await getCurrentUserId());
-    if (!uid) return;
 
     const userData = await getDocument(`users/${uid}`) || {};
     const today = new Date().toISOString().slice(0, 10);
@@ -229,7 +226,6 @@ export default function ChallengeScreen() {
 
   const handleStartMultiDay = async () => {
     const uid = await ensureAuth(await getCurrentUserId());
-    if (!uid) return;
 
     try {
       await createMultiDayChallenge('Provide a 3-day gratitude challenge.', 3);
@@ -242,7 +238,6 @@ export default function ChallengeScreen() {
 
   const handleComplete = async () => {
     const uid = await ensureAuth(await getCurrentUserId());
-    if (!uid) return;
 
     if (activeMulti) {
       try {

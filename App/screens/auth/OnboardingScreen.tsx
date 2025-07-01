@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import CustomText from '@/components/CustomText';
 import { View, StyleSheet, Alert, TextInput } from 'react-native';
+import * as SecureStore from 'expo-secure-store';
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import Button from "@/components/common/Button";
 import { useNavigation, CommonActions } from '@react-navigation/native';
@@ -49,7 +50,7 @@ export default function OnboardingScreen() {
           organizationId: organization || undefined,
         });
         await completeOnboarding(user.uid);
-        await SafeStore.setItem(`hasSeenOnboarding-${user.uid}`, 'true');
+        await SecureStore.setItemAsync(`hasSeenOnboarding-${user.uid}`, 'true');
 
         navigation.reset({
           index: 0,

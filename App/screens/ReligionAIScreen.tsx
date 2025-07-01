@@ -123,7 +123,6 @@ export default function ReligionAIScreen() {
         return;
       }
       const uid = await ensureAuth(firebaseUid);
-      if (!uid) return;
       try {
         const userData = await getDocument(`users/${uid}`) || {};
         const subscribed = await checkIfUserIsSubscribed(uid);
@@ -146,11 +145,9 @@ export default function ReligionAIScreen() {
     const sub = AppState.addEventListener('change', (state) => {
       if (state !== 'active') {
         const clear = async () => {
-          const uid = await ensureAuth(await getCurrentUserId());
-          if (uid) {
-            await clearTempReligionChat(uid);
-            await AsyncStorage.setItem('tempReligionChatCleared', 'true');
-          }
+          const uidVal = await ensureAuth(await getCurrentUserId());
+          await clearTempReligionChat(uidVal);
+          await AsyncStorage.setItem('tempReligionChatCleared', 'true');
         };
         clear();
       }
@@ -159,11 +156,9 @@ export default function ReligionAIScreen() {
     return () => {
       sub.remove();
       const cleanup = async () => {
-        const uid = await ensureAuth(await getCurrentUserId());
-        if (uid) {
-          await clearTempReligionChat(uid);
-          await AsyncStorage.setItem('tempReligionChatCleared', 'true');
-        }
+        const uidVal = await ensureAuth(await getCurrentUserId());
+        await clearTempReligionChat(uidVal);
+        await AsyncStorage.setItem('tempReligionChatCleared', 'true');
       };
       cleanup();
     };
@@ -180,10 +175,6 @@ export default function ReligionAIScreen() {
     try {
       const firebaseUid = await getCurrentUserId();
       const uid = await ensureAuth(firebaseUid ?? undefined);
-      if (!uid) {
-        setLoading(false);
-        return;
-      }
 
       const userData = await getDocument(`users/${uid}`) || {};
       const lastAsk = userData.lastFreeAsk?.toDate?.();
@@ -295,19 +286,17 @@ export default function ReligionAIScreen() {
         text: 'Clear',
         onPress: async () => {
           setMessages([]);
-          const uid = await ensureAuth(await getCurrentUserId());
-          if (uid) {
-            try {
-              if (isSubscribed) {
-                await clearHistory(uid);
-              } else {
-                await clearTempReligionChat(uid);
-                await AsyncStorage.setItem('tempReligionChatCleared', 'true');
-                setShowMemoryClearedBanner(true);
-              }
-            } catch (err) {
-              console.error('Failed to clear ReligionAI history', err);
+          const uidVal = await ensureAuth(await getCurrentUserId());
+          try {
+            if (isSubscribed) {
+              await clearHistory(uidVal);
+            } else {
+              await clearTempReligionChat(uidVal);
+              await AsyncStorage.setItem('tempReligionChatCleared', 'true');
+              setShowMemoryClearedBanner(true);
             }
+          } catch (err) {
+            console.error('Failed to clear ReligionAI history', err);
           }
         },
       },
