@@ -25,14 +25,13 @@ export default ({ config }) => ({
     "expo-dev-client",
     "expo-font",
     "expo-secure-store",
+    "expo-system-ui",
     [
       "expo-build-properties",
       {
         android: {
           kotlinVersion: "1.9.24",
-          gradlePlugin: {
-            version: "8.4.1",
-          },
+          gradlePluginVersion: "8.4.1",
         },
       },
     ],
