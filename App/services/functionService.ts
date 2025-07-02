@@ -1,10 +1,10 @@
-import { functions } from '../../firebaseConfig';
-import { httpsCallable } from 'firebase/functions';
+import axios from 'axios';
+
+const API_URL = process.env.EXPO_PUBLIC_API_URL || '';
 
 export async function callFunction(name: string, data: any): Promise<any> {
   try {
-    const callable = httpsCallable(functions, name);
-    const res = await callable(data);
+    const res = await axios.post(`${API_URL}/${name}`, data);
     return res.data as any;
   } catch (err: any) {
     console.error('🔥 Function error:', err?.message || err);
@@ -12,10 +12,7 @@ export async function callFunction(name: string, data: any): Promise<any> {
   }
 }
 
-export async function incrementReligionPoints(
-  religion: string,
-  points: number,
-): Promise<void> {
+export async function incrementReligionPoints(religion: string, points: number): Promise<void> {
   await callFunction('incrementReligionPoints', { religion, points });
 }
 

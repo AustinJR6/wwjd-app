@@ -9,21 +9,21 @@
 
 **OneVine** is a mobile app built to guide users through daily moral and spiritual reflection based on their faith. Originally launched as **WWJD**, the app has grown to support **multi-religious guidance**, **token-based engagement**, **journaling**, and **faith-based leaderboards**.
 
-This project uses **React Native (via Expo)** and is powered by **Firebase** for authentication, Firestore storage, and Stripe integration for premium features.
+This project uses **React Native (via Expo)** and relies on **Firebase's REST API** for authentication and Firestore storage. Stripe manages premium features.
 
 ---
 
 ## 🧰 Tech Stack
 
 - **React Native** (with Expo)
-- **Firebase via Modular JS SDK**
-  - Authentication, Firestore, and Storage handled by the Firebase Web SDK
+- **Firebase REST API**
+  - Authentication and Firestore calls performed via REST endpoints
 - **Google Gemini / OpenAI GPT**
   - Faith-aligned reflection prompts
 - **Stripe**
   - OneVine+ subscription handling
 - **Firebase Cloud Functions**
-  - (Planned) server-side token logic and analytics
+  - Invoked via HTTPS endpoints for server-side logic
 
 ---
 
@@ -99,10 +99,10 @@ onevine-app/
 ├── app/                  # App entry points and routing
 ├── components/           # Shared UI components
 ├── screens/              # Major app pages (Ask, Journal, Trivia)
-├── config/               # Firebase and environment setup
+├── config/               # Environment setup
 ├── utils/                # Constants, prompt logic, helpers
 ├── navigation/           # Stack navigation
-└── config/firebaseApp.ts # Firebase initialization trigger
+└── firebaseRest.ts       # Firebase REST helpers
 ✨ Future Features
 ✨ Faith-specific AI tone customization
 
@@ -125,12 +125,21 @@ OneVine is rooted in the belief that truth and love transcend labels. Whether Ch
 Austin Rittenhouse – Founder, developer
 
 🛠 Development Notes
-All Firebase integrations now use the Firebase Modular Web SDK with a centralized service abstraction. Cloud Functions rely on the Firebase Admin SDK to mirror client behavior.
+All Firebase interactions now use the Firebase REST API. Cloud Functions are called via HTTPS and the Admin SDK runs server-side.
 
 Stripe subscription flow is being integrated with Firebase webhook handling
 
 
 Onboarding uses anonymous login, upgraded to email if subscribed
+
+### Firebase REST Endpoints
+
+The app communicates with Firebase using the following REST endpoints:
+
+* `https://identitytoolkit.googleapis.com/v1/accounts:signUp` – email/password sign up
+* `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword` – email/password sign in
+* `https://securetoken.googleapis.com/v1/token` – refresh ID tokens
+* `https://firestore.googleapis.com/v1/projects/{projectId}/databases/(default)/documents/...` – Firestore reads and writes
 
 ## 📚 Codex Prompt Library
 
