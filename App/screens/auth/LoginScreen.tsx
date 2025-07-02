@@ -6,7 +6,7 @@ import ScreenContainer from "@/components/theme/ScreenContainer";
 import TextField from "@/components/TextField";
 import Button from "@/components/common/Button";
 import { login, resetPassword } from "@/services/authService";
-import { loadUser, ensureUserDocExists } from "@/services/userService";
+import { ensureUserDocExists, fetchUserProfile } from "@/services/userService";
 import { useUserStore } from "@/state/userStore";
 import { useAuthStore } from "@/state/authStore";
 import { useNavigation } from "@react-navigation/native";
@@ -32,10 +32,22 @@ export default function LoginScreen() {
       if (result.localId) {
         setUid(result.localId);
         const isNew = await ensureUserDocExists(result.localId, result.email);
-        // Load the user profile so the root navigator registers authenticated screens
-        await loadUser(result.localId);
-        const loaded = useUserStore.getState().user;
-        const needsOnboarding = isNew || !loaded?.onboardingComplete;
+        const profile = await fetchUserProfile(result.localId);
+        if (profile) {
+          useUserStore.getState().setUser({
+            uid: profile.uid,
+            email: profile.email,
+            displayName: profile.displayName ?? "",
+            isSubscribed: profile.isSubscribed,
+            religion: profile.religion,
+            region: profile.region ?? "",
+            organizationId: profile.organizationId,
+            onboardingComplete: profile.onboardingComplete,
+            tokens: 0,
+          });
+        }
+        const profileValid = profile?.uid === result.localId;
+        const needsOnboarding = isNew || !profileValid;
         console.log(
           "🧭 Post-login route",
           needsOnboarding ? SCREENS.AUTH.ONBOARDING : SCREENS.MAIN.HOME,
