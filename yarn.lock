@@ -4637,7 +4637,7 @@ expo-updates@~0.28.15:
     ignore "^5.3.1"
     resolve-from "^5.0.0"
 
-expo@*, expo@^53.0.0, expo@>=49.0.0, expo@>=52.0.0:
+expo@*, expo@^53.0.15, expo@>=49.0.0, expo@>=52.0.0:
   version "53.0.15"
   resolved "https://registry.npmjs.org/expo/-/expo-53.0.15.tgz"
   integrity sha512-tOMnpM1iHHUKcG6QzpE8Pm+d56XIyaxiOkXyDHiHrDziBMAI+ngBlZZ3xU/vuyMFiJWBCx5KAqiKsliKTEQi6Q==
