@@ -5,11 +5,11 @@
   "scripts": {
     "clean": "rimraf lib",
     "build": "npm run clean && tsc",
-    "deploy": "npm run clean && npm run build && firebase deploy --only functions --runtime=nodejs20",
+    "deploy": "npm run clean && npm run build && firebase deploy --only functions --runtime=nodejs18",
     "start": "npm run clean && npm run build && firebase emulators:start --only functions"
   },
   "engines": {
-    "node": "20"
+    "node": "18"
   },
   "dependencies": {
     "firebase-admin": "^13.4.0",
