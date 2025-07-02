@@ -1,5 +1,9 @@
-export default ({ config }) => ({
-  ...config,
+export default ({ config }) => {
+  const kotlinVersion = "1.9.24";
+  const gradlePluginVersion = "8.4.1";
+
+  return {
+    ...config,
   name: "OneVine",
   slug: "onevine-app",
   version: "1.0.0",
@@ -33,8 +37,8 @@ export default ({ config }) => ({
       "expo-build-properties",
       {
         android: {
-          kotlinVersion: "1.9.24",
-          gradlePluginVersion: "8.4.1",
+          kotlinVersion,
+          gradlePluginVersion,
         },
       },
     ],
@@ -44,4 +48,5 @@ export default ({ config }) => ({
       projectId: "bbf209be-1b48-4f76-a496-9d4fcd8339fd",
     },
   },
-});
+  };
+};
