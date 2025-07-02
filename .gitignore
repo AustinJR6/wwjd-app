@@ -25,6 +25,9 @@ tsconfig.effective.json
 # React Native / Expo artifacts
 *.hbc
 *.map
+# Expo prebuild native directories
+android/
+ios/
 
 # System files
 .DS_Store
