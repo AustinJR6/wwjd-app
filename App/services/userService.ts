@@ -57,6 +57,7 @@ export async function loadUser(uid: string): Promise<void> {
       religion: user.religion,
       region: user.region ?? "",
       organizationId: user.organizationId,
+      onboardingComplete: user.onboardingComplete,
       tokens: 0, // placeholder
     });
   } else {

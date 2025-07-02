@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { View, ActivityIndicator, Text } from "react-native";
-import * as Sentry from '@sentry/react-native';
+import * as Sentry from "@sentry/react-native";
 import ErrorBoundary from "./App/components/common/ErrorBoundary";
 import { useFonts, Poppins_600SemiBold } from "@expo-google-fonts/poppins";
 import { Merriweather_400Regular } from "@expo-google-fonts/merriweather";
-import * as SecureStore from 'expo-secure-store';
+import * as SecureStore from "expo-secure-store";
 import { NavigationContainer } from "@react-navigation/native";
 import { navigationRef } from "./App/navigation/navigationRef";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
@@ -54,12 +54,11 @@ import BuyTokensScreen from "./App/screens/BuyTokensScreen";
 import GiveBackScreen from "./App/screens/GiveBackScreen";
 
 const dsn = process.env.SENTRY_DSN || process.env.EXPO_PUBLIC_SENTRY_DSN;
-if (!dsn || dsn.includes('your-key')) {
-  console.warn('Sentry DSN not configured. Skipping Sentry initialization.');
+if (!dsn || dsn.includes("your-key")) {
+  console.warn("Sentry DSN not configured. Skipping Sentry initialization.");
 } else {
   Sentry.init({ dsn });
 }
-
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -83,7 +82,6 @@ export default function App() {
       );
     }
   }, []);
-
 
   useEffect(() => {
     if (fontsLoaded) {
@@ -114,13 +112,20 @@ export default function App() {
     if (user) {
       console.log("🙋 User state updated:", user.uid);
       (async () => {
-        const seen = await SecureStore.getItemAsync(
+        let seen = await SecureStore.getItemAsync(
           `hasSeenOnboarding-${user.uid}`,
         );
-        setInitialRoute(seen === 'true' ? 'Home' : 'Onboarding');
+        if (seen === null && user.onboardingComplete) {
+          seen = "true";
+          await SecureStore.setItemAsync(
+            `hasSeenOnboarding-${user.uid}`,
+            "true",
+          );
+        }
+        setInitialRoute(seen === "true" ? "Home" : "Onboarding");
       })();
     } else if (authReady) {
-      setInitialRoute('Login');
+      setInitialRoute("Login");
     }
   }, [user, authReady]);
 
