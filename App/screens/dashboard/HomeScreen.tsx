@@ -22,11 +22,7 @@ export default function HomeScreen({ navigation }: Props) {
   const theme = useTheme();
   const { authReady, uid } = useAuth();
   useEffect(() => {
-    if (!authReady) return;
-    if (!uid) {
-      navigation.replace('Login');
-      return;
-    }
+    if (!authReady || !uid) return;
     const loadData = async () => {
       const t = await getTokenCount();
       await syncSubscriptionStatus(); // updates Firestore token state

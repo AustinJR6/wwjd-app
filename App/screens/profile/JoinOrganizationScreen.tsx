@@ -60,11 +60,7 @@ export default function JoinOrganizationScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   useEffect(() => {
-    if (!authReady) return;
-    if (!uid) {
-      navigation.replace('Login');
-      return;
-    }
+    if (!authReady || !uid) return;
     fetchOrgs();
   }, [authReady, uid]);
 
@@ -74,7 +70,6 @@ export default function JoinOrganizationScreen() {
         await getAuthHeaders();
       } catch {
         Alert.alert('Login Required', 'Please log in again.');
-        navigation.replace('Login');
         return;
       }
 
@@ -104,7 +99,6 @@ export default function JoinOrganizationScreen() {
       await getAuthHeaders();
     } catch {
       Alert.alert('Login Required', 'Please log in again.');
-      navigation.replace('Login');
       return;
     }
     const uid = await ensureAuth(user.uid);

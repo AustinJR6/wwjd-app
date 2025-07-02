@@ -135,11 +135,7 @@ export default function JournalScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   useEffect(() => {
-    if (!authReady) return;
-    if (!uid) {
-      navigation.replace('Login');
-      return;
-    }
+    if (!authReady || !uid) return;
     async function authenticateAndLoad() {
       try {
         const hasHardware = await LocalAuthentication.hasHardwareAsync();

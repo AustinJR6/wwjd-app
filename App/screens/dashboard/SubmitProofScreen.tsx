@@ -88,7 +88,6 @@ export default function SubmitProofScreen() {
       await getAuthHeaders();
     } catch {
       Alert.alert('Login Required', 'Please log in again.');
-      navigation.replace('Login');
       return;
     }
 
