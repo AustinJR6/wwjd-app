@@ -1,4 +1,5 @@
-export default {
+export default ({ config }) => ({
+  ...config,
   name: "OneVine",
   slug: "onevine-app",
   version: "1.0.0",
@@ -8,12 +9,12 @@ export default {
   splash: {
     image: "./assets/splash.png",
     resizeMode: "contain",
-    backgroundColor: "#ffffff"
+    backgroundColor: "#ffffff",
   },
   userInterfaceStyle: "light",
   assetBundlePatterns: ["**/*"],
   ios: {
-    supportsTablet: true
+    supportsTablet: true,
   },
   android: {
     package: "com.lysara.onevine",
@@ -22,16 +23,13 @@ export default {
     // ./android/app/google-services.json, but on EAS Build the variable will
     // point to a temporary path where the secret is stored.
     googleServicesFile:
-      process.env.GOOGLE_SERVICES_JSON || "./android/app/google-services.json"
+      process.env.GOOGLE_SERVICES_JSON || "./android/app/google-services.json",
   },
-  plugins: [
-    "expo-dev-client",
-    "expo-font",
-    "expo-secure-store"
-  ],
+  plugins: ["expo-dev-client", "expo-font", "expo-secure-store"],
   extra: {
     eas: {
-      projectId: "bbf209be-1b48-4f76-a496-9d4fcd8339fd"
-    }
-  }
-};
+      projectId: "bbf209be-1b48-4f76-a496-9d4fcd8339fd",
+    },
+  },
+  cli: { appVersionSource: "version" },
+});
