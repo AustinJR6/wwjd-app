@@ -1,7 +1,7 @@
 import { GEMINI_API_URL } from '@/config/apiConfig';
 import { sendRequestWithGusBugLogging } from '@/utils/gusBugLogger';
 import { useAuthStore } from '@/state/authStore';
-import { getIdToken } from '@/services/authService';
+import { getIdToken } from '@/utils/TokenManager';
 
 export type GeminiMessage = { role: 'user' | 'assistant'; text: string };
 

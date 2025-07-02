@@ -16,7 +16,7 @@ import { ASK_GEMINI_SIMPLE } from "@/utils/constants";
 import { getDocument } from '@/services/firestoreService';
 import { useUser } from '@/hooks/useUser';
 import { ensureAuth } from '@/utils/authGuard';
-import { getToken, getCurrentUserId } from '@/services/authService';
+import { getToken, getCurrentUserId } from '@/utils/TokenManager';
 import { showGracefulError } from '@/utils/gracefulError';
 import { sendGeminiPrompt, type GeminiMessage } from '@/services/geminiService';
 import { useAuth } from '@/hooks/useAuth';

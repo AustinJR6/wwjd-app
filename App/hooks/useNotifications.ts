@@ -1,11 +1,12 @@
 import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
 
-const isExpoGo = Constants.appOwnership === 'expo';
+const isDevClient = !Constants.appOwnership || Constants.appOwnership === 'expo-dev-client';
 
 export async function scheduleDailyNotification(title: string, body: string) {
-  if (isExpoGo) {
-    console.warn('⚠️ Running in Expo Go. Notification behavior may be limited.');
+  if (!isDevClient) {
+    console.warn('⚠️ Push notifications disabled in Expo Go.');
+    return;
   }
   try {
     await Notifications.scheduleNotificationAsync({

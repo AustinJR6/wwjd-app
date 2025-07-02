@@ -21,7 +21,7 @@ import {
 } from '@/services/functionService';
 import { useUser } from '@/hooks/useUser';
 import { ensureAuth } from '@/utils/authGuard';
-import { getToken, getCurrentUserId } from '@/services/authService';
+import { getToken, getCurrentUserId } from '@/utils/TokenManager';
 import { useAuth } from '@/hooks/useAuth';
 import { useAuthStore } from '@/state/authStore';
 import { useChallengeStore } from '@/state/challengeStore';
