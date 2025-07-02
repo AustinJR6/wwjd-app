@@ -162,6 +162,14 @@ node lib/codexPrompts.js export ../PromptLibrary.md
 
 The export command creates `PromptLibrary.md` with prompts grouped by category.
 
+## ✅ Test Readiness Checklist
+
+- Clean EAS build completes without native errors
+- Auth via REST works (sign in, token stored)
+- Firestore reads/writes work with Bearer token
+- App opens and navigates to all main screens
+- Backend functions verify tokens correctly
+
 🙏 Contributing
 We welcome faith leaders, engineers, designers, and visionaries to collaborate.
 
