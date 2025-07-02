@@ -7,7 +7,7 @@ import {
   Alert,
   ActivityIndicator} from 'react-native';
 import Button from '@/components/common/Button';
-import { getDocument, setDocument } from '@/lib/firestore';
+import { getDocument, setDocument } from '@/services/firestoreService';
 import { useUser } from '@/hooks/useUser';
 import { getAuthHeaders } from '@/config/firebaseApp';
 import ScreenContainer from '@/components/theme/ScreenContainer';

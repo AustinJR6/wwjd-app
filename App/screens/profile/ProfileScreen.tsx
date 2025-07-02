@@ -8,7 +8,7 @@ import { Picker } from '@react-native-picker/picker';
 import { useUser } from '@/hooks/useUser';
 import { useUserStore } from '@/state/userStore';
 import { getTokenCount } from '@/utils/TokenManager';
-import { getDocument, setDocument } from '@/lib/firestore';
+import { getDocument, setDocument } from '@/services/firestoreService';
 import { updateUserFields } from '@/services/userService';
 import { useTheme } from '@/components/theme/theme';
 import { ensureAuth } from '@/utils/authGuard';

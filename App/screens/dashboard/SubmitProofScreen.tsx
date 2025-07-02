@@ -9,8 +9,8 @@ import {
 } from 'react-native';
 import Button from '@/components/common/Button';
 import * as ImagePicker from 'expo-image-picker';
-import { uploadImage } from '@/lib/storage';
-import { addDocument } from '@/lib/firestore';
+import { uploadImage } from '@/services/storageService';
+import { addDocument } from '@/services/firestoreService';
 import { useUser } from "@/hooks/useUser";
 import { getAuthHeaders } from '@/config/firebaseApp';
 import ScreenContainer from "@/components/theme/ScreenContainer";

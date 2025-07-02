@@ -4,7 +4,7 @@ import { View, StyleSheet, Alert } from 'react-native';
 import ScreenContainer from '@/components/theme/ScreenContainer';
 import TextField from '@/components/TextField';
 import Button from '@/components/common/Button';
-import { queryCollection } from '@/lib/firestore';
+import { queryCollection } from '@/services/firestoreService';
 import { ensureAuth } from '@/utils/authGuard';
 import { useTheme } from '@/components/theme/theme';
 

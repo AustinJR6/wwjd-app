@@ -6,7 +6,7 @@ import {
   ActivityIndicator,
   ScrollView
 } from 'react-native';
-import { queryCollection } from '@/lib/firestore';
+import { queryCollection } from '@/services/firestoreService';
 import { showGracefulError } from '@/utils/gracefulError';
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { useTheme } from "@/components/theme/theme";

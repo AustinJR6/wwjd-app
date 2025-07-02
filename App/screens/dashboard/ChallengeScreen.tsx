@@ -12,7 +12,7 @@ import { useTheme } from "@/components/theme/theme";
 import { getTokenCount, setTokenCount } from "@/utils/TokenManager";
 import { showGracefulError } from '@/utils/gracefulError';
 import { ASK_GEMINI_SIMPLE, GENERATE_CHALLENGE_URL } from "@/utils/constants";
-import { getDocument, setDocument } from '@/lib/firestore';
+import { getDocument, setDocument } from '@/services/firestoreService';
 import {
   callFunction,
   incrementReligionPoints,
@@ -21,7 +21,7 @@ import {
 } from '@/services/functionService';
 import { useUser } from '@/hooks/useUser';
 import { ensureAuth } from '@/utils/authGuard';
-import { getToken, getCurrentUserId } from '@/lib/auth';
+import { getToken, getCurrentUserId } from '@/services/authService';
 import { useAuth } from '@/hooks/useAuth';
 import { useAuthStore } from '@/state/authStore';
 import { useChallengeStore } from '@/state/challengeStore';
