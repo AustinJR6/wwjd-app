@@ -35,6 +35,7 @@ Thumbs.db
 .vs/
 
 # Ignore native folders to enable CNG / prebuild
-
+android/
 ios/
-
+/android
+/ios
