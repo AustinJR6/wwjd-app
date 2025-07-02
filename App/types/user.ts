@@ -20,5 +20,6 @@ export interface AppUser {
   displayName: string;
   religion: string;
   isSubscribed: boolean;
+  onboardingComplete: boolean;
   tokens: number;
 }
