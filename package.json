@@ -30,7 +30,6 @@
     "expo-notifications": "~0.31.3",
     "expo-secure-store": "~14.2.3",
     "expo-updates": "~0.28.15",
-    "firebase": "^11.9.1",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "react-native": "0.73.6",
