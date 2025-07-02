@@ -10,6 +10,7 @@
   "dependencies": {
     "@expo-google-fonts/merriweather": "^0.4.1",
     "@expo-google-fonts/poppins": "^0.4.0",
+    "@expo/metro-runtime": "^5.0.4",
     "@google/generative-ai": "^0.24.1",
     "@react-native-async-storage/async-storage": "^2.2.0",
     "@react-native-community/datetimepicker": "^8.4.2",
@@ -42,6 +43,7 @@
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",
+    "@expo/metro-config": "~0.20.15",
     "@types/axios": "^0.9.36",
     "@types/jest": "^29.5.14",
     "@types/react": "~18.2.45",
@@ -52,6 +54,7 @@
     "eslint-config-expo": "^9.2.0",
     "eslint-plugin-react": "^7.33.2",
     "expo": "^53.0.15",
+    "metro": "^0.82.0",
     "rimraf": "5.0.5",
     "typescript": "^5.8.3"
   },
