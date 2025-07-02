@@ -31,11 +31,13 @@ export function initAuthState(): void {
 
 export async function signup(email: string, password: string) {
   const user = await fbSignup(email, password);
+  useAuthStore.getState().setUid(user.uid);
   return { localId: user.uid, email: user.email ?? '' };
 }
 
 export async function login(email: string, password: string) {
   const user = await fbLogin(email, password);
+  useAuthStore.getState().setUid(user.uid);
   return { localId: user.uid, email: user.email ?? '' };
 }
 

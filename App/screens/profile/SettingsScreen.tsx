@@ -6,6 +6,7 @@ import Constants from 'expo-constants';
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import Button from "@/components/common/Button";
 import { logout, changePassword } from "@/services/authService";
+import { resetToLogin } from "@/navigation/navigationRef";
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/navigation/RootStackParamList';
@@ -72,7 +73,7 @@ export default function SettingsScreen() {
     try {
       await logout();
       clearUser();
-      navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+      resetToLogin();
     } catch (err) {
       console.error('\u274C Sign out failed:', err);
       Alert.alert('Logout Error', 'Could not sign out. Please try again.');
