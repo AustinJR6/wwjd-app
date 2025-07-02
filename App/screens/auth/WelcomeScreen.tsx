@@ -62,7 +62,7 @@ export default function WelcomeScreen() {
 
   return (
     <LinearGradient colors={[theme.colors.primary, theme.colors.surface]} style={styles.container}>
-      <CustomText style={styles.loginLink} onPress={() => navigation.replace('Login')}>
+      <CustomText style={styles.loginLink} onPress={() => navigation.navigate('Login')}>
         Already have an account? Go to Login
       </CustomText>
       {/* Image removed if asset missing to prevent crash */}
