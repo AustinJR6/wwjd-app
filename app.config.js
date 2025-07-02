@@ -25,7 +25,6 @@ export default {
       process.env.GOOGLE_SERVICES_JSON || "./android/app/google-services.json"
   },
   plugins: [
-    "@react-native-firebase/app",
     "expo-dev-client",
     "expo-font",
     "expo-secure-store"
