@@ -54,7 +54,6 @@
     "eslint": "^8.56.0",
     "eslint-config-expo": "^9.2.0",
     "eslint-plugin-react": "^7.33.2",
-    "expo": "^53.0.15",
     "metro": "^0.82.0",
     "rimraf": "5.0.5",
     "typescript": "^5.8.3"
