@@ -5,7 +5,7 @@
   },
   "build": {
     "production": {
-      "developmentClient": false,
+      "developmentClient": true,
       "distribution": "store",
       "workflow": "generic",
       "android": {

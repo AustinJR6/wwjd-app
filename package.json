@@ -31,6 +31,7 @@
     "expo-local-authentication": "~16.0.5",
     "expo-notifications": "~0.31.3",
     "expo-secure-store": "~14.2.3",
+    "expo-system-ui": "~5.0.9",
     "expo-updates": "~0.28.15",
     "react": "19.0.0",
     "react-dom": "19.0.0",
@@ -40,8 +41,7 @@
     "react-native-reanimated": "~3.17.4",
     "react-native-safe-area-context": "5.4.0",
     "react-native-screens": "~4.11.1",
-    "zustand": "^5.0.4",
-    "expo-system-ui": "~5.0.9"
+    "zustand": "^5.0.4"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",
