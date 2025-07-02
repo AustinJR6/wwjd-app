@@ -17,7 +17,7 @@ export default {
   },
   android: {
     package: "com.lysara.onevine",
-    // Path to the firebase config file is provided by EAS as a file based
+    // Path to the firebase config file is provided by EAS as a file-based
     // environment variable. During local development the file can still live at
     // ./android/app/google-services.json, but on EAS Build the variable will
     // point to a temporary path where the secret is stored.
@@ -26,11 +26,13 @@ export default {
   },
   plugins: [
     "@react-native-firebase/app",
-    "expo-dev-client"
+    "expo-dev-client",
+    "expo-font",
+    "expo-secure-store"
   ],
   extra: {
     eas: {
-      projectId: "bbf209be-1b48-4f76-a496-9d4fcd8339fd" // ✅ fixed!
+      projectId: "bbf209be-1b48-4f76-a496-9d4fcd8339fd"
     }
   }
 };
