@@ -8,6 +8,7 @@ import Button from "@/components/common/Button";
 import { login, resetPassword } from "@/services/authService";
 import { loadUser, ensureUserDocExists } from "@/services/userService";
 import { useUserStore } from "@/state/userStore";
+import { useAuthStore } from "@/state/authStore";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useTheme } from "@/components/theme/theme";
@@ -21,6 +22,7 @@ export default function LoginScreen() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const navigation = useNavigation<NavigationProp>();
+  const setUid = useAuthStore.getState().setUid;
   const theme = useTheme();
 
   const handleLogin = async () => {
@@ -28,6 +30,7 @@ export default function LoginScreen() {
     try {
       const result = await login(email, password);
       if (result.localId) {
+        setUid(result.localId);
         const isNew = await ensureUserDocExists(result.localId, result.email);
         // Load the user profile so the root navigator registers authenticated screens
         await loadUser(result.localId);

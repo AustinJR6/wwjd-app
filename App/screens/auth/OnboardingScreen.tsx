@@ -9,10 +9,9 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import {
   completeOnboarding,
   updateUserFields,
-  ensureUserDocExists,
-  loadUser,
 } from "@/services/userService";
 import { useUserStore } from "@/state/userStore";
+import { useAuthStore } from "@/state/authStore";
 import { SCREENS } from "@/navigation/screens";
 import { useTheme } from "@/components/theme/theme";
 import { Picker } from "@react-native-picker/picker";
@@ -27,6 +26,7 @@ const religions = ["Christian", "Muslim", "Jewish", "Hindu", "Buddhist"];
 
 export default function OnboardingScreen() {
   const user = useUserStore((state: any) => state.user);
+  const uidFromAuth = useAuthStore((state) => state.uid);
   const navigation = useNavigation<OnboardingScreenProps["navigation"]>();
   const theme = useTheme();
   const [religion, setReligion] = useState(user?.religion ?? "Christian");
@@ -36,9 +36,9 @@ export default function OnboardingScreen() {
   const [loading, setLoading] = useState(false);
 
   const handleContinue = async () => {
-    if (!user) {
-      Alert.alert("Session expired — please log in again.");
-      navigation.navigate("Login");
+    const uid = user?.uid || uidFromAuth;
+    if (!uid) {
+      Alert.alert("Error", "User ID is missing.");
       return;
     }
 
@@ -49,23 +49,21 @@ export default function OnboardingScreen() {
 
     setLoading(true);
     try {
-      if (user.uid) {
-        await updateUserFields(user.uid, {
+      if (uid) {
+        await updateUserFields(uid, {
           religion,
           displayName: username,
           region,
           organizationId: organization || undefined,
         });
-        await completeOnboarding(user.uid);
-        await SecureStore.setItemAsync(`hasSeenOnboarding-${user.uid}`, "true");
+        await completeOnboarding(uid);
+        await SecureStore.setItemAsync(`hasSeenOnboarding-${uid}`, "true");
         useUserStore.getState().updateUser({ onboardingComplete: true });
 
         navigation.reset({
           index: 0,
           routes: [{ name: SCREENS.MAIN.HOME as keyof RootStackParamList }],
         });
-      } else {
-        Alert.alert("Error", "User ID is missing.");
       }
     } catch (err: any) {
       Alert.alert(
