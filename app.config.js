@@ -17,7 +17,12 @@ export default {
   },
   android: {
     package: "com.lysara.onevine",
-    googleServicesFile: "./android/app/google-services.json"
+    // Path to the firebase config file is provided by EAS as a file based
+    // environment variable. During local development the file can still live at
+    // ./android/app/google-services.json, but on EAS Build the variable will
+    // point to a temporary path where the secret is stored.
+    googleServicesFile:
+      process.env.GOOGLE_SERVICES_JSON || "./android/app/google-services.json"
   },
   plugins: [
     "@react-native-firebase/app",
