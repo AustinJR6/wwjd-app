@@ -35,3 +35,5 @@ Thumbs.db
 .vs/
 
 # Ignore native folders to enable CNG / prebuild
+/secrets
+secrets/
