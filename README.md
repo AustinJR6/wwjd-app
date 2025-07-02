@@ -56,6 +56,15 @@ reach your deployed Firebase functions from any network:
 EXPO_PUBLIC_API_URL=https://us-central1-onevine-app.cloudfunctions.net
 GEMINI_API_KEY=<your Gemini API key>
 ```
+
+### Google Services Configuration
+
+If you build the app with EAS, provide your Firebase `google-services.json` as a
+file-based secret named `GOOGLE_SERVICES_JSON`. EAS Build will create the file
+and expose its path via the `GOOGLE_SERVICES_JSON` environment variable. The app
+config reads this variable to locate the file during prebuild.
+
+
 📱 Key Features
 ✝️ 🕉️ ☪️ 🕎 Multi-Faith Reflection AI
 Dynamic prompts based on selected religion
