@@ -1,5 +1,6 @@
 import axios from 'axios';
-import { logTokenIssue, getIdToken } from '@/services/authService';
+import { logTokenIssue } from '@/services/authService';
+import { getIdToken } from '@/utils/TokenManager';
 import { useAuthStore } from '@/state/authStore';
 import { sendRequestWithGusBugLogging } from '@/utils/gusBugLogger';
 

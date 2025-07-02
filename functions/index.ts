@@ -1,6 +1,7 @@
 import * as functions from "firebase-functions";
 import { auth, db } from "./firebase";
 import * as admin from "firebase-admin";
+import { Request, Response } from "express";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import Stripe from "stripe";
 import * as dotenv from "dotenv";
@@ -140,7 +141,7 @@ async function updateStreakAndXPInternal(uid: string, type: string) {
 export const incrementReligionPoints = functions
   .region("us-central1")
   .https.onRequest(
-    withCors(async (req, res) => {
+    withCors(async (req: Request, res: Response) => {
       try {
         const { uid } = await verifyIdToken(req);
         const { religion, points } = req.body;
@@ -173,7 +174,7 @@ export const incrementReligionPoints = functions
 
 export const completeChallenge = functions
   .region("us-central1")
-  .https.onRequest(async (req, res) => {
+  .https.onRequest(async (req: Request, res: Response) => {
   const idToken = req.headers.authorization?.split("Bearer ")[1];
   if (!idToken) {
     console.error("❌ Gus Bug Alert: Missing ID token in header. 🐞");
@@ -196,7 +197,7 @@ export const completeChallenge = functions
 
 export const createMultiDayChallenge = functions
   .region("us-central1")
-  .https.onRequest(async (req, res) => {
+  .https.onRequest(async (req: Request, res: Response) => {
   const idToken = req.headers.authorization?.split("Bearer ")[1];
   if (!idToken) {
     res.status(401).json({ error: "Unauthorized" });
@@ -269,7 +270,7 @@ export const createMultiDayChallenge = functions
 
 export const completeChallengeDay = functions
   .region("us-central1")
-  .https.onRequest(async (req, res) => {
+  .https.onRequest(async (req: Request, res: Response) => {
   const idToken = req.headers.authorization?.split("Bearer ")[1];
   if (!idToken) {
     res.status(401).json({ error: "Unauthorized" });
@@ -358,7 +359,7 @@ export const completeChallengeDay = functions
 
 export const askGeminiSimple = functions
   .region("us-central1")
-  .https.onRequest(async (req, res) => {
+  .https.onRequest(async (req: Request, res: Response) => {
   const idToken = req.headers.authorization?.split("Bearer ")[1];
   if (!idToken) {
     console.error("❌ Gus Bug Alert: Missing ID token in header. 🐞");
@@ -405,7 +406,7 @@ export const askGeminiSimple = functions
 
 export const askGeminiV2 = functions
   .region("us-central1")
-  .https.onRequest(async (req, res) => {
+  .https.onRequest(async (req: Request, res: Response) => {
   console.log("🔍 Headers received:", req.headers);
   const idToken = req.headers.authorization?.split("Bearer ")[1];
   logger.debug(`Token prefix: ${idToken ? idToken.slice(0, 10) : "none"}`);
@@ -465,7 +466,7 @@ export const askGeminiV2 = functions
 
 export const generateChallenge = functions
   .region("us-central1")
-  .https.onRequest(async (req, res) => {
+  .https.onRequest(async (req: Request, res: Response) => {
   const idToken = req.headers.authorization?.split("Bearer ")[1];
   if (!idToken) {
     console.error("❌ Gus Bug Alert: Missing ID token in header. 🐞");
@@ -540,7 +541,7 @@ export const generateChallenge = functions
 
 export const generateDailyChallenge = functions
   .region("us-central1")
-  .https.onRequest(async (req, res) => {
+  .https.onRequest(async (req: Request, res: Response) => {
   const idToken = req.headers.authorization?.split("Bearer ")[1];
   if (!idToken) {
     console.error("❌ Gus Bug Alert: Missing ID token in header. 🐞");
@@ -642,7 +643,7 @@ export const generateDailyChallenge = functions
 
 export const skipDailyChallenge = functions
   .region("us-central1")
-  .https.onRequest(async (req, res) => {
+  .https.onRequest(async (req: Request, res: Response) => {
   const idToken = req.headers.authorization?.split("Bearer ")[1];
   if (!idToken) {
     res.status(401).json({ error: "Unauthorized" });
@@ -764,7 +765,7 @@ export const skipDailyChallenge = functions
 // removing or wiring it up in a future release.
 export const startSubscriptionCheckout = functions
   .region("us-central1")
-  .https.onRequest(async (req, res) => {
+  .https.onRequest(async (req: Request, res: Response) => {
   logger.info("📦 startSubscriptionCheckout payload", req.body);
   logger.info(
     "🔐 Stripe Secret:",
@@ -815,7 +816,7 @@ export const startSubscriptionCheckout = functions
 // removing or wiring it up in a future release.
 export const startOneTimeTokenCheckout = functions
   .region("us-central1")
-  .https.onRequest(async (req, res) => {
+  .https.onRequest(async (req: Request, res: Response) => {
   logger.info("📦 startOneTimeTokenCheckout payload", req.body);
   logger.info(
     "🔐 Stripe Secret:",
@@ -864,7 +865,7 @@ export const startOneTimeTokenCheckout = functions
 
 export const startDonationCheckout = functions
   .region("us-central1")
-  .https.onRequest(async (req, res) => {
+  .https.onRequest(async (req: Request, res: Response) => {
   logger.info("💖 startDonationCheckout payload", req.body);
   const idToken = req.headers.authorization?.split("Bearer ")[1];
   if (!idToken) {
@@ -919,7 +920,7 @@ export const startDonationCheckout = functions
 
 export const startCheckoutSession = functions
   .region("us-central1")
-  .https.onRequest(async (req, res) => {
+  .https.onRequest(async (req: Request, res: Response) => {
   logger.info("📦 startCheckoutSession payload", req.body);
   logger.info(
     "🔐 Stripe Secret:",
@@ -968,7 +969,7 @@ export const startCheckoutSession = functions
 
 export const handleStripeWebhookV2 = functions
   .region("us-central1")
-  .https.onRequest(async (req, res) => {
+  .https.onRequest(async (req: Request, res: Response) => {
   console.log('💰 Gus Bug Webhook triggered. No auth needed!');
   const sig = req.headers['stripe-signature'] as string | undefined;
   if (!sig) {
@@ -1023,7 +1024,7 @@ export const handleStripeWebhookV2 = functions
 
 export const updateStreakAndXP = functions
   .region("us-central1")
-  .https.onRequest(async (req, res) => {
+  .https.onRequest(async (req: Request, res: Response) => {
   const idToken = req.headers.authorization?.split("Bearer ")[1];
   if (!idToken) {
     res.status(401).json({ error: "Unauthorized" });

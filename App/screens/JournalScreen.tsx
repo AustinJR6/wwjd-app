@@ -19,7 +19,7 @@ import { querySubcollection, addDocument, getDocument, setDocument } from '@/ser
 import { callFunction, incrementReligionPoints } from '@/services/functionService';
 import { ASK_GEMINI_SIMPLE } from '@/utils/constants';
 import { ensureAuth } from '@/utils/authGuard';
-import { getToken, getCurrentUserId } from '@/services/authService';
+import { getToken, getCurrentUserId } from '@/utils/TokenManager';
 import { sendGeminiPrompt } from '@/services/geminiService';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigation } from '@react-navigation/native';

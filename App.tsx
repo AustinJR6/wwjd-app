@@ -53,11 +53,12 @@ import ConfessionalScreen from "./App/screens/ConfessionalScreen";
 import BuyTokensScreen from "./App/screens/BuyTokensScreen";
 import GiveBackScreen from "./App/screens/GiveBackScreen";
 
-Sentry.init({
-  dsn: 'https://your-key@o123456.ingest.sentry.io/your-project-id',
-  tracesSampleRate: 1.0, // Optional, helps capture performance issues
-  debug: __DEV__,        // Only logs debug info in development
-});
+const dsn = process.env.SENTRY_DSN || process.env.EXPO_PUBLIC_SENTRY_DSN;
+if (!dsn || dsn.includes('your-key')) {
+  console.warn('Sentry DSN not configured. Skipping Sentry initialization.');
+} else {
+  Sentry.init({ dsn });
+}
 
 
 const Stack = createNativeStackNavigator<RootStackParamList>();

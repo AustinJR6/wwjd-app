@@ -12,7 +12,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { uploadImage } from '@/services/storageService';
 import { addDocument } from '@/services/firestoreService';
 import { useUser } from "@/hooks/useUser";
-import { getAuthHeaders } from '@/config/firebaseApp';
+import { getAuthHeaders } from '@/utils/TokenManager';
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { useTheme } from "@/components/theme/theme";
 import { ensureAuth } from '@/utils/authGuard';

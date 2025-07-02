@@ -9,7 +9,7 @@ import { RootStackParamList } from "@/navigation/RootStackParamList";
 import { useUser } from '@/hooks/useUser';
 import { createStripeCheckout } from '@/services/apiService';
 import { PRICE_IDS } from '@/config/stripeConfig';
-import { getAuthHeaders } from '@/config/firebaseApp';
+import { getAuthHeaders } from '@/utils/TokenManager';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Upgrade'>;
 

@@ -21,7 +21,7 @@ import { ASK_GEMINI_V2 } from "@/utils/constants";
 import { getDocument, setDocument } from '@/services/firestoreService';
 import { useUser } from '@/hooks/useUser';
 import { ensureAuth } from '@/utils/authGuard';
-import { getToken, getCurrentUserId } from '@/services/authService';
+import { getToken, getCurrentUserId } from '@/utils/TokenManager';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/navigation/RootStackParamList';

@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { getIdToken } from '@/services/authService';
+import { getIdToken } from '@/utils/TokenManager';
 import { showPermissionDenied } from '@/utils/gracefulError';
 
 const PROJECT_ID = process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID || '';
