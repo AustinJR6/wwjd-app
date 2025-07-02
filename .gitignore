@@ -35,7 +35,6 @@ Thumbs.db
 .vs/
 
 # Ignore native folders to enable CNG / prebuild
-android/
+
 ios/
-google-services.json
-GoogleService-Info.plist
+
