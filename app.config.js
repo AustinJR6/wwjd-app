@@ -33,8 +33,8 @@ export default ({ config }) => ({
       "expo-build-properties",
       {
         android: {
-          kotlinVersion: "1.8.10",
-          gradlePluginVersion: "7.4.1",
+          kotlinVersion: "1.9.24",
+          gradlePluginVersion: "8.3.0",
         },
       },
     ],
