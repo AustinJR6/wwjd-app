@@ -11,6 +11,16 @@ let currentToken: string | null = null;
 let currentRefresh: string | null = null;
 let currentUid: string | null = null;
 
+function isExpired(token: string) {
+  try {
+    const [, payload] = token.split('.');
+    const data = JSON.parse(atob(payload));
+    return data.exp * 1000 < Date.now() + 5 * 60 * 1000;
+  } catch {
+    return true;
+  }
+}
+
 async function loadStoredCredentials() {
   if (currentToken && currentUid) return;
   currentToken = await getItem(TOKEN_KEY);
@@ -72,8 +82,10 @@ export async function changePassword(newPassword: string) {
 
 export async function getIdToken(forceRefresh = false): Promise<string | null> {
   await loadStoredCredentials();
-  if (!forceRefresh && currentToken) return currentToken;
   if (!currentRefresh) return null;
+  if (!forceRefresh && currentToken && !isExpired(currentToken)) {
+    return currentToken;
+  }
   const url = `https://securetoken.googleapis.com/v1/token?key=${API_KEY}`;
   const res = await axios.post(url, { grant_type: 'refresh_token', refresh_token: currentRefresh });
   currentToken = res.data.id_token;

@@ -8,23 +8,31 @@ dotenv.config();
 function initialize() {
   if (admin.apps.length) return;
 
-  const credPath = process.env.GOOGLE_APPLICATION_CREDENTIALS;
-  const credJson = process.env.FIREBASE_SERVICE_ACCOUNT;
+  const serviceAccountEnv = process.env.FIREBASE_SERVICE_ACCOUNT;
+  const defaultCredPath = process.env.GOOGLE_APPLICATION_CREDENTIALS;
 
-  if (credPath && fs.existsSync(credPath)) {
-    const serviceAccount = JSON.parse(fs.readFileSync(credPath, 'utf8'));
+  let serviceAccount: admin.ServiceAccount | undefined;
+
+  if (serviceAccountEnv) {
+    const resolved = path.resolve(serviceAccountEnv);
+    if (fs.existsSync(resolved)) {
+      serviceAccount = require(resolved);
+    } else {
+      try {
+        serviceAccount = JSON.parse(serviceAccountEnv);
+      } catch {
+        console.warn('FIREBASE_SERVICE_ACCOUNT is not valid JSON or path');
+      }
+    }
+  } else if (defaultCredPath && fs.existsSync(defaultCredPath)) {
+    serviceAccount = JSON.parse(fs.readFileSync(defaultCredPath, 'utf8'));
+  }
+
+  if (serviceAccount) {
     admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
-    return;
+  } else {
+    admin.initializeApp();
   }
-
-  if (credJson) {
-    admin.initializeApp({
-      credential: admin.credential.cert(JSON.parse(credJson)),
-    });
-    return;
-  }
-
-  admin.initializeApp();
 }
 
 initialize();

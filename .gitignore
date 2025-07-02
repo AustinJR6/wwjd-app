@@ -34,6 +34,5 @@ Thumbs.db
 .vscode/
 .vs/
 
-# Ignore native folders to enable CNG / prebuild
-/secrets
+# Ignore secrets such as Firebase service account keys
 secrets/

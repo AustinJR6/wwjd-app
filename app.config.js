@@ -25,7 +25,20 @@ export default ({ config }) => ({
     googleServicesFile:
       process.env.GOOGLE_SERVICES_JSON || "./android/app/google-services.json",
   },
-  plugins: ["expo-dev-client", "expo-font", "expo-secure-store"],
+  plugins: [
+    "expo-dev-client",
+    "expo-font",
+    "expo-secure-store",
+    [
+      "expo-build-properties",
+      {
+        android: {
+          kotlinVersion: "1.9.24",
+          gradlePluginVersion: "8.5.0",
+        },
+      },
+    ],
+  ],
   extra: {
     eas: {
       projectId: "bbf209be-1b48-4f76-a496-9d4fcd8339fd",
