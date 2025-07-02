@@ -38,4 +38,3 @@ Thumbs.db
 
 # Ignore secrets such as Firebase service account keys
 secrets/
-android/app/google-services.json
