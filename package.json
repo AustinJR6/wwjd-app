@@ -45,7 +45,7 @@
     "@babel/core": "^7.20.0",
     "@types/axios": "^0.9.36",
     "@types/jest": "^29.5.14",
-    "@types/react": "~19.0.10",
+    "@types/react": "~18.2.45",
     "@typescript-eslint/eslint-plugin": "^6.7.0",
     "@typescript-eslint/parser": "^6.7.0",
     "babel-plugin-module-resolver": "^5.0.2",

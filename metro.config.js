@@ -1,16 +1,17 @@
-const { getDefaultConfig } = require('@expo/metro-config');
+// metro.config.js
 
-const config = getDefaultConfig(__dirname);
+const { getDefaultConfig, mergeConfig } = require('@expo/metro-config');
 
-// Ensure common extensions are included
-config.resolver.sourceExts = [...config.resolver.sourceExts, 'cjs'];
+const projectRoot = __dirname;
+const baseConfig = getDefaultConfig(projectRoot);
 
-// Explicitly disable experimental bridgeless mode (if it’s being picked up)
-config.transformer = {
-  ...config.transformer,
-  unstable_disableES6Transforms: false
-};
-
-config.resolver.unstable_enableSymlinks = false;
-
-module.exports = config;
+module.exports = mergeConfig(baseConfig, {
+  resolver: {
+    sourceExts: [...baseConfig.resolver.sourceExts, 'cjs'],
+    unstable_enableSymlinks: false
+  },
+  transformer: {
+    ...baseConfig.transformer,
+    unstable_disableES6Transforms: false
+  }
+});
