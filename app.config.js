@@ -34,7 +34,7 @@ export default ({ config }) => ({
       {
         android: {
           kotlinVersion: "1.9.24",
-          gradlePluginVersion: "8.3.0",
+          gradlePluginVersion: "8.4.1",
         },
       },
     ],
@@ -44,5 +44,4 @@ export default ({ config }) => ({
       projectId: "bbf209be-1b48-4f76-a496-9d4fcd8339fd",
     },
   },
-  cli: { appVersionSource: "version" },
 });
