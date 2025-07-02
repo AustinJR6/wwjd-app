@@ -58,7 +58,7 @@ service cloud.firestore {
     }
 
     // 🔁 Active Challenge (per user)
-    match /users/{userId}/activeChallenge {
+    match /users/{userId}/activeChallenge/{docId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 

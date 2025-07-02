@@ -215,7 +215,7 @@ export const createMultiDayChallenge = functions
     const decoded = await auth.verifyIdToken(idToken);
     const uid = decoded.uid;
     const userRef = db.collection("users").doc(uid);
-    const challengeRef = db.doc(`users/${uid}/activeChallenge`);
+    const challengeRef = db.doc(`users/${uid}/activeChallenge/current`);
 
     const basePrompt =
       prompt.trim() ||
@@ -281,7 +281,7 @@ export const completeChallengeDay = functions
   try {
     const decoded = await auth.verifyIdToken(idToken);
     const uid = decoded.uid;
-    const challengeRef = db.doc(`users/${uid}/activeChallenge`);
+    const challengeRef = db.doc(`users/${uid}/activeChallenge/current`);
     const userRef = db.collection("users").doc(uid);
 
     let bonus = 0;
