@@ -1,15 +1,16 @@
 import * as admin from 'firebase-admin';
 import * as functions from 'firebase-functions';
-import * as cors from 'cors';
+import cors from 'cors';
+import { Request, Response } from 'express';
 import { auth, db } from './firebase';
 
 const corsHandler = cors({ origin: true });
 
-export function withCors(handler: functions.RequestHandler): functions.RequestHandler {
+export function withCors(handler: (req: Request, res: Response) => void): (req: Request, res: Response) => void {
   return (req, res) => corsHandler(req, res, () => handler(req, res));
 }
 
-export async function verifyIdToken(req: functions.Request): Promise<admin.auth.DecodedIdToken> {
+export async function verifyIdToken(req: Request): Promise<admin.auth.DecodedIdToken> {
   const token = req.headers.authorization?.split('Bearer ')[1];
   if (!token) throw new Error('Unauthorized');
   return await auth.verifyIdToken(token);
