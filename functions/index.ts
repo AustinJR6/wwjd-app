@@ -1,4 +1,3 @@
-import { onRequest } from "firebase-functions/v2/https";
 import * as functions from "firebase-functions/v1";
 import { auth, db } from "./firebase";
 import * as admin from "firebase-admin";
@@ -140,11 +139,9 @@ async function updateStreakAndXPInternal(uid: string, type: string) {
   });
 }
 
-export const incrementReligionPoints = onRequest(
-  {
-    region: "us-central1",
-  },
-  
+export const incrementReligionPoints = functions
+  .region("us-central1")
+  .https.onRequest(
     withCors(async (req: Request, res: Response) => {
       try {
         const { uid } = await verifyIdToken(req);
@@ -176,11 +173,9 @@ export const incrementReligionPoints = onRequest(
     })
   );
 
-export const completeChallenge = onRequest(
-  {
-    region: "us-central1",
-  },
-  async (req: Request, res: Response) => {
+export const completeChallenge = functions
+  .region("us-central1")
+  .https.onRequest(async (req: Request, res: Response) => {
   const idToken = req.headers.authorization?.split("Bearer ")[1];
   if (!idToken) {
     console.error("❌ Gus Bug Alert: Missing ID token in header. 🐞");
@@ -201,11 +196,9 @@ export const completeChallenge = onRequest(
   }
 });
 
-export const createMultiDayChallenge = onRequest(
-  {
-    region: "us-central1",
-  },
-  async (req: Request, res: Response) => {
+export const createMultiDayChallenge = functions
+  .region("us-central1")
+  .https.onRequest(async (req: Request, res: Response) => {
   const idToken = req.headers.authorization?.split("Bearer ")[1];
   if (!idToken) {
     res.status(401).json({ error: "Unauthorized" });
@@ -276,11 +269,9 @@ export const createMultiDayChallenge = onRequest(
   }
 });
 
-export const completeChallengeDay = onRequest(
-  {
-    region: "us-central1",
-  },
-  async (req: Request, res: Response) => {
+export const completeChallengeDay = functions
+  .region("us-central1")
+  .https.onRequest(async (req: Request, res: Response) => {
   const idToken = req.headers.authorization?.split("Bearer ")[1];
   if (!idToken) {
     res.status(401).json({ error: "Unauthorized" });
@@ -367,11 +358,9 @@ export const completeChallengeDay = onRequest(
   }
 });
 
-export const askGeminiSimple = onRequest(
-  {
-    region: "us-central1",
-  },
-  async (req: Request, res: Response) => {
+export const askGeminiSimple = functions
+  .region("us-central1")
+  .https.onRequest(async (req: Request, res: Response) => {
   const idToken = req.headers.authorization?.split("Bearer ")[1];
   if (!idToken) {
     console.error("❌ Gus Bug Alert: Missing ID token in header. 🐞");
@@ -416,11 +405,9 @@ export const askGeminiSimple = onRequest(
   }
 });
 
-export const askGeminiV2 = onRequest(
-  {
-    region: "us-central1",
-  },
-  async (req: Request, res: Response) => {
+export const askGeminiV2 = functions
+  .region("us-central1")
+  .https.onRequest(async (req: Request, res: Response) => {
   console.log("🔍 Headers received:", req.headers);
   const idToken = req.headers.authorization?.split("Bearer ")[1];
   logger.debug(`Token prefix: ${idToken ? idToken.slice(0, 10) : "none"}`);
@@ -478,11 +465,9 @@ export const askGeminiV2 = onRequest(
   }
 });
 
-export const generateChallenge = onRequest(
-  {
-    region: "us-central1",
-  },
-  async (req: Request, res: Response) => {
+export const generateChallenge = functions
+  .region("us-central1")
+  .https.onRequest(async (req: Request, res: Response) => {
   const idToken = req.headers.authorization?.split("Bearer ")[1];
   if (!idToken) {
     console.error("❌ Gus Bug Alert: Missing ID token in header. 🐞");
@@ -555,11 +540,9 @@ export const generateChallenge = onRequest(
   }
 });
 
-export const generateDailyChallenge = onRequest(
-  {
-    region: "us-central1",
-  },
-  async (req: Request, res: Response) => {
+export const generateDailyChallenge = functions
+  .region("us-central1")
+  .https.onRequest(async (req: Request, res: Response) => {
   const idToken = req.headers.authorization?.split("Bearer ")[1];
   if (!idToken) {
     console.error("❌ Gus Bug Alert: Missing ID token in header. 🐞");
@@ -659,11 +642,9 @@ export const generateDailyChallenge = onRequest(
   }
 });
 
-export const skipDailyChallenge = onRequest(
-  {
-    region: "us-central1",
-  },
-  async (req: Request, res: Response) => {
+export const skipDailyChallenge = functions
+  .region("us-central1")
+  .https.onRequest(async (req: Request, res: Response) => {
   const idToken = req.headers.authorization?.split("Bearer ")[1];
   if (!idToken) {
     res.status(401).json({ error: "Unauthorized" });
@@ -783,11 +764,9 @@ export const skipDailyChallenge = onRequest(
 
 // TODO: startSubscriptionCheckout is unused in the current frontend. Consider
 // removing or wiring it up in a future release.
-export const startSubscriptionCheckout = onRequest(
-  {
-    region: "us-central1",
-  },
-  async (req: Request, res: Response) => {
+export const startSubscriptionCheckout = functions
+  .region("us-central1")
+  .https.onRequest(async (req: Request, res: Response) => {
   logger.info("📦 startSubscriptionCheckout payload", req.body);
   logger.info(
     "🔐 Stripe Secret:",
@@ -836,11 +815,9 @@ export const startSubscriptionCheckout = onRequest(
 
 // TODO: startOneTimeTokenCheckout is unused in the current frontend. Consider
 // removing or wiring it up in a future release.
-export const startOneTimeTokenCheckout = onRequest(
-  {
-    region: "us-central1",
-  },
-  async (req: Request, res: Response) => {
+export const startOneTimeTokenCheckout = functions
+  .region("us-central1")
+  .https.onRequest(async (req: Request, res: Response) => {
   logger.info("📦 startOneTimeTokenCheckout payload", req.body);
   logger.info(
     "🔐 Stripe Secret:",
@@ -887,11 +864,9 @@ export const startOneTimeTokenCheckout = onRequest(
   }
 });
 
-export const startDonationCheckout = onRequest(
-  {
-    region: "us-central1",
-  },
-  async (req: Request, res: Response) => {
+export const startDonationCheckout = functions
+  .region("us-central1")
+  .https.onRequest(async (req: Request, res: Response) => {
   logger.info("💖 startDonationCheckout payload", req.body);
   const idToken = req.headers.authorization?.split("Bearer ")[1];
   if (!idToken) {
@@ -944,11 +919,9 @@ export const startDonationCheckout = onRequest(
   }
 });
 
-export const startCheckoutSession = onRequest(
-  {
-    region: "us-central1",
-  },
-  async (req: Request, res: Response) => {
+export const startCheckoutSession = functions
+  .region("us-central1")
+  .https.onRequest(async (req: Request, res: Response) => {
   logger.info("📦 startCheckoutSession payload", req.body);
   logger.info(
     "🔐 Stripe Secret:",
@@ -995,11 +968,9 @@ export const startCheckoutSession = onRequest(
   }
 });
 
-export const handleStripeWebhookV2 = onRequest(
-  {
-    region: "us-central1",
-  },
-  async (req: RawBodyRequest, res: Response) => {
+export const handleStripeWebhookV2 = functions
+  .region("us-central1")
+  .https.onRequest(async (req: RawBodyRequest, res: Response) => {
   console.log('💰 Gus Bug Webhook triggered. No auth needed!');
   const sig = req.headers['stripe-signature'] as string | undefined;
   if (!sig) {
@@ -1052,11 +1023,9 @@ export const handleStripeWebhookV2 = onRequest(
   res.status(200).send({ received: true });
 });
 
-export const updateStreakAndXP = onRequest(
-  {
-    region: "us-central1",
-  },
-  async (req: Request, res: Response) => {
+export const updateStreakAndXP = functions
+  .region("us-central1")
+  .https.onRequest(async (req: Request, res: Response) => {
   const idToken = req.headers.authorization?.split("Bearer ")[1];
   if (!idToken) {
     res.status(401).json({ error: "Unauthorized" });
@@ -1084,11 +1053,9 @@ async function ensureDocument(
   }
 }
 
-export const seedFirestore = onRequest(
-  {
-    region: "us-central1",
-  },
-  async (_req, res) => {
+export const seedFirestore = functions
+  .region("us-central1")
+  .https.onRequest(async (_req, res) => {
   try {
     await Promise.all([
       ensureDocument('users/seed-user', { initialized: true }),
