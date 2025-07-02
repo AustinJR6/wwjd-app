@@ -132,6 +132,10 @@ Stripe subscription flow is being integrated with Firebase webhook handling
 
 Onboarding uses anonymous login, upgraded to email if subscribed
 
+Note: Even when using `app.config.js` in the bare workflow, keep a minimal
+`app.json` alongside it so Metro and other legacy tools can resolve the app
+name during builds.
+
 ### Firebase REST Endpoints
 
 The app communicates with Firebase using the following REST endpoints:
