@@ -6,6 +6,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTheme } from '@/components/theme/theme';
 import { RootStackParamList } from '@/navigation/RootStackParamList';
 import { logout } from '@/services/authService';
+import { resetToLogin } from '@/navigation/navigationRef';
 
 export default function Header() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -42,7 +43,7 @@ export default function Header() {
         onPress: async () => {
           try {
             await logout();
-            navigation.reset({ index: 0, routes: [{ name: 'Login' }] });
+            resetToLogin();
           } catch (err) {
             console.error('\u274C Sign out failed:', err);
             Alert.alert('Logout Error', 'Could not sign out. Please try again.');
