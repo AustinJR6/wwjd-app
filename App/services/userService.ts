@@ -25,20 +25,19 @@ export async function ensureUserDocExists(
   email?: string,
 ): Promise<boolean> {
   try {
-    const snap = await getDocument(`users/${uid}`);
-    if (!snap) {
+    await getDocument(`users/${uid}`);
+    console.log("📄 User doc already exists for", uid);
+    return false;
+  } catch (err: any) {
+    if (err?.response?.status === 404) {
       const payload: any = { uid, createdAt: Date.now() };
       if (email) payload.email = email;
       await setDocument(`users/${uid}`, payload);
       console.log("📄 Created user doc for", uid);
-      return true; // new user created
-    } else {
-      console.log("📄 User doc already exists for", uid);
-      return false;
+      return true;
     }
-  } catch (err) {
     console.warn("⚠️ ensureUserDocExists failed", err);
-    return false;
+    throw err;
   }
 }
 
