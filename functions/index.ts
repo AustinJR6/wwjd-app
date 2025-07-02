@@ -5,6 +5,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import Stripe from "stripe";
 import * as dotenv from "dotenv";
 import * as logger from "firebase-functions/logger";
+import { withCors, verifyIdToken, writeDoc, logError } from "./helpers";
 
 function logTokenVerificationError(context: string, token: string | undefined, err: any) {
   logger.error(`${context} token verification failed`, {
@@ -138,51 +139,37 @@ async function updateStreakAndXPInternal(uid: string, type: string) {
 
 export const incrementReligionPoints = functions
   .region("us-central1")
-  .https.onRequest(async (req, res) => {
-  console.log("🔍 Headers received:", req.headers);
+  .https.onRequest(
+    withCors(async (req, res) => {
+      try {
+        const { uid } = await verifyIdToken(req);
+        const { religion, points } = req.body;
 
-  const idToken = req.headers.authorization?.split("Bearer ")[1];
-  if (!idToken) {
-    console.error("❌ Gus Bug Alert: No ID token provided.");
-    res.status(401).send("Unauthorized: Missing ID token.");
-    return;
-  }
+        if (
+          typeof religion !== "string" ||
+          typeof points !== "number" ||
+          points <= 0 ||
+          points > 100
+        ) {
+          res.status(400).send("Invalid input.");
+          return;
+        }
 
-  let decoded: admin.auth.DecodedIdToken;
-  try {
-    decoded = await auth.verifyIdToken(idToken);
-    console.log(`✅ Gus Bug Authenticated: ${decoded.uid}`);
-    const { religion, points } = req.body;
+        const ref = db.collection("religion").doc(religion);
+        await db.runTransaction(async (t: FirebaseFirestore.Transaction) => {
+          const snap = await t.get(ref);
+          const current = snap.exists ? (snap.data()?.totalPoints ?? 0) : 0;
+          t.set(ref, { totalPoints: current + points }, { merge: true });
+        });
 
-    if (
-      typeof religion !== "string" ||
-      typeof points !== "number" ||
-      points <= 0 ||
-      points > 100
-    ) {
-      res.status(400).send("Invalid input.");
-      return;
-    }
-
-    const ref = db.collection("religion").doc(religion);
-    await db.runTransaction(async (t: FirebaseFirestore.Transaction) => {
-      const snap = await t.get(ref);
-      const current = snap.exists ? (snap.data()?.totalPoints ?? 0) : 0;
-      t.set(ref, { totalPoints: current + points }, { merge: true });
-    });
-
-    res.status(200).send({ message: "Points updated" });
-  } catch (err: any) {
-    logTokenVerificationError('incrementReligionPoints', idToken, err);
-    if (err.code === "auth/argument-error") {
-      res.status(401).json({
-        error: "Unauthorized — Gus bug cast an invalid token spell.",
-      });
-      return;
-    }
-    res.status(500).send("Internal error");
-  }
-});
+        res.status(200).send({ message: "Points updated" });
+      } catch (err: any) {
+        logError("incrementReligionPoints", err);
+        const code = err.message === "Unauthorized" ? 401 : 500;
+        res.status(code).json({ error: err.message });
+      }
+    })
+  );
 
 export const completeChallenge = functions
   .region("us-central1")

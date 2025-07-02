@@ -2,7 +2,7 @@ import {
   addDocument,
   querySubcollection,
   deleteDocument,
-} from '@/lib/firestore';
+} from '@/services/firestoreService';
 import { ensureAuth } from '@/utils/authGuard';
 
 export interface TempMessage {

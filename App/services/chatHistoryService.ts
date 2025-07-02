@@ -3,7 +3,7 @@ import {
   querySubcollection,
   getDocument,
   deleteDocument,
-} from '@/lib/firestore';
+} from '@/services/firestoreService';
 import { ensureAuth } from '@/utils/authGuard';
 
 export interface ChatMessage {

@@ -11,7 +11,7 @@ import Button from '@/components/common/Button';
 import { useUser } from '@/hooks/useUser';
 import ScreenContainer from '@/components/theme/ScreenContainer';
 import { useTheme } from '@/components/theme/theme';
-import { queryCollection, setDocument, getDocument } from '@/lib/firestore';
+import { queryCollection, setDocument, getDocument } from '@/services/firestoreService';
 import { getAuthHeaders } from '@/config/firebaseApp';
 import { ensureAuth } from '@/utils/authGuard';
 import { useNavigation } from '@react-navigation/native';
