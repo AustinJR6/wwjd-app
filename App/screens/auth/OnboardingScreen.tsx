@@ -4,7 +4,7 @@ import { View, StyleSheet, Alert, TextInput } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import Button from "@/components/common/Button";
-import { useNavigation, CommonActions } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { completeOnboarding, updateUserFields, ensureUserDocExists, loadUser } from "@/services/userService";
 import { useUserStore } from "@/state/userStore";
@@ -31,7 +31,7 @@ export default function OnboardingScreen() {
   const handleContinue = async () => {
     if (!user) {
       Alert.alert('Session expired — please log in again.');
-      navigation.replace('Login');
+      navigation.navigate('Login');
       return;
     }
 
@@ -154,7 +154,7 @@ export default function OnboardingScreen() {
       />
 
       <Button title="Continue" onPress={handleContinue} loading={loading} />
-      <CustomText style={styles.link} onPress={() => navigation.replace('Login')}>
+      <CustomText style={styles.link} onPress={() => navigation.navigate('Login')}>
         Already have an account? Log in
       </CustomText>
     </ScreenContainer>
