@@ -20,7 +20,10 @@ export interface FirestoreUser {
 /**
  * Ensure the user document exists before accessing it
  */
-export async function ensureUserDocExists(uid: string, email?: string) {
+export async function ensureUserDocExists(
+  uid: string,
+  email?: string,
+): Promise<boolean> {
   try {
     const snap = await getDocument(`users/${uid}`);
     if (!snap) {
@@ -28,11 +31,14 @@ export async function ensureUserDocExists(uid: string, email?: string) {
       if (email) payload.email = email;
       await setDocument(`users/${uid}`, payload);
       console.log("📄 Created user doc for", uid);
+      return true; // new user created
     } else {
       console.log("📄 User doc already exists for", uid);
+      return false;
     }
   } catch (err) {
     console.warn("⚠️ ensureUserDocExists failed", err);
+    return false;
   }
 }
 

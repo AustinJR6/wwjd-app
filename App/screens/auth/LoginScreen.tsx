@@ -1,22 +1,24 @@
-import React, { useState } from 'react';
-import CustomText from '@/components/CustomText';
-import { View, StyleSheet, Alert, ActivityIndicator } from 'react-native';
-import { showGracefulError } from '@/utils/gracefulError';
+import React, { useState } from "react";
+import CustomText from "@/components/CustomText";
+import { View, StyleSheet, Alert, ActivityIndicator } from "react-native";
+import { showGracefulError } from "@/utils/gracefulError";
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import TextField from "@/components/TextField";
 import Button from "@/components/common/Button";
 import { login, resetPassword } from "@/services/authService";
 import { loadUser, ensureUserDocExists } from "@/services/userService";
-import { useNavigation } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useUserStore } from "@/state/userStore";
+import { useNavigation } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useTheme } from "@/components/theme/theme";
 import { RootStackParamList } from "@/navigation/RootStackParamList";
+import { SCREENS } from "@/navigation/screens";
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 export default function LoginScreen() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const navigation = useNavigation<NavigationProp>();
   const theme = useTheme();
@@ -26,9 +28,25 @@ export default function LoginScreen() {
     try {
       const result = await login(email, password);
       if (result.localId) {
-        await ensureUserDocExists(result.localId, result.email);
+        const isNew = await ensureUserDocExists(result.localId, result.email);
         // Load the user profile so the root navigator registers authenticated screens
         await loadUser(result.localId);
+        const loaded = useUserStore.getState().user;
+        const needsOnboarding = isNew || !loaded?.onboardingComplete;
+        console.log(
+          "🧭 Post-login route",
+          needsOnboarding ? SCREENS.AUTH.ONBOARDING : SCREENS.MAIN.HOME,
+        );
+        navigation.reset({
+          index: 0,
+          routes: [
+            {
+              name: (needsOnboarding
+                ? SCREENS.AUTH.ONBOARDING
+                : SCREENS.MAIN.HOME) as keyof RootStackParamList,
+            },
+          ],
+        });
       }
     } catch (err: any) {
       showGracefulError(err.message);
@@ -43,26 +61,28 @@ export default function LoginScreen() {
     }
     try {
       await resetPassword(email);
-      Alert.alert("Password Reset", "If this email is registered, a reset link has been sent.");
-    } catch (err:any) {
+      Alert.alert(
+        "Password Reset",
+        "If this email is registered, a reset link has been sent.",
+      );
+    } catch (err: any) {
       showGracefulError(err.message);
     }
   };
-
 
   const styles = React.useMemo(
     () =>
       StyleSheet.create({
         title: {
           fontSize: 24,
-          fontWeight: '700',
+          fontWeight: "700",
           color: theme.colors.text,
           marginBottom: 20,
         },
         link: {
           marginTop: 20,
           color: theme.colors.primary,
-          textAlign: 'center',
+          textAlign: "center",
         },
         spinner: {
           marginBottom: 16,
@@ -98,24 +118,20 @@ export default function LoginScreen() {
       />
 
       <Button title="Log In" onPress={handleLogin} loading={loading} />
-      <CustomText
-        style={styles.link}
-        onPress={handleForgotPassword}
-      >
+      <CustomText style={styles.link} onPress={handleForgotPassword}>
         Forgot Password?
       </CustomText>
 
-
       <CustomText
         style={styles.link}
-        onPress={() => navigation.navigate('Signup')}
+        onPress={() => navigation.navigate("Signup")}
       >
         Don’t have an account? Sign up
       </CustomText>
 
       <CustomText
         style={styles.link}
-        onPress={() => navigation.navigate('OrganizationSignup')}
+        onPress={() => navigation.navigate("OrganizationSignup")}
       >
         Want to register your organization? Click here
       </CustomText>
@@ -124,4 +140,3 @@ export default function LoginScreen() {
 }
 
 // styles created inside component to update with theme
-
