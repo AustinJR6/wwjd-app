@@ -17,7 +17,7 @@ export default {
   },
   android: {
     package: "com.lysara.onevine",
-    googleServicesFile: "./google-services.json"
+    googleServicesFile: "./android/app/google-services.json"
   },
   plugins: [
     "@react-native-firebase/app",
