@@ -1,9 +1,5 @@
-export default ({ config }) => {
-  const kotlinVersion = "1.9.24";
-  const gradlePluginVersion = "8.4.1";
-
-  return {
-    ...config,
+export default ({ config }) => ({
+  ...config,
   name: "OneVine",
   slug: "onevine-app",
   version: "1.0.0",
@@ -22,10 +18,6 @@ export default ({ config }) => {
   },
   android: {
     package: "com.lysara.onevine",
-    // Path to the firebase config file is provided by EAS as a file-based
-    // environment variable. During local development the file can still live at
-    // ./android/app/google-services.json, but on EAS Build the variable will
-    // point to a temporary path where the secret is stored.
     googleServicesFile:
       process.env.GOOGLE_SERVICES_JSON || "./android/app/google-services.json",
   },
@@ -37,8 +29,10 @@ export default ({ config }) => {
       "expo-build-properties",
       {
         android: {
-          kotlinVersion,
-          gradlePluginVersion,
+          kotlinVersion: "1.9.24",
+          gradlePlugin: {
+            version: "8.4.1",
+          },
         },
       },
     ],
@@ -48,5 +42,4 @@ export default ({ config }) => {
       projectId: "bbf209be-1b48-4f76-a496-9d4fcd8339fd",
     },
   },
-  };
-};
+});
