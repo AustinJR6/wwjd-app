@@ -2,6 +2,7 @@ import * as functions from "firebase-functions";
 import { auth, db } from "./firebase";
 import * as admin from "firebase-admin";
 import { Request, Response } from "express";
+import { RawBodyRequest } from "./types";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import Stripe from "stripe";
 import * as dotenv from "dotenv";
@@ -969,7 +970,7 @@ export const startCheckoutSession = functions
 
 export const handleStripeWebhookV2 = functions
   .region("us-central1")
-  .https.onRequest(async (req: Request, res: Response) => {
+  .https.onRequest(async (req: RawBodyRequest, res: Response) => {
   console.log('💰 Gus Bug Webhook triggered. No auth needed!');
   const sig = req.headers['stripe-signature'] as string | undefined;
   if (!sig) {
