@@ -64,7 +64,7 @@ export async function setDocument(path: string, data: any): Promise<void> {
   warnIfInvalidPath(path, true);
   try {
     const body = { fields: toFirestoreFields(data) };
-    await axios.patch(`${BASE}/${path}?allowMissing=true`, body, { headers: await authHeaders() });
+    await axios.patch(`${BASE}/${path}`, body, { headers: await authHeaders() });
   } catch (err: any) {
     console.warn(`❌ Firestore REST error on ${path}:`, err.response?.data || err.message);
     if (err.response?.status === 403) {
