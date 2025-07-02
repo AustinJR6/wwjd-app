@@ -42,6 +42,22 @@ export async function ensureUserDocExists(
 }
 
 /**
+ * Fetch a user profile document without creating it
+ */
+export async function fetchUserProfile(
+  uid: string,
+): Promise<FirestoreUser | null> {
+  try {
+    const data = await getDocument(`users/${uid}`);
+    return data as FirestoreUser;
+  } catch (err: any) {
+    if (err?.response?.status === 404) return null;
+    console.warn('⚠️ fetchUserProfile failed', err);
+    throw err;
+  }
+}
+
+/**
  * Get user from Firestore and set into userStore
  */
 export async function loadUser(uid: string): Promise<void> {

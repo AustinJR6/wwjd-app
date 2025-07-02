@@ -55,6 +55,7 @@ export default function OnboardingScreen() {
           displayName: username,
           region,
           organizationId: organization || undefined,
+          uid,
         });
         await completeOnboarding(uid);
         await SecureStore.setItemAsync(`hasSeenOnboarding-${uid}`, "true");
