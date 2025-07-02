@@ -1,17 +1,10 @@
 // metro.config.js
 
-const { getDefaultConfig, mergeConfig } = require('@expo/metro-config');
+const { getDefaultConfig } = require('@expo/metro-config');
 
-const projectRoot = __dirname;
-const baseConfig = getDefaultConfig(projectRoot);
+const config = getDefaultConfig(__dirname);
+config.resolver.sourceExts.push('cjs');
+config.resolver.unstable_enableSymlinks = false;
+config.transformer.unstable_disableES6Transforms = false;
 
-module.exports = mergeConfig(baseConfig, {
-  resolver: {
-    sourceExts: [...baseConfig.resolver.sourceExts, 'cjs'],
-    unstable_enableSymlinks: false
-  },
-  transformer: {
-    ...baseConfig.transformer,
-    unstable_disableES6Transforms: false
-  }
-});
+module.exports = config;
