@@ -1134,7 +1134,6 @@ export const seedFirestore = onRequest(
 });
 
 export const createSubscriptionOnSignup = functions
-  .region("us-central1")
   .auth
   .user()
   .onCreate(async (user: admin.auth.UserRecord) => {
