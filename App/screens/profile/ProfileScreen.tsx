@@ -54,11 +54,7 @@ export default function ProfileScreen() {
   );
 
   useEffect(() => {
-    if (!authReady) return;
-    if (!uid) {
-      navigation.replace('Login');
-      return;
-    }
+    if (!authReady || !uid) return;
     loadData();
   }, [authReady, uid]);
 

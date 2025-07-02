@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { STRIPE_CHECKOUT_URL } from '@/config/apiConfig';
 import { STRIPE_SUCCESS_URL, STRIPE_CANCEL_URL } from '@/config/stripeConfig';
-import { getAuthHeaders } from '@/utils/TokenManager';
+import { getAuthHeaders } from '@/utils/authUtils';
 import { sendRequestWithGusBugLogging } from '@/utils/gusBugLogger';
 import { logTokenIssue } from '@/services/authService';
 import { showPermissionDenied } from '@/utils/gracefulError';

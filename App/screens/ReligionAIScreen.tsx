@@ -111,11 +111,7 @@ export default function ReligionAIScreen() {
   const { authReady, uid } = useAuth();
 
   useEffect(() => {
-    if (!authReady) return;
-    if (!uid) {
-      navigation.replace('Login');
-      return;
-    }
+    if (!authReady || !uid) return;
     const loadHistory = async () => {
       const firebaseUid = await getCurrentUserId();
       if (!firebaseUid) {

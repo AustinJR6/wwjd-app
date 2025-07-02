@@ -56,7 +56,6 @@ export default function UpgradeScreen({ navigation }: Props) {
         await getAuthHeaders();
       } catch {
         Alert.alert('Login Required', 'Please log in again.');
-        navigation.replace('Login');
         return;
       }
 

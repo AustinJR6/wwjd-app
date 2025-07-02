@@ -330,11 +330,7 @@ export default function ChallengeScreen() {
   };
 
   useEffect(() => {
-    if (!authReady) return;
-    if (!uid) {
-      navigation.replace('Login');
-      return;
-    }
+    if (!authReady || !uid) return;
     syncStreak();
     fetchChallenge();
   }, [authReady, uid]);

@@ -84,11 +84,7 @@ export default function OrganizationManagementScreen() {
   }, []);
 
   useEffect(() => {
-    if (!authReady) return;
-    if (!uid) {
-      navigation.replace('Login');
-      return;
-    }
+    if (!authReady || !uid) return;
     if (user) loadOrg();
   }, [authReady, uid, user]);
 
@@ -98,7 +94,6 @@ export default function OrganizationManagementScreen() {
       await getAuthHeaders();
     } catch {
       Alert.alert('Login Required', 'Please log in again.');
-      navigation.replace('Login');
       return;
     }
     const uid = await ensureAuth(user.uid);
@@ -125,7 +120,6 @@ export default function OrganizationManagementScreen() {
       await getAuthHeaders();
     } catch {
       Alert.alert('Login Required', 'Please log in again.');
-      navigation.replace('Login');
       return;
     }
     const authUid = await ensureAuth(user?.uid);
