@@ -84,7 +84,13 @@ export default function AuthGate() {
         }
       }
 
-      if (profile && profile.uid === uid) {
+      if (!profile) {
+        console.log('➡️ route -> Onboarding');
+        setInitialRoute('Onboarding');
+        return;
+      }
+
+      if (profile.onboardingComplete) {
         console.log('➡️ route -> Home');
         setInitialRoute('Home');
       } else {
