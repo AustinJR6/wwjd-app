@@ -105,7 +105,17 @@ export default function ChallengeScreen() {
 
       const uid = await ensureAuth(await getCurrentUserId());
 
-      const active = await getDocument(`users/${uid}/activeChallenge/current`);
+      let active: any | null = null;
+      try {
+        active = await getDocument(`users/${uid}/activeChallenge/current`);
+      } catch (err: any) {
+        if (err?.response?.status === 404) {
+          await setDocument(`users/${uid}/activeChallenge/current`, {});
+          active = null;
+        } else {
+          throw err;
+        }
+      }
       if (active && !active.isComplete) {
         setActiveMulti(active);
         setLoading(false);
@@ -351,7 +361,9 @@ export default function ChallengeScreen() {
         ) : loading ? (
           <ActivityIndicator size="large" color={theme.colors.primary} />
         ) : (
-          <CustomText style={styles.challenge}>{challenge}</CustomText>
+          <CustomText style={styles.challenge}>
+            {challenge || 'No challenge available.'}
+          </CustomText>
         )}
         <View style={styles.buttonWrap}>
           {!activeMulti && canSkip && (
