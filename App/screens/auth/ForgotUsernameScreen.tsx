@@ -4,7 +4,7 @@ import { View, StyleSheet, Alert } from 'react-native';
 import ScreenContainer from '@/components/theme/ScreenContainer';
 import TextField from '@/components/TextField';
 import Button from '@/components/common/Button';
-import { queryCollection } from '@/services/firestoreService';
+import { getDocument } from '@/services/firestoreService';
 import { ensureAuth } from '@/utils/authGuard';
 import { useTheme } from '@/components/theme/theme';
 
@@ -60,10 +60,9 @@ export default function ForgotUsernameScreen() {
 
     setLoading(true);
     try {
-      const users = await queryCollection('users');
-      const match = users.find((u: any) => u.displayName === name && u.region === region);
-      if (match) {
-        setEmail(match.email);
+      const doc = await getDocument(`users/${uid}`);
+      if (doc && doc.displayName === name && doc.region === region) {
+        setEmail(doc.email);
       } else {
         Alert.alert('Not Found', 'No matching user found.');
       }
