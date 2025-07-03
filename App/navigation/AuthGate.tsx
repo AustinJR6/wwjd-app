@@ -71,25 +71,32 @@ export default function AuthGate() {
 
       let profile = useUserStore.getState().user;
       if (!profile || profile.uid !== uid) {
-        profile = await fetchUserProfile(uid);
-        if (profile) {
-          useUserStore.getState().setUser({
-            uid: profile.uid,
-            email: profile.email,
-            displayName: profile.displayName ?? '',
-            religion: profile.religion,
-            region: profile.region ?? '',
-            organizationId: profile.organizationId,
-            isSubscribed: profile.isSubscribed,
-            onboardingComplete: profile.onboardingComplete,
-            tokens: 0,
-          });
+        try {
+          profile = await fetchUserProfile(uid);
+          if (profile) {
+            useUserStore.getState().setUser({
+              uid: profile.uid,
+              email: profile.email,
+              displayName: profile.displayName ?? '',
+              religion: profile.religion,
+              region: profile.region ?? '',
+              organizationId: profile.organizationId,
+              isSubscribed: profile.isSubscribed,
+              onboardingComplete: profile.onboardingComplete,
+              tokens: 0,
+            });
+          }
+        } catch (err) {
+          console.warn('Failed to fetch profile', err);
+          setInitialRoute('Login');
+          setChecking(false);
+          return;
         }
       }
 
       if (!profile) {
-        console.log('➡️ route -> Onboarding');
-        setInitialRoute('Onboarding');
+        console.log('➡️ route -> Login');
+        setInitialRoute('Login');
         setChecking(false);
         return;
       }
@@ -138,7 +145,6 @@ export default function AuthGate() {
             <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} options={{ title: 'Reset Password' }} />
             <Stack.Screen name="ForgotUsername" component={ForgotUsernameScreen} options={{ title: 'Find Email' }} />
             <Stack.Screen name="OrganizationSignup" component={OrganizationSignupScreen} options={{ title: 'Create Organization' }} />
-            <Stack.Screen name="Onboarding" component={OnboardingScreen} options={{ headerShown: false }} />
           </>
         ) : (
           <>
