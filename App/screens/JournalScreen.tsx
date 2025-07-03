@@ -238,8 +238,12 @@ export default function JournalScreen() {
 
       try {
         await callFunction('updateStreakAndXP', { type: 'journal' });
-      } catch (err) {
-        console.error('Streak update failed:', err);
+      } catch (err: any) {
+        if (err?.response?.status === 401) {
+          console.warn('Journal streak update unauthorized');
+        } else {
+          console.error('Streak update failed:', err);
+        }
       }
 
       if (userData.religion) {
