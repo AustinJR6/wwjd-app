@@ -24,6 +24,9 @@ import { useAuth } from '@/hooks/useAuth';
 export default function TriviaScreen() {
   const theme = useTheme();
   const { authReady, uid } = useAuth();
+  useEffect(() => {
+    console.log('📚 Trivia screen opened');
+  }, []);
   const styles = React.useMemo(
     () =>
       StyleSheet.create({

@@ -105,6 +105,8 @@ export default function HomeScreen({ navigation }: Props) {
           <View style={styles.spacer} />
           <Button title="Journal" onPress={() => navigation.navigate('Journal')} />
           <View style={styles.spacer} />
+          <Button title="Trivia" onPress={() => navigation.navigate('Trivia')} />
+          <View style={styles.spacer} />
           <Button title="Leaderboards" onPress={() => navigation.navigate('Leaderboards')} />
         </View>
       </ScrollView>
