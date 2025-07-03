@@ -1,9 +1,11 @@
 import axios from 'axios';
-import { getIdToken } from '@/utils/authUtils';
+import { getIdToken, getCurrentUserId } from '@/utils/authUtils';
 import { showPermissionDeniedForPath } from '@/utils/gracefulError';
 
 const PROJECT_ID = process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID || '';
 const BASE = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents`;
+
+let lastToken: string | null = null;
 
 function warnIfInvalidPath(path: string, expectEven: boolean) {
   const segments = path.split('/').filter(Boolean);
@@ -45,8 +47,23 @@ async function authHeaders() {
     console.warn('🔐 authHeaders called with missing token');
     throw new Error('Missing auth token');
   }
+  lastToken = token;
   console.log('📡 Using ID token', token.slice(0, 8));
   return { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
+}
+
+async function logPermissionDetails(path: string) {
+  const uid = await getCurrentUserId();
+  const tokenPreview = lastToken ? lastToken.slice(0, 8) : 'none';
+  const match = path.match(/^[^/]+\/([^/]+)/);
+  const pathUid = match ? match[1] : 'unknown';
+  if (!lastToken) {
+    console.warn('❗ Permission denied due to missing token');
+  }
+  if (uid && pathUid && uid !== pathUid) {
+    console.warn(`❗ UID mismatch. token UID: ${uid} path UID: ${pathUid}`);
+  }
+  console.warn(`🚫 Permission denied | uid: ${uid} | token: ${tokenPreview} | path: ${path}`);
 }
 
 export async function getDocument(path: string): Promise<any | null> {
@@ -58,6 +75,7 @@ export async function getDocument(path: string): Promise<any | null> {
   } catch (err: any) {
     console.warn(`❌ Firestore REST error on ${path}:`, err.response?.data || err.message);
     if (err.response?.status === 403) {
+      await logPermissionDetails(path);
       showPermissionDeniedForPath(path);
       return null;
     }
@@ -74,6 +92,7 @@ export async function setDocument(path: string, data: any): Promise<void> {
   } catch (err: any) {
     console.warn(`❌ Firestore REST error on ${path}:`, err.response?.data || err.message);
     if (err.response?.status === 403) {
+      await logPermissionDetails(path);
       showPermissionDeniedForPath(path);
       return;
     }
@@ -96,6 +115,7 @@ export async function addDocument(collectionPath: string, data: any): Promise<st
   } catch (err: any) {
     console.warn(`❌ Firestore REST error on ${collectionPath}:`, err.response?.data || err.message);
     if (err.response?.status === 403) {
+      await logPermissionDetails(collectionPath);
       showPermissionDeniedForPath(collectionPath);
       return '';
     }
@@ -111,6 +131,7 @@ export async function deleteDocument(path: string): Promise<void> {
   } catch (err: any) {
     console.warn(`❌ Firestore REST error on ${path}:`, err.response?.data || err.message);
     if (err.response?.status === 403) {
+      await logPermissionDetails(path);
       showPermissionDeniedForPath(path);
       return;
     }
@@ -128,6 +149,7 @@ export async function queryCollection(collectionPath: string): Promise<any[]> {
   } catch (err: any) {
     console.warn(`❌ Firestore REST error on ${collectionPath}:`, err.response?.data || err.message);
     if (err.response?.status === 403) {
+      await logPermissionDetails(collectionPath);
       showPermissionDeniedForPath(collectionPath);
       return [];
     }
