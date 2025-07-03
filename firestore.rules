@@ -58,7 +58,14 @@ service cloud.firestore {
     }
 
     // 🔁 Active Challenge (per user)
+    // Allows read/write access to documents under
+    // `users/{uid}/activeChallenge`, including the `current` doc
     match /users/{userId}/activeChallenge/{docId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Convenience rule for the common `current` document
+    match /users/{userId}/activeChallenge/current {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
