@@ -6,7 +6,7 @@ import {
   ActivityIndicator,
   ScrollView
 } from 'react-native';
-import { getDocument } from '@/services/firestoreService';
+import { getDocument, setDocument } from '@/services/firestoreService';
 import { showGracefulError } from '@/utils/gracefulError';
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { useTheme } from "@/components/theme/theme";
@@ -62,6 +62,7 @@ export default function LeaderboardScreen() {
   const [individuals, setIndividuals] = useState<any[]>([]);
   const [religions, setReligions] = useState<any[]>([]);
   const [organizations, setOrganizations] = useState<any[]>([]);
+  const [noData, setNoData] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -72,6 +73,7 @@ export default function LeaderboardScreen() {
 
   const fetchData = async () => {
     setLoading(true);
+    setNoData(false);
     try {
       const uid = await ensureAuth();
       if (!uid) {
@@ -81,11 +83,22 @@ export default function LeaderboardScreen() {
 
       const data = await getDocument('leaderboards/global');
       console.log('🏆 Loaded leaderboard doc', data);
-      setIndividuals((data?.individuals || []).slice(0, 10));
-      setReligions((data?.religions || []).slice(0, 10));
-      setOrganizations((data?.organizations || []).slice(0, 10));
-    } catch (err) {
-      console.error('🔥 Error loading leaderboards:', err);
+      if (!data) {
+        setNoData(true);
+        const seed = { individuals: [], religions: [], organizations: [] };
+        await setDocument('leaderboards/global', seed);
+        setIndividuals([]);
+        setReligions([]);
+        setOrganizations([]);
+      } else {
+        setNoData(false);
+        setIndividuals((data.individuals || []).slice(0, 10));
+        setReligions((data.religions || []).slice(0, 10));
+        setOrganizations((data.organizations || []).slice(0, 10));
+      }
+    } catch (err: any) {
+      console.error('🔥 Error loading leaderboards:', err?.response?.data || err?.message || err);
+      setNoData(true);
       showGracefulError('Unable to load leaderboard — please try again later');
     } finally {
       setLoading(false);
@@ -123,6 +136,8 @@ export default function LeaderboardScreen() {
         <CustomText style={styles.title}>Leaderboards</CustomText>
         {loading ? (
           <ActivityIndicator size="large" color={theme.colors.primary} />
+        ) : noData ? (
+          <CustomText>No leaderboard data available yet.</CustomText>
         ) : (
           <>
             {renderList('Top Individuals', individuals, 'email', 'individualPoints')}
