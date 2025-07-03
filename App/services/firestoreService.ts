@@ -41,7 +41,10 @@ function fromFirestore(doc: any): any {
 
 async function authHeaders() {
   const token = await getIdToken(true);
-  if (!token) throw new Error('Missing auth token');
+  if (!token) {
+    console.warn('🔐 authHeaders called with missing token');
+    throw new Error('Missing auth token');
+  }
   console.log('📡 Using ID token', token.slice(0, 8));
   return { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
 }
