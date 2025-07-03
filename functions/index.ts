@@ -13,6 +13,7 @@ import {
   writeDoc,
   logError,
   verifyAuth,
+  extractAuthToken,
 } from "./helpers";
 
 function logTokenVerificationError(context: string, token: string | undefined, err: any) {
@@ -111,9 +112,11 @@ async function deductTokens(uid: string, amount: number): Promise<boolean> {
 }
 
 async function updateStreakAndXPInternal(uid: string, type: string) {
-  const userRef = db.collection("users").doc(uid);
+  const baseRef = db.collection("users").doc(uid);
+  const ref = type === "journal" ? db.doc(`users/${uid}/journalStreak`) : baseRef;
+
   await db.runTransaction(async (t) => {
-    const snap = await t.get(userRef);
+    const snap = await t.get(ref);
     const data = snap.exists ? snap.data() || {} : {};
     const now = admin.firestore.Timestamp.now();
     const last: admin.firestore.Timestamp | undefined = data.lastCheckIn;
@@ -133,7 +136,7 @@ async function updateStreakAndXPInternal(uid: string, type: string) {
     }
     const xpEarned = 10;
     t.set(
-      userRef,
+      ref,
       {
         lastCheckIn: now,
         streakCount: newStreak,
@@ -1062,23 +1065,27 @@ export const handleStripeWebhookV2 = functions
 
 export const updateStreakAndXP = functions
   .region("us-central1")
-  .https.onRequest(async (req: Request, res: Response) => {
-  const authHeader = req.headers.authorization;
-  const token = authHeader?.split('Bearer ')[1];
-  if (!token) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
-  try {
-    const decoded = await auth.verifyIdToken(token);
-    const type = req.body?.type || "general";
-    await updateStreakAndXPInternal(decoded.uid, type);
-    res.status(200).json({ message: "Streak updated" });
-  } catch (err: any) {
-    logTokenVerificationError('updateStreakAndXP', token, err);
-    res.status(500).json({ error: err.message || "Failed" });
-  }
-});
+  .https.onRequest(
+    withCors(async (req: Request, res: Response) => {
+      let authData: { uid: string; token: string };
+      try {
+        authData = await verifyAuth(req);
+      } catch (err) {
+        logTokenVerificationError("updateStreakAndXP", extractAuthToken(req), err);
+        res.status(401).json({ error: "Unauthorized" });
+        return;
+      }
+
+      try {
+        const type = req.body?.type || "general";
+        await updateStreakAndXPInternal(authData.uid, type);
+        res.status(200).json({ message: "Streak updated" });
+      } catch (err: any) {
+        logError("updateStreakAndXP", err);
+        res.status(500).json({ error: err.message || "Failed" });
+      }
+    }),
+  );
 
 async function ensureDocument(
   path: string,
