@@ -14,7 +14,7 @@ import { ensureAuth } from '@/utils/authGuard';
 import AuthGate from '@/components/AuthGate';
 import { useAuth } from '@/hooks/useAuth';
 
-export default function LeaderboardsScreen() {
+export default function LeaderboardScreen() {
   const theme = useTheme();
   const { authReady, uid } = useAuth();
   const styles = React.useMemo(

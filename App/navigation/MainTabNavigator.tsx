@@ -12,7 +12,7 @@ import ConfessionalScreen from "@/screens/ConfessionalScreen";
 import ProfileScreen from "@/screens/profile/ProfileScreen";
 import SettingsScreen from "@/screens/profile/SettingsScreen";
 import TriviaScreen from "@/screens/dashboard/TriviaScreen";
-import LeaderboardsScreen from "@/screens/dashboard/LeaderboardScreen";
+import LeaderboardScreen from "@/screens/dashboard/LeaderboardScreen";
 
 const Tab = createBottomTabNavigator();
 
@@ -62,7 +62,7 @@ export default function MainTabNavigator() {
       <Tab.Screen name="Challenge" component={ChallengeScreen as React.ComponentType<any>} />
       <Tab.Screen name="Confessional" component={ConfessionalScreen as React.ComponentType<any>} />
       <Tab.Screen name="Trivia" component={TriviaScreen as React.ComponentType<any>} />
-      <Tab.Screen name="Leaderboards" component={LeaderboardsScreen as React.ComponentType<any>} />
+      <Tab.Screen name="Leaderboards" component={LeaderboardScreen as React.ComponentType<any>} />
       <Tab.Screen name="Profile" component={ProfileScreen as React.ComponentType<any>} />
       <Tab.Screen name="Settings" component={SettingsScreen as React.ComponentType<any>} />
     </Tab.Navigator>
