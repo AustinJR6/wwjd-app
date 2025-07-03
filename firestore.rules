@@ -8,17 +8,17 @@ service cloud.firestore {
     }
 
     // 💬 Religion Chats
-    match /religionChats/{userId}/messages {
+    match /religionChats/{userId}/messages/{docId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
     // 🕊️ Temp Religion Chat (non-subscribed users)
-    match /tempReligionChat/{userId}/messages {
+    match /tempReligionChat/{userId}/messages/{docId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
     // 🙏 Confessional Sessions
-    match /confessionalSessions/{userId}/messages {
+    match /confessionalSessions/{userId}/messages/{docId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
