@@ -26,29 +26,38 @@ function toFirestoreFields(obj: any): any {
   return fields;
 }
 
+function parseValue(v: any): any {
+  if (v == null) return undefined;
+  if ("stringValue" in v) return v.stringValue;
+  if ("integerValue" in v) return Number(v.integerValue);
+  if ("booleanValue" in v) return v.booleanValue;
+  if ("nullValue" in v) return null;
+  if ("mapValue" in v) return fromFirestore({ fields: (v as any).mapValue.fields });
+  if ("arrayValue" in v && Array.isArray((v as any).arrayValue.values)) {
+    return (v as any).arrayValue.values.map((x: any) => parseValue(x));
+  }
+  return undefined;
+}
+
 function fromFirestore(doc: any): any {
   const out: any = {};
   if (!doc || !doc.fields) return out;
   for (const [k, v] of Object.entries(doc.fields)) {
-    if ('stringValue' in v) out[k] = v.stringValue;
-    else if ('integerValue' in v) out[k] = Number(v.integerValue);
-    else if ('booleanValue' in v) out[k] = v.booleanValue;
-    else if ('nullValue' in v) out[k] = null;
-    else if ('arrayValue' in v && Array.isArray((v as any).arrayValue.values)) {
-      out[k] = (v as any).arrayValue.values.map((x: any) => x.stringValue ?? null);
-    }
+    const parsed = parseValue(v);
+    if (parsed !== undefined) out[k] = parsed;
   }
   return out;
 }
 
 async function authHeaders() {
   const token = await getIdToken(true);
+  const uid = await getCurrentUserId();
   if (!token) {
     console.warn('🔐 authHeaders called with missing token');
     throw new Error('Missing auth token');
   }
   lastToken = token;
-  console.log('📡 Using ID token', token.slice(0, 8));
+  console.log('📡 Using ID token', token.slice(0, 8), 'for UID', uid);
   return { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
 }
 
