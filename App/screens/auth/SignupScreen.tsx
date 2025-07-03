@@ -10,6 +10,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTheme } from "@/components/theme/theme";
 import { RootStackParamList } from "@/navigation/RootStackParamList";
+import { resetToLogin } from '@/navigation/navigationRef';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -81,7 +82,7 @@ export default function SignupScreen() {
 
       <CustomText
         style={styles.link}
-        onPress={() => navigation.navigate('Login')}
+        onPress={resetToLogin}
       >
         Already have an account? Log in
       </CustomText>

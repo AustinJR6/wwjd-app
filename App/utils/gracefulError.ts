@@ -14,3 +14,7 @@ export function showGracefulError(msg?: string) {
 export function showPermissionDenied(msg = 'You do not have permission to perform this action.') {
   Alert.alert('Access Denied', msg);
 }
+
+export function showPermissionDeniedForPath(path: string) {
+  showPermissionDenied(`Permission denied for ${path}`);
+}

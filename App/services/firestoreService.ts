@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { getIdToken } from '@/utils/authUtils';
-import { showPermissionDenied } from '@/utils/gracefulError';
+import { showPermissionDeniedForPath } from '@/utils/gracefulError';
 
 const PROJECT_ID = process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID || '';
 const BASE = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents`;
@@ -42,18 +42,20 @@ function fromFirestore(doc: any): any {
 async function authHeaders() {
   const token = await getIdToken(true);
   if (!token) throw new Error('Missing auth token');
-  return { Authorization: `Bearer ${token}` };
+  console.log('📡 Using ID token', token.slice(0, 8));
+  return { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
 }
 
 export async function getDocument(path: string): Promise<any | null> {
   warnIfInvalidPath(path, true);
   try {
+    console.log('➡️ Firestore GET', path);
     const res = await axios.get(`${BASE}/${path}`, { headers: await authHeaders() });
     return fromFirestore(res.data);
   } catch (err: any) {
     console.warn(`❌ Firestore REST error on ${path}:`, err.response?.data || err.message);
     if (err.response?.status === 403) {
-      showPermissionDenied();
+      showPermissionDeniedForPath(path);
       return null;
     }
     throw err;
@@ -64,11 +66,12 @@ export async function setDocument(path: string, data: any): Promise<void> {
   warnIfInvalidPath(path, true);
   try {
     const body = { fields: toFirestoreFields(data) };
+    console.log('➡️ Firestore SET', path, data);
     await axios.patch(`${BASE}/${path}`, body, { headers: await authHeaders() });
   } catch (err: any) {
     console.warn(`❌ Firestore REST error on ${path}:`, err.response?.data || err.message);
     if (err.response?.status === 403) {
-      showPermissionDenied();
+      showPermissionDeniedForPath(path);
       return;
     }
     throw err;
@@ -83,13 +86,14 @@ export async function addDocument(collectionPath: string, data: any): Promise<st
   warnIfInvalidPath(collectionPath, false);
   try {
     const body = { fields: toFirestoreFields(data) };
+    console.log('➡️ Firestore ADD', collectionPath, data);
     const res = await axios.post(`${BASE}/${collectionPath}`, body, { headers: await authHeaders() });
     const parts = res.data.name.split('/');
     return parts[parts.length - 1];
   } catch (err: any) {
     console.warn(`❌ Firestore REST error on ${collectionPath}:`, err.response?.data || err.message);
     if (err.response?.status === 403) {
-      showPermissionDenied();
+      showPermissionDeniedForPath(collectionPath);
       return '';
     }
     throw err;
@@ -99,11 +103,12 @@ export async function addDocument(collectionPath: string, data: any): Promise<st
 export async function deleteDocument(path: string): Promise<void> {
   warnIfInvalidPath(path, true);
   try {
+    console.log('➡️ Firestore DELETE', path);
     await axios.delete(`${BASE}/${path}`, { headers: await authHeaders() });
   } catch (err: any) {
     console.warn(`❌ Firestore REST error on ${path}:`, err.response?.data || err.message);
     if (err.response?.status === 403) {
-      showPermissionDenied();
+      showPermissionDeniedForPath(path);
       return;
     }
     throw err;
@@ -113,13 +118,14 @@ export async function deleteDocument(path: string): Promise<void> {
 export async function queryCollection(collectionPath: string): Promise<any[]> {
   warnIfInvalidPath(collectionPath, false);
   try {
+    console.log('➡️ Firestore QUERY', collectionPath);
     const res = await axios.get(`${BASE}/${collectionPath}`, { headers: await authHeaders() });
     const docs = res.data.documents || [];
     return docs.map((d: any) => ({ id: d.name.split('/').pop(), ...fromFirestore(d) }));
   } catch (err: any) {
     console.warn(`❌ Firestore REST error on ${collectionPath}:`, err.response?.data || err.message);
     if (err.response?.status === 403) {
-      showPermissionDenied();
+      showPermissionDeniedForPath(collectionPath);
       return [];
     }
     return [];
@@ -127,5 +133,6 @@ export async function queryCollection(collectionPath: string): Promise<any[]> {
 }
 
 export async function querySubcollection(parentPath: string, collectionName: string): Promise<any[]> {
+  console.log('➡️ Firestore SUBQUERY', `${parentPath}/${collectionName}`);
   return queryCollection(`${parentPath}/${collectionName}`);
 }

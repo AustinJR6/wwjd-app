@@ -13,6 +13,7 @@ import { useTheme } from "@/components/theme/theme";
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from "@/navigation/RootStackParamList";
 import { ensureAuth } from '@/utils/authGuard';
+import { resetToLogin } from '@/navigation/navigationRef';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'OrganizationSignup'>;
 
@@ -76,7 +77,7 @@ export default function OrganizationSignupScreen({ navigation }: Props) {
 
       Alert.alert('Success', 'Organization created successfully.');
       setName('');
-      navigation.navigate('Login');
+      resetToLogin();
     } catch (err: any) {
       console.error('❌ Organization signup error:', err);
       Alert.alert('Error', 'Could not create organization. Please try again.');
