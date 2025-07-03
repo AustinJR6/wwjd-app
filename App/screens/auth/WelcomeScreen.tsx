@@ -7,6 +7,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/navigation/RootStackParamList';
 import { useTheme } from '@/components/theme/theme';
+import { resetToLogin } from '@/navigation/navigationRef';
 
 export default function WelcomeScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -62,14 +63,14 @@ export default function WelcomeScreen() {
 
   return (
     <LinearGradient colors={[theme.colors.primary, theme.colors.surface]} style={styles.container}>
-      <CustomText style={styles.loginLink} onPress={() => navigation.navigate('Login')}>
+      <CustomText style={styles.loginLink} onPress={resetToLogin}>
         Already have an account? Go to Login
       </CustomText>
       {/* Image removed if asset missing to prevent crash */}
       <CustomText style={styles.title}>Welcome to OneVine</CustomText>
       <View style={styles.buttons}>
         <View style={styles.buttonWrap}>
-          <Button title="Log In" onPress={() => navigation.navigate('Login')} />
+          <Button title="Log In" onPress={resetToLogin} />
         </View>
         <View style={styles.buttonWrap}>
           <Button title="Sign Up" onPress={() => navigation.navigate('Signup')} />

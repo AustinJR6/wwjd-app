@@ -132,7 +132,7 @@ export default function SettingsScreen() {
           </>
         ) : (
           <>
-            <Button title="Log In" onPress={() => navigation.navigate('Login')} />
+            <Button title="Log In" onPress={resetToLogin} />
             <Button title="Sign Up" onPress={() => navigation.navigate('Signup')} />
             <Button
               title="App Info"
