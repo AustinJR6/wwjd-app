@@ -44,7 +44,7 @@ function toFirestoreFields(obj: any): any {
 }
 
 export async function saveJournalEntry(uid: string, data: Record<string, any>, idToken: string) {
-  const url = `${FIRESTORE_BASE}/users/${uid}/journalEntries`;
+  const url = `${FIRESTORE_BASE}/journalEntries/${uid}/entries`;
   const body = { fields: toFirestoreFields(data) };
   const res = await axios.post(url, body, { headers: { Authorization: `Bearer ${idToken}` } });
   return res.data;
