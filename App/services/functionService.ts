@@ -1,10 +1,20 @@
 import axios from 'axios';
+import { getAuthHeaders } from '@/utils/authUtils';
+import { logTokenIssue } from '@/services/authService';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || '';
 
 export async function callFunction(name: string, data: any): Promise<any> {
+  let headers;
   try {
-    const res = await axios.post(`${API_URL}/${name}`, data);
+    headers = await getAuthHeaders();
+  } catch {
+    logTokenIssue(`function:${name}`);
+    throw new Error('Missing auth token');
+  }
+
+  try {
+    const res = await axios.post(`${API_URL}/${name}`, data, { headers });
     return res.data as any;
   } catch (err: any) {
     console.error('🔥 Function error:', err?.message || err);
