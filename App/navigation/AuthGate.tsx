@@ -50,7 +50,8 @@ export default function AuthGate() {
   const theme = useTheme();
   const { uid, idToken, authReady } = useAuth();
   const { user } = useUser();
-  const [initialRoute, setInitialRoute] = useState<keyof RootStackParamList | null>(null);
+  const [initialRoute, setInitialRoute] = useState<keyof RootStackParamList>('Login');
+  const [checking, setChecking] = useState(true);
 
   useEffect(() => {
     initAuthState();
@@ -60,9 +61,11 @@ export default function AuthGate() {
     async function verify() {
       if (!authReady) return;
       console.log('🔍 AuthGate verify', { uid, hasToken: !!idToken });
+
       if (!uid || !idToken) {
         console.log('➡️ route -> Login');
         setInitialRoute('Login');
+        setChecking(false);
         return;
       }
 
@@ -87,6 +90,7 @@ export default function AuthGate() {
       if (!profile) {
         console.log('➡️ route -> Onboarding');
         setInitialRoute('Onboarding');
+        setChecking(false);
         return;
       }
 
@@ -97,6 +101,7 @@ export default function AuthGate() {
         console.log('➡️ route -> Onboarding');
         setInitialRoute('Onboarding');
       }
+      setChecking(false);
     }
     verify();
   }, [authReady, uid, idToken]);
@@ -107,7 +112,7 @@ export default function AuthGate() {
     }
   }, [initialRoute]);
 
-  if (!authReady || !initialRoute) {
+  if (checking) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: theme.colors.background }}>
         <ActivityIndicator size="large" color={theme.colors.primary} />
