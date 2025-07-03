@@ -16,5 +16,6 @@ export function showPermissionDenied(msg = 'You do not have permission to perfor
 }
 
 export function showPermissionDeniedForPath(path: string) {
+  console.warn('🔥 Firestore permission denied for path', path);
   showPermissionDenied(`Permission denied for ${path}`);
 }

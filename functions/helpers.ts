@@ -16,6 +16,21 @@ export async function verifyIdToken(req: Request): Promise<admin.auth.DecodedIdT
   return await auth.verifyIdToken(token);
 }
 
+export function extractAuthToken(req: Request): string | undefined {
+  const header = req.headers.authorization;
+  if (!header || !header.startsWith('Bearer ')) return undefined;
+  return header.split('Bearer ')[1];
+}
+
+export async function verifyAuth(req: Request): Promise<{ uid: string; token: string }> {
+  const token = extractAuthToken(req);
+  if (!token) {
+    throw new Error('Missing Authorization header');
+  }
+  const decoded = await auth.verifyIdToken(token);
+  return { uid: decoded.uid, token };
+}
+
 export async function writeDoc(path: string, data: any): Promise<FirebaseFirestore.WriteResult> {
   return await db.doc(path).set(data, { merge: true });
 }

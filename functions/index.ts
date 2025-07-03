@@ -7,7 +7,13 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import Stripe from "stripe";
 import * as dotenv from "dotenv";
 import * as logger from "firebase-functions/logger";
-import { withCors, verifyIdToken, writeDoc, logError } from "./helpers";
+import {
+  withCors,
+  verifyIdToken,
+  writeDoc,
+  logError,
+  verifyAuth,
+} from "./helpers";
 
 function logTokenVerificationError(context: string, token: string | undefined, err: any) {
   logger.error(`${context} token verification failed`, {
@@ -766,21 +772,31 @@ export const skipDailyChallenge = functions
 // removing or wiring it up in a future release.
 export const startSubscriptionCheckout = functions
   .region("us-central1")
-  .https.onRequest(async (req: Request, res: Response) => {
+  .https.onRequest(withCors(async (req: Request, res: Response) => {
   logger.info("📦 startSubscriptionCheckout payload", req.body);
   logger.info(
     "🔐 Stripe Secret:",
     STRIPE_SECRET_KEY ? "\u2713 set" : "\u2717 missing",
   );
-  const idToken = req.headers.authorization?.split("Bearer ")[1];
-  if (!idToken) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
 
   const { userId, priceId, success_url, cancel_url } = req.body || {};
   if (!userId || !priceId || !success_url || !cancel_url) {
+    logger.warn("⚠️ Missing fields", {
+      userId: !!userId,
+      priceId: !!priceId,
+      success_url: !!success_url,
+      cancel_url: !!cancel_url,
+    });
     res.status(400).json({ error: "Missing required fields" });
+    return;
+  }
+
+  let authData: { uid: string; token: string };
+  try {
+    authData = await verifyAuth(req);
+  } catch (err) {
+    logTokenVerificationError("startSubscriptionCheckout", undefined, err);
+    res.status(401).json({ error: "Unauthorized" });
     return;
   }
 
@@ -791,8 +807,7 @@ export const startSubscriptionCheckout = functions
   }
 
   try {
-    const decoded = await auth.verifyIdToken(idToken);
-    if (decoded.uid !== userId) {
+    if (authData.uid !== userId) {
       logger.warn("⚠️ UID mismatch between token and payload");
     }
     const session = await stripe.checkout.sessions.create({
@@ -806,32 +821,41 @@ export const startSubscriptionCheckout = functions
     logger.info(`✅ Stripe session created ${session.id}`);
     res.status(200).json({ url: session.url });
   } catch (err) {
-    logTokenVerificationError('startSubscriptionCheckout', idToken, err);
+    logTokenVerificationError('startSubscriptionCheckout', authData.token, err);
     res
       .status(500)
       .json({ error: (err as any)?.message || "Failed to start checkout" });
   }
-});
+}));
 
 // TODO: startOneTimeTokenCheckout is unused in the current frontend. Consider
 // removing or wiring it up in a future release.
 export const startOneTimeTokenCheckout = functions
   .region("us-central1")
-  .https.onRequest(async (req: Request, res: Response) => {
+  .https.onRequest(withCors(async (req: Request, res: Response) => {
   logger.info("📦 startOneTimeTokenCheckout payload", req.body);
   logger.info(
     "🔐 Stripe Secret:",
     STRIPE_SECRET_KEY ? "\u2713 set" : "\u2717 missing",
   );
-  const idToken = req.headers.authorization?.split("Bearer ")[1];
-  if (!idToken) {
-    res.status(401).json({ error: "Unauthorized" });
+  const { userId, priceId, success_url, cancel_url } = req.body || {};
+  if (!userId || !priceId || !success_url || !cancel_url) {
+    logger.warn("⚠️ Missing fields", {
+      userId: !!userId,
+      priceId: !!priceId,
+      success_url: !!success_url,
+      cancel_url: !!cancel_url,
+    });
+    res.status(400).json({ error: "Missing required fields" });
     return;
   }
 
-  const { userId, priceId, success_url, cancel_url } = req.body || {};
-  if (!userId || !priceId || !success_url || !cancel_url) {
-    res.status(400).json({ error: "Missing required fields" });
+  let authData: { uid: string; token: string };
+  try {
+    authData = await verifyAuth(req);
+  } catch (err) {
+    logTokenVerificationError("startOneTimeTokenCheckout", undefined, err);
+    res.status(401).json({ error: "Unauthorized" });
     return;
   }
 
@@ -842,8 +866,7 @@ export const startOneTimeTokenCheckout = functions
   }
 
   try {
-    const decoded = await auth.verifyIdToken(idToken);
-    if (decoded.uid !== userId) {
+    if (authData.uid !== userId) {
       logger.warn("⚠️ UID mismatch between token and payload");
     }
     const session = await stripe.checkout.sessions.create({
@@ -857,26 +880,30 @@ export const startOneTimeTokenCheckout = functions
     logger.info(`✅ Stripe session created ${session.id}`);
     res.status(200).json({ url: session.url });
   } catch (err) {
-    logTokenVerificationError('startOneTimeTokenCheckout', idToken, err);
+    logTokenVerificationError('startOneTimeTokenCheckout', authData.token, err);
     res
       .status(500)
       .json({ error: (err as any)?.message || "Failed to start checkout" });
   }
-});
+}));
 
 export const startDonationCheckout = functions
   .region("us-central1")
-  .https.onRequest(async (req: Request, res: Response) => {
+  .https.onRequest(withCors(async (req: Request, res: Response) => {
   logger.info("💖 startDonationCheckout payload", req.body);
-  const idToken = req.headers.authorization?.split("Bearer ")[1];
-  if (!idToken) {
-    res.status(401).json({ error: "Unauthorized" });
+  const { userId, amount } = req.body || {};
+  if (!userId || typeof amount !== "number" || amount <= 0) {
+    logger.warn("⚠️ Missing fields", { userId: !!userId, amount });
+    res.status(400).json({ error: "Missing required fields" });
     return;
   }
 
-  const { userId, amount } = req.body || {};
-  if (!userId || typeof amount !== "number" || amount <= 0) {
-    res.status(400).json({ error: "Missing required fields" });
+  let authData: { uid: string; token: string };
+  try {
+    authData = await verifyAuth(req);
+  } catch (err) {
+    logTokenVerificationError("startDonationCheckout", undefined, err);
+    res.status(401).json({ error: "Unauthorized" });
     return;
   }
 
@@ -887,8 +914,7 @@ export const startDonationCheckout = functions
   }
 
   try {
-    const decoded = await auth.verifyIdToken(idToken);
-    if (decoded.uid !== userId) {
+    if (authData.uid !== userId) {
       logger.warn("⚠️ UID mismatch between token and payload");
     }
     logger.info(`📨 Creating donation session for ${userId} amount $${amount}`);
@@ -912,30 +938,39 @@ export const startDonationCheckout = functions
     logger.info(`✅ Donation session created ${session.id}`);
     res.status(200).json({ url: session.url });
   } catch (err) {
-    logTokenVerificationError('startDonationCheckout', idToken, err);
+    logTokenVerificationError('startDonationCheckout', authData.token, err);
     res
       .status(500)
       .json({ error: (err as any)?.message || "Failed to start donation" });
   }
-});
+}));
 
 export const startCheckoutSession = functions
   .region("us-central1")
-  .https.onRequest(async (req: Request, res: Response) => {
+  .https.onRequest(withCors(async (req: Request, res: Response) => {
   logger.info("📦 startCheckoutSession payload", req.body);
   logger.info(
     "🔐 Stripe Secret:",
     STRIPE_SECRET_KEY ? "\u2713 set" : "\u2717 missing",
   );
-  const idToken = req.headers.authorization?.split("Bearer ")[1];
-  if (!idToken) {
-    res.status(401).json({ error: "Unauthorized" });
+  const { userId, priceId, success_url, cancel_url, mode = "payment" } = req.body || {};
+  if (!userId || !priceId || !success_url || !cancel_url) {
+    logger.warn("⚠️ Missing fields", {
+      userId: !!userId,
+      priceId: !!priceId,
+      success_url: !!success_url,
+      cancel_url: !!cancel_url,
+    });
+    res.status(400).json({ error: "Missing required fields" });
     return;
   }
 
-  const { userId, priceId, success_url, cancel_url, mode = "payment" } = req.body || {};
-  if (!userId || !priceId || !success_url || !cancel_url) {
-    res.status(400).json({ error: "Missing required fields" });
+  let authData: { uid: string; token: string };
+  try {
+    authData = await verifyAuth(req);
+  } catch (err) {
+    logTokenVerificationError("startCheckoutSession", undefined, err);
+    res.status(401).json({ error: "Unauthorized" });
     return;
   }
 
@@ -946,8 +981,7 @@ export const startCheckoutSession = functions
   }
 
   try {
-    const decoded = await auth.verifyIdToken(idToken);
-    if (decoded.uid !== userId) {
+    if (authData.uid !== userId) {
       logger.warn("⚠️ UID mismatch between token and payload");
     }
     const session = await stripe.checkout.sessions.create({
@@ -961,12 +995,12 @@ export const startCheckoutSession = functions
     logger.info(`✅ Stripe session created ${session.id}`);
     res.status(200).json({ url: session.url });
   } catch (err) {
-    logTokenVerificationError('startCheckoutSession', idToken, err);
+    logTokenVerificationError('startCheckoutSession', authData.token, err);
     res
       .status(500)
       .json({ error: (err as any)?.message || "Failed to start checkout" });
   }
-});
+}));
 
 export const handleStripeWebhookV2 = functions
   .region("us-central1")
