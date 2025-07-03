@@ -113,7 +113,10 @@ async function deductTokens(uid: string, amount: number): Promise<boolean> {
 
 async function updateStreakAndXPInternal(uid: string, type: string) {
   const baseRef = db.collection("users").doc(uid);
-  const ref = type === "journal" ? db.doc(`users/${uid}/journalStreak`) : baseRef;
+  const ref =
+    type === "journal"
+      ? db.doc(`users/${uid}/journalStreak/current`)
+      : baseRef;
 
   await db.runTransaction(async (t) => {
     const snap = await t.get(ref);
@@ -788,10 +791,10 @@ export const startSubscriptionCheckout = functions
   const { userId, priceId, success_url, cancel_url } = req.body || {};
   if (!userId || !priceId || !success_url || !cancel_url) {
     logger.warn("⚠️ Missing fields", {
-      userId: !!userId,
-      priceId: !!priceId,
-      success_url: !!success_url,
-      cancel_url: !!cancel_url,
+      userId,
+      priceId,
+      success_url,
+      cancel_url,
     });
     res.status(400).json({ error: "Missing required fields" });
     return;
@@ -847,10 +850,10 @@ export const startOneTimeTokenCheckout = functions
   const { userId, priceId, success_url, cancel_url } = req.body || {};
   if (!userId || !priceId || !success_url || !cancel_url) {
     logger.warn("⚠️ Missing fields", {
-      userId: !!userId,
-      priceId: !!priceId,
-      success_url: !!success_url,
-      cancel_url: !!cancel_url,
+      userId,
+      priceId,
+      success_url,
+      cancel_url,
     });
     res.status(400).json({ error: "Missing required fields" });
     return;
@@ -955,6 +958,7 @@ export const startCheckoutSession = functions
   .region("us-central1")
   .https.onRequest(withCors(async (req: Request, res: Response) => {
   logger.info("📦 startCheckoutSession payload", req.body);
+  logger.debug("startCheckoutSession headers", req.headers);
   logger.info(
     "🔐 Stripe Secret:",
     STRIPE_SECRET_KEY ? "\u2713 set" : "\u2717 missing",
@@ -962,10 +966,10 @@ export const startCheckoutSession = functions
   const { userId, priceId, success_url, cancel_url, mode = "payment" } = req.body || {};
   if (!userId || !priceId || !success_url || !cancel_url) {
     logger.warn("⚠️ Missing fields", {
-      userId: !!userId,
-      priceId: !!priceId,
-      success_url: !!success_url,
-      cancel_url: !!cancel_url,
+      userId,
+      priceId,
+      success_url,
+      cancel_url,
     });
     res.status(400).json({ error: "Missing required fields" });
     return;
@@ -1125,6 +1129,11 @@ export const seedFirestore = functions
       ensureDocument('completedChallenges/dummy', { placeholder: true }),
       ensureDocument('religion/dummy', { name: 'Dummy Religion' }),
       ensureDocument('organizations/dummy', { name: 'Dummy Org' }),
+      ensureDocument('leaderboards/global', {
+        individuals: [],
+        religions: [],
+        organizations: [],
+      }),
       ensureDocument(
         'religionChats/seed-user/messages/welcome',
         { text: 'Welcome to religion chat!' },
