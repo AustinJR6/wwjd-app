@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import CustomText from '@/components/CustomText';
-import { View, StyleSheet, Alert, Linking } from 'react-native';
+import { View, StyleSheet, Alert } from 'react-native';
+import * as WebBrowser from 'expo-web-browser';
 import Button from '@/components/common/Button';
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { useTheme } from "@/components/theme/theme";
@@ -69,7 +70,7 @@ export default function UpgradeScreen({ navigation }: Props) {
         priceId: PRICE_IDS.SUBSCRIPTION,
       });
       if (url) {
-        Linking.openURL(url);
+        await WebBrowser.openBrowserAsync(url);
       } else {
         Alert.alert('Checkout Error', 'Unable to start checkout. Please try again later.');
       }
