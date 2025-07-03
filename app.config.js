@@ -26,6 +26,7 @@ export default ({ config }) => ({
     "expo-font",
     "expo-secure-store",
     "expo-system-ui",
+    "expo-web-browser",
     [
       "expo-build-properties",
       {
