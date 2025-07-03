@@ -6,7 +6,7 @@ import {
   ActivityIndicator,
   ScrollView
 } from 'react-native';
-import { queryCollection } from '@/services/firestoreService';
+import { getDocument } from '@/services/firestoreService';
 import { showGracefulError } from '@/utils/gracefulError';
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { useTheme } from "@/components/theme/theme";
@@ -79,13 +79,11 @@ export default function LeaderboardScreen() {
         return;
       }
 
-      const userSnap = await queryCollection('users', 'individualPoints');
-      const religionSnap = await queryCollection('religion', 'totalPoints');
-      const orgSnap = await queryCollection('organizations', 'totalPoints');
-
-      setIndividuals(userSnap.slice(0, 10));
-      setReligions(religionSnap.slice(0, 10));
-      setOrganizations(orgSnap.slice(0, 10));
+      const data = await getDocument('leaderboards/global');
+      console.log('🏆 Loaded leaderboard doc', data);
+      setIndividuals((data?.individuals || []).slice(0, 10));
+      setReligions((data?.religions || []).slice(0, 10));
+      setOrganizations((data?.organizations || []).slice(0, 10));
     } catch (err) {
       console.error('🔥 Error loading leaderboards:', err);
       showGracefulError('Unable to load leaderboard — please try again later');
