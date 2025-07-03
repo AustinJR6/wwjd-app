@@ -86,7 +86,11 @@ export default function LeaderboardScreen() {
       if (!data) {
         setNoData(true);
         const seed = { individuals: [], religions: [], organizations: [] };
-        await setDocument('leaderboards/global', seed);
+        try {
+          await setDocument('leaderboards/global', seed);
+        } catch (err: any) {
+          console.error('🔥 Failed to seed leaderboard:', err?.response?.data || err?.message);
+        }
         setIndividuals([]);
         setReligions([]);
         setOrganizations([]);

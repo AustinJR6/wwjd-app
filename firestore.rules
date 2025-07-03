@@ -59,7 +59,8 @@ service cloud.firestore {
     }
 
     // 📝 Journal streak tracking (per user)
-    match /users/{userId}/journalStreak {
+    // Document stored under users/{uid}/journalStreak/current
+    match /users/{userId}/journalStreak/{docId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
@@ -101,8 +102,9 @@ service cloud.firestore {
     }
 
     // 🏆 Leaderboards
+    // Allow all authenticated users to read and write the global leaderboard
     match /leaderboards/global {
-      allow read: if request.auth != null;
+      allow read, write: if request.auth != null;
     }
     match /leaderboards/{docId} {
       allow read: if request.auth != null;
