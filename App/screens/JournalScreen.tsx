@@ -157,10 +157,8 @@ export default function JournalScreen() {
         console.log('ID Token:', tokenPreview);
 
         const list = await querySubcollection(
-          `users/${uid}`,
-          'journalEntries',
-          'timestamp',
-          'DESCENDING'
+          `journalEntries/${uid}`,
+          'entries'
         );
         setEntries(list);
         const userData = await getDocument(`users/${uid}`);
@@ -218,18 +216,21 @@ export default function JournalScreen() {
 
       console.log('Firebase currentUser:', await getCurrentUserId());
       const token = await getToken(true);
-      console.log('ID Token:', token);
+      const tokenPreview = token ? token.slice(0, 8) : 'none';
+      console.log('ID Token:', tokenPreview);
 
       const userData = await getDocument(`users/${uid}`) || {};
 
-      console.log('📤 Saving journal entry for UID:', uid);
-      await addDocument(`users/${uid}/journalEntries`, {
+      console.log(`📝 Attempting to save journal entry for UID ${uid}`);
+      const path = `journalEntries/${uid}/entries`;
+      await addDocument(path, {
         stage,
         aiPrompt,
         aiResponse,
         userEntry: entry,
         timestamp: new Date().toISOString(),
       });
+      console.log('✅ Journal entry saved');
 
       await setDocument(`users/${uid}`, {
         individualPoints: (userData.individualPoints || 0) + 2,
@@ -265,14 +266,17 @@ export default function JournalScreen() {
       setTags('');
 
       const list = await querySubcollection(
-        `users/${uid}`,
-        'journalEntries',
-        'timestamp',
-        'DESCENDING'
+        `journalEntries/${uid}`,
+        'entries'
       );
       setEntries(list);
     } catch (err: any) {
-      console.error('🔥 API Error:', err?.response?.data || err.message);
+      console.error('❌ Journal save error:', {
+        path: `journalEntries/${uid}/entries`,
+        uid,
+        token: (await getToken(true))?.slice(0, 8) || 'none',
+        error: err?.response?.data || err.message,
+      });
       showGracefulError();
     } finally {
       setSaving(false);

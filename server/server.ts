@@ -46,9 +46,9 @@ app.post('/journal', verifyFirebaseIdToken, async (req: AuthedRequest, res) => {
   const uid = req.uid!;
   try {
     const ref = await db
-      .collection('users')
-      .doc(uid)
       .collection('journalEntries')
+      .doc(uid)
+      .collection('entries')
       .add({ ...req.body, createdAt: new Date() });
     res.json({ id: ref.id });
   } catch (err) {
