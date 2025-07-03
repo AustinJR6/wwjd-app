@@ -4,7 +4,7 @@ import * as Sentry from '@sentry/react-native';
 import ErrorBoundary from './App/components/common/ErrorBoundary';
 import { useFonts, Poppins_600SemiBold } from '@expo-google-fonts/poppins';
 import { Merriweather_400Regular } from '@expo-google-fonts/merriweather';
-import NavigatorWrapper from './App/navigation/NavigatorWrapper';
+import AuthGate from './App/navigation/AuthGate';
 import StartupAnimation from './App/components/common/StartupAnimation';
 import Constants from 'expo-constants';
 import { useTheme } from './App/components/theme/theme';
@@ -46,7 +46,7 @@ export default function App() {
 
   return (
     <ErrorBoundary>
-      <NavigatorWrapper />
+      <AuthGate />
       {showAnim && <StartupAnimation onDone={() => setShowAnim(false)} />}
     </ErrorBoundary>
   );

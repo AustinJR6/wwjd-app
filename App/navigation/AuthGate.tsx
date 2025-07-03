@@ -46,7 +46,7 @@ import GiveBackScreen from '@/screens/GiveBackScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
-export default function NavigatorWrapper() {
+export default function AuthGate() {
   const theme = useTheme();
   const { uid, idToken, authReady } = useAuth();
   const { user } = useUser();
@@ -59,25 +59,32 @@ export default function NavigatorWrapper() {
   useEffect(() => {
     async function verify() {
       if (!authReady) return;
-      console.log('🔍 verify auth', { uid, hasToken: !!idToken });
+      console.log('🔍 AuthGate verify', { uid, hasToken: !!idToken });
       if (!uid || !idToken) {
         console.log('➡️ route -> Login');
         setInitialRoute('Login');
         return;
       }
-      const profile = await fetchUserProfile(uid);
+
+      let profile = useUserStore.getState().user;
+      if (!profile || profile.uid !== uid) {
+        profile = await fetchUserProfile(uid);
+        if (profile) {
+          useUserStore.getState().setUser({
+            uid: profile.uid,
+            email: profile.email,
+            displayName: profile.displayName ?? '',
+            religion: profile.religion,
+            region: profile.region ?? '',
+            organizationId: profile.organizationId,
+            isSubscribed: profile.isSubscribed,
+            onboardingComplete: profile.onboardingComplete,
+            tokens: 0,
+          });
+        }
+      }
+
       if (profile && profile.uid === uid) {
-        useUserStore.getState().setUser({
-          uid: profile.uid,
-          email: profile.email,
-          displayName: profile.displayName ?? '',
-          religion: profile.religion,
-          region: profile.region ?? '',
-          organizationId: profile.organizationId,
-          isSubscribed: profile.isSubscribed,
-          onboardingComplete: profile.onboardingComplete,
-          tokens: 0,
-        });
         console.log('➡️ route -> Home');
         setInitialRoute('Home');
       } else {
