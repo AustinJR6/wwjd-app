@@ -83,9 +83,14 @@ export async function getDocument(path: string): Promise<any | null> {
     return fromFirestore(res.data);
   } catch (err: any) {
     console.warn(`❌ Firestore REST error on ${path}:`, err.response?.data || err.message);
-    if (err.response?.status === 403) {
+    const status = err.response?.status;
+    if (status === 403) {
       await logPermissionDetails(path);
       showPermissionDeniedForPath(path);
+      return null;
+    }
+    if (status === 404) {
+      // Document missing is not an auth issue
       return null;
     }
     throw err;

@@ -105,16 +105,9 @@ export default function ChallengeScreen() {
 
       const uid = await ensureAuth(await getCurrentUserId());
 
-      let active: any | null = null;
-      try {
-        active = await getDocument(`users/${uid}/activeChallenge/current`);
-      } catch (err: any) {
-        if (err?.response?.status === 404) {
-          await setDocument(`users/${uid}/activeChallenge/current`, {});
-          active = null;
-        } else {
-          throw err;
-        }
+      let active = await getDocument(`users/${uid}/activeChallenge/current`);
+      if (!active) {
+        await setDocument(`users/${uid}/activeChallenge/current`, {});
       }
       if (active && !active.isComplete) {
         setActiveMulti(active);

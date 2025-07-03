@@ -182,19 +182,20 @@ export const incrementReligionPoints = functions
 export const completeChallenge = functions
   .region("us-central1")
   .https.onRequest(async (req: Request, res: Response) => {
-  const idToken = req.headers.authorization?.split("Bearer ")[1];
-  if (!idToken) {
+  const authHeader = req.headers.authorization;
+  const token = authHeader?.split('Bearer ')[1];
+  if (!token) {
     console.error("❌ Gus Bug Alert: Missing ID token in header. 🐞");
     res.status(401).json({ error: "Unauthorized — Gus bug stole the token!" });
     return;
   }
   try {
-    const decodedToken = await auth.verifyIdToken(idToken);
+    const decodedToken = await auth.verifyIdToken(token);
     console.log(`✅ Gus Bug Authenticated: ${decodedToken.uid} is legit! 🎯`);
     await updateStreakAndXPInternal(decodedToken.uid, "challenge");
     res.status(200).send({ message: "Streak and XP updated" });
   } catch (err) {
-    logTokenVerificationError('completeChallenge', idToken, err);
+    logTokenVerificationError('completeChallenge', token, err);
     res.status(401).json({
       error: "Unauthorized — Gus bug cast an invalid token spell.",
     });
@@ -205,8 +206,9 @@ export const completeChallenge = functions
 export const createMultiDayChallenge = functions
   .region("us-central1")
   .https.onRequest(async (req: Request, res: Response) => {
-  const idToken = req.headers.authorization?.split("Bearer ")[1];
-  if (!idToken) {
+  const authHeader = req.headers.authorization;
+  const token = authHeader?.split('Bearer ')[1];
+  if (!token) {
     res.status(401).json({ error: "Unauthorized" });
     return;
   }
@@ -218,7 +220,7 @@ export const createMultiDayChallenge = functions
   }
 
   try {
-    const decoded = await auth.verifyIdToken(idToken);
+    const decoded = await auth.verifyIdToken(token);
     const uid = decoded.uid;
     const userRef = db.collection("users").doc(uid);
     const challengeRef = db.doc(`users/${uid}/activeChallenge/current`);
@@ -278,14 +280,15 @@ export const createMultiDayChallenge = functions
 export const completeChallengeDay = functions
   .region("us-central1")
   .https.onRequest(async (req: Request, res: Response) => {
-  const idToken = req.headers.authorization?.split("Bearer ")[1];
-  if (!idToken) {
+  const authHeader = req.headers.authorization;
+  const token = authHeader?.split('Bearer ')[1];
+  if (!token) {
     res.status(401).json({ error: "Unauthorized" });
     return;
   }
 
   try {
-    const decoded = await auth.verifyIdToken(idToken);
+    const decoded = await auth.verifyIdToken(token);
     const uid = decoded.uid;
     const challengeRef = db.doc(`users/${uid}/activeChallenge/current`);
     const userRef = db.collection("users").doc(uid);
@@ -1060,18 +1063,19 @@ export const handleStripeWebhookV2 = functions
 export const updateStreakAndXP = functions
   .region("us-central1")
   .https.onRequest(async (req: Request, res: Response) => {
-  const idToken = req.headers.authorization?.split("Bearer ")[1];
-  if (!idToken) {
+  const authHeader = req.headers.authorization;
+  const token = authHeader?.split('Bearer ')[1];
+  if (!token) {
     res.status(401).json({ error: "Unauthorized" });
     return;
   }
   try {
-    const decoded = await auth.verifyIdToken(idToken);
+    const decoded = await auth.verifyIdToken(token);
     const type = req.body?.type || "general";
     await updateStreakAndXPInternal(decoded.uid, type);
     res.status(200).json({ message: "Streak updated" });
   } catch (err: any) {
-    logTokenVerificationError('updateStreakAndXP', idToken, err);
+    logTokenVerificationError('updateStreakAndXP', token, err);
     res.status(500).json({ error: err.message || "Failed" });
   }
 });
