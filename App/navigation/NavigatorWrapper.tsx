@@ -25,7 +25,7 @@ import OrganizationSignupScreen from '@/screens/auth/OrganizationSignupScreen';
 import HomeScreen from '@/screens/dashboard/HomeScreen';
 import ChallengeScreen from '@/screens/dashboard/ChallengeScreen';
 import UpgradeScreen from '@/screens/dashboard/UpgradeScreen';
-import LeaderboardsScreen from '@/screens/dashboard/LeaderboardScreen';
+import LeaderboardScreen from '@/screens/dashboard/LeaderboardScreen';
 import TriviaScreen from '@/screens/dashboard/TriviaScreen';
 import SubmitProofScreen from '@/screens/dashboard/SubmitProofScreen';
 
@@ -59,7 +59,9 @@ export default function NavigatorWrapper() {
   useEffect(() => {
     async function verify() {
       if (!authReady) return;
+      console.log('🔍 verify auth', { uid, hasToken: !!idToken });
       if (!uid || !idToken) {
+        console.log('➡️ route -> Login');
         setInitialRoute('Login');
         return;
       }
@@ -76,13 +78,21 @@ export default function NavigatorWrapper() {
           onboardingComplete: profile.onboardingComplete,
           tokens: 0,
         });
+        console.log('➡️ route -> Home');
         setInitialRoute('Home');
       } else {
+        console.log('➡️ route -> Onboarding');
         setInitialRoute('Onboarding');
       }
     }
     verify();
   }, [authReady, uid, idToken]);
+
+  useEffect(() => {
+    if (initialRoute) {
+      console.log('🧭 initialRoute set', { initialRoute });
+    }
+  }, [initialRoute]);
 
   if (!authReady || !initialRoute) {
     return (
@@ -129,7 +139,7 @@ export default function NavigatorWrapper() {
             <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} options={{ title: 'Change Password' }} />
             <Stack.Screen name="Settings" component={SettingsScreen} />
             <Stack.Screen name="Trivia" component={TriviaScreen} options={{ title: 'Trivia Challenge' }} />
-            <Stack.Screen name="Leaderboards" component={LeaderboardsScreen} options={{ title: 'Leaderboards' }} />
+            <Stack.Screen name="Leaderboards" component={LeaderboardScreen} options={{ title: 'Leaderboards' }} />
             <Stack.Screen name="SubmitProof" component={SubmitProofScreen} options={{ title: 'Submit Proof' }} />
             <Stack.Screen name="OrganizationManagement" component={OrganizationManagementScreen} options={{ title: 'Manage Organization' }} />
             <Stack.Screen name="JoinOrganization" component={JoinOrganizationScreen} options={{ title: 'Join Organization' }} />
