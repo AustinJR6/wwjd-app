@@ -17,6 +17,7 @@ import { useTheme } from "@/components/theme/theme";
 import { Picker } from "@react-native-picker/picker";
 import type { RootStackParamList } from "@/navigation/RootStackParamList";
 import { queryCollection } from "@/services/firestoreService";
+import { fetchReligionList } from "../../../religionRest";
 
 type OnboardingScreenProps = NativeStackScreenProps<
   RootStackParamList,
@@ -55,9 +56,9 @@ export default function OnboardingScreen() {
         setRegions([{ name: 'Unknown', code: 'UNKNOWN' }]);
       }
 
-      console.log('➡️ fetching religions');
+      console.log('➡️ fetching religions via REST');
       try {
-        const rels = await queryCollection('religions');
+        const rels = await fetchReligionList();
         console.log(`✅ fetched ${rels.length} religions`);
         if (!rels.length) console.error('❌ Religions list was empty');
         rels.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
