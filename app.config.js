@@ -3,6 +3,7 @@ export default ({ config }) => ({
   name: "OneVine",
   slug: "onevine-app",
   version: "1.0.0",
+  icon: "./app/assets/icon.png",
   runtimeVersion: "1.0.0",
   assetBundlePatterns: ["**/*"],
   android: {
