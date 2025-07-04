@@ -67,6 +67,12 @@ service cloud.firestore {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
+    // 🏆 Challenge streak tracking (per user)
+    // Document stored under users/{uid}/challengeStreak/current
+    match /users/{userId}/challengeStreak/{docId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
     // 🔁 Active Challenge (per user)
     // Allows read/write access to documents under
     // `users/{uid}/activeChallenge`, including the `current` doc
