@@ -202,7 +202,7 @@ export async function fetchTopUsersByPoints(limit = 10): Promise<any[]> {
 
 export async function fetchTopReligions(limit = 10): Promise<any[]> {
   const query = {
-    from: [{ collectionId: 'religion' }],
+    from: [{ collectionId: 'religions' }],
     orderBy: [{ field: { fieldPath: 'totalPoints' }, direction: 'DESCENDING' }],
     limit,
   };
