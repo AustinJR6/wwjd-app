@@ -1291,3 +1291,38 @@ export const createSubscriptionOnSignup = functions
       });
     }
   });
+
+export const createUserDocOnSignup = functions
+  .auth
+  .user()
+  .onCreate(async (user: admin.auth.UserRecord) => {
+    const userRef = db.collection("users").doc(user.uid);
+    const snap = await userRef.get();
+    if (!snap.exists) {
+      await userRef.set({
+        email: user.email || "",
+        uid: user.uid,
+        displayName: "",
+        individualPoints: 0,
+        isSubscribed: false,
+        tokens: 0,
+        religion: null,
+        region: null,
+        streak: 0,
+        streakMilestones: {
+          m14: false,
+        },
+        nightModeEnabled: false,
+        onboardingComplete: false,
+        recentChallenges: [],
+        dailyChallengeHistory: {
+          completed: 0,
+          skipped: 0,
+          date: "",
+        },
+        lastChallenge: "",
+        lastChallengeText: "",
+        lastCompleted: "",
+      });
+    }
+  });
