@@ -89,7 +89,9 @@ export default function ProfileScreen() {
         setUsername(profile.username || profile.displayName || '');
         setRegion(profile.region || '');
         setReligion(profile.religion || RELIGIONS[0]);
-        if (profile.organizationId) {
+        if (profile.organizationName) {
+          setOrganization(profile.organizationName);
+        } else if (profile.organizationId) {
           const org = await getDocument(`organizations/${profile.organizationId}`);
           setOrganization(org?.name || '');
         }
