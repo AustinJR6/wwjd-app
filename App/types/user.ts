@@ -10,6 +10,14 @@ export interface FirestoreUser {
   isSubscribed: boolean;
   onboardingComplete: boolean;
   createdAt: number;
+  challengeStreak?: {
+    count: number;
+    lastCompletedDate: string | null;
+  };
+  dailyChallengeCount?: number;
+  dailySkipCount?: number;
+  lastChallengeLoadDate?: string | null;
+  lastSkipDate?: string | null;
 }
 
 /**

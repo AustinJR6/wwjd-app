@@ -17,6 +17,42 @@ export interface FirestoreUser {
   isSubscribed: boolean;
   onboardingComplete: boolean;
   createdAt: number;
+  challengeStreak?: {
+    count: number;
+    lastCompletedDate: string | null;
+  };
+  dailyChallengeCount?: number;
+  dailySkipCount?: number;
+  lastChallengeLoadDate?: string | null;
+  lastSkipDate?: string | null;
+}
+
+/**
+ * Initialize optional user fields if they're missing.
+ */
+export async function initializeUserDataIfNeeded(uid: string): Promise<void> {
+  const data = (await getDocument(`users/${uid}`)) || {};
+  const payload: any = {};
+
+  if (!data.challengeStreak) {
+    payload.challengeStreak = { count: 0, lastCompletedDate: null };
+  }
+  if (data.dailyChallengeCount === undefined) {
+    payload.dailyChallengeCount = 0;
+  }
+  if (data.dailySkipCount === undefined) {
+    payload.dailySkipCount = 0;
+  }
+  if (!data.lastChallengeLoadDate) {
+    payload.lastChallengeLoadDate = null;
+  }
+  if (!data.lastSkipDate) {
+    payload.lastSkipDate = null;
+  }
+
+  if (Object.keys(payload).length > 0) {
+    await setDocument(`users/${uid}`, payload);
+  }
 }
 
 /**
@@ -67,6 +103,7 @@ export async function loadUser(uid: string): Promise<void> {
   if (!storedUid) return;
 
   await ensureUserDocExists(storedUid);
+  await initializeUserDataIfNeeded(storedUid);
 
   const snapshot = await getDocument(`users/${storedUid}`);
 
@@ -125,6 +162,11 @@ export async function createUserProfile({
     isSubscribed: false,
     onboardingComplete: false,
     createdAt: now,
+    challengeStreak: { count: 0, lastCompletedDate: null },
+    dailyChallengeCount: 0,
+    dailySkipCount: 0,
+    lastChallengeLoadDate: null,
+    lastSkipDate: null,
   };
 
   if (organizationId) {
