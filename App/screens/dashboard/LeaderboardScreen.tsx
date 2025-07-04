@@ -6,9 +6,8 @@ import {
   ActivityIndicator,
   ScrollView
 } from 'react-native';
+import axios from 'axios';
 import { fetchTopUsersByPoints } from '@/services/firestoreService';
-import { collection, getDocs, query, orderBy, limit as fsLimit } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
 import { showGracefulError } from '@/utils/gracefulError';
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { useTheme } from "@/components/theme/theme";
@@ -16,9 +15,67 @@ import { ensureAuth } from '@/utils/authGuard';
 import AuthGate from '@/components/AuthGate';
 import { useAuth } from '@/hooks/useAuth';
 
+const PROJECT_ID = process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID || '';
+
+async function fetchTopReligions(idToken: string) {
+  const response = await axios.post(
+    `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents:runQuery`,
+    {
+      structuredQuery: {
+        from: [{ collectionId: 'religions' }],
+        orderBy: [
+          { field: { fieldPath: 'totalPoints' }, direction: 'DESCENDING' },
+        ],
+        limit: 10,
+      },
+    },
+    {
+      headers: {
+        Authorization: `Bearer ${idToken}`,
+      },
+    }
+  );
+
+  return response.data
+    .map((doc: any) => doc.document)
+    .filter(Boolean)
+    .map((doc: any) => ({
+      name: doc.fields?.name?.stringValue,
+      totalPoints: parseInt(doc.fields?.totalPoints?.integerValue || '0'),
+    }));
+}
+
+async function fetchTopOrganizations(idToken: string) {
+  const response = await axios.post(
+    `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents:runQuery`,
+    {
+      structuredQuery: {
+        from: [{ collectionId: 'organizations' }],
+        orderBy: [
+          { field: { fieldPath: 'totalPoints' }, direction: 'DESCENDING' },
+        ],
+        limit: 10,
+      },
+    },
+    {
+      headers: {
+        Authorization: `Bearer ${idToken}`,
+      },
+    }
+  );
+
+  return response.data
+    .map((doc: any) => doc.document)
+    .filter(Boolean)
+    .map((doc: any) => ({
+      name: doc.fields?.name?.stringValue,
+      totalPoints: parseInt(doc.fields?.totalPoints?.integerValue || '0'),
+    }));
+}
+
 export default function LeaderboardScreen() {
   const theme = useTheme();
-  const { authReady, uid } = useAuth();
+  const { authReady, uid, idToken } = useAuth();
   const styles = React.useMemo(
     () =>
       StyleSheet.create({
@@ -83,20 +140,11 @@ export default function LeaderboardScreen() {
         return;
       }
 
-      const [top, relSnap, orgSnap] = await Promise.all([
+      const [top, rel, org] = await Promise.all([
         fetchTopUsersByPoints(10),
-        getDocs(query(collection(db, 'religions'), orderBy('totalPoints', 'desc'), fsLimit(10))),
-        getDocs(query(collection(db, 'organizations'), orderBy('totalPoints', 'desc'), fsLimit(10))),
+        idToken ? fetchTopReligions(idToken) : [],
+        idToken ? fetchTopOrganizations(idToken) : [],
       ]);
-
-      const rel = relSnap.docs.map((doc) => ({
-        name: doc.data().name || doc.id,
-        totalPoints: doc.data().totalPoints || 0,
-      }));
-      const org = orgSnap.docs.map((doc) => ({
-        name: doc.data().name || doc.id,
-        totalPoints: doc.data().totalPoints || 0,
-      }));
 
       console.log('🏆 Leaderboard results', { top, rel, org });
       setIndividuals(top);
