@@ -502,7 +502,8 @@ export const confessionalAI = functions
   const { history = [], religion: religionId } = req.body || {};
 
   try {
-    await auth.verifyIdToken(idToken);
+    const decoded = await auth.verifyIdToken(idToken);
+    logger.info(`✅ confessionalAI user: ${decoded.uid}`);
     const { name, aiVoice } = await fetchReligionContext(religionId);
     const promptText = history
       .map((m: any) => `${m.role}: ${m.text}`)
@@ -515,7 +516,9 @@ export const confessionalAI = functions
     res.status(200).json({ reply });
   } catch (err: any) {
     logTokenVerificationError('confessionalAI', idToken, err);
-    const code = err.code === "auth/argument-error" ? 401 : 500;
+    const isAuthErr =
+      err.code === "auth/argument-error" || err.code === "auth/id-token-expired";
+    const code = isAuthErr ? 401 : 500;
     res.status(code).json({ error: err.message || "Failed" });
   }
 });

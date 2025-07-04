@@ -109,8 +109,8 @@ export default function ConfessionalScreen() {
       const uid = await ensureAuth(await getCurrentUserId());
 
       console.log('Firebase currentUser:', await getCurrentUserId());
-      const token = await getToken(true);
-      console.log('ID Token:', token);
+      let token = await getToken(true);
+      console.log('Using token', token ? token.slice(0, 10) : 'none');
 
       const userData = await getDocument(`users/${uid}`);
       const religion = userData.religion || 'Spiritual Guide';
@@ -129,11 +129,32 @@ export default function ConfessionalScreen() {
         text: m.content,
       }));
 
-      const response = await axios.post(CONFESSIONAL_AI_URL, {
-        history: historyMsgs,
-        uid,
-        religion,
-      });
+      const makeRequest = (idTok: string) =>
+        axios.post(
+          CONFESSIONAL_AI_URL,
+          {
+            history: historyMsgs,
+            uid,
+            religion,
+          },
+          {
+            headers: { Authorization: `Bearer ${idTok}` },
+          },
+        );
+
+      let response;
+      try {
+        response = await makeRequest(token);
+      } catch (err: any) {
+        if (err.response?.status === 401) {
+          console.warn('Token expired, refreshing...');
+          token = await getToken(true);
+          console.log('Refreshed token', token ? token.slice(0, 10) : 'none');
+          response = await makeRequest(token);
+        } else {
+          throw err;
+        }
+      }
       const answer = response.data?.reply || "I’m here with you.";
 
       console.log('✝️ Confessional input:', text);
