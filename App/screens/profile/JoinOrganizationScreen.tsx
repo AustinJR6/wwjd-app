@@ -19,10 +19,12 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/navigation/RootStackParamList';
 import AuthGate from '@/components/AuthGate';
 import { useAuth } from '@/hooks/useAuth';
+import { useUserStore } from '@/state/userStore';
 
 export default function JoinOrganizationScreen() {
   const theme = useTheme();
   const { authReady, uid } = useAuth();
+  const updateUser = useUserStore((s) => s.updateUser);
   const styles = React.useMemo(
     () =>
       StyleSheet.create({
@@ -93,6 +95,26 @@ export default function JoinOrganizationScreen() {
     );
   };
 
+  const leaveOrganization = async (orgId: string) => {
+    if (!user) return;
+    const uid = await ensureAuth(user.uid);
+    if (!uid) return;
+    try {
+      await setDocument(`users/${uid}`, {
+        organizationId: null,
+        organizationName: null,
+      });
+
+      updateUser({ organizationId: undefined });
+
+      const orgData = await getDocument(`organizations/${orgId}`);
+      const members = (orgData?.members || []).filter((m: string) => m !== uid);
+      await setDocument(`organizations/${orgId}`, { members });
+    } catch (err: any) {
+      console.error('🔥 Leave org error:', err?.response?.data || err.message);
+    }
+  };
+
   const joinOrg = async (org: any) => {
     if (!user) return;
     try {
@@ -103,13 +125,38 @@ export default function JoinOrganizationScreen() {
     }
     const uid = await ensureAuth(user.uid);
     if (!uid) return;
+
+    const profile = await getDocument(`users/${uid}`);
+    if (profile?.organizationId) {
+      Alert.alert(
+        'Already Joined',
+        'You must leave your current organization to join a new one.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Leave current org',
+            onPress: async () => {
+              await leaveOrganization(profile.organizationId);
+              await joinOrg(org);
+            },
+          },
+        ],
+      );
+      return;
+    }
+
     if ((org.members?.length || 0) >= org.seatLimit) {
       Alert.alert('Full', 'This organization has no available seats.');
       return;
     }
 
     try {
-      await setDocument(`users/${uid}`, { organizationId: org.id });
+      await setDocument(`users/${uid}`, {
+        organizationId: org.id,
+        organizationName: org.name,
+      });
+
+      updateUser({ organizationId: org.id });
 
       const orgData = await getDocument(`organizations/${org.id}`);
       const members = orgData?.members || [];
