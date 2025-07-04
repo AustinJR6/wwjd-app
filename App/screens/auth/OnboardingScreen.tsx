@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import CustomText from "@/components/CustomText";
-import { View, StyleSheet, Alert, TextInput } from "react-native";
+import { View, StyleSheet, Alert, TextInput, ActivityIndicator } from "react-native";
 import * as SecureStore from "expo-secure-store";
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import Button from "@/components/common/Button";
@@ -16,60 +16,28 @@ import { SCREENS } from "@/navigation/screens";
 import { useTheme } from "@/components/theme/theme";
 import { Picker } from "@react-native-picker/picker";
 import type { RootStackParamList } from "@/navigation/RootStackParamList";
-import { queryCollection, getDocument } from "@/services/firestoreService";
-import { fetchReligionList } from "../../../religionRest";
+import { getDocument } from "@/services/firestoreService";
+import { useLookupLists } from "@/hooks/useLookupLists";
 
 type OnboardingScreenProps = NativeStackScreenProps<
   RootStackParamList,
   "Onboarding"
 >;
 
-const FALLBACK_RELIGION = { id: 'spiritual', name: 'Spiritual Guide' };
-
 export default function OnboardingScreen() {
   const user = useUserStore((state: any) => state.user);
   const uidFromAuth = useAuthStore((state) => state.uid);
   const navigation = useNavigation<OnboardingScreenProps["navigation"]>();
   const theme = useTheme();
+  const { regions, religions, loading: listsLoading } = useLookupLists();
   const [religion, setReligion] = useState(user?.religion ?? "");
-  const [religions, setReligions] = useState<any[]>([]);
   const [username, setUsername] = useState(
     user?.username ?? user?.displayName ?? ""
   );
   const [region, setRegion] = useState("");
-  const [regions, setRegions] = useState<any[]>([]);
   const [organization, setOrganization] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [religionError, setReligionError] = useState("");
-
-  useEffect(() => {
-    const load = async () => {
-      console.log('➡️ fetching regions');
-      try {
-        const list = await queryCollection('regions');
-        console.log(`✅ fetched ${list.length} regions`);
-        if (!list.length) console.error('❌ Regions list was empty');
-        list.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
-        setRegions(list);
-      } catch (err) {
-        console.error('Failed to load regions', err);
-        setRegions([{ name: 'Unknown', code: 'UNKNOWN' }]);
-      }
-
-      console.log('➡️ fetching religions via REST');
-      try {
-        const rels = await fetchReligionList();
-        console.log(`✅ fetched ${rels.length} religions`);
-        if (!rels.length) console.error('❌ Religions list was empty');
-        rels.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
-        setReligions(rels);
-      } catch (err) {
-        console.error('Failed to load religions', err);
-        setReligions([FALLBACK_RELIGION]);
-      }
-    };
-    load();
-  }, []);
 
   const handleContinue = async () => {
     const uid = user?.uid || uidFromAuth;
@@ -90,7 +58,7 @@ export default function OnboardingScreen() {
       setReligionError('');
     }
 
-    setLoading(true);
+    setSaving(true);
     try {
       if (uid) {
         await saveUsernameAndProceed(username.trim());
@@ -121,7 +89,7 @@ export default function OnboardingScreen() {
         err.message || "An unknown error occurred.",
       );
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
 
@@ -170,6 +138,14 @@ export default function OnboardingScreen() {
       }),
     [theme],
   );
+
+  if (listsLoading) {
+    return (
+      <ScreenContainer>
+        <ActivityIndicator size="large" color={theme.colors.primary} />
+      </ScreenContainer>
+    );
+  }
 
   return (
     <ScreenContainer>
@@ -226,7 +202,7 @@ export default function OnboardingScreen() {
         onChangeText={setOrganization}
       />
 
-      <Button title="Continue" onPress={handleContinue} loading={loading} />
+      <Button title="Continue" onPress={handleContinue} loading={saving} />
       <CustomText
         style={styles.link}
         onPress={() => navigation.navigate("Login")}
