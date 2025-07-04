@@ -77,6 +77,7 @@ export default function AuthGate() {
             useUserStore.getState().setUser({
               uid: profile.uid,
               email: profile.email,
+              username: profile.username ?? '',
               displayName: profile.displayName ?? '',
               religion: profile.religion,
               region: profile.region ?? '',

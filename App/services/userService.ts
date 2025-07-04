@@ -8,6 +8,7 @@ import { ensureAuth } from "@/utils/authGuard";
 export interface FirestoreUser {
   uid: string;
   email: string;
+  username?: string;
   displayName?: string;
   religion: string;
   region?: string;
@@ -73,6 +74,7 @@ export async function loadUser(uid: string): Promise<void> {
     useUserStore.getState().setUser({
       uid: user.uid,
       email: user.email,
+      username: user.username ?? '',
       displayName: user.displayName ?? "",
       isSubscribed: user.isSubscribed,
       religion: user.religion,
@@ -93,12 +95,14 @@ export async function createUserProfile({
   uid,
   email,
   displayName,
+  username,
   religion = "Christian",
   region = "",
   organizationId,
 }: {
   uid: string;
   email: string;
+  username?: string;
   displayName?: string;
   religion?: string;
   region?: string;
@@ -112,6 +116,7 @@ export async function createUserProfile({
   const userData: FirestoreUser = {
     uid,
     email,
+    username,
     displayName,
     religion,
     region,
@@ -148,7 +153,14 @@ export async function updateUserFields(
   if (!storedUid) return;
 
   const filtered = Object.fromEntries(
-    Object.entries(updates).filter(([_, v]) => v !== undefined),
+    Object.entries(updates).filter(([k, v]) => {
+      if (v === undefined) return false;
+      if (k === 'username' && typeof v === 'string' && v.trim() === '') {
+        return false;
+      }
+      return true;
+    }),
   );
+  console.log('➡️ updateUserFields payload', { uid: storedUid, ...filtered });
   await setDocument(`users/${storedUid}`, filtered);
 }

@@ -30,6 +30,7 @@ export default function SignupScreen() {
       await createUserProfile({
         uid: result.localId,
         email: result.email,
+        username: '',
         displayName: '',
       });
       await loadUser(result.localId);

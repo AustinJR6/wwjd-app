@@ -3,6 +3,7 @@ import { create } from "zustand";
 interface UserData {
   uid: string;
   email: string;
+  username: string;
   displayName: string;
   religion: string;
   region: string;

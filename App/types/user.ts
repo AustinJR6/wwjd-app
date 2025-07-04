@@ -4,6 +4,7 @@
 export interface FirestoreUser {
   uid: string;
   email: string;
+  username?: string;
   displayName?: string;
   religion: string;
   isSubscribed: boolean;
@@ -17,6 +18,7 @@ export interface FirestoreUser {
 export interface AppUser {
   uid: string;
   email: string;
+  username: string;
   displayName: string;
   religion: string;
   isSubscribed: boolean;
