@@ -30,7 +30,7 @@ export default function OnboardingScreen() {
   const uidFromAuth = useAuthStore((state) => state.uid);
   const navigation = useNavigation<OnboardingScreenProps["navigation"]>();
   const theme = useTheme();
-  const [religion, setReligion] = useState(user?.religion ?? '');
+  const [religion, setReligion] = useState(user?.religion ?? "");
   const [religions, setReligions] = useState<any[]>([]);
   const [username, setUsername] = useState(
     user?.username ?? user?.displayName ?? ""
@@ -39,28 +39,32 @@ export default function OnboardingScreen() {
   const [regions, setRegions] = useState<any[]>([]);
   const [organization, setOrganization] = useState("");
   const [loading, setLoading] = useState(false);
+  const [religionError, setReligionError] = useState("");
 
   useEffect(() => {
     const load = async () => {
+      console.log('➡️ fetching regions');
       try {
         const list = await queryCollection('regions');
+        console.log(`✅ fetched ${list.length} regions`);
+        if (!list.length) console.error('❌ Regions list was empty');
         list.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
         setRegions(list);
-        if (!region && list.length) setRegion(list[0].name);
       } catch (err) {
-        console.warn('Failed to load regions', err);
+        console.error('Failed to load regions', err);
         setRegions([{ name: 'Unknown', code: 'UNKNOWN' }]);
-        setRegion('Unknown');
       }
+
+      console.log('➡️ fetching religions');
       try {
         const rels = await queryCollection('religions');
+        console.log(`✅ fetched ${rels.length} religions`);
+        if (!rels.length) console.error('❌ Religions list was empty');
         rels.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
         setReligions(rels);
-        if (!religion && rels.length) setReligion(rels[0].id || rels[0].name);
       } catch (err) {
-        console.warn('Failed to load religions', err);
+        console.error('Failed to load religions', err);
         setReligions([FALLBACK_RELIGION]);
-        if (!religion) setReligion(FALLBACK_RELIGION.id);
       }
     };
     load();
@@ -76,6 +80,13 @@ export default function OnboardingScreen() {
     if (!username.trim()) {
       Alert.alert('Missing Info', 'Username is required.');
       return;
+    }
+
+    if (!religion) {
+      setReligionError('Please select a spiritual lens.');
+      return;
+    } else {
+      setReligionError('');
     }
 
     setLoading(true);
@@ -172,6 +183,7 @@ export default function OnboardingScreen() {
           onValueChange={(val) => setRegion(val)}
           style={styles.picker}
         >
+          <Picker.Item label="Select your region" value="" />
           {regions.map((r) => (
             <Picker.Item key={r.id || r.code} label={r.name} value={r.name} />
           ))}
@@ -188,11 +200,17 @@ export default function OnboardingScreen() {
           onValueChange={(itemValue) => setReligion(itemValue)}
           style={styles.picker}
         >
+          <Picker.Item label="Select your spiritual lens" value="" />
           {religions.map((r) => (
             <Picker.Item key={r.id || r.name} label={r.name} value={r.id || r.name} />
           ))}
         </Picker>
       </View>
+      {religionError ? (
+        <CustomText style={{ color: 'red', marginBottom: 8 }}>
+          {religionError}
+        </CustomText>
+      ) : null}
 
       <TextInput
         style={styles.input}
