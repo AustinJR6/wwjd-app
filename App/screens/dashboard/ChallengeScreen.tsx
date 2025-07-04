@@ -13,6 +13,7 @@ import { getTokenCount, setTokenCount } from "@/utils/TokenManager";
 import { showGracefulError } from '@/utils/gracefulError';
 import { ASK_GEMINI_SIMPLE, GENERATE_CHALLENGE_URL } from "@/utils/constants";
 import { getDocument, setDocument } from '@/services/firestoreService';
+import { canLoadNewChallenge } from '@/services/challengeLimitService';
 import { completeChallengeWithStreakCheck } from '@/services/challengeStreakService';
 import {
   callFunction,
@@ -128,6 +129,12 @@ export default function ChallengeScreen() {
       if (!forceNew && lastChallenge && now.getTime() - lastChallenge.getTime() < oneDay) {
         setChallenge(userData.lastChallengeText || '');
         setCanSkip(false);
+        setLoading(false);
+        return;
+      }
+
+      const allowed = await canLoadNewChallenge();
+      if (!allowed) {
         setLoading(false);
         return;
       }
