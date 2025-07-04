@@ -185,6 +185,52 @@ export const incrementReligionPoints = functions
     })
   );
 
+export const awardPointsToUser = functions
+  .region("us-central1")
+  .https.onRequest(
+    withCors(async (req: Request, res: Response) => {
+      try {
+        const { uid } = await verifyIdToken(req);
+        const { points } = req.body;
+
+        if (typeof points !== "number" || points <= 0 || points > 100) {
+          res.status(400).send("Invalid input.");
+          return;
+        }
+
+        const userSnap = await db.doc(`users/${uid}`).get();
+        if (!userSnap.exists) {
+          res.status(404).send("User not found");
+          return;
+        }
+        const userData = userSnap.data() || {};
+        const religionId = userData.religion;
+        const organizationId = userData.organizationId;
+
+        await db.runTransaction(async (t) => {
+          if (religionId) {
+            const ref = db.doc(`religion/${religionId}`);
+            const snap = await t.get(ref);
+            const current = snap.exists ? (snap.data()?.totalPoints ?? 0) : 0;
+            t.set(ref, { name: religionId, totalPoints: current + points }, { merge: true });
+          }
+          if (organizationId) {
+            const ref = db.doc(`organizations/${organizationId}`);
+            const snap = await t.get(ref);
+            const current = snap.exists ? (snap.data()?.totalPoints ?? 0) : 0;
+            t.set(ref, { name: organizationId, totalPoints: current + points }, { merge: true });
+          }
+        });
+
+        res.status(200).send({ message: "Points awarded" });
+      } catch (err: any) {
+        logError("awardPointsToUser", err);
+        const code = err.message === "Unauthorized" ? 401 : 500;
+        res.status(code).json({ error: err.message });
+      }
+    })
+  );
+
 export const completeChallenge = functions
   .region("us-central1")
   .https.onRequest(async (req: Request, res: Response) => {

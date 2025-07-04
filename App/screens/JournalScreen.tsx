@@ -16,7 +16,7 @@ import { useTheme } from "@/components/theme/theme";
 import { showGracefulError } from '@/utils/gracefulError';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { querySubcollection, addDocument, getDocument, setDocument } from '@/services/firestoreService';
-import { callFunction, incrementReligionPoints } from '@/services/functionService';
+import { callFunction, awardPointsToUser } from '@/services/functionService';
 import { ASK_GEMINI_SIMPLE } from '@/utils/constants';
 import { ensureAuth } from '@/utils/authGuard';
 import { getToken, getCurrentUserId } from '@/utils/TokenManager';
@@ -246,21 +246,10 @@ export default function JournalScreen() {
         }
       }
 
-      if (userData.religion) {
-        try {
-          await incrementReligionPoints(userData.religion, 2);
-        } catch (err: any) {
-          console.error('🔥 Backend error:', err.response?.data || err.message);
-        }
-      }
-
-      if (userData.organizationId) {
-        const orgData = await getDocument(`organizations/${userData.organizationId}`);
-        const newTotal = (orgData?.totalPoints || 0) + 2;
-        await setDocument(`organizations/${userData.organizationId}`, {
-          totalPoints: newTotal,
-        });
-        console.log(`🏛️ Added points to org ${userData.organizationId}:`, newTotal);
+      try {
+        await awardPointsToUser(2);
+      } catch (err: any) {
+        console.error('🔥 Backend error:', err.response?.data || err.message);
       }
 
       Alert.alert('✅ Journal Saved', 'Your reflection has been securely stored.');

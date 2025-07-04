@@ -26,6 +26,10 @@ export async function incrementReligionPoints(religion: string, points: number):
   await callFunction('incrementReligionPoints', { religion, points });
 }
 
+export async function awardPointsToUser(points: number): Promise<void> {
+  await callFunction('awardPointsToUser', { points });
+}
+
 export async function createMultiDayChallenge(prompt: string, days: number) {
   return await callFunction('createMultiDayChallenge', { prompt, days });
 }

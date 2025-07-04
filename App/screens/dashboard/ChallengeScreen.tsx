@@ -17,7 +17,7 @@ import { canLoadNewChallenge } from '@/services/challengeLimitService';
 import { completeChallengeWithStreakCheck } from '@/services/challengeStreakService';
 import {
   callFunction,
-  incrementReligionPoints,
+  awardPointsToUser,
   createMultiDayChallenge,
   completeChallengeDay,
 } from '@/services/functionService';
@@ -298,21 +298,10 @@ export default function ChallengeScreen() {
       individualPoints: (userData.individualPoints || 0) + 2,
     });
 
-    if (userData.religion) {
-      try {
-        await incrementReligionPoints(userData.religion, 2);
-      } catch (err: any) {
-        console.error('🔥 Backend error:', err.response?.data || err.message);
-      }
-    }
-
-    if (userData.organizationId) {
-      const orgData = await getDocument(`organizations/${userData.organizationId}`);
-      const newTotal = (orgData?.totalPoints || 0) + 2;
-      await setDocument(`organizations/${userData.organizationId}`, {
-        totalPoints: newTotal,
-      });
-      console.log(`🏛️ Added points to org ${userData.organizationId}:`, newTotal);
+    try {
+      await awardPointsToUser(2);
+    } catch (err: any) {
+      console.error('🔥 Backend error:', err.response?.data || err.message);
     }
 
     Alert.alert('Great job!', 'Challenge completed.');
