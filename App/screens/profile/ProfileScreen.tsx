@@ -9,6 +9,7 @@ import { useUser } from '@/hooks/useUser';
 import { useUserStore } from '@/state/userStore';
 import { getTokenCount } from '@/utils/TokenManager';
 import { getDocument, setDocument, queryCollection } from '@/services/firestoreService';
+import { fetchReligionList } from '../../../religionRest';
 import { updateUserFields } from '@/services/userService';
 import { useTheme } from '@/components/theme/theme';
 import { ensureAuth } from '@/utils/authGuard';
@@ -75,7 +76,7 @@ export default function ProfileScreen() {
         setRegion('Unknown');
       }
       try {
-        const rels = await queryCollection('religions');
+        const rels = await fetchReligionList();
         rels.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
         setReligions(rels);
         if (!religion && rels.length) setReligion(rels[0].id || rels[0].name);

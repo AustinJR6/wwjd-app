@@ -4,7 +4,7 @@ const API_KEY = process.env.EXPO_PUBLIC_FIREBASE_API_KEY || '';
 const PROJECT_ID = process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID || '';
 
 const ID_BASE = `https://identitytoolkit.googleapis.com/v1`;
-const FIRESTORE_BASE = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents`;
+export const FIRESTORE_BASE = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents`;
 
 export interface AuthResponse {
   idToken: string;
