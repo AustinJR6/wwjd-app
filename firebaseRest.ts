@@ -15,8 +15,22 @@ export interface AuthResponse {
 
 export async function signUpWithEmailAndPassword(email: string, password: string): Promise<AuthResponse> {
   const url = `${ID_BASE}/accounts:signUp?key=${API_KEY}`;
-  const res = await axios.post(url, { email, password, returnSecureToken: true });
-  return res.data;
+  const payload = { email, password, returnSecureToken: true };
+  console.log('➡️ signup request', { url, payload });
+  try {
+    const res = await axios.post(url, payload, {
+      headers: { 'Content-Type': 'application/json' },
+    });
+    console.log('✅ signup response', res.data);
+    return res.data;
+  } catch (err: any) {
+    if (err.response) {
+      console.error('❌ signup error response', err.response.data);
+    } else {
+      console.error('❌ signup error', err.message);
+    }
+    throw err;
+  }
 }
 
 export async function signInWithEmailAndPassword(email: string, password: string): Promise<AuthResponse> {
