@@ -146,6 +146,7 @@ export default function ConfessionalScreen() {
       try {
         response = await makeRequest(token);
       } catch (err: any) {
+        console.warn('💬 Confessional Error', err.response?.status, err.message);
         if (err.response?.status === 401) {
           console.warn('Token expired, refreshing...');
           token = await getToken(true);

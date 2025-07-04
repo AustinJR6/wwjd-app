@@ -21,11 +21,17 @@ export async function saveTempMessage(
   if (!storedUid) return;
   console.warn('🔥 Attempting Firestore access:', `confessionalSessions/${storedUid}/messages`);
   console.warn('👤 Using UID:', storedUid);
-  await addDocument(`confessionalSessions/${storedUid}/messages`, {
-    role,
-    text,
-    timestamp: new Date().toISOString(),
-  });
+  try {
+    await addDocument(`confessionalSessions/${storedUid}/messages`, {
+      role,
+      text,
+      timestamp: new Date().toISOString(),
+    });
+    console.log('✅ Confessional message sent');
+  } catch (error: any) {
+    console.warn('💬 Confessional Error', error.response?.status, error.message);
+    throw error;
+  }
 }
 
 export async function fetchTempSession(uid: string): Promise<TempMessage[]> {
@@ -33,12 +39,17 @@ export async function fetchTempSession(uid: string): Promise<TempMessage[]> {
   if (!storedUid) return [];
   console.warn('🔥 Attempting Firestore access:', `confessionalSessions/${storedUid}/messages`);
   console.warn('👤 Using UID:', storedUid);
-  return await querySubcollection(
-    `confessionalSessions/${storedUid}`,
-    'messages',
-    'timestamp',
-    'ASCENDING',
-  );
+  try {
+    return await querySubcollection(
+      `confessionalSessions/${storedUid}`,
+      'messages',
+      'timestamp',
+      'ASCENDING',
+    );
+  } catch (error: any) {
+    console.warn('💬 Confessional Error', error.response?.status, error.message);
+    return [];
+  }
 }
 
 export async function clearConfessionalSession(uid: string): Promise<void> {
@@ -46,8 +57,12 @@ export async function clearConfessionalSession(uid: string): Promise<void> {
   if (!storedUid) return;
   console.warn('🔥 Attempting Firestore access:', `confessionalSessions/${storedUid}/messages`);
   console.warn('👤 Using UID:', storedUid);
-  const docs = await querySubcollection(`confessionalSessions/${storedUid}`, 'messages');
-  for (const msg of docs) {
-    await deleteDocument(`confessionalSessions/${storedUid}/messages/${msg.id}`);
+  try {
+    const docs = await querySubcollection(`confessionalSessions/${storedUid}`, 'messages');
+    for (const msg of docs) {
+      await deleteDocument(`confessionalSessions/${storedUid}/messages/${msg.id}`);
+    }
+  } catch (error: any) {
+    console.warn('💬 Confessional Error', error.response?.status, error.message);
   }
 }

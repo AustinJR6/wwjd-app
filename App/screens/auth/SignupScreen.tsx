@@ -19,6 +19,7 @@ export default function SignupScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
   const navigation = useNavigation<NavigationProp>();
   const theme = useTheme();
 
@@ -33,6 +34,7 @@ export default function SignupScreen() {
     }
     const requestPayload = { email, password };
     console.log('➡️ signup payload', requestPayload);
+    setErrorMsg('');
     setLoading(true);
     try {
       const result = await signup(email, password);
@@ -47,11 +49,12 @@ export default function SignupScreen() {
       await loadUser(result.localId);
       await checkIfUserIsNewAndRoute();
     } catch (err: any) {
-      console.error('❌ signup failed', err?.response?.data || err);
-      const message = err?.response?.status === 400
-        ? err?.response?.data?.message || err.message
-        : err.message;
-      Alert.alert('Signup Failed', message);
+      console.warn('🚫 Signup Failed:', err?.response?.data?.error?.message);
+      const fbMessage = err?.response?.data?.error?.message;
+      const message = fbMessage || err.message;
+      const friendly = fbMessage === 'EMAIL_EXISTS' ? 'Email already in use.' : message;
+      setErrorMsg(friendly);
+      Alert.alert('Signup Failed', friendly);
     } finally {
       setLoading(false);
     }
@@ -93,6 +96,10 @@ export default function SignupScreen() {
         placeholder="••••••"
         secureTextEntry
       />
+
+      {errorMsg ? (
+        <CustomText style={{ color: theme.colors.danger }}>{errorMsg}</CustomText>
+      ) : null}
 
       <Button title="Sign Up" onPress={handleSignup} loading={loading} />
 

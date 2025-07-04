@@ -39,14 +39,20 @@ export function observeAuthState(cb: (user: any | null) => void) {
 }
 
 export async function signup(email: string, password: string) {
-  const res = await signUpWithEmailAndPassword(email, password);
-  currentToken = res.idToken;
-  currentRefresh = res.refreshToken;
-  currentUid = res.localId;
-  await setItem(TOKEN_KEY, res.idToken);
-  await setItem(REFRESH_KEY, res.refreshToken);
-  await setItem(UID_KEY, res.localId);
-  return { uid: res.localId, email: res.email };
+  try {
+    const res = await signUpWithEmailAndPassword(email, password);
+    currentToken = res.idToken;
+    currentRefresh = res.refreshToken;
+    currentUid = res.localId;
+    await setItem(TOKEN_KEY, res.idToken);
+    await setItem(REFRESH_KEY, res.refreshToken);
+    await setItem(UID_KEY, res.localId);
+    console.log('🎉 Signup successful');
+    return { uid: res.localId, email: res.email };
+  } catch (error: any) {
+    console.warn('🚫 Signup Failed:', error.response?.data?.error?.message);
+    throw error;
+  }
 }
 
 export async function login(email: string, password: string) {

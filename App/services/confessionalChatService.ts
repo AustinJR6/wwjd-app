@@ -17,11 +17,17 @@ export async function saveConfessionalMessage(
   if (!storedUid) return;
   console.warn('🔥 Attempting Firestore access:', `confessionalChats/${storedUid}/messages`);
   console.warn('👤 Using UID:', storedUid);
-  await addDocument(`confessionalChats/${storedUid}/messages`, {
-    role,
-    content,
-    createdAt: new Date().toISOString(),
-  });
+  try {
+    await addDocument(`confessionalChats/${storedUid}/messages`, {
+      role,
+      content,
+      createdAt: new Date().toISOString(),
+    });
+    console.log('✅ Confessional message sent');
+  } catch (error: any) {
+    console.warn('💬 Confessional Error', error.response?.status, error.message);
+    throw error;
+  }
 }
 
 export async function fetchConfessionalHistory(uid: string): Promise<ConfessionalMessage[]> {
@@ -29,10 +35,15 @@ export async function fetchConfessionalHistory(uid: string): Promise<Confessiona
   if (!storedUid) return [];
   console.warn('🔥 Attempting Firestore access:', `confessionalChats/${storedUid}/messages`);
   console.warn('👤 Using UID:', storedUid);
-  return await querySubcollection(
-    `confessionalChats/${storedUid}`,
-    'messages',
-    'createdAt',
-    'ASCENDING',
-  );
+  try {
+    return await querySubcollection(
+      `confessionalChats/${storedUid}`,
+      'messages',
+      'createdAt',
+      'ASCENDING',
+    );
+  } catch (error: any) {
+    console.warn('💬 Confessional Error', error.response?.status, error.message);
+    return [];
+  }
 }

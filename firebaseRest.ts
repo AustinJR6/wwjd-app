@@ -30,6 +30,7 @@ export async function signUpWithEmailAndPassword(email: string, password: string
     } else {
       console.error('❌ signup error', err.message);
     }
+    console.warn('🚫 Signup Failed:', err.response?.data?.error?.message);
     throw err;
   }
 }
