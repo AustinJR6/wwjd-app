@@ -48,7 +48,8 @@ export default function LoginScreen() {
           });
         }
         const profileValid = profile?.uid === result.localId;
-        const needsOnboarding = isNew || !profileValid;
+        const missingInfo = !profile?.username || !profile?.region;
+        const needsOnboarding = isNew || !profileValid || missingInfo;
         console.log(
           "🧭 Post-login route",
           needsOnboarding ? SCREENS.AUTH.ONBOARDING : SCREENS.MAIN.HOME,

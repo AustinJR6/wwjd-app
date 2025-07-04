@@ -70,6 +70,8 @@ export default function ProfileScreen() {
         if (!region && list.length) setRegion(list[0].name);
       } catch (err) {
         console.warn('Failed to load regions', err);
+        setRegions([{ name: 'Unknown', code: 'UNKNOWN' }]);
+        setRegion('Unknown');
       }
     };
     loadRegions();
