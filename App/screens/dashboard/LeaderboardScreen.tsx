@@ -6,7 +6,7 @@ import {
   ActivityIndicator,
   ScrollView
 } from 'react-native';
-import { getDocument, setDocument } from '@/services/firestoreService';
+import { fetchTopUsersByPoints } from '@/services/firestoreService';
 import { showGracefulError } from '@/utils/gracefulError';
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { useTheme } from "@/components/theme/theme";
@@ -75,30 +75,20 @@ export default function LeaderboardScreen() {
     setLoading(true);
     setNoData(false);
     try {
-      const uid = await ensureAuth();
-      if (!uid) {
+      const authedUid = await ensureAuth();
+      if (!authedUid) {
         setLoading(false);
         return;
       }
 
-      const data = await getDocument('leaderboards/global');
-      console.log('🏆 Loaded leaderboard doc', data);
-      if (!data) {
+      const top = await fetchTopUsersByPoints(10);
+      console.log('🏆 Leaderboard results', top);
+      if (!top || top.length === 0) {
         setNoData(true);
-        const seed = { individuals: [], religions: [], organizations: [] };
-        try {
-          await setDocument('leaderboards/global', seed);
-        } catch (err: any) {
-          console.error('🔥 Failed to seed leaderboard:', err?.response?.data || err?.message);
-        }
         setIndividuals([]);
-        setReligions([]);
-        setOrganizations([]);
       } else {
         setNoData(false);
-        setIndividuals((data.individuals || []).slice(0, 10));
-        setReligions((data.religions || []).slice(0, 10));
-        setOrganizations((data.organizations || []).slice(0, 10));
+        setIndividuals(top);
       }
     } catch (err: any) {
       console.error('🔥 Error loading leaderboards:', err?.response?.data || err?.message || err);

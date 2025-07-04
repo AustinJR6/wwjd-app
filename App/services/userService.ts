@@ -13,6 +13,7 @@ export interface FirestoreUser {
   religion: string;
   region?: string;
   organizationId?: string;
+  individualPoints?: number;
   isSubscribed: boolean;
   onboardingComplete: boolean;
   createdAt: number;
@@ -31,7 +32,7 @@ export async function ensureUserDocExists(
     return false;
   } catch (err: any) {
     if (err?.response?.status === 404) {
-      const payload: any = { uid, createdAt: Date.now() };
+      const payload: any = { uid, createdAt: Date.now(), individualPoints: 0 };
       if (email) payload.email = email;
       await setDocument(`users/${uid}`, payload);
       console.log("📄 Created user doc for", uid);
@@ -120,6 +121,7 @@ export async function createUserProfile({
     displayName,
     religion,
     region,
+    individualPoints: 0,
     isSubscribed: false,
     onboardingComplete: false,
     createdAt: now,
