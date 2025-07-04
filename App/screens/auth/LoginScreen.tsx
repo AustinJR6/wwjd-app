@@ -7,6 +7,7 @@ import TextField from "@/components/TextField";
 import Button from "@/components/common/Button";
 import { login, resetPassword } from "@/services/authService";
 import { ensureUserDocExists, fetchUserProfile } from "@/services/userService";
+import { checkIfUserIsNewAndRoute } from "@/services/onboardingService";
 import { useUserStore } from "@/state/userStore";
 import { useAuthStore } from "@/state/authStore";
 import { useNavigation } from "@react-navigation/native";
@@ -31,39 +32,24 @@ export default function LoginScreen() {
       const result = await login(email, password);
       if (result.localId) {
         setUid(result.localId);
-        const isNew = await ensureUserDocExists(result.localId, result.email);
+        await ensureUserDocExists(result.localId, result.email);
         const profile = await fetchUserProfile(result.localId);
         if (profile) {
           useUserStore.getState().setUser({
             uid: profile.uid,
             email: profile.email,
-            username: profile.username ?? "",
-            displayName: profile.displayName ?? "",
+            username: profile.username ?? '',
+            displayName: profile.displayName ?? '',
             isSubscribed: profile.isSubscribed,
             religion: profile.religion,
-            region: profile.region ?? "",
+            region: profile.region ?? '',
             organizationId: profile.organizationId,
             onboardingComplete: profile.onboardingComplete,
             tokens: 0,
           });
         }
-        const profileValid = profile?.uid === result.localId;
-        const missingInfo = !profile?.username || !profile?.region;
-        const needsOnboarding = isNew || !profileValid || missingInfo;
-        console.log(
-          "🧭 Post-login route",
-          needsOnboarding ? SCREENS.AUTH.ONBOARDING : SCREENS.MAIN.HOME,
-        );
-        navigation.reset({
-          index: 0,
-          routes: [
-            {
-              name: (needsOnboarding
-                ? SCREENS.AUTH.ONBOARDING
-                : SCREENS.MAIN.HOME) as keyof RootStackParamList,
-            },
-          ],
-        });
+
+        await checkIfUserIsNewAndRoute();
       }
     } catch (err: any) {
       showGracefulError(err.message);

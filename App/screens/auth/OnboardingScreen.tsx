@@ -6,10 +6,10 @@ import ScreenContainer from "@/components/theme/ScreenContainer";
 import Button from "@/components/common/Button";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { updateUserFields, completeOnboarding } from "@/services/userService";
 import {
-  completeOnboarding,
-  updateUserFields,
-} from "@/services/userService";
+  saveUsernameAndProceed,
+} from "@/services/onboardingService";
 import { useUserStore } from "@/state/userStore";
 import { useAuthStore } from "@/state/authStore";
 import { SCREENS } from "@/navigation/screens";
@@ -62,35 +62,28 @@ export default function OnboardingScreen() {
       return;
     }
 
-    if (!username.trim() || !region.trim()) {
-      Alert.alert("Missing Info", "Username and region are required.");
+    if (!username.trim()) {
+      Alert.alert('Missing Info', 'Username is required.');
       return;
     }
 
     setLoading(true);
     try {
       if (uid) {
+        await saveUsernameAndProceed(username.trim());
         await updateUserFields(uid, {
           religion,
-          username,
-          displayName: username,
           region,
           organizationId: organization || undefined,
-          uid,
         });
         await completeOnboarding(uid);
-        await SecureStore.setItemAsync(`hasSeenOnboarding-${uid}`, "true");
+        await SecureStore.setItemAsync(`hasSeenOnboarding-${uid}`, 'true');
         useUserStore.getState().updateUser({
           onboardingComplete: true,
-          username,
-          displayName: username,
+          username: username.trim(),
+          displayName: username.trim(),
           region,
           religion,
-        });
-
-        navigation.reset({
-          index: 0,
-          routes: [{ name: SCREENS.MAIN.HOME as keyof RootStackParamList }],
         });
       }
     } catch (err: any) {
