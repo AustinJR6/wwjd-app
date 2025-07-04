@@ -116,7 +116,7 @@ service cloud.firestore {
     }
 
     // 🛐 Public religion content
-    match /religion/{religionId} {
+    match /religions/{religionId} {
       allow read: if true;
     }
 

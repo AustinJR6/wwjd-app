@@ -1,6 +1,7 @@
 import express from 'express';
 import { auth, db } from '../admin/firebase';
 import { verifyFirebaseIdToken, AuthedRequest } from '../middleware/auth';
+import { incrementUserReligionOrgPoints } from './leaderboard';
 
 const app = express();
 app.use(express.json());
@@ -54,6 +55,24 @@ app.post('/journal', verifyFirebaseIdToken, async (req: AuthedRequest, res) => {
   } catch (err) {
     console.error('saveJournalEntry failed', err);
     res.status(500).json({ error: 'Failed to save entry' });
+  }
+});
+
+app.post('/leaderboard/:uid/points', verifyFirebaseIdToken, async (req: AuthedRequest, res) => {
+  const { uid } = req.params;
+  if (req.uid !== uid) {
+    return res.status(403).json({ error: 'Unauthorized' });
+  }
+  const { points } = req.body;
+  if (typeof points !== 'number' || points <= 0) {
+    return res.status(400).json({ error: 'Invalid points' });
+  }
+  try {
+    await incrementUserReligionOrgPoints(uid, points);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('incrementUserReligionOrgPoints failed', err);
+    res.status(500).json({ error: 'Failed to update points' });
   }
 });
 
