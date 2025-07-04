@@ -283,6 +283,11 @@ export default function ChallengeScreen() {
     }
 
     const updated = await completeChallengeWithStreakCheck();
+    const todayStr = new Date().toISOString().split('T')[0];
+    const lastStr = lastCompletedDate
+      ? lastCompletedDate.toISOString().split('T')[0]
+      : null;
+
     if (updated != null) {
       if (updated > streakCount) {
         await checkMilestoneReward(updated);
@@ -304,7 +309,14 @@ export default function ChallengeScreen() {
       console.error('🔥 Backend error:', err.response?.data || err.message);
     }
 
-    Alert.alert('Great job!', 'Challenge completed.');
+    if (updated != null && updated === streakCount && lastStr === todayStr) {
+      Alert.alert(
+        'Challenge Already Completed',
+        "You've already completed your challenge for today. Come back tomorrow to continue your streak and grow even stronger."
+      );
+    } else {
+      Alert.alert('Great job!', 'Challenge completed.');
+    }
     const shouldGenerateNew = useToken || history.completed < limit;
     fetchChallenge(shouldGenerateNew);
   };
