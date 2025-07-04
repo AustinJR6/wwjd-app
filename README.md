@@ -167,6 +167,10 @@ The export command creates `PromptLibrary.md` with prompts grouped by category.
 Run `npx ts-node seedRegions.ts` from the `functions` directory to populate the
 `regions` collection with default entries used by the app.
 
+The mobile app pulls these documents via the Firestore REST API to populate the
+region picker on the onboarding and profile screens. The selected region value
+is saved back to `users/{uid}` so that returning users can skip onboarding.
+
 ## ✅ Test Readiness Checklist
 
 - Clean EAS build completes without native errors
