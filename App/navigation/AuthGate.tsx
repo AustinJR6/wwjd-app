@@ -102,8 +102,13 @@ export default function AuthGate() {
         return;
       }
 
-      console.log('➡️ route -> Home');
-      setInitialRoute('Home');
+      if (profile.username) {
+        console.log('➡️ route -> Home');
+        setInitialRoute('Home');
+      } else {
+        console.log('➡️ route -> Onboarding');
+        setInitialRoute('Onboarding');
+      }
       setChecking(false);
     }
     verify();
