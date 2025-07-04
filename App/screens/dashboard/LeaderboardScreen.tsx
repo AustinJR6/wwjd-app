@@ -6,11 +6,9 @@ import {
   ActivityIndicator,
   ScrollView
 } from 'react-native';
-import {
-  fetchTopUsersByPoints,
-  fetchTopReligions,
-  fetchTopOrganizations,
-} from '@/services/firestoreService';
+import { fetchTopUsersByPoints } from '@/services/firestoreService';
+import { collection, getDocs, query, orderBy, limit as fsLimit } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 import { showGracefulError } from '@/utils/gracefulError';
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { useTheme } from "@/components/theme/theme";
@@ -85,11 +83,21 @@ export default function LeaderboardScreen() {
         return;
       }
 
-      const [top, rel, org] = await Promise.all([
+      const [top, relSnap, orgSnap] = await Promise.all([
         fetchTopUsersByPoints(10),
-        fetchTopReligions(10),
-        fetchTopOrganizations(10),
+        getDocs(query(collection(db, 'religions'), orderBy('totalPoints', 'desc'), fsLimit(10))),
+        getDocs(query(collection(db, 'organizations'), orderBy('totalPoints', 'desc'), fsLimit(10))),
       ]);
+
+      const rel = relSnap.docs.map((doc) => ({
+        name: doc.data().name || doc.id,
+        totalPoints: doc.data().totalPoints || 0,
+      }));
+      const org = orgSnap.docs.map((doc) => ({
+        name: doc.data().name || doc.id,
+        totalPoints: doc.data().totalPoints || 0,
+      }));
+
       console.log('🏆 Leaderboard results', { top, rel, org });
       setIndividuals(top);
       setReligions(rel);
