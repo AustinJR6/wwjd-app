@@ -19,16 +19,10 @@ import {
   createMultiDayChallenge,
   completeChallengeDay,
 } from '@/services/functionService';
-import { useUser } from '@/hooks/useUser';
 import { ensureAuth } from '@/utils/authGuard';
 import { getToken, getCurrentUserId } from '@/utils/TokenManager';
 import { useAuth } from '@/hooks/useAuth';
-import { useAuthStore } from '@/state/authStore';
-import { useChallengeStore } from '@/state/challengeStore';
 import { sendGeminiPrompt } from '@/services/geminiService';
-import { useNavigation } from '@react-navigation/native';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '@/navigation/RootStackParamList';
 import AuthGate from '@/components/AuthGate';
 
 export default function ChallengeScreen() {
@@ -62,12 +56,9 @@ export default function ChallengeScreen() {
   const [activeMulti, setActiveMulti] = useState<any | null>(null);
   const [loading, setLoading] = useState(false);
   const [canSkip, setCanSkip] = useState(true);
-  const streak = useChallengeStore((s) => s.streak);
-  const incrementStreak = useChallengeStore((s) => s.incrementStreak);
-  const syncStreak = useChallengeStore((s) => s.syncWithFirestore);
-  const { user } = useUser();
+  const [streakCount, setStreakCount] = useState(0);
+  const [lastCompletedDate, setLastCompletedDate] = useState<Date | null>(null);
   const { authReady, uid } = useAuth();
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   const checkMilestoneReward = async (current: number) => {
     const milestones = [3, 7, 14, 30];
@@ -98,6 +89,15 @@ export default function ChallengeScreen() {
     } catch (err) {
       console.error('❌ Milestone reward error:', err);
     }
+  };
+
+  const loadChallengeStreak = async () => {
+    const uid = await ensureAuth(await getCurrentUserId());
+    if (!uid) return;
+    const data = await getDocument(`users/${uid}`);
+    const streakData = data?.challengeStreak || {};
+    setStreakCount(streakData.count || 0);
+    setLastCompletedDate(streakData.lastCompletedDate ? new Date(streakData.lastCompletedDate) : null);
   };
 
   const fetchChallenge = async (forceNew = false) => {
@@ -274,11 +274,19 @@ export default function ChallengeScreen() {
       console.error('Backend validation failed:', err);
     }
 
-    let newStreak = userData.streak || 0;
-    if (userData.lastStreakDate !== today) {
-      newStreak = incrementStreak();
-      await setDocument(`users/${uid}`, { lastStreakDate: today, streak: newStreak });
-      await checkMilestoneReward(newStreak);
+    let newCount = streakCount;
+    const last = lastCompletedDate ? lastCompletedDate.toISOString().split('T')[0] : '';
+    if (last !== today) {
+      newCount += 1;
+      await setDocument(`users/${uid}`, {
+        challengeStreak: {
+          count: newCount,
+          lastCompletedDate: new Date().toISOString(),
+        },
+      });
+      setStreakCount(newCount);
+      setLastCompletedDate(new Date());
+      await checkMilestoneReward(newCount);
     }
 
     const currentTokens = await getTokenCount();
@@ -312,7 +320,7 @@ export default function ChallengeScreen() {
 
   useEffect(() => {
     if (!authReady || !uid) return;
-    syncStreak();
+    loadChallengeStreak();
     fetchChallenge();
   }, [authReady, uid]);
 
@@ -321,7 +329,7 @@ export default function ChallengeScreen() {
     <ScreenContainer>
       <ScrollView contentContainerStyle={styles.container}>
         <CustomText style={styles.title}>Daily Challenge</CustomText>
-        <CustomText style={styles.streak}>Streak: {streak} days</CustomText>
+        <CustomText style={styles.streak}>Streak: {streakCount} days</CustomText>
         {activeMulti ? (
           <>
             <CustomText style={styles.challengeText}>
