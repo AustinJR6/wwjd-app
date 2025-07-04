@@ -162,6 +162,11 @@ node lib/codexPrompts.js export ../PromptLibrary.md
 
 The export command creates `PromptLibrary.md` with prompts grouped by category.
 
+### Region Seeding
+
+Run `npx ts-node seedRegions.ts` from the `functions` directory to populate the
+`regions` collection with default entries used by the app.
+
 ## ✅ Test Readiness Checklist
 
 - Clean EAS build completes without native errors

@@ -8,7 +8,7 @@ import { Picker } from '@react-native-picker/picker';
 import { useUser } from '@/hooks/useUser';
 import { useUserStore } from '@/state/userStore';
 import { getTokenCount } from '@/utils/TokenManager';
-import { getDocument, setDocument } from '@/services/firestoreService';
+import { getDocument, setDocument, queryCollection } from '@/services/firestoreService';
 import { updateUserFields } from '@/services/userService';
 import { useTheme } from '@/components/theme/theme';
 import { ensureAuth } from '@/utils/authGuard';
@@ -30,6 +30,7 @@ export default function ProfileScreen() {
     user?.username || user?.displayName || ''
   );
   const [region, setRegion] = useState(user?.region || '');
+  const [regions, setRegions] = useState<any[]>([]);
   const [religion, setReligion] = useState(user?.religion || RELIGIONS[0]);
   const [tokens, setTokens] = useState(0);
   const [points, setPoints] = useState(0);
@@ -60,6 +61,20 @@ export default function ProfileScreen() {
     loadData();
   }, [authReady, uid]);
 
+  useEffect(() => {
+    const loadRegions = async () => {
+      try {
+        const list = await queryCollection('regions');
+        list.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+        setRegions(list);
+        if (!region && list.length) setRegion(list[0].name);
+      } catch (err) {
+        console.warn('Failed to load regions', err);
+      }
+    };
+    loadRegions();
+  }, []);
+
   const loadData = async () => {
     const uid = await ensureAuth(user?.uid);
     if (!uid) return;
@@ -87,6 +102,10 @@ export default function ProfileScreen() {
   const handleSave = async () => {
     const uid = await ensureAuth(user?.uid);
     if (!uid) return;
+    if (!region) {
+      Alert.alert('Missing Info', 'Please select a region.');
+      return;
+    }
     setSaving(true);
     try {
       await updateUserFields(uid, {
@@ -117,7 +136,18 @@ export default function ProfileScreen() {
     <ScreenContainer>
       <View style={styles.container}>
         <TextField label="Username" value={username} onChangeText={setUsername} />
-        <TextField label="Region" value={region} onChangeText={setRegion} />
+        <CustomText style={styles.label}>Region</CustomText>
+        <View style={styles.pickerWrapper}>
+          <Picker
+            selectedValue={region}
+            onValueChange={(v) => setRegion(v)}
+            style={styles.picker}
+          >
+            {regions.map((r) => (
+              <Picker.Item key={r.id || r.code} label={r.name} value={r.name} />
+            ))}
+          </Picker>
+        </View>
 
         <CustomText style={styles.label}>Religion</CustomText>
         <View style={styles.pickerWrapper}>

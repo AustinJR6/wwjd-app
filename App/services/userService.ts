@@ -158,6 +158,9 @@ export async function updateUserFields(
       if (k === 'username' && typeof v === 'string' && v.trim() === '') {
         return false;
       }
+      if (k === 'region' && typeof v === 'string' && v.trim() === '') {
+        return false;
+      }
       return true;
     }),
   );
