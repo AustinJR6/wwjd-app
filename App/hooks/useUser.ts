@@ -3,6 +3,7 @@ import { useUserStore } from "@/state/userStore";
 export interface User {
   uid: string;
   email: string;
+  username: string;
   displayName: string;
   religion: string;
   region: string;

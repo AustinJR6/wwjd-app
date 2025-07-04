@@ -26,7 +26,9 @@ export default function ProfileScreen() {
   const theme = useTheme();
   const { authReady, uid } = useAuth();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const [username, setUsername] = useState(user?.displayName || '');
+  const [username, setUsername] = useState(
+    user?.username || user?.displayName || ''
+  );
   const [region, setRegion] = useState(user?.region || '');
   const [religion, setReligion] = useState(user?.religion || RELIGIONS[0]);
   const [tokens, setTokens] = useState(0);
@@ -69,6 +71,9 @@ export default function ProfileScreen() {
       setTokens(tokenCount);
       if (profile) {
         setPoints(profile.individualPoints || 0);
+        setUsername(profile.username || profile.displayName || '');
+        setRegion(profile.region || '');
+        setReligion(profile.religion || RELIGIONS[0]);
         if (profile.organizationId) {
           const org = await getDocument(`organizations/${profile.organizationId}`);
           setOrganization(org?.name || '');
@@ -84,8 +89,18 @@ export default function ProfileScreen() {
     if (!uid) return;
     setSaving(true);
     try {
-      await updateUserFields(uid, { displayName: username, region, religion });
-      updateUser({ displayName: username, region, religion });
+      await updateUserFields(uid, {
+        displayName: username,
+        username,
+        region,
+        religion,
+      });
+      updateUser({
+        displayName: username,
+        ...(username.trim() ? { username } : {}),
+        region,
+        religion,
+      });
       if (religion !== user?.religion) {
         await setDocument(`users/${uid}`, { lastChallenge: null });
       }

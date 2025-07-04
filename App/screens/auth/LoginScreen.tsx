@@ -37,6 +37,7 @@ export default function LoginScreen() {
           useUserStore.getState().setUser({
             uid: profile.uid,
             email: profile.email,
+            username: profile.username ?? "",
             displayName: profile.displayName ?? "",
             isSubscribed: profile.isSubscribed,
             religion: profile.religion,

@@ -30,7 +30,9 @@ export default function OnboardingScreen() {
   const navigation = useNavigation<OnboardingScreenProps["navigation"]>();
   const theme = useTheme();
   const [religion, setReligion] = useState(user?.religion ?? "Christian");
-  const [username, setUsername] = useState(user?.displayName ?? "");
+  const [username, setUsername] = useState(
+    user?.username ?? user?.displayName ?? ""
+  );
   const [region, setRegion] = useState("");
   const [organization, setOrganization] = useState("");
   const [loading, setLoading] = useState(false);
@@ -52,6 +54,7 @@ export default function OnboardingScreen() {
       if (uid) {
         await updateUserFields(uid, {
           religion,
+          username,
           displayName: username,
           region,
           organizationId: organization || undefined,
@@ -59,7 +62,13 @@ export default function OnboardingScreen() {
         });
         await completeOnboarding(uid);
         await SecureStore.setItemAsync(`hasSeenOnboarding-${uid}`, "true");
-        useUserStore.getState().updateUser({ onboardingComplete: true });
+        useUserStore.getState().updateUser({
+          onboardingComplete: true,
+          username,
+          displayName: username,
+          region,
+          religion,
+        });
 
         navigation.reset({
           index: 0,
