@@ -128,7 +128,13 @@ export default function ConfessionalScreen() {
         text: m.content,
       }));
 
-      const response = await axios.post(`${process.env.EXPO_PUBLIC_API_URL}/confessionalAI`, { history: historyMsgs });
+      const response = await axios.post(
+        `${process.env.EXPO_PUBLIC_API_URL}/confessionalAI`,
+        {
+          history: historyMsgs,
+          uid,
+        },
+      );
       const answer = response.data?.reply || "I’m here with you.";
 
       console.log('✝️ Confessional input:', text);
