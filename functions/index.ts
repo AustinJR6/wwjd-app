@@ -1012,6 +1012,77 @@ export const startCheckoutSession = functions
   }
 }));
 
+export const createStripeCheckout = functions
+  .region("us-central1")
+  .https.onRequest(withCors(async (req: Request, res: Response) => {
+  logger.info("🛒 createStripeCheckout payload", req.body);
+  const { uid, email, priceId, type, quantity, returnUrl } = req.body || {};
+
+  const missing: string[] = [];
+  if (!uid) missing.push("uid");
+  if (!email) missing.push("email");
+  if (!type) missing.push("type");
+  if (type === "subscription" && !priceId) missing.push("priceId");
+  if (type === "tokens" && !priceId && !quantity) missing.push("priceId or quantity");
+  if (missing.length) {
+    logger.warn("⚠️ Missing fields", { missing, body: req.body });
+    res.status(400).json({ error: `Missing required field: ${missing.join(', ')}` });
+    return;
+  }
+
+  let authData: { uid: string; token: string };
+  try {
+    authData = await verifyAuth(req);
+  } catch (err) {
+    logTokenVerificationError("createStripeCheckout", undefined, err);
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  let finalPriceId: string | undefined = priceId;
+  if (type === "tokens" && !priceId) {
+    if (quantity === 20) finalPriceId = STRIPE_20_TOKEN_PRICE_ID;
+    else if (quantity === 50) finalPriceId = STRIPE_50_TOKEN_PRICE_ID;
+    else if (quantity === 100) finalPriceId = STRIPE_100_TOKEN_PRICE_ID;
+  }
+
+  if (!finalPriceId) {
+    logger.warn("⚠️ Unable to resolve priceId", { type, quantity, priceId });
+    res.status(400).json({ error: "Missing required field: priceId" });
+    return;
+  }
+
+  if (!STRIPE_SECRET_KEY) {
+    logger.error("❌ Stripe secret key missing");
+    res.status(500).json({ error: "Stripe secret not configured" });
+    return;
+  }
+
+  try {
+    if (authData.uid !== uid) {
+      logger.warn("⚠️ UID mismatch between token and payload");
+    }
+    const metadata: Record<string, string> = { uid, type };
+    if (quantity) {
+      metadata.quantity = String(quantity);
+    }
+    const session = await stripe.checkout.sessions.create({
+      mode: type === "subscription" ? "subscription" : "payment",
+      line_items: [{ price: finalPriceId!, quantity: 1 }],
+      success_url: returnUrl || STRIPE_SUCCESS_URL,
+      cancel_url: STRIPE_CANCEL_URL,
+      client_reference_id: uid,
+      customer_email: email,
+      metadata,
+    });
+    logger.info(`✅ Stripe session created ${session.id}`);
+    res.status(200).json({ url: session.url });
+  } catch (err) {
+    logTokenVerificationError('createStripeCheckout', authData.token, err);
+    res.status(500).json({ error: (err as any)?.message || 'Failed to start checkout' });
+  }
+}));
+
 export const handleStripeWebhookV2 = functions
   .region("us-central1")
   .https.onRequest(async (req: RawBodyRequest, res: Response) => {
