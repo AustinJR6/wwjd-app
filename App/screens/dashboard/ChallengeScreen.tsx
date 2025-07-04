@@ -168,58 +168,36 @@ export default function ChallengeScreen() {
     }
   };
 
-  const handleSkip = async () => {
+  const handleSkipChallenge = async () => {
     const uid = await ensureAuth(await getCurrentUserId());
 
-    const userData = await getDocument(`users/${uid}`) || {};
-    const today = new Date().toISOString().slice(0, 10);
+    const userData = (await getDocument(`users/${uid}`)) || {};
+    const today = new Date().toISOString().split('T')[0];
     let history = userData.dailyChallengeHistory || { date: today, completed: 0, skipped: 0 };
     if (history.date !== today) history = { date: today, completed: 0, skipped: 0 };
 
-    const now = new Date();
-    let weekStart = userData.skipWeekStart ? new Date(userData.skipWeekStart) : now;
-    let skipCount = userData.skipCountThisWeek || 0;
-    if (!userData.skipWeekStart || now.getTime() - weekStart.getTime() > 7 * 24 * 60 * 60 * 1000) {
-      skipCount = 0;
-      weekStart = now;
+    let { tokens = 0, dailySkipCount = 0, lastSkipDate } = userData;
+    const lastDate = lastSkipDate ? new Date(lastSkipDate).toISOString().split('T')[0] : '';
+
+    if (lastDate !== today) {
+      dailySkipCount = 0;
     }
 
-    const cost = skipCount === 0 ? 0 : Math.pow(2, skipCount);
-    let tokens = await getTokenCount();
-    if (cost > 0 && tokens < cost) {
-      Alert.alert('Out of Tokens', `You need ${cost} tokens to skip.`);
+    const skipCost = Math.pow(2, dailySkipCount);
+
+    if (tokens < skipCost) {
+      Alert.alert('Not enough tokens', `You need ${skipCost} tokens to skip this challenge.`);
       return;
     }
 
-    let confirmed = true;
-    if (cost > 0) {
-      confirmed = await new Promise((resolve) => {
-        Alert.alert(
-          `Use ${cost} Tokens to Skip?`,
-          'Are you sure you want to skip the current challenge?',
-          [
-            { text: 'Cancel', onPress: () => resolve(false), style: 'cancel' },
-            { text: 'Yes', onPress: () => resolve(true) },
-          ]
-        );
-      });
-    }
-
-    if (!confirmed) return;
-
     try {
-      if (cost > 0) {
-        await setTokenCount(tokens - cost);
-        tokens -= cost;
-      }
-      setCanSkip(true);
-      history.skipped += 1;
-      skipCount += 1;
       await setDocument(`users/${uid}`, {
-        dailyChallengeHistory: history,
-        skipCountThisWeek: skipCount,
-        skipWeekStart: weekStart.toISOString(),
+        tokens: tokens - skipCost,
+        dailySkipCount: dailySkipCount + 1,
+        lastSkipDate: new Date().toISOString(),
+        dailyChallengeHistory: { ...history, skipped: history.skipped + 1 },
       });
+      setCanSkip(true);
       fetchChallenge(true);
     } catch (error: any) {
       console.error('🔥 API Error:', error?.response?.data || error.message);
@@ -360,7 +338,7 @@ export default function ChallengeScreen() {
         )}
         <View style={styles.buttonWrap}>
           {!activeMulti && canSkip && (
-            <Button title="Skip Challenge" onPress={handleSkip} />
+            <Button title="Skip Challenge" onPress={handleSkipChallenge} />
           )}
           {activeMulti ? (
             <Button title="Complete Day" onPress={handleComplete} />
