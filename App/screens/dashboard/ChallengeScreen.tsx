@@ -13,6 +13,7 @@ import { getTokenCount, setTokenCount } from "@/utils/TokenManager";
 import { showGracefulError } from '@/utils/gracefulError';
 import { ASK_GEMINI_SIMPLE, GENERATE_CHALLENGE_URL } from "@/utils/constants";
 import { getDocument, setDocument } from '@/services/firestoreService';
+import { completeChallengeWithStreakCheck } from '@/services/challengeStreakService';
 import {
   callFunction,
   incrementReligionPoints,
@@ -274,19 +275,13 @@ export default function ChallengeScreen() {
       console.error('Backend validation failed:', err);
     }
 
-    let newCount = streakCount;
-    const last = lastCompletedDate ? lastCompletedDate.toISOString().split('T')[0] : '';
-    if (last !== today) {
-      newCount += 1;
-      await setDocument(`users/${uid}`, {
-        challengeStreak: {
-          count: newCount,
-          lastCompletedDate: new Date().toISOString(),
-        },
-      });
-      setStreakCount(newCount);
+    const updated = await completeChallengeWithStreakCheck();
+    if (updated != null) {
+      if (updated > streakCount) {
+        await checkMilestoneReward(updated);
+      }
+      setStreakCount(updated);
       setLastCompletedDate(new Date());
-      await checkMilestoneReward(newCount);
     }
 
     const currentTokens = await getTokenCount();
