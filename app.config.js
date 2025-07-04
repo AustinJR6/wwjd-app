@@ -3,9 +3,11 @@ export default ({ config }) => ({
   name: "OneVine",
   slug: "onevine-app",
   version: "1.0.0",
-  icon: "./app/assets/icon.png",
+  // Use the shared logo for both platforms
+  icon: "./assets/icon.png",
   runtimeVersion: "1.0.0",
-  assetBundlePatterns: ["**/*"],
+  // Include bundled assets (e.g. icon)
+  assetBundlePatterns: ["assets/*"],
   android: {
     package: "com.whippybuckle.onevineapp"
   },
