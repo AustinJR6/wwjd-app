@@ -171,6 +171,35 @@ export async function queryCollection(collectionPath: string): Promise<any[]> {
   }
 }
 
+export async function runStructuredQuery(query: any): Promise<any[]> {
+  const url = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents:runQuery`;
+  try {
+    console.log('➡️ Firestore RUNQUERY', JSON.stringify(query));
+    const res = await axios.post(url, { structuredQuery: query }, { headers: await authHeaders() });
+    const docs = Array.isArray(res.data) ? res.data : [];
+    return docs
+      .filter((d: any) => d.document)
+      .map((d: any) => ({ id: d.document.name.split('/').pop(), ...fromFirestore(d.document) }));
+  } catch (err: any) {
+    console.warn('❌ Firestore runQuery error:', err.response?.data || err.message);
+    if (err.response?.status === 403) {
+      await logPermissionDetails('runQuery');
+      showPermissionDeniedForPath('runQuery');
+      return [];
+    }
+    return [];
+  }
+}
+
+export async function fetchTopUsersByPoints(limit = 10): Promise<any[]> {
+  const query = {
+    from: [{ collectionId: 'users' }],
+    orderBy: [{ field: { fieldPath: 'individualPoints' }, direction: 'DESCENDING' }],
+    limit,
+  };
+  return runStructuredQuery(query);
+}
+
 export async function querySubcollection(parentPath: string, collectionName: string): Promise<any[]> {
   console.log('➡️ Firestore SUBQUERY', `${parentPath}/${collectionName}`);
   return queryCollection(`${parentPath}/${collectionName}`);
