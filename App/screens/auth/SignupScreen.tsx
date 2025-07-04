@@ -22,6 +22,16 @@ export default function SignupScreen() {
   const theme = useTheme();
 
   const handleSignup = async () => {
+    if (!email || !/^\S+@\S+\.\S+$/.test(email)) {
+      Alert.alert('Invalid Email', 'Please enter a valid email address.');
+      return;
+    }
+    if (!password || password.length < 6) {
+      Alert.alert('Invalid Password', 'Password must be at least 6 characters long.');
+      return;
+    }
+    const requestPayload = { email, password };
+    console.log('➡️ signup payload', requestPayload);
     setLoading(true);
     try {
       const result = await signup(email, password);
@@ -36,7 +46,11 @@ export default function SignupScreen() {
       await loadUser(result.localId);
       navigation.replace('Onboarding');
     } catch (err: any) {
-      Alert.alert('Signup Failed', err.message);
+      console.error('❌ signup failed', err?.response?.data || err);
+      const message = err?.response?.status === 400
+        ? err?.response?.data?.message || err.message
+        : err.message;
+      Alert.alert('Signup Failed', message);
     } finally {
       setLoading(false);
     }
