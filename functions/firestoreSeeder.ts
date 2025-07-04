@@ -1,4 +1,5 @@
 import * as admin from 'firebase-admin';
+import { seedRegions } from './seedRegions';
 
 if (!admin.apps.length) {
   admin.initializeApp();
@@ -28,7 +29,7 @@ export async function seedSubscriptionsForUsers() {
 }
 
 if (require.main === module) {
-  seedSubscriptionsForUsers()
+  Promise.all([seedSubscriptionsForUsers(), seedRegions()])
     .then(() => {
       console.log('Firestore seeding complete');
       process.exit(0);

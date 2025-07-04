@@ -1129,6 +1129,11 @@ export const seedFirestore = functions
       ensureDocument('completedChallenges/dummy', { placeholder: true }),
       ensureDocument('religion/dummy', { name: 'Dummy Religion' }),
       ensureDocument('organizations/dummy', { name: 'Dummy Org' }),
+      ensureDocument('regions/SW', { name: 'Southwest', code: 'SW', sortOrder: 1 }),
+      ensureDocument('regions/NE', { name: 'Northeast', code: 'NE', sortOrder: 2 }),
+      ensureDocument('regions/MW', { name: 'Midwest', code: 'MW', sortOrder: 3 }),
+      ensureDocument('regions/SE', { name: 'Southeast', code: 'SE', sortOrder: 4 }),
+      ensureDocument('regions/NW', { name: 'Northwest', code: 'NW', sortOrder: 5 }),
       ensureDocument('leaderboards/global', {
         individuals: [],
         religions: [],

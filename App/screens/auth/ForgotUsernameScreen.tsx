@@ -1,12 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import CustomText from '@/components/CustomText';
 import { View, StyleSheet, Alert } from 'react-native';
 import ScreenContainer from '@/components/theme/ScreenContainer';
 import TextField from '@/components/TextField';
 import Button from '@/components/common/Button';
-import { getDocument } from '@/services/firestoreService';
+import { getDocument, queryCollection } from '@/services/firestoreService';
 import { ensureAuth } from '@/utils/authGuard';
 import { useTheme } from '@/components/theme/theme';
+import { Picker } from '@react-native-picker/picker';
 
 export default function ForgotUsernameScreen() {
   const theme = useTheme();
@@ -44,8 +45,23 @@ export default function ForgotUsernameScreen() {
   );
   const [name, setName] = useState('');
   const [region, setRegion] = useState('');
+  const [regions, setRegions] = useState<any[]>([]);
   const [email, setEmail] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const list = await queryCollection('regions');
+        list.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+        setRegions(list);
+        if (!region && list.length) setRegion(list[0].name);
+      } catch (err) {
+        console.warn('Failed to load regions', err);
+      }
+    };
+    load();
+  }, []);
 
   const handleLookup = async () => {
     if (!name || !region) {
@@ -77,7 +93,18 @@ export default function ForgotUsernameScreen() {
     <ScreenContainer>
       <CustomText style={styles.title}>Find Your Email</CustomText>
       <TextField label="Name" value={name} onChangeText={setName} placeholder="Your name" />
-      <TextField label="Region" value={region} onChangeText={setRegion} placeholder="Region" />
+      <CustomText style={styles.label}>Region</CustomText>
+      <View style={styles.input}>
+        <Picker
+          selectedValue={region}
+          onValueChange={(v) => setRegion(v)}
+          style={{ color: theme.colors.text }}
+        >
+          {regions.map((r) => (
+            <Picker.Item key={r.id || r.code} label={r.name} value={r.name} />
+          ))}
+        </Picker>
+      </View>
       <Button title="Lookup" onPress={handleLookup} loading={loading} />
       {email && <CustomText style={styles.result}>Email: {email}</CustomText>}
     </ScreenContainer>

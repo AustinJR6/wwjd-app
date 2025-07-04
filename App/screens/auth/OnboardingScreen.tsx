@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import CustomText from "@/components/CustomText";
 import { View, StyleSheet, Alert, TextInput } from "react-native";
 import * as SecureStore from "expo-secure-store";
@@ -16,6 +16,7 @@ import { SCREENS } from "@/navigation/screens";
 import { useTheme } from "@/components/theme/theme";
 import { Picker } from "@react-native-picker/picker";
 import type { RootStackParamList } from "@/navigation/RootStackParamList";
+import { queryCollection } from "@/services/firestoreService";
 
 type OnboardingScreenProps = NativeStackScreenProps<
   RootStackParamList,
@@ -34,8 +35,23 @@ export default function OnboardingScreen() {
     user?.username ?? user?.displayName ?? ""
   );
   const [region, setRegion] = useState("");
+  const [regions, setRegions] = useState<any[]>([]);
   const [organization, setOrganization] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const list = await queryCollection('regions');
+        list.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+        setRegions(list);
+        if (!region && list.length) setRegion(list[0].name);
+      } catch (err) {
+        console.warn('Failed to load regions', err);
+      }
+    };
+    load();
+  }, []);
 
   const handleContinue = async () => {
     const uid = user?.uid || uidFromAuth;
@@ -143,12 +159,18 @@ export default function OnboardingScreen() {
         onChangeText={setUsername}
       />
 
-      <TextInput
-        style={styles.input}
-        placeholder="Region"
-        value={region}
-        onChangeText={setRegion}
-      />
+      <CustomText style={styles.subtitle}>Select your region:</CustomText>
+      <View style={styles.pickerWrapper}>
+        <Picker
+          selectedValue={region}
+          onValueChange={(val) => setRegion(val)}
+          style={styles.picker}
+        >
+          {regions.map((r) => (
+            <Picker.Item key={r.id || r.code} label={r.name} value={r.name} />
+          ))}
+        </Picker>
+      </View>
 
       <CustomText style={styles.subtitle}>
         Choose your spiritual lens:
