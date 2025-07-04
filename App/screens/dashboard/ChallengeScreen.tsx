@@ -82,6 +82,7 @@ export default function ChallengeScreen() {
         url: ASK_GEMINI_SIMPLE,
         prompt: `Provide a short blessing for a user who reached a ${current}-day spiritual challenge streak in the ${userData.religion || 'Christian'} tradition.`,
         history: [],
+        religion: userData.religion,
       });
       if (blessing) {
         Alert.alert('Blessing!', `${blessing}\nYou earned ${reward} Grace Tokens.`);
@@ -155,6 +156,7 @@ export default function ChallengeScreen() {
         prompt,
         history: [],
         token: debugToken || undefined,
+        religion,
       });
       if (!newChallenge) {
         showGracefulError('AI failed to provide a challenge.');
@@ -217,7 +219,7 @@ export default function ChallengeScreen() {
     const uid = await ensureAuth(await getCurrentUserId());
 
     try {
-      await createMultiDayChallenge('Provide a 3-day gratitude challenge.', 3);
+      await createMultiDayChallenge('Provide a 3-day gratitude challenge.', 3, religion);
       fetchChallenge(true);
     } catch (err) {
       console.error('Failed to start multi-day challenge:', err);

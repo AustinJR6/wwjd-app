@@ -68,6 +68,26 @@ function createGeminiModel() {
   }
 }
 
+async function fetchReligionContext(religionId?: string) {
+  const fallback = { name: "Spiritual Guide", aiVoice: "Reflective Mentor" };
+  if (!religionId) return fallback;
+  try {
+    let doc = await db.collection("religion").doc(religionId).get();
+    if (!doc.exists) {
+      doc = await db.collection("religions").doc(religionId).get();
+    }
+    if (!doc.exists) return fallback;
+    const data = doc.data() || {};
+    return {
+      name: data.name || fallback.name,
+      aiVoice: data.aiVoice || fallback.aiVoice,
+    };
+  } catch (err) {
+    logger.warn("Failed to fetch religion context", err);
+    return fallback;
+  }
+}
+
 async function addTokens(uid: string, amount: number): Promise<void> {
   const userRef = db.collection("users").doc(uid);
   await db.runTransaction(async (t) => {
@@ -265,7 +285,7 @@ export const createMultiDayChallenge = functions
     return;
   }
 
-  const { prompt = "", days = 1, basePoints = 10 } = req.body || {};
+  const { prompt = "", days = 1, basePoints = 10, religion: religionId } = req.body || {};
   if (typeof days !== "number" || days < 1 || days > 7) {
     res.status(400).json({ error: "days must be between 1 and 7" });
     return;
@@ -277,15 +297,17 @@ export const createMultiDayChallenge = functions
     const userRef = db.collection("users").doc(uid);
     const challengeRef = db.doc(`users/${uid}/activeChallenge/current`);
 
+    const { name, aiVoice } = await fetchReligionContext(religionId);
     const basePrompt =
       prompt.trim() ||
       `Generate a ${days}-day spiritual challenge. Give concise instructions for each day.`;
+    const fullPrompt = `As a ${aiVoice} within the ${name} tradition, ${basePrompt}`;
 
     let text = "";
     try {
       const model = createGeminiModel();
       const chat = await model.startChat({ history: [] });
-      const result = await chat.sendMessage(basePrompt);
+      const result = await chat.sendMessage(fullPrompt);
       text = result?.response?.text?.() || "";
     } catch (err) {
       logger.error("Gemini createMultiDayChallenge failed", err);
@@ -429,7 +451,7 @@ export const askGeminiSimple = functions
     return;
   }
 
-  const { prompt = "", history = [] } = req.body || {};
+  const { prompt = "", history = [], religion: religionId } = req.body || {};
 
   try {
     const decoded = await auth.verifyIdToken(idToken);
@@ -445,7 +467,9 @@ export const askGeminiSimple = functions
           parts: [{ text: msg.text }],
         })),
       });
-      const result = await chat.sendMessage(prompt);
+      const { name, aiVoice } = await fetchReligionContext(religionId);
+      const fullPrompt = `As a ${aiVoice} within the ${name} tradition, respond to the following:\n"${prompt}"`;
+      const result = await chat.sendMessage(fullPrompt);
       text = result?.response?.text?.() ?? "No response text returned.";
     } catch (gemErr) {
       console.error("Gemini request failed", gemErr);
@@ -466,6 +490,36 @@ export const askGeminiSimple = functions
   }
 });
 
+export const confessionalAI = functions
+  .region("us-central1")
+  .https.onRequest(async (req: Request, res: Response) => {
+  const idToken = req.headers.authorization?.split("Bearer ")[1];
+  if (!idToken) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  const { history = [], religion: religionId } = req.body || {};
+
+  try {
+    await auth.verifyIdToken(idToken);
+    const { name, aiVoice } = await fetchReligionContext(religionId);
+    const promptText = history
+      .map((m: any) => `${m.role}: ${m.text}`)
+      .join("\n");
+    const system = `As a ${aiVoice} within the ${name} tradition, offer a brief compassionate response to the confession below.`;
+    const model = createGeminiModel();
+    const chat = await model.startChat({ history: [] });
+    const result = await chat.sendMessage(`${system}\n${promptText}`);
+    const reply = result?.response?.text?.() || "";
+    res.status(200).json({ reply });
+  } catch (err: any) {
+    logTokenVerificationError('confessionalAI', idToken, err);
+    const code = err.code === "auth/argument-error" ? 401 : 500;
+    res.status(code).json({ error: err.message || "Failed" });
+  }
+});
+
 export const askGeminiV2 = functions
   .region("us-central1")
   .https.onRequest(async (req: Request, res: Response) => {
@@ -478,7 +532,7 @@ export const askGeminiV2 = functions
     return;
   }
 
-  const { prompt = "", history = [] } = req.body || {};
+  const { prompt = "", history = [], religion: religionId } = req.body || {};
   logger.info(`📩 askGeminiV2 prompt length: ${prompt.length}`);
   logger.info(`📜 askGeminiV2 history length: ${(history as any[]).length}`);
 
@@ -497,7 +551,9 @@ export const askGeminiV2 = functions
           parts: [{ text: msg.text }],
         })),
       });
-      const result = await chat.sendMessage(prompt);
+      const { name, aiVoice } = await fetchReligionContext(religionId);
+      const fullPrompt = `As a ${aiVoice} within the ${name} tradition, respond to the following:\n"${prompt}"`;
+      const result = await chat.sendMessage(fullPrompt);
       text = result?.response?.text?.() ?? "No response text returned.";
       logger.info("💬 Gemini response:", text);
     } catch (gemErr) {
@@ -536,7 +592,7 @@ export const generateChallenge = functions
     return;
   }
 
-  const { prompt = "", history = [], seed = Date.now() } = req.body || {};
+  const { prompt = "", history = [], seed = Date.now(), religion: religionId } = req.body || {};
 
   try {
     const decoded = await auth.verifyIdToken(idToken);
@@ -556,9 +612,12 @@ export const generateChallenge = functions
 
     const randomizer = `Seed:${seed}`;
 
-    const basePrompt = prompt.trim() ||
-      "Generate a new, unique, and creative spiritual challenge inspired by Christian teachings.";
-    const fullPrompt = `${basePrompt}\n\nDo NOT repeat or closely resemble any of the following recent challenges:\n${avoid}\n\nRespond ONLY with the new challenge text.`;
+    const { name, aiVoice } = await fetchReligionContext(religionId);
+    const basePrompt =
+      prompt.trim() ||
+      `Generate a new, unique, and creative spiritual challenge.`;
+    const fullPrompt =
+      `As a ${aiVoice} within the ${name} tradition, ${basePrompt}\n\nDo NOT repeat or closely resemble any of the following recent challenges:\n${avoid}\n\nRespond ONLY with the new challenge text.`;
 
     let text = "";
     try {
@@ -611,7 +670,7 @@ export const generateDailyChallenge = functions
     return;
   }
 
-  const { prompt = "" } = req.body || {};
+  const { prompt = "", religion: religionId } = req.body || {};
 
   try {
     const decoded = await auth.verifyIdToken(idToken);
@@ -630,10 +689,11 @@ export const generateDailyChallenge = functions
       .map((c, i) => `#${i + 1}: ${c}`)
       .join("\n");
 
+    const { name, aiVoice } = await fetchReligionContext(religionId);
     const basePrompt =
       prompt.trim() ||
       "Generate a spiritually meaningful daily challenge that is unique, short, actionable, and not similar to these:";
-    const fullPrompt = `${basePrompt}\n${avoidList}\nReturn only the challenge.`;
+    const fullPrompt = `As a ${aiVoice} within the ${name} tradition, ${basePrompt}\n${avoidList}\nReturn only the challenge.`;
 
     logger.info("📝 Gemini prompt:", fullPrompt);
 
@@ -757,6 +817,7 @@ export const skipDailyChallenge = functions
 
     // generate new challenge after deduction
     const prompt = req.body?.prompt || "";
+    const religionId = req.body?.religion;
 
     const historyRef = userRef.collection("challengeHistory");
     const histSnap = await historyRef
@@ -769,10 +830,11 @@ export const skipDailyChallenge = functions
       .map((c, i) => `#${i + 1}: ${c}`)
       .join("\n");
 
+    const { name, aiVoice } = await fetchReligionContext(religionId);
     const basePrompt =
       prompt.trim() ||
       "Generate a spiritually meaningful daily challenge that is unique, short, actionable, and not similar to these:";
-    const fullPrompt = `${basePrompt}\n${avoidList}\nReturn only the challenge.`;
+    const fullPrompt = `As a ${aiVoice} within the ${name} tradition, ${basePrompt}\n${avoidList}\nReturn only the challenge.`;
 
     let text = "";
     try {

@@ -93,6 +93,7 @@ export default function TriviaScreen() {
         url: ASK_GEMINI_SIMPLE,
         prompt: `Give me a short moral story originally from any major world religion. Replace all real names and locations with fictional ones so that it seems to come from a different culture. Keep the meaning and lesson intact. After the story, add two lines: RELIGION: <religion> and STORY: <story name>.`,
         history: [],
+        religion: user?.religion,
       });
       if (!data) {
         Alert.alert('Error', 'Could not load trivia. Please try again later.');

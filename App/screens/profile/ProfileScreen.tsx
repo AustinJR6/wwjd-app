@@ -18,7 +18,7 @@ import { RootStackParamList } from '@/navigation/RootStackParamList';
 import AuthGate from '@/components/AuthGate';
 import { useAuth } from '@/hooks/useAuth';
 
-const RELIGIONS = ['Christianity', 'Islam', 'Judaism', 'Buddhism', 'Hinduism'];
+const FALLBACK_RELIGION = { id: 'spiritual', name: 'Spiritual Guide' };
 
 export default function ProfileScreen() {
   const { user } = useUser();
@@ -31,7 +31,8 @@ export default function ProfileScreen() {
   );
   const [region, setRegion] = useState(user?.region || '');
   const [regions, setRegions] = useState<any[]>([]);
-  const [religion, setReligion] = useState(user?.religion || RELIGIONS[0]);
+  const [religions, setReligions] = useState<any[]>([]);
+  const [religion, setReligion] = useState(user?.religion || '');
   const [tokens, setTokens] = useState(0);
   const [points, setPoints] = useState(0);
   const [organization, setOrganization] = useState<string>('');
@@ -73,6 +74,16 @@ export default function ProfileScreen() {
         setRegions([{ name: 'Unknown', code: 'UNKNOWN' }]);
         setRegion('Unknown');
       }
+      try {
+        const rels = await queryCollection('religions');
+        rels.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+        setReligions(rels);
+        if (!religion && rels.length) setReligion(rels[0].id || rels[0].name);
+      } catch (err) {
+        console.warn('Failed to load religions', err);
+        setReligions([FALLBACK_RELIGION]);
+        if (!religion) setReligion(FALLBACK_RELIGION.id);
+      }
     };
     loadRegions();
   }, []);
@@ -90,7 +101,7 @@ export default function ProfileScreen() {
         setPoints(profile.individualPoints || 0);
         setUsername(profile.username || profile.displayName || '');
         setRegion(profile.region || '');
-        setReligion(profile.religion || RELIGIONS[0]);
+        setReligion(profile.religion || '');
         if (profile.organizationName) {
           setOrganization(profile.organizationName);
         } else if (profile.organizationId) {
@@ -160,8 +171,8 @@ export default function ProfileScreen() {
             onValueChange={(v) => setReligion(v)}
             style={styles.picker}
           >
-            {RELIGIONS.map((r) => (
-              <Picker.Item key={r} label={r} value={r} />
+            {religions.map((r) => (
+              <Picker.Item key={r.id || r.name} label={r.name} value={r.id || r.name} />
             ))}
           </Picker>
         </View>
