@@ -69,9 +69,10 @@ export default function BuyTokensScreen({ navigation }: Props) {
           : amount === 15
           ? PRICE_IDS.TOKENS_50
           : PRICE_IDS.TOKENS_100;
-      const url = await createStripeCheckout(user.uid, {
-        type: 'one-time',
+      const url = await createStripeCheckout(user.uid, user.email, {
+        type: 'tokens',
         priceId,
+        quantity: amount,
       });
       if (url) {
         await WebBrowser.openBrowserAsync(url);

@@ -13,7 +13,13 @@ type StripeCheckoutResponse = {
 
 export async function createStripeCheckout(
   uid: string,
-  options: { type: 'subscription' | 'one-time'; priceId: string }
+  email: string,
+  options: {
+    type: 'subscription' | 'tokens';
+    priceId: string;
+    quantity?: number;
+    returnUrl?: string;
+  }
 ): Promise<string> {
   let headers;
   try {
@@ -24,18 +30,17 @@ export async function createStripeCheckout(
   }
   try {
     const payload = {
-      userId: uid,
+      uid,
+      email,
       priceId: options.priceId,
-      mode: options.type === 'subscription' ? 'subscription' : 'payment',
-      success_url: STRIPE_SUCCESS_URL,
-      cancel_url: STRIPE_CANCEL_URL,
+      type: options.type,
+      quantity: options.quantity,
+      returnUrl: options.returnUrl ?? STRIPE_SUCCESS_URL,
     };
     const res = await sendRequestWithGusBugLogging(() =>
-      axios.post<StripeCheckoutResponse>(
-        STRIPE_CHECKOUT_URL,
-        payload,
-        { headers },
-      )
+      axios.post<StripeCheckoutResponse>(STRIPE_CHECKOUT_URL, payload, {
+        headers,
+      })
     );
     return res.data.url;
   } catch (err: any) {

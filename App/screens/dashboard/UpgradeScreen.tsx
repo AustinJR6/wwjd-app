@@ -65,7 +65,7 @@ export default function UpgradeScreen({ navigation }: Props) {
         return;
       }
 
-      const url = await createStripeCheckout(user.uid, {
+      const url = await createStripeCheckout(user.uid, user.email, {
         type: 'subscription',
         priceId: PRICE_IDS.SUBSCRIPTION,
       });
