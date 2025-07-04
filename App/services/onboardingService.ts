@@ -13,8 +13,10 @@ export async function saveUsernameAndProceed(username: string): Promise<void> {
 export async function checkIfUserIsNewAndRoute(): Promise<void> {
   const uid = await ensureAuth();
   const profile = await getDocument(`users/${uid}`);
-  const hasUsername = !!profile?.username;
+  const completed = !!profile?.onboardingComplete;
   if (navigationRef.isReady()) {
-    navigationRef.reset({ index: 0, routes: [{ name: hasUsername ? 'Home' : 'Onboarding' }] });
+    const initialRoute = completed ? 'Home' : 'Onboarding';
+    console.log('🧭 initialRoute set', { initialRoute });
+    navigationRef.reset({ index: 0, routes: [{ name: initialRoute }] });
   }
 }

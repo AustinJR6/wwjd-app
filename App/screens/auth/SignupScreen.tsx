@@ -6,6 +6,7 @@ import TextField from "@/components/TextField";
 import Button from "@/components/common/Button";
 import { signup } from "@/services/authService";
 import { createUserProfile, loadUser } from "@/services/userService";
+import { checkIfUserIsNewAndRoute } from "@/services/onboardingService";
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useTheme } from "@/components/theme/theme";
@@ -44,7 +45,7 @@ export default function SignupScreen() {
         displayName: '',
       });
       await loadUser(result.localId);
-      navigation.replace('Onboarding');
+      await checkIfUserIsNewAndRoute();
     } catch (err: any) {
       console.error('❌ signup failed', err?.response?.data || err);
       const message = err?.response?.status === 400
