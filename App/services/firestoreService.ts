@@ -200,7 +200,20 @@ export async function fetchTopUsersByPoints(limit = 10): Promise<any[]> {
   return runStructuredQuery(query);
 }
 
-export async function querySubcollection(parentPath: string, collectionName: string): Promise<any[]> {
+export async function querySubcollection(
+  parentPath: string,
+  collectionName: string,
+  orderByField?: string,
+  direction: 'ASCENDING' | 'DESCENDING' = 'ASCENDING',
+): Promise<any[]> {
   console.log('➡️ Firestore SUBQUERY', `${parentPath}/${collectionName}`);
-  return queryCollection(`${parentPath}/${collectionName}`);
+  if (!orderByField) {
+    return queryCollection(`${parentPath}/${collectionName}`);
+  }
+  const query = {
+    parent: `projects/${PROJECT_ID}/databases/(default)/documents/${parentPath}`,
+    from: [{ collectionId: collectionName }],
+    orderBy: [{ field: { fieldPath: orderByField }, direction }],
+  };
+  return runStructuredQuery(query);
 }
