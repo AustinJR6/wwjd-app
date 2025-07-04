@@ -23,6 +23,15 @@ export async function signUpWithEmailAndPassword(email: string, password: string
       headers: { 'Content-Type': 'application/json' },
     });
     console.log('✅ signup response', res.data);
+
+    // After successful signup, create default Firestore user doc
+    const { localId, idToken } = res.data as AuthResponse;
+    try {
+      await createDefaultUserDoc(localId, idToken);
+    } catch (err) {
+      console.error('❌ Failed to create default user document', err);
+    }
+
     return res.data;
   } catch (err: any) {
     if (err.response) {
@@ -63,6 +72,32 @@ function toFirestoreFields(obj: any): any {
     else fields[k] = { stringValue: String(v) };
   }
   return fields;
+}
+
+export async function createDefaultUserDoc(uid: string, idToken: string) {
+  const path = `users/${uid}`;
+  const url = `${FIRESTORE_BASE}/${path}`;
+  const payload = {
+    username: '',
+    region: '',
+    religion: '',
+    individualPoints: 0,
+    totalPoints: 0,
+    hasCompletedToday: false,
+    onboardingComplete: false,
+    streak: 0,
+    lastCompleted: null,
+    createdAt: new Date().toISOString(),
+  };
+  const body = { fields: toFirestoreFields(payload) };
+  console.log('➡️ createUserDoc', { path, payload });
+  try {
+    await axios.patch(url, body, { headers: { Authorization: `Bearer ${idToken}` } });
+    console.log('✅ user doc created', uid);
+  } catch (err: any) {
+    logFirestoreError('SET', path, err);
+    throw err;
+  }
 }
 
 export async function saveJournalEntry(uid: string, data: Record<string, any>, idToken: string) {
