@@ -200,6 +200,24 @@ export async function fetchTopUsersByPoints(limit = 10): Promise<any[]> {
   return runStructuredQuery(query);
 }
 
+export async function fetchTopReligions(limit = 10): Promise<any[]> {
+  const query = {
+    from: [{ collectionId: 'religion' }],
+    orderBy: [{ field: { fieldPath: 'totalPoints' }, direction: 'DESCENDING' }],
+    limit,
+  };
+  return runStructuredQuery(query);
+}
+
+export async function fetchTopOrganizations(limit = 10): Promise<any[]> {
+  const query = {
+    from: [{ collectionId: 'organizations' }],
+    orderBy: [{ field: { fieldPath: 'totalPoints' }, direction: 'DESCENDING' }],
+    limit,
+  };
+  return runStructuredQuery(query);
+}
+
 export async function querySubcollection(
   parentPath: string,
   collectionName: string,

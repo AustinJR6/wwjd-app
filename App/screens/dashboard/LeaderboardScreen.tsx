@@ -6,7 +6,11 @@ import {
   ActivityIndicator,
   ScrollView
 } from 'react-native';
-import { fetchTopUsersByPoints } from '@/services/firestoreService';
+import {
+  fetchTopUsersByPoints,
+  fetchTopReligions,
+  fetchTopOrganizations,
+} from '@/services/firestoreService';
 import { showGracefulError } from '@/utils/gracefulError';
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { useTheme } from "@/components/theme/theme";
@@ -81,14 +85,19 @@ export default function LeaderboardScreen() {
         return;
       }
 
-      const top = await fetchTopUsersByPoints(10);
-      console.log('🏆 Leaderboard results', top);
-      if (!top || top.length === 0) {
+      const [top, rel, org] = await Promise.all([
+        fetchTopUsersByPoints(10),
+        fetchTopReligions(10),
+        fetchTopOrganizations(10),
+      ]);
+      console.log('🏆 Leaderboard results', { top, rel, org });
+      setIndividuals(top);
+      setReligions(rel);
+      setOrganizations(org);
+      if (top.length === 0 && rel.length === 0 && org.length === 0) {
         setNoData(true);
-        setIndividuals([]);
       } else {
         setNoData(false);
-        setIndividuals(top);
       }
     } catch (err: any) {
       console.error('🔥 Error loading leaderboards:', err?.response?.data || err?.message || err);
