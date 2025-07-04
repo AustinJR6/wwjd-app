@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import CustomText from '@/components/CustomText';
-import { View, StyleSheet, Alert } from 'react-native';
+import { View, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import ScreenContainer from '@/components/theme/ScreenContainer';
 import TextField from '@/components/TextField';
 import Button from '@/components/common/Button';
@@ -8,8 +8,8 @@ import { Picker } from '@react-native-picker/picker';
 import { useUser } from '@/hooks/useUser';
 import { useUserStore } from '@/state/userStore';
 import { getTokenCount } from '@/utils/TokenManager';
-import { getDocument, setDocument, queryCollection } from '@/services/firestoreService';
-import { fetchReligionList } from '../../../religionRest';
+import { getDocument, setDocument } from '@/services/firestoreService';
+import { useLookupLists } from '@/hooks/useLookupLists';
 import { updateUserFields } from '@/services/userService';
 import { useTheme } from '@/components/theme/theme';
 import { ensureAuth } from '@/utils/authGuard';
@@ -18,8 +18,6 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/navigation/RootStackParamList';
 import AuthGate from '@/components/AuthGate';
 import { useAuth } from '@/hooks/useAuth';
-
-const FALLBACK_RELIGION = { id: 'spiritual', name: 'Spiritual Guide' };
 
 export default function ProfileScreen() {
   const { user } = useUser();
@@ -30,9 +28,8 @@ export default function ProfileScreen() {
   const [username, setUsername] = useState(
     user?.username || user?.displayName || ''
   );
+  const { regions, religions, loading: listsLoading } = useLookupLists();
   const [region, setRegion] = useState(user?.region || '');
-  const [regions, setRegions] = useState<any[]>([]);
-  const [religions, setReligions] = useState<any[]>([]);
   const [religion, setReligion] = useState(user?.religion || '');
   const [tokens, setTokens] = useState(0);
   const [points, setPoints] = useState(0);
@@ -63,31 +60,6 @@ export default function ProfileScreen() {
     loadData();
   }, [authReady, uid]);
 
-  useEffect(() => {
-    const loadRegions = async () => {
-      try {
-        const list = await queryCollection('regions');
-        list.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
-        setRegions(list);
-        if (!region && list.length) setRegion(list[0].name);
-      } catch (err) {
-        console.warn('Failed to load regions', err);
-        setRegions([{ name: 'Unknown', code: 'UNKNOWN' }]);
-        setRegion('Unknown');
-      }
-      try {
-        const rels = await fetchReligionList();
-        rels.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
-        setReligions(rels);
-        if (!religion && rels.length) setReligion(rels[0].id || rels[0].name);
-      } catch (err) {
-        console.warn('Failed to load religions', err);
-        setReligions([FALLBACK_RELIGION]);
-        if (!religion) setReligion(FALLBACK_RELIGION.id);
-      }
-    };
-    loadRegions();
-  }, []);
 
   const loadData = async () => {
     const uid = await ensureAuth(user?.uid);
@@ -114,6 +86,12 @@ export default function ProfileScreen() {
       console.error('Profile load error', err);
     }
   };
+
+  useEffect(() => {
+    if (!region && regions.length) setRegion(regions[0].name);
+    if (!religion && religions.length)
+      setReligion(religions[0].id || religions[0].name);
+  }, [regions, religions]);
 
   const handleSave = async () => {
     const uid = await ensureAuth(user?.uid);
@@ -146,6 +124,14 @@ export default function ProfileScreen() {
       setSaving(false);
     }
   };
+
+  if (listsLoading) {
+    return (
+      <ScreenContainer>
+        <ActivityIndicator size="large" color={theme.colors.primary} />
+      </ScreenContainer>
+    );
+  }
 
   return (
     <AuthGate>
