@@ -3,8 +3,7 @@ import CustomText from '@/components/CustomText';
 import {
   View,
   TextInput,
-  AppState,
-  
+
   ActivityIndicator,
   StyleSheet,
   Alert,
@@ -12,21 +11,19 @@ import {
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import Button from '@/components/common/Button';
 import { useTheme } from "@/components/theme/theme";
-import { ASK_GEMINI_SIMPLE } from "@/utils/constants";
 import { getDocument } from '@/services/firestoreService';
 import { useUser } from '@/hooks/useUser';
 import { ensureAuth } from '@/utils/authGuard';
 import { getToken, getCurrentUserId } from '@/utils/TokenManager';
 import { showGracefulError } from '@/utils/gracefulError';
-import { sendGeminiPrompt, type GeminiMessage } from '@/services/geminiService';
+import axios from 'axios';
+import type { GeminiMessage } from '@/services/geminiService';
 import { useAuth } from '@/hooks/useAuth';
-import { useAuthStore } from '@/state/authStore';
 import {
-  saveTempMessage,
-  fetchTempSession,
-  clearConfessionalSession,
-  TempMessage,
-} from '@/services/confessionalSessionService';
+  saveConfessionalMessage,
+  fetchConfessionalHistory,
+  ConfessionalMessage,
+} from '@/services/confessionalChatService';
 import AuthGate from '@/components/AuthGate';
 
 export default function ConfessionalScreen() {
@@ -82,7 +79,7 @@ export default function ConfessionalScreen() {
     [theme],
   );
   const [text, setText] = useState('');
-  const [messages, setMessages] = useState<TempMessage[]>([]);
+  const [messages, setMessages] = useState<ConfessionalMessage[]>([]);
   const [loading, setLoading] = useState(false);
   const { user } = useUser();
 
@@ -94,29 +91,10 @@ export default function ConfessionalScreen() {
       console.log('Firebase currentUser:', await getCurrentUserId());
       const preview = await getToken(true);
       console.log('ID Token:', preview);
-      const hist = await fetchTempSession(uidCheck);
+      const hist = await fetchConfessionalHistory(uidCheck);
       setMessages(hist);
     };
     load();
-
-    const sub = AppState.addEventListener('change', (state) => {
-      if (state !== 'active') {
-        const clear = async () => {
-          const uidVal = await ensureAuth(await getCurrentUserId());
-          await clearConfessionalSession(uidVal);
-        };
-        clear();
-      }
-    });
-
-    return () => {
-      sub.remove();
-      const cleanup = async () => {
-        const uidVal = await ensureAuth(await getCurrentUserId());
-        await clearConfessionalSession(uidVal);
-      };
-      cleanup();
-    };
   }, [authReady, uid, user]);
 
   const handleConfess = async () => {
@@ -124,7 +102,6 @@ export default function ConfessionalScreen() {
       Alert.alert('Please enter your confession.');
       return;
     }
-
 
     setLoading(true);
     try {
@@ -143,41 +120,23 @@ export default function ConfessionalScreen() {
                    religion === 'Judaism' ? 'Rabbi' :
                    'Spiritual Guide';
 
-      const history = await fetchTempSession(uid);
-      if (history.length >= 30) {
-        Alert.alert('Conversation full', 'Try a fresh start for a new conversation.');
-      }
+      await saveConfessionalMessage(uid, 'user', text);
+
+      const history = await fetchConfessionalHistory(uid);
       const historyMsgs: GeminiMessage[] = history.map((m) => ({
-        role: m.role === 'user' ? 'user' : 'assistant',
-        text: m.text,
+        role: m.role,
+        text: m.content,
       }));
 
-      const prompt =
-        `${role}: You are a spiritual guide hearing confession.\nUser: ${text}\n${role}:`;
-      console.log('📡 Sending Gemini prompt:', prompt);
-      console.log('👤 Role:', role);
+      const response = await axios.post(`${process.env.EXPO_PUBLIC_API_URL}/confessionalAI`, { history: historyMsgs });
+      const answer = response.data?.reply || "I’m here with you.";
 
-      const answer = await sendGeminiPrompt({
-        url: ASK_GEMINI_SIMPLE,
-        prompt,
-        history: historyMsgs,
-        token: token || undefined,
-      });
-      if (!answer) {
-        showGracefulError('Could not process your confession.');
-        return;
-      }
       console.log('✝️ Confessional input:', text);
       console.log('🕊️ Confessional AI reply:', answer);
 
-      await saveTempMessage(uid, 'user', text);
-      await saveTempMessage(uid, 'assistant', answer);
+      await saveConfessionalMessage(uid, 'assistant', answer);
 
-      setMessages((prev) => [
-        ...prev,
-        { role: 'user', text },
-        { role: 'assistant', text: answer },
-      ]);
+      setMessages([...history, { role: 'assistant', content: answer }]);
       setText('');
     } catch (err) {
       console.error('❌ Confession error:', err);
@@ -199,13 +158,13 @@ export default function ConfessionalScreen() {
           onChangeText={setText}
           multiline
         />
-        <CustomText style={styles.systemMsg}>This conversation is private and vanishes when you leave.</CustomText>
+        <CustomText style={styles.systemMsg}>Your confessions are stored securely.</CustomText>
         <View style={styles.buttonWrap}>
           <Button title="Send" onPress={handleConfess} disabled={loading} />
         </View>
         {loading && <ActivityIndicator size="large" color={theme.colors.primary} />}
         {messages.map((m, idx) => (
-          <CustomText key={idx} style={styles.response}>{m.role === 'user' ? 'You: ' : ''}{m.text}</CustomText>
+          <CustomText key={idx} style={styles.response}>{m.role === 'user' ? 'You: ' : ''}{m.content}</CustomText>
         ))}
       </ScrollView>
     </ScreenContainer>
