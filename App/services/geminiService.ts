@@ -2,6 +2,7 @@ import { GEMINI_API_URL } from '@/config/apiConfig';
 import { sendRequestWithGusBugLogging } from '@/utils/gusBugLogger';
 import { useAuthStore } from '@/state/authStore';
 import { getIdToken } from '@/utils/authUtils';
+import { useUserStore } from '@/state/userStore';
 
 export type GeminiMessage = { role: 'user' | 'assistant'; text: string };
 
@@ -10,6 +11,7 @@ export async function sendGeminiPrompt({
   history = [],
   url = GEMINI_API_URL,
   token,
+  religion,
   onResponse,
   onError,
 }: {
@@ -17,6 +19,7 @@ export async function sendGeminiPrompt({
   history?: GeminiMessage[];
   url?: string;
   token?: string;
+  religion?: string;
   onResponse?: (reply: string) => void;
   onError?: (err: any) => void;
 }): Promise<string | null> {
@@ -45,11 +48,12 @@ export async function sendGeminiPrompt({
 
   try {
     console.log('➡️ Gemini request to', url);
+    const finalReligion = religion ?? useUserStore.getState().user?.religion;
     const res = await sendRequestWithGusBugLogging(() =>
       fetch(url, {
         method: 'POST',
         headers,
-        body: JSON.stringify({ prompt, history: formattedHistory }),
+        body: JSON.stringify({ prompt, history: formattedHistory, religion: finalReligion }),
       })
     );
 

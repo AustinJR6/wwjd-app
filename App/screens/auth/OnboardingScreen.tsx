@@ -23,14 +23,15 @@ type OnboardingScreenProps = NativeStackScreenProps<
   "Onboarding"
 >;
 
-const religions = ["Christian", "Muslim", "Jewish", "Hindu", "Buddhist"];
+const FALLBACK_RELIGION = { id: 'spiritual', name: 'Spiritual Guide' };
 
 export default function OnboardingScreen() {
   const user = useUserStore((state: any) => state.user);
   const uidFromAuth = useAuthStore((state) => state.uid);
   const navigation = useNavigation<OnboardingScreenProps["navigation"]>();
   const theme = useTheme();
-  const [religion, setReligion] = useState(user?.religion ?? "Christian");
+  const [religion, setReligion] = useState(user?.religion ?? '');
+  const [religions, setReligions] = useState<any[]>([]);
   const [username, setUsername] = useState(
     user?.username ?? user?.displayName ?? ""
   );
@@ -50,6 +51,16 @@ export default function OnboardingScreen() {
         console.warn('Failed to load regions', err);
         setRegions([{ name: 'Unknown', code: 'UNKNOWN' }]);
         setRegion('Unknown');
+      }
+      try {
+        const rels = await queryCollection('religions');
+        rels.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+        setReligions(rels);
+        if (!religion && rels.length) setReligion(rels[0].id || rels[0].name);
+      } catch (err) {
+        console.warn('Failed to load religions', err);
+        setReligions([FALLBACK_RELIGION]);
+        if (!religion) setReligion(FALLBACK_RELIGION.id);
       }
     };
     load();
@@ -178,7 +189,7 @@ export default function OnboardingScreen() {
           style={styles.picker}
         >
           {religions.map((r) => (
-            <Picker.Item key={r} label={r} value={r} />
+            <Picker.Item key={r.id || r.name} label={r.name} value={r.id || r.name} />
           ))}
         </Picker>
       </View>

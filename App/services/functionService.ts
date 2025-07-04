@@ -30,8 +30,8 @@ export async function awardPointsToUser(points: number): Promise<void> {
   await callFunction('awardPointsToUser', { points });
 }
 
-export async function createMultiDayChallenge(prompt: string, days: number) {
-  return await callFunction('createMultiDayChallenge', { prompt, days });
+export async function createMultiDayChallenge(prompt: string, days: number, religion?: string) {
+  return await callFunction('createMultiDayChallenge', { prompt, days, religion });
 }
 
 export async function completeChallengeDay() {

@@ -188,6 +188,7 @@ export default function JournalScreen() {
         prompt,
         history: [],
         token: token || undefined,
+        religion,
       });
       if (!answer) {
         Alert.alert('Guide Unavailable', 'We couldn\u2019t reach our guide right now. Write freely from the heart.');

@@ -18,6 +18,7 @@ import { getToken, getCurrentUserId } from '@/utils/TokenManager';
 import { showGracefulError } from '@/utils/gracefulError';
 import axios from 'axios';
 import type { GeminiMessage } from '@/services/geminiService';
+import { CONFESSIONAL_AI_URL } from '@/utils/constants';
 import { useAuth } from '@/hooks/useAuth';
 import {
   saveConfessionalMessage,
@@ -128,13 +129,11 @@ export default function ConfessionalScreen() {
         text: m.content,
       }));
 
-      const response = await axios.post(
-        `${process.env.EXPO_PUBLIC_API_URL}/confessionalAI`,
-        {
-          history: historyMsgs,
-          uid,
-        },
-      );
+      const response = await axios.post(CONFESSIONAL_AI_URL, {
+        history: historyMsgs,
+        uid,
+        religion,
+      });
       const answer = response.data?.reply || "I’m here with you.";
 
       console.log('✝️ Confessional input:', text);

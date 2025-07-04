@@ -242,6 +242,7 @@ export default function ReligionAIScreen() {
         prompt,
         history: formattedHistory,
         token: debugToken || undefined,
+        religion,
       });
       if (!answer) {
         showGracefulError();
