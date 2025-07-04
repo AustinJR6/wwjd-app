@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { FIRESTORE_BASE } from './firebaseRest';
 import { getIdToken } from './authRest';
+import { logFirestoreError } from './App/lib/logging';
 
 export interface ReligionItem {
   id: string;
@@ -29,7 +30,7 @@ export async function fetchReligionList(): Promise<ReligionItem[]> {
 
     return religions;
   } catch (err: any) {
-    console.error('❌ Failed to fetch religion list via REST:', err.message);
+    logFirestoreError('GET', 'religions', err);
     throw new Error('Unable to fetch religions');
   }
 }

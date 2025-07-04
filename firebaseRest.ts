@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { logFirestoreError } from './App/lib/logging';
 
 const API_KEY = process.env.EXPO_PUBLIC_FIREBASE_API_KEY || '';
 const PROJECT_ID = process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID || '';
@@ -40,9 +41,15 @@ export async function signInWithEmailAndPassword(email: string, password: string
 }
 
 export async function getUserData(uid: string, idToken: string) {
-  const url = `${FIRESTORE_BASE}/users/${uid}`;
-  const res = await axios.get(url, { headers: { Authorization: `Bearer ${idToken}` } });
-  return res.data;
+  const path = `users/${uid}`;
+  const url = `${FIRESTORE_BASE}/${path}`;
+  try {
+    const res = await axios.get(url, { headers: { Authorization: `Bearer ${idToken}` } });
+    return res.data;
+  } catch (err: any) {
+    logFirestoreError('GET', path, err);
+    throw err;
+  }
 }
 
 function toFirestoreFields(obj: any): any {
@@ -58,10 +65,16 @@ function toFirestoreFields(obj: any): any {
 }
 
 export async function saveJournalEntry(uid: string, data: Record<string, any>, idToken: string) {
-  const url = `${FIRESTORE_BASE}/journalEntries/${uid}/entries`;
+  const path = `journalEntries/${uid}/entries`;
+  const url = `${FIRESTORE_BASE}/${path}`;
   const body = { fields: toFirestoreFields(data) };
-  const res = await axios.post(url, body, { headers: { Authorization: `Bearer ${idToken}` } });
-  return res.data;
+  try {
+    const res = await axios.post(url, body, { headers: { Authorization: `Bearer ${idToken}` } });
+    return res.data;
+  } catch (err: any) {
+    logFirestoreError('POST', path, err);
+    throw err;
+  }
 }
 
 export const FIREBASE_ENDPOINTS = {

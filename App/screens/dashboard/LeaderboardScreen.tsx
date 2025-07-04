@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import axios from 'axios';
 import { fetchTopUsersByPoints } from '@/services/firestoreService';
+import { logFirestoreError } from '@/lib/logging';
 import { showGracefulError } from '@/utils/gracefulError';
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { useTheme } from "@/components/theme/theme";
@@ -18,59 +19,65 @@ import { useAuth } from '@/hooks/useAuth';
 const PROJECT_ID = process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID || '';
 
 async function fetchTopReligions(idToken: string) {
-  const response = await axios.post(
-    `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents:runQuery`,
-    {
-      structuredQuery: {
-        from: [{ collectionId: 'religions' }],
-        orderBy: [
-          { field: { fieldPath: 'totalPoints' }, direction: 'DESCENDING' },
-        ],
-        limit: 10,
-      },
+  const url = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents:runQuery`;
+  const payload = {
+    structuredQuery: {
+      from: [{ collectionId: 'religions' }],
+      orderBy: [
+        { field: { fieldPath: 'totalPoints' }, direction: 'DESCENDING' },
+      ],
+      limit: 10,
     },
-    {
+  };
+  try {
+    const response = await axios.post(url, payload, {
       headers: {
         Authorization: `Bearer ${idToken}`,
       },
-    }
-  );
+    });
 
-  return response.data
-    .map((doc: any) => doc.document)
-    .filter(Boolean)
-    .map((doc: any) => ({
-      name: doc.fields?.name?.stringValue,
-      totalPoints: parseInt(doc.fields?.totalPoints?.integerValue || '0'),
-    }));
+    return response.data
+      .map((doc: any) => doc.document)
+      .filter(Boolean)
+      .map((doc: any) => ({
+        name: doc.fields?.name?.stringValue,
+        totalPoints: parseInt(doc.fields?.totalPoints?.integerValue || '0'),
+      }));
+  } catch (err: any) {
+    logFirestoreError('QUERY', 'runQuery religions', err);
+    throw err;
+  }
 }
 
 async function fetchTopOrganizations(idToken: string) {
-  const response = await axios.post(
-    `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents:runQuery`,
-    {
-      structuredQuery: {
-        from: [{ collectionId: 'organizations' }],
-        orderBy: [
-          { field: { fieldPath: 'totalPoints' }, direction: 'DESCENDING' },
-        ],
-        limit: 10,
-      },
+  const url = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents:runQuery`;
+  const payload = {
+    structuredQuery: {
+      from: [{ collectionId: 'organizations' }],
+      orderBy: [
+        { field: { fieldPath: 'totalPoints' }, direction: 'DESCENDING' },
+      ],
+      limit: 10,
     },
-    {
+  };
+  try {
+    const response = await axios.post(url, payload, {
       headers: {
         Authorization: `Bearer ${idToken}`,
       },
-    }
-  );
+    });
 
-  return response.data
-    .map((doc: any) => doc.document)
-    .filter(Boolean)
-    .map((doc: any) => ({
-      name: doc.fields?.name?.stringValue,
-      totalPoints: parseInt(doc.fields?.totalPoints?.integerValue || '0'),
-    }));
+    return response.data
+      .map((doc: any) => doc.document)
+      .filter(Boolean)
+      .map((doc: any) => ({
+        name: doc.fields?.name?.stringValue,
+        totalPoints: parseInt(doc.fields?.totalPoints?.integerValue || '0'),
+      }));
+  } catch (err: any) {
+    logFirestoreError('QUERY', 'runQuery organizations', err);
+    throw err;
+  }
 }
 
 export default function LeaderboardScreen() {

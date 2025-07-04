@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { getIdToken, getCurrentUserId } from '@/utils/authUtils';
 import { showPermissionDeniedForPath } from '@/utils/gracefulError';
+import { logFirestoreError } from '@/lib/logging';
 
 const PROJECT_ID = process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID || '';
 const BASE = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents`;
@@ -82,7 +83,7 @@ export async function getDocument(path: string): Promise<any | null> {
     const res = await axios.get(`${BASE}/${path}`, { headers: await authHeaders() });
     return fromFirestore(res.data);
   } catch (err: any) {
-    console.warn(`❌ Firestore REST error on ${path}:`, err.response?.data || err.message);
+    logFirestoreError('GET', path, err);
     const status = err.response?.status;
     if (status === 403) {
       await logPermissionDetails(path);
@@ -104,7 +105,7 @@ export async function setDocument(path: string, data: any): Promise<void> {
     console.log('➡️ Firestore SET', path, data);
     await axios.patch(`${BASE}/${path}`, body, { headers: await authHeaders() });
   } catch (err: any) {
-    console.warn(`❌ Firestore REST error on ${path}:`, err.response?.data || err.message);
+    logFirestoreError('SET', path, err);
     if (err.response?.status === 403) {
       await logPermissionDetails(path);
       showPermissionDeniedForPath(path);
@@ -127,7 +128,7 @@ export async function addDocument(collectionPath: string, data: any): Promise<st
     const parts = res.data.name.split('/');
     return parts[parts.length - 1];
   } catch (err: any) {
-    console.warn(`❌ Firestore REST error on ${collectionPath}:`, err.response?.data || err.message);
+    logFirestoreError('POST', collectionPath, err);
     if (err.response?.status === 403) {
       await logPermissionDetails(collectionPath);
       showPermissionDeniedForPath(collectionPath);
@@ -143,7 +144,7 @@ export async function deleteDocument(path: string): Promise<void> {
     console.log('➡️ Firestore DELETE', path);
     await axios.delete(`${BASE}/${path}`, { headers: await authHeaders() });
   } catch (err: any) {
-    console.warn(`❌ Firestore REST error on ${path}:`, err.response?.data || err.message);
+    logFirestoreError('DELETE', path, err);
     if (err.response?.status === 403) {
       await logPermissionDetails(path);
       showPermissionDeniedForPath(path);
@@ -161,7 +162,7 @@ export async function queryCollection(collectionPath: string): Promise<any[]> {
     const docs = res.data.documents || [];
     return docs.map((d: any) => ({ id: d.name.split('/').pop(), ...fromFirestore(d) }));
   } catch (err: any) {
-    console.warn(`❌ Firestore REST error on ${collectionPath}:`, err.response?.data || err.message);
+    logFirestoreError('GET', collectionPath, err);
     if (err.response?.status === 403) {
       await logPermissionDetails(collectionPath);
       showPermissionDeniedForPath(collectionPath);
@@ -181,7 +182,7 @@ export async function runStructuredQuery(query: any): Promise<any[]> {
       .filter((d: any) => d.document)
       .map((d: any) => ({ id: d.document.name.split('/').pop(), ...fromFirestore(d.document) }));
   } catch (err: any) {
-    console.warn('❌ Firestore runQuery error:', err.response?.data || err.message);
+    logFirestoreError('QUERY', 'runQuery', err);
     if (err.response?.status === 403) {
       await logPermissionDetails('runQuery');
       showPermissionDeniedForPath('runQuery');
