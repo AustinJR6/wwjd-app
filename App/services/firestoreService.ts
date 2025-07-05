@@ -255,3 +255,27 @@ export async function querySubcollection(
   });
   return runStructuredQuery(query);
 }
+
+// -------------------
+// Active Challenge
+// -------------------
+
+/**
+ * Fetch the active challenge document for a user, creating it if missing.
+ * This prevents 404 errors when the document hasn't been initialized yet.
+ */
+export async function getOrCreateActiveChallenge(
+  uid: string,
+): Promise<any> {
+  const path = `users/${uid}/activeChallenge/current`;
+  let doc = await getDocument(path);
+  if (!doc) {
+    doc = {
+      day: 1,
+      completed: false,
+      startTimestamp: new Date().toISOString(),
+    };
+    await setDocument(path, doc);
+  }
+  return doc;
+}
