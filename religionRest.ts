@@ -8,7 +8,30 @@ export interface ReligionItem {
   name: string;
 }
 
-export async function fetchReligionList(): Promise<ReligionItem[]> {
+let cachedReligions: ReligionItem[] | null = null;
+
+/**
+ * Retrieve the list of religions, using an in-memory cache to avoid
+ * unnecessary network calls within the app session.
+ */
+export async function getReligions(): Promise<ReligionItem[]> {
+  if (cachedReligions) {
+    console.log('📦 Religions served from cache');
+    return cachedReligions;
+  }
+
+  try {
+    const rels = await fetchReligionList();
+    cachedReligions = rels;
+    return rels;
+  } catch (err) {
+    console.error('getReligions failed', err);
+    console.log('⚠️ Returning empty religion list');
+    return [];
+  }
+}
+
+async function fetchReligionList(): Promise<ReligionItem[]> {
   const idToken = await getIdToken();
   const url = `${FIRESTORE_BASE}/religion`;
 
