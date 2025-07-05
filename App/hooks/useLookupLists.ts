@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { fetchRegionList, RegionItem } from '../../regionRest';
-import { fetchReligionList, ReligionItem } from '../../religionRest';
+import { getReligions, ReligionItem } from '../../religionRest';
 
 const FALLBACK_REGION: RegionItem = { id: 'unknown', name: 'Unknown' };
 const FALLBACK_RELIGION: ReligionItem = { id: 'spiritual', name: 'Spiritual Guide' };
@@ -17,7 +17,7 @@ export function useLookupLists() {
       try {
         const [rgns, rels] = await Promise.all([
           fetchRegionList(),
-          fetchReligionList(),
+          getReligions(),
         ]);
         if (!isMounted) return;
         console.log('📖 Fetched regions', rgns);
