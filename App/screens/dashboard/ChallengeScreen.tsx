@@ -12,7 +12,11 @@ import { useTheme } from "@/components/theme/theme";
 import { getTokenCount, setTokenCount } from "@/utils/TokenManager";
 import { showGracefulError } from '@/utils/gracefulError';
 import { ASK_GEMINI_SIMPLE, GENERATE_CHALLENGE_URL } from "@/utils/constants";
-import { getDocument, setDocument } from '@/services/firestoreService';
+import {
+  getDocument,
+  setDocument,
+  getOrCreateActiveChallenge,
+} from '@/services/firestoreService';
 import { canLoadNewChallenge } from '@/services/challengeLimitService';
 import { completeChallengeWithStreakCheck } from '@/services/challengeStreakService';
 import {
@@ -108,10 +112,7 @@ export default function ChallengeScreen() {
 
       const uid = await ensureAuth(await getCurrentUserId());
 
-      let active = await getDocument(`users/${uid}/activeChallenge/current`);
-      if (!active) {
-        await setDocument(`users/${uid}/activeChallenge/current`, {});
-      }
+      let active = await getOrCreateActiveChallenge(uid);
       if (active && !active.isComplete) {
         setActiveMulti(active);
         setLoading(false);
@@ -181,6 +182,8 @@ export default function ChallengeScreen() {
   const handleSkipChallenge = async () => {
     const uid = await ensureAuth(await getCurrentUserId());
 
+    await getOrCreateActiveChallenge(uid);
+
     const userData = (await getDocument(`users/${uid}`)) || {};
     const today = new Date().toISOString().split('T')[0];
     let history = userData.dailyChallengeHistory || { date: today, completed: 0, skipped: 0 };
@@ -229,6 +232,8 @@ export default function ChallengeScreen() {
 
   const handleComplete = async () => {
     const uid = await ensureAuth(await getCurrentUserId());
+
+    await getOrCreateActiveChallenge(uid);
 
     if (activeMulti) {
       try {
