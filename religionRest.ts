@@ -10,7 +10,9 @@ export interface ReligionItem {
 
 export async function fetchReligionList(): Promise<ReligionItem[]> {
   const idToken = await getIdToken();
-  const url = `${FIRESTORE_BASE}/religions`;
+  const url = `${FIRESTORE_BASE}/religion`;
+
+  console.log('➡️ Fetching religions from', url);
 
   try {
     const response = await axios.get(url, {
@@ -20,17 +22,18 @@ export async function fetchReligionList(): Promise<ReligionItem[]> {
     });
 
     const docs = response.data.documents || [];
+    console.log('✅ Religions fetched', docs.map((d: any) => d.name.split('/').pop()));
 
     const religions: ReligionItem[] = docs.map((doc: any) => {
       const id = doc.name.split('/').pop() || '';
       const fields = doc.fields || {};
-      const name = fields.name?.stringValue || 'Unnamed';
+      const name = fields.name?.stringValue || id;
       return { id, name };
     });
 
     return religions;
   } catch (err: any) {
-    logFirestoreError('GET', 'religions', err);
+    logFirestoreError('GET', 'religion', err);
     throw new Error('Unable to fetch religions');
   }
 }

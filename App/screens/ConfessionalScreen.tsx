@@ -18,6 +18,7 @@ import { getToken, getCurrentUserId } from '@/utils/TokenManager';
 import { showGracefulError } from '@/utils/gracefulError';
 import axios from 'axios';
 import type { GeminiMessage } from '@/services/geminiService';
+import { getPersonaPrompt } from '@/utils/religionPersona';
 import { CONFESSIONAL_AI_URL } from '@/utils/constants';
 import { useAuth } from '@/hooks/useAuth';
 import {
@@ -114,12 +115,8 @@ export default function ConfessionalScreen() {
 
       const userData = await getDocument(`users/${uid}`);
       const religion = userData.religion || 'Spiritual Guide';
-      const role = religion === 'Christianity' ? 'Pastor' :
-                   religion === 'Islam' ? 'Imam' :
-                   religion === 'Hinduism' ? 'Guru' :
-                   religion === 'Buddhism' ? 'Teacher' :
-                   religion === 'Judaism' ? 'Rabbi' :
-                   'Spiritual Guide';
+      const role = getPersonaPrompt(religion);
+      console.log('👤 Persona resolved', { religion, role });
 
       await saveConfessionalMessage(uid, 'user', text);
 
