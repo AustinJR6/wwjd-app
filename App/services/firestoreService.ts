@@ -198,6 +198,11 @@ export async function fetchTopUsersByPoints(limit = 10): Promise<any[]> {
     orderBy: [{ field: { fieldPath: 'individualPoints' }, direction: 'DESCENDING' }],
     limit,
   };
+  console.warn('📄 Structured query path:', 'users');
+  console.warn('🔍 Structured query filters:', {
+    orderBy: query.orderBy,
+    limit,
+  });
   return runStructuredQuery(query);
 }
 
@@ -207,6 +212,11 @@ export async function fetchTopReligions(limit = 10): Promise<any[]> {
     orderBy: [{ field: { fieldPath: 'totalPoints' }, direction: 'DESCENDING' }],
     limit,
   };
+  console.warn('📄 Structured query path:', 'religions');
+  console.warn('🔍 Structured query filters:', {
+    orderBy: query.orderBy,
+    limit,
+  });
   return runStructuredQuery(query);
 }
 
@@ -216,6 +226,11 @@ export async function fetchTopOrganizations(limit = 10): Promise<any[]> {
     orderBy: [{ field: { fieldPath: 'totalPoints' }, direction: 'DESCENDING' }],
     limit,
   };
+  console.warn('📄 Structured query path:', 'organizations');
+  console.warn('🔍 Structured query filters:', {
+    orderBy: query.orderBy,
+    limit,
+  });
   return runStructuredQuery(query);
 }
 
@@ -225,14 +240,18 @@ export async function querySubcollection(
   orderByField?: string,
   direction: 'ASCENDING' | 'DESCENDING' = 'ASCENDING',
 ): Promise<any[]> {
-  console.log('➡️ Firestore SUBQUERY', `${parentPath}/${collectionName}`);
+  const fullPath = `${parentPath}/${collectionName}`;
+  console.warn('📄 Structured subquery path:', fullPath);
   if (!orderByField) {
-    return queryCollection(`${parentPath}/${collectionName}`);
+    return queryCollection(fullPath);
   }
   const query = {
-    parent: `projects/${PROJECT_ID}/databases/(default)/documents/${parentPath}`,
+    parent: `projects/${PROJECT_ID}/databases/(default)/documents/${fullPath}`,
     from: [{ collectionId: collectionName }],
     orderBy: [{ field: { fieldPath: orderByField }, direction }],
   };
+  console.warn('🔍 Structured query filters:', {
+    orderBy: query.orderBy,
+  });
   return runStructuredQuery(query);
 }
