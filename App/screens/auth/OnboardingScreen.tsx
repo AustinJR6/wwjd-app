@@ -39,6 +39,10 @@ export default function OnboardingScreen() {
   const [saving, setSaving] = useState(false);
   const [religionError, setReligionError] = useState("");
 
+  React.useEffect(() => {
+    console.log('📋 Available religions', religions);
+  }, [religions]);
+
   const handleContinue = async () => {
     const uid = user?.uid || uidFromAuth;
     if (!uid) {
@@ -59,6 +63,7 @@ export default function OnboardingScreen() {
     }
 
     setSaving(true);
+    console.log('💾 Submitting onboarding', { username, region, religion });
     try {
       if (uid) {
         await saveUsernameAndProceed(username.trim());
@@ -163,7 +168,10 @@ export default function OnboardingScreen() {
       <View style={styles.pickerWrapper}>
         <Picker
           selectedValue={region}
-          onValueChange={(val) => setRegion(val)}
+          onValueChange={(val) => {
+            console.log('📍 Region selected', val);
+            setRegion(val);
+          }}
           style={styles.picker}
         >
           <Picker.Item label="Select your region" value="" />
@@ -180,12 +188,15 @@ export default function OnboardingScreen() {
       <View style={styles.pickerWrapper}>
         <Picker
           selectedValue={religion}
-          onValueChange={(itemValue) => setReligion(itemValue)}
+          onValueChange={(itemValue) => {
+            console.log('🙏 Religion selected', itemValue);
+            setReligion(itemValue);
+          }}
           style={styles.picker}
         >
           <Picker.Item label="Select your spiritual lens" value="" />
           {religions.map((r) => (
-            <Picker.Item key={r.id || r.name} label={r.name} value={r.id || r.name} />
+            <Picker.Item key={r.id} label={r.id} value={r.id} />
           ))}
         </Picker>
       </View>

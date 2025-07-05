@@ -38,6 +38,7 @@ import {
   checkIfUserIsSubscribed,
 } from '@/services/chatHistoryService';
 import { showInterstitialAd } from '@/services/adService';
+import { getPersonaPrompt } from '@/utils/religionPersona';
 
 export default function ReligionAIScreen() {
   const theme = useTheme();
@@ -183,12 +184,8 @@ export default function ReligionAIScreen() {
       console.log('💎 OneVine+ Status:', subscribed);
 
       const religion = userData.religion || 'Spiritual Guide';
-      const promptRole = religion === 'Christianity' ? 'Jesus' :
-                         religion === 'Islam' ? 'Imam' :
-                         religion === 'Hinduism' ? 'Guru' :
-                         religion === 'Buddhism' ? 'Teacher' :
-                         religion === 'Judaism' ? 'Rabbi' :
-                         'Spiritual Guide';
+      const promptRole = getPersonaPrompt(religion);
+      console.log('👤 Persona resolved', { religion, promptRole });
 
       if (!subscribed) {
         if (!canAskFree) {

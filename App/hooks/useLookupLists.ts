@@ -13,6 +13,7 @@ export function useLookupLists() {
   useEffect(() => {
     let isMounted = true;
     const load = async () => {
+      console.log('⏬ Loading region and religion lists');
       try {
         const [rgns, rels] = await Promise.all([
           fetchRegionList(),
@@ -28,6 +29,7 @@ export function useLookupLists() {
           console.warn('Failed to load reference lists', err);
           setRegions([FALLBACK_REGION]);
           setReligions([FALLBACK_RELIGION]);
+          console.log('🕳️ Using fallback reference lists');
         }
       } finally {
         if (isMounted) setLoading(false);
