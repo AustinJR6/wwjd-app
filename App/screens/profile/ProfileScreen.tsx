@@ -9,6 +9,9 @@ import { useUser } from '@/hooks/useUser';
 import { useUserStore } from '@/state/userStore';
 import { getTokenCount } from '@/utils/TokenManager';
 import { getDocument, setDocument } from '@/services/firestoreService';
+import axios from 'axios';
+import { FIRESTORE_BASE } from '../../../firebaseRest';
+import { getIdToken } from '@/utils/authUtils';
 import { useLookupLists } from '@/hooks/useLookupLists';
 import { updateUserFields } from '@/services/userService';
 import { useTheme } from '@/components/theme/theme';
@@ -35,6 +38,7 @@ export default function ProfileScreen() {
   const [points, setPoints] = useState(0);
   const [organization, setOrganization] = useState<string>('');
   const [saving, setSaving] = useState(false);
+  const [religionUpdating, setReligionUpdating] = useState(false);
 
   const styles = React.useMemo(
     () =>
@@ -75,6 +79,7 @@ export default function ProfileScreen() {
         setUsername(profile.username || profile.displayName || '');
         setRegion(profile.region || '');
         setReligion(profile.religion || '');
+        console.log('🙏 Current religion from Firestore:', profile.religion);
         if (profile.organizationName) {
           setOrganization(profile.organizationName);
         } else if (profile.organizationId) {
@@ -93,6 +98,32 @@ export default function ProfileScreen() {
       setReligion(religions[0].id || religions[0].name);
   }, [regions, religions]);
 
+  const handleReligionChange = async (value: string) => {
+    if (value === religion) return;
+    setReligion(value);
+    const uidVal = await ensureAuth(user?.uid);
+    if (!uidVal) return;
+    setReligionUpdating(true);
+    console.log('➡️ Updating religion to', value);
+    const body = { fields: { religion: { stringValue: value } } };
+    try {
+      const token = await getIdToken(true);
+      const url = `${FIRESTORE_BASE}/users/${uidVal}`;
+      const res = await axios.patch(url, body, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      console.log('✅ Religion update response', res.data);
+      updateUser({ religion: value });
+      await setDocument(`users/${uidVal}`, { lastChallenge: null });
+      Alert.alert('Religion Updated');
+    } catch (err: any) {
+      console.error('Religion update failed', err);
+      Alert.alert('Error', err.message || 'Could not update religion');
+    } finally {
+      setReligionUpdating(false);
+    }
+  };
+
   const handleSave = async () => {
     const uid = await ensureAuth(user?.uid);
     if (!uid) return;
@@ -106,17 +137,12 @@ export default function ProfileScreen() {
         displayName: username,
         username,
         region,
-        religion,
       });
       updateUser({
         displayName: username,
         ...(username.trim() ? { username } : {}),
         region,
-        religion,
       });
-      if (religion !== user?.religion) {
-        await setDocument(`users/${uid}`, { lastChallenge: null });
-      }
       Alert.alert('Profile Updated');
     } catch (err: any) {
       Alert.alert('Error', err.message || 'Could not update profile');
@@ -155,7 +181,7 @@ export default function ProfileScreen() {
         <View style={styles.pickerWrapper}>
           <Picker
             selectedValue={religion}
-            onValueChange={(v) => setReligion(v)}
+            onValueChange={handleReligionChange}
             style={styles.picker}
           >
             {religions.map((r) => (
@@ -163,6 +189,9 @@ export default function ProfileScreen() {
             ))}
           </Picker>
         </View>
+        {religionUpdating && (
+          <ActivityIndicator size="small" color={theme.colors.primary} />
+        )}
 
         <CustomText style={styles.info}>Points: {points}</CustomText>
         <CustomText style={styles.info}>Subscribed: {user?.isSubscribed ? 'Yes' : 'No'}</CustomText>
