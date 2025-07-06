@@ -1449,3 +1449,41 @@ export const createUserDocOnSignup = functions
       });
     }
   });
+
+export const onUserCreate = functions
+  .auth
+  .user()
+  .onCreate(async (user: admin.auth.UserRecord) => {
+    const uid = user.uid;
+    logger.info(`onUserCreate triggered for ${uid}`);
+    try {
+      const timestamp = admin.firestore.FieldValue.serverTimestamp();
+      await db.collection("users").doc(uid).set({
+        uid,
+        email: user.email || "",
+        createdAt: timestamp,
+        isSubscribed: false,
+        lastFreeAsk: timestamp,
+        lastFreeSkip: timestamp,
+        nightModeEnabled: false,
+        onboardingComplete: false,
+        organization: null,
+        religion: "SpiritGuide",
+        skipTokensUsed: 0,
+        tokens: 5,
+        individualPoints: 0,
+      });
+
+      await Promise.all([
+        db.collection("journalEntries").doc(uid).set({ entries: [] }),
+        db.collection("confessionalSessions").doc(uid).set({ messages: [] }),
+        db.collection("dailyChallenges").doc(uid).set({ seenChallenges: [] }),
+        db.collection("leaderboards").doc(uid).set({ score: 0 }),
+        db.collection("tokens").doc(uid).set({ earned: 0, spent: 0 }),
+      ]);
+
+      logger.info(`onUserCreate completed for ${uid}`);
+    } catch (err) {
+      logger.error(`onUserCreate failed for ${uid}`, err);
+    }
+  });
