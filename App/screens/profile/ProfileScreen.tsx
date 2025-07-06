@@ -10,7 +10,7 @@ import { useUserStore } from '@/state/userStore';
 import { getTokenCount } from '@/utils/TokenManager';
 import { getDocument, setDocument } from '@/services/firestoreService';
 import { useLookupLists } from '@/hooks/useLookupLists';
-import { updateUserFields } from '@/services/userService';
+import { updateUserProfile } from '../../utils/firestoreHelpers';
 import { useTheme } from '@/components/theme/theme';
 import { ensureAuth } from '@/utils/authGuard';
 import { useNavigation } from '@react-navigation/native';
@@ -103,7 +103,7 @@ export default function ProfileScreen() {
     setReligionUpdating(true);
     console.log('➡️ Updating religion to', value);
     try {
-      await updateUserFields(uidVal, { religion: value });
+      await updateUserProfile({ religion: value });
       console.log('✅ Religion updated');
       updateUser({ religion: value });
       await setDocument(`users/${uidVal}`, { lastChallenge: null });
@@ -125,11 +125,9 @@ export default function ProfileScreen() {
     }
     setSaving(true);
     try {
-      await updateUserFields(uid, {
-        displayName: username,
-        username,
-        region,
-      });
+      const updates: Record<string, any> = { displayName: username, region };
+      if (username.trim()) updates.username = username.trim();
+      await updateUserProfile(updates);
       updateUser({
         displayName: username,
         ...(username.trim() ? { username } : {}),
