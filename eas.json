@@ -16,9 +16,6 @@
       },
       "ios": {
         "simulator": true
-      },
-      "hooks": {
-        "prebuild": "node scripts/setup-google-services.js"
       }
     },
     "preview": {
@@ -33,9 +30,6 @@
       },
       "ios": {
         "simulator": true
-      },
-      "hooks": {
-        "prebuild": "node scripts/setup-google-services.js"
       }
     },
     "production": {
@@ -50,9 +44,6 @@
       },
       "ios": {
         "simulator": false
-      },
-      "hooks": {
-        "prebuild": "node scripts/setup-google-services.js"
       }
     }
   },
