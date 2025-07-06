@@ -82,11 +82,20 @@ export default function ChallengeScreen() {
         streakMilestones: { ...granted, [key]: true },
       });
 
+      const religion = userData?.religion;
+      if (!uid || !religion) {
+        console.warn('⚠️ Challenge generation blocked — missing uid or religion', {
+          uid,
+          religion,
+        });
+        return;
+      }
+
       const blessing = await sendGeminiPrompt({
         url: ASK_GEMINI_SIMPLE,
-        prompt: `Provide a short blessing for a user who reached a ${current}-day spiritual challenge streak in the ${userData?.religion ?? 'SpiritGuide'} tradition.`,
+        prompt: `Provide a short blessing for a user who reached a ${current}-day spiritual challenge streak in the ${religion} tradition.`,
         history: [],
-        religion: userData?.religion ?? 'SpiritGuide',
+        religion,
       });
       if (blessing) {
         Alert.alert('Blessing!', `${blessing}\nYou earned ${reward} Grace Tokens.`);
@@ -141,7 +150,12 @@ export default function ChallengeScreen() {
         return;
       }
 
-      const religion = userData?.religion ?? 'SpiritGuide';
+      const religion = userData?.religion;
+      if (!uid || !religion) {
+        console.warn('⚠️ Challenge generation blocked — missing uid or religion', { uid, religion });
+        setLoading(false);
+        return;
+      }
 
       const prompt =
         `Give me a short daily challenge for the ${religion} faith on ${new Date().toDateString()}.`;
@@ -225,7 +239,11 @@ export default function ChallengeScreen() {
 
     try {
       const userData = (await getDocument(`users/${uid}`)) || {};
-      const religion = userData?.religion ?? 'SpiritGuide';
+      const religion = userData?.religion;
+      if (!uid || !religion) {
+        console.warn('⚠️ Challenge generation blocked — missing uid or religion', { uid, religion });
+        return;
+      }
       await createMultiDayChallenge('Provide a 3-day gratitude challenge.', 3, religion);
       fetchChallenge(true);
     } catch (err) {

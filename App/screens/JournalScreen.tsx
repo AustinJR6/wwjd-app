@@ -183,6 +183,10 @@ export default function JournalScreen() {
       console.log('Firebase currentUser:', await getCurrentUserId());
       const token = await getToken(true);
       console.log('ID Token:', token);
+      if (!uid || !religion) {
+        console.warn('⚠️ askGemini blocked — missing uid or religion', { uid, religion });
+        return;
+      }
       const answer = await sendGeminiPrompt({
         url: ASK_GEMINI_SIMPLE,
         prompt,

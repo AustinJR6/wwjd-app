@@ -183,7 +183,12 @@ export default function ReligionAIScreen() {
       setIsSubscribed(subscribed);
       console.log('💎 OneVine+ Status:', subscribed);
 
-      const religion = userData?.religion ?? 'SpiritGuide';
+      const religion = userData?.religion;
+      if (!uid || !religion) {
+        console.warn('⚠️ askGemini blocked — missing uid or religion', { uid, religion });
+        setLoading(false);
+        return;
+      }
       const promptRole = getPersonaPrompt(religion);
       console.log('👤 Persona resolved', { religion, promptRole });
 
