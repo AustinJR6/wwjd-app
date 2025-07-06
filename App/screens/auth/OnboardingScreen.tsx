@@ -16,7 +16,7 @@ import { SCREENS } from "@/navigation/screens";
 import { useTheme } from "@/components/theme/theme";
 import { Picker } from "@react-native-picker/picker";
 import type { RootStackParamList } from "@/navigation/RootStackParamList";
-import { getDocument } from "@/services/firestoreService";
+import { getDocument, setDocument } from "@/services/firestoreService";
 import { useLookupLists } from "@/hooks/useLookupLists";
 
 type OnboardingScreenProps = NativeStackScreenProps<
@@ -72,6 +72,7 @@ export default function OnboardingScreen() {
           region,
           organizationId: organization || undefined,
         });
+        await setDocument(`users/${uid}`, { religion });
         await completeOnboarding(uid);
         await SecureStore.setItemAsync(`hasSeenOnboarding-${uid}`, 'true');
         useUserStore.getState().updateUser({

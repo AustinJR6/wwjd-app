@@ -1461,6 +1461,8 @@ export const onUserCreate = functions
       await db.collection("users").doc(uid).set({
         uid,
         email: user.email || "",
+        displayName: user.displayName || "",
+        emailVerified: user.emailVerified || false,
         createdAt: timestamp,
         isSubscribed: false,
         lastFreeAsk: timestamp,
@@ -1475,8 +1477,8 @@ export const onUserCreate = functions
       });
 
       await Promise.all([
-        db.collection("journalEntries").doc(uid).set({ entries: [] }),
-        db.collection("confessionalSessions").doc(uid).set({ messages: [] }),
+        db.collection("journalEntries").doc(uid).set({ placeholder: true }),
+        db.collection("confessionalSessions").doc(uid).set({ placeholder: true }),
         db.collection("dailyChallenges").doc(uid).set({ seenChallenges: [] }),
         db.collection("leaderboards").doc(uid).set({ score: 0 }),
         db.collection("tokens").doc(uid).set({ earned: 0, spent: 0 }),

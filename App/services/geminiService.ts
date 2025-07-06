@@ -48,7 +48,8 @@ export async function sendGeminiPrompt({
 
   try {
     console.log('➡️ Gemini request to', url);
-    const finalReligion = religion ?? useUserStore.getState().user?.religion;
+    const finalReligion =
+      religion ?? useUserStore.getState().user?.religion ?? 'SpiritGuide';
     const res = await sendRequestWithGusBugLogging(() =>
       fetch(url, {
         method: 'POST',

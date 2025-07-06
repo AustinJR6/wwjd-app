@@ -97,7 +97,7 @@ export default function ConfessionalScreen() {
       console.log('Using token', token ? token.slice(0, 10) : 'none');
 
       const userData = await getDocument(`users/${uid}`);
-      const religion = userData.religion;
+      const religion = userData?.religion ?? 'SpiritGuide';
       const role = getPersonaPrompt(religion);
       console.log('👤 Persona resolved', { religionId: religion, role });
 

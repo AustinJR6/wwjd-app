@@ -114,6 +114,7 @@ export default function ProfileScreen() {
       });
       console.log('✅ Religion update response', res.data);
       updateUser({ religion: value });
+      await updateUserFields(uidVal, { religion: value });
       await setDocument(`users/${uidVal}`, { lastChallenge: null });
       Alert.alert('Religion Updated');
     } catch (err: any) {
