@@ -9,7 +9,7 @@ import { RootStackParamList } from "@/navigation/RootStackParamList";
 import { useUser } from '@/hooks/useUser';
 import { startSubscriptionCheckout } from '@/services/apiService';
 import { ONEVINE_PLUS_PRICE_ID } from '@/config/stripeConfig';
-import { getAuthHeaders } from '@/utils/TokenManager';
+import { getAuthHeaders, getCurrentUserId } from '@/utils/TokenManager';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Upgrade'>;
 
@@ -64,15 +64,16 @@ export default function UpgradeScreen({ navigation }: Props) {
         return;
       }
 
-      if (!user.uid || !ONEVINE_PLUS_PRICE_ID) {
-        console.warn('Missing uid or priceId when starting Stripe checkout', {
-          uid: user.uid,
+      const uid = await getCurrentUserId();
+      if (!uid || !ONEVINE_PLUS_PRICE_ID) {
+        console.warn('🚫 Stripe Checkout failed — missing uid or priceId', {
+          uid,
           priceId: ONEVINE_PLUS_PRICE_ID,
         });
         return;
       }
 
-      const url = await startSubscriptionCheckout(user.uid, ONEVINE_PLUS_PRICE_ID);
+      const url = await startSubscriptionCheckout(uid, ONEVINE_PLUS_PRICE_ID);
       if (url) {
         await Linking.openURL(url);
       } else {

@@ -4,6 +4,7 @@ import { View, StyleSheet, Alert, Linking } from 'react-native';
 import Button from '@/components/common/Button';
 import { useUser } from '@/hooks/useUser';
 import { startTokenCheckout } from '@/services/apiService';
+import { getCurrentUserId } from '@/utils/TokenManager';
 import { PRICE_IDS } from '@/config/stripeConfig';
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { useTheme } from "@/components/theme/theme";
@@ -61,22 +62,22 @@ export default function BuyTokensScreen({ navigation }: Props) {
   const { user } = useUser();
   const [loading, setLoading] = React.useState<number | null>(null);
   const purchase = async (amount: number) => {
-    if (!user) return;
     setLoading(amount);
     try {
+      const uid = await getCurrentUserId();
       const priceId =
         amount === 20
           ? PRICE_IDS.TOKENS_20
           : amount === 50
           ? PRICE_IDS.TOKENS_50
           : PRICE_IDS.TOKENS_100;
-      if (!user.uid || !priceId) {
-        console.warn('Missing uid or priceId when starting Stripe checkout', { uid: user.uid, priceId });
+      if (!uid || !priceId) {
+        console.warn('🚫 Stripe Checkout failed — missing uid or priceId', { uid, priceId });
         return;
       }
-      const payload = { uid: user.uid, priceId };
+      const payload = { uid, priceId };
       console.log('🪙 Starting Stripe checkout for', amount, 'tokens...', payload);
-      const url = await startTokenCheckout(user.uid, priceId);
+      const url = await startTokenCheckout(uid, priceId);
       if (url) {
         console.log('🔗 Redirecting to Stripe:', url);
         await Linking.openURL(url);

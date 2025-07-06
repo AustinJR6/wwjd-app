@@ -69,8 +69,8 @@ export async function createStripeCheckout(
 
 export async function startTokenCheckout(uid: string, priceId: string): Promise<string> {
   if (typeof uid !== 'string' || !uid.trim() || typeof priceId !== 'string' || !priceId.trim()) {
-    console.warn('Missing uid or priceId for startTokenCheckout', { uid, priceId });
-    throw new Error('Missing uid or priceId');
+    console.warn('🚫 Stripe Checkout failed — missing uid or priceId', { uid, priceId });
+    return '';
   }
 
   console.log('🪙 Starting Stripe checkout', { uid, priceId });
@@ -85,25 +85,37 @@ export async function startTokenCheckout(uid: string, priceId: string): Promise<
 
   try {
     const payload = { uid, priceId };
-    const res = await axios.post<StripeCheckoutResponse>(TOKEN_CHECKOUT_URL, payload, { headers });
-    const url = (res.data as any).checkoutUrl || res.data.url;
+    const res = await sendRequestWithGusBugLogging(() =>
+      fetch(TOKEN_CHECKOUT_URL, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(payload),
+      })
+    );
+    const text = await res.text();
+    if (!res.ok) {
+      console.warn('❌ Firestore REST error on startTokenCheckout:', text);
+      if (res.status === 403) {
+        console.warn('Firestore 403 – not a session issue');
+        showPermissionDenied();
+        throw new Error('Permission denied');
+      }
+      throw new Error('Unable to start checkout.');
+    }
+    const data: StripeCheckoutResponse = JSON.parse(text);
+    const url = (data as any).checkoutUrl || data.url;
     console.log('🔗 Redirect URL received', url);
     return url;
   } catch (err: any) {
-    console.warn('❌ Firestore REST error on startTokenCheckout:', err.response?.data || err.message);
-    if (err.response?.status === 403) {
-      console.warn('Firestore 403 – not a session issue', err);
-      showPermissionDenied();
-      throw new Error('Permission denied');
-    }
-    throw new Error(err.response?.data?.error || 'Unable to start checkout.');
+    console.warn('❌ Firestore REST error on startTokenCheckout:', err?.message || err);
+    throw new Error(err?.message || 'Unable to start checkout.');
   }
 }
 
 export async function startSubscriptionCheckout(uid: string, priceId: string): Promise<string> {
   if (typeof uid !== 'string' || !uid.trim() || typeof priceId !== 'string' || !priceId.trim()) {
-    console.warn('Missing uid or priceId for startSubscriptionCheckout', { uid, priceId });
-    throw new Error('Missing uid or priceId');
+    console.warn('🚫 Stripe Checkout failed — missing uid or priceId', { uid, priceId });
+    return '';
   }
 
   console.log('📦 Starting OneVine+ subscription...', { uid, priceId });
@@ -118,18 +130,30 @@ export async function startSubscriptionCheckout(uid: string, priceId: string): P
 
   try {
     const payload = { uid, priceId };
-    const res = await axios.post<StripeCheckoutResponse>(SUBSCRIPTION_CHECKOUT_URL, payload, { headers });
-    const url = (res.data as any).checkoutUrl || res.data.url;
+    const res = await sendRequestWithGusBugLogging(() =>
+      fetch(SUBSCRIPTION_CHECKOUT_URL, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(payload),
+      })
+    );
+    const text = await res.text();
+    if (!res.ok) {
+      console.warn('❌ Firestore REST error on startSubscriptionCheckout:', text);
+      if (res.status === 403) {
+        console.warn('Firestore 403 – not a session issue');
+        showPermissionDenied();
+        throw new Error('Permission denied');
+      }
+      throw new Error('Unable to start checkout.');
+    }
+    const data: StripeCheckoutResponse = JSON.parse(text);
+    const url = (data as any).checkoutUrl || data.url;
     console.log('🔗 Redirecting to:', url);
     return url;
   } catch (err: any) {
-    console.warn('❌ Firestore REST error on startSubscriptionCheckout:', err.response?.data || err.message);
-    if (err.response?.status === 403) {
-      console.warn('Firestore 403 – not a session issue', err);
-      showPermissionDenied();
-      throw new Error('Permission denied');
-    }
-    throw new Error(err.response?.data?.error || 'Unable to start checkout.');
+    console.warn('❌ Firestore REST error on startSubscriptionCheckout:', err?.message || err);
+    throw new Error(err?.message || 'Unable to start checkout.');
   }
 }
 
