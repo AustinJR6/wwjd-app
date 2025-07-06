@@ -9,7 +9,8 @@ export default ({ config }) => ({
   icon: "./assets/icon.png",
   runtimeVersion: "1.0.0",
   // Include bundled assets (e.g. icon)
-  assetBundlePatterns: ["assets/*"],
+  assetBundlePatterns: ["**/*"],
+
   // Limit platforms to avoid requiring react-native-web for expo export
   platforms: ["ios", "android"],
   android: {
