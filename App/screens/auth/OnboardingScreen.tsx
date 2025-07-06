@@ -18,8 +18,6 @@ import { Picker } from "@react-native-picker/picker";
 import type { RootStackParamList } from "@/navigation/RootStackParamList";
 import { getDocument } from "@/services/firestoreService";
 import { useLookupLists } from "@/hooks/useLookupLists";
-import { doc, updateDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
 
 type OnboardingScreenProps = NativeStackScreenProps<
   RootStackParamList,
@@ -71,9 +69,9 @@ export default function OnboardingScreen() {
         await saveUsernameAndProceed(username.trim());
         await updateUserFields(uid, {
           region,
+          religion,
           organizationId: organization || undefined,
         });
-        await updateDoc(doc(db, 'users', uid), { religion });
         await completeOnboarding(uid);
         await SecureStore.setItemAsync(`hasSeenOnboarding-${uid}`, 'true');
         useUserStore.getState().updateUser({

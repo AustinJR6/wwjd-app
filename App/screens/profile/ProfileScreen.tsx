@@ -18,8 +18,6 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/navigation/RootStackParamList';
 import AuthGate from '@/components/AuthGate';
 import { useAuth } from '@/hooks/useAuth';
-import { doc, updateDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
 
 export default function ProfileScreen() {
   const { user } = useUser();
@@ -105,7 +103,7 @@ export default function ProfileScreen() {
     setReligionUpdating(true);
     console.log('➡️ Updating religion to', value);
     try {
-      await updateDoc(doc(db, 'users', uidVal), { religion: value });
+      await updateUserFields(uidVal, { religion: value });
       console.log('✅ Religion updated');
       updateUser({ religion: value });
       await setDocument(`users/${uidVal}`, { lastChallenge: null });
