@@ -183,7 +183,7 @@ export default function ReligionAIScreen() {
       setIsSubscribed(subscribed);
       console.log('💎 OneVine+ Status:', subscribed);
 
-      const religion = userData.religion || 'Spiritual Guide';
+      const religion = userData?.religion ?? 'SpiritGuide';
       const promptRole = getPersonaPrompt(religion);
       console.log('👤 Persona resolved', { religion, promptRole });
 

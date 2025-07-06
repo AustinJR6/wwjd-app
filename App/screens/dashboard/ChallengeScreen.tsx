@@ -84,9 +84,9 @@ export default function ChallengeScreen() {
 
       const blessing = await sendGeminiPrompt({
         url: ASK_GEMINI_SIMPLE,
-        prompt: `Provide a short blessing for a user who reached a ${current}-day spiritual challenge streak in the ${userData.religion || 'Christian'} tradition.`,
+        prompt: `Provide a short blessing for a user who reached a ${current}-day spiritual challenge streak in the ${userData?.religion ?? 'SpiritGuide'} tradition.`,
         history: [],
-        religion: userData.religion,
+        religion: userData?.religion ?? 'SpiritGuide',
       });
       if (blessing) {
         Alert.alert('Blessing!', `${blessing}\nYou earned ${reward} Grace Tokens.`);
@@ -141,7 +141,7 @@ export default function ChallengeScreen() {
         return;
       }
 
-      const religion = userData.religion || 'spiritual';
+      const religion = userData?.religion ?? 'SpiritGuide';
 
       const prompt =
         `Give me a short daily challenge for the ${religion} faith on ${new Date().toDateString()}.`;
