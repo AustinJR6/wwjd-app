@@ -899,15 +899,10 @@ export const startSubscriptionCheckout = functions
     STRIPE_SECRET_KEY ? "\u2713 set" : "\u2717 missing",
   );
 
-  const { userId, priceId, success_url, cancel_url } = req.body || {};
-  if (!userId || !priceId || !success_url || !cancel_url) {
-    logger.warn("⚠️ Missing fields", {
-      userId,
-      priceId,
-      success_url,
-      cancel_url,
-    });
-    res.status(400).json({ error: "Missing required fields" });
+  const { uid, priceId } = req.body || {};
+  if (!uid || !priceId) {
+    logger.warn("⚠️ Missing uid or priceId", { uid, priceId });
+    res.status(400).json({ error: "Missing uid or priceId" });
     return;
   }
 
@@ -927,19 +922,19 @@ export const startSubscriptionCheckout = functions
   }
 
   try {
-    if (authData.uid !== userId) {
+    if (authData.uid !== uid) {
       logger.warn("⚠️ UID mismatch between token and payload");
     }
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
       line_items: [{ price: priceId, quantity: 1 }],
-      success_url,
-      cancel_url,
-      client_reference_id: userId,
-      metadata: { uid: userId },
+      success_url: STRIPE_SUCCESS_URL,
+      cancel_url: STRIPE_CANCEL_URL,
+      client_reference_id: uid,
+      metadata: { uid, type: "subscription" },
     });
     logger.info(`✅ Stripe session created ${session.id}`);
-    res.status(200).json({ url: session.url });
+    res.status(200).json({ checkoutUrl: session.url });
   } catch (err) {
     logTokenVerificationError('startSubscriptionCheckout', authData.token, err);
     res

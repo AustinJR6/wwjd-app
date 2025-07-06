@@ -8,3 +8,5 @@ export const PRICE_IDS = {
   TOKENS_100: process.env.EXPO_PUBLIC_STRIPE_100_TOKEN_PRICE_ID || '',
   // Donation price IDs are no longer needed because donations use dynamic amounts
 };
+
+export const ONEVINE_PLUS_PRICE_ID = PRICE_IDS.SUBSCRIPTION;
