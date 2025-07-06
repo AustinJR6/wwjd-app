@@ -1,11 +1,15 @@
 import { getItem, setItem, deleteItem } from '@/utils/secureStore';
 import { signUpWithEmailAndPassword, signInWithEmailAndPassword } from '../../firebaseRest';
 import axios from 'axios';
+import Constants from 'expo-constants';
 
 const TOKEN_KEY = 'firebase_id_token';
 const REFRESH_KEY = 'firebase_refresh_token';
 const UID_KEY = 'firebase_uid';
-const API_KEY = process.env.EXPO_PUBLIC_FIREBASE_API_KEY || '';
+const API_KEY = Constants.expoConfig.extra.EXPO_PUBLIC_FIREBASE_API_KEY || '';
+if (!API_KEY) {
+  console.warn('⚠️ Missing EXPO_PUBLIC_FIREBASE_API_KEY in .env');
+}
 
 let currentToken: string | null = null;
 let currentRefresh: string | null = null;

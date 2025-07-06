@@ -1,6 +1,11 @@
 import axios from 'axios';
+import Constants from 'expo-constants';
 
-export const STORAGE_BUCKET = process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET || '';
+export const STORAGE_BUCKET =
+  Constants.expoConfig.extra.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET || '';
+if (!STORAGE_BUCKET) {
+  console.warn('⚠️ Missing EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET in .env');
+}
 
 export async function uploadImage(fileUri: string, path: string): Promise<string> {
   const response = await fetch(fileUri);

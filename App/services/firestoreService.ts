@@ -2,8 +2,12 @@ import axios from 'axios';
 import { getIdToken, getCurrentUserId } from '@/utils/authUtils';
 import { showPermissionDeniedForPath } from '@/utils/gracefulError';
 import { logFirestoreError } from '@/lib/logging';
+import Constants from 'expo-constants';
 
-const PROJECT_ID = process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID || '';
+const PROJECT_ID = Constants.expoConfig.extra.EXPO_PUBLIC_FIREBASE_PROJECT_ID || '';
+if (!PROJECT_ID) {
+  console.warn('⚠️ Missing EXPO_PUBLIC_FIREBASE_PROJECT_ID in .env');
+}
 const BASE = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents`;
 
 let lastToken: string | null = null;
