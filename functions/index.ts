@@ -34,18 +34,27 @@ if (!GEMINI_API_KEY) {
   logger.info("✅ GEMINI_API_KEY loaded");
 }
 const LOGGING_MODE = process.env.LOGGING_MODE || "gusbug";
-const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || "";
+const STRIPE_SECRET_KEY = process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY || "";
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || "";
 const STRIPE_SUCCESS_URL = process.env.STRIPE_SUCCESS_URL || "https://example.com/success";
 const STRIPE_CANCEL_URL = process.env.STRIPE_CANCEL_URL || "https://example.com/cancel";
-const STRIPE_20_TOKEN_PRICE_ID = process.env.STRIPE_20_TOKEN_PRICE_ID || "";
-const STRIPE_50_TOKEN_PRICE_ID = process.env.STRIPE_50_TOKEN_PRICE_ID || "";
-const STRIPE_100_TOKEN_PRICE_ID = process.env.STRIPE_100_TOKEN_PRICE_ID || "";
+const STRIPE_20_TOKEN_PRICE_ID =
+  process.env.EXPO_PUBLIC_STRIPE_20_TOKEN_PRICE_ID || "";
+const STRIPE_50_TOKEN_PRICE_ID =
+  process.env.EXPO_PUBLIC_STRIPE_50_TOKEN_PRICE_ID || "";
+const STRIPE_100_TOKEN_PRICE_ID =
+  process.env.EXPO_PUBLIC_STRIPE_100_TOKEN_PRICE_ID || "";
+
+if (!process.env.EXPO_PUBLIC_STRIPE_SUB_PRICE_ID) {
+  logger.warn("⚠️ Missing EXPO_PUBLIC_STRIPE_SUB_PRICE_ID in .env");
+}
 
 if (!STRIPE_SECRET_KEY) {
-  logger.error("❌ STRIPE_SECRET_KEY missing. Set this in your environment.");
+  logger.error(
+    "❌ EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY missing. Set this in your environment."
+  );
 } else {
-  logger.info("✅ STRIPE_SECRET_KEY loaded");
+  logger.info("✅ Stripe key loaded");
 }
 if (!STRIPE_WEBHOOK_SECRET) {
   logger.warn("⚠️ STRIPE_WEBHOOK_SECRET not set. Webhook verification will fail.");

@@ -9,6 +9,7 @@ import {
 import axios from 'axios';
 import { fetchTopUsersByPoints } from '@/services/firestoreService';
 import { logFirestoreError } from '@/lib/logging';
+import Constants from 'expo-constants';
 import { showGracefulError } from '@/utils/gracefulError';
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { useTheme } from "@/components/theme/theme";
@@ -16,7 +17,11 @@ import { ensureAuth } from '@/utils/authGuard';
 import AuthGate from '@/components/AuthGate';
 import { useAuth } from '@/hooks/useAuth';
 
-const PROJECT_ID = process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID || '';
+const PROJECT_ID =
+  Constants.expoConfig.extra.EXPO_PUBLIC_FIREBASE_PROJECT_ID || '';
+if (!PROJECT_ID) {
+  console.warn('⚠️ Missing EXPO_PUBLIC_FIREBASE_PROJECT_ID in .env');
+}
 
 async function fetchTopReligions(idToken: string) {
   const url = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents:runQuery`;

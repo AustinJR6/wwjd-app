@@ -1,8 +1,15 @@
 import axios from 'axios';
 import { logFirestoreError } from './App/lib/logging';
+import Constants from 'expo-constants';
 
-const API_KEY = process.env.EXPO_PUBLIC_FIREBASE_API_KEY || '';
-const PROJECT_ID = process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID || '';
+const API_KEY = Constants.expoConfig.extra.EXPO_PUBLIC_FIREBASE_API_KEY || '';
+const PROJECT_ID = Constants.expoConfig.extra.EXPO_PUBLIC_FIREBASE_PROJECT_ID || '';
+if (!API_KEY) {
+  console.warn('⚠️ Missing EXPO_PUBLIC_FIREBASE_API_KEY in .env');
+}
+if (!PROJECT_ID) {
+  console.warn('⚠️ Missing EXPO_PUBLIC_FIREBASE_PROJECT_ID in .env');
+}
 
 const ID_BASE = `https://identitytoolkit.googleapis.com/v1`;
 export const FIRESTORE_BASE = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents`;
