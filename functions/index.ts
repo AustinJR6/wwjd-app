@@ -1129,6 +1129,15 @@ export const createStripeCheckout = functions
   logger.info("🛒 createStripeCheckout payload", req.body);
   const { uid, email, priceId, type, quantity, returnUrl } = req.body || {};
 
+  if (typeof uid !== "string" || !uid.trim() ||
+      typeof priceId !== "string" || !priceId.trim()) {
+    logger.warn("⚠️ Missing uid or priceId", { uid, priceId });
+    res.status(400).json({ error: "Missing uid or priceId" });
+    return;
+  }
+
+  logger.debug("Creating Stripe session with", { uid, priceId });
+
   const missing: string[] = [];
   if (!uid) missing.push("uid");
   if (!email) missing.push("email");

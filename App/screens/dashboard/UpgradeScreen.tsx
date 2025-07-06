@@ -65,6 +65,14 @@ export default function UpgradeScreen({ navigation }: Props) {
         return;
       }
 
+      if (!user.uid || !PRICE_IDS.SUBSCRIPTION) {
+        console.warn('Missing uid or priceId when starting Stripe checkout', {
+          uid: user.uid,
+          priceId: PRICE_IDS.SUBSCRIPTION,
+        });
+        return;
+      }
+
       const url = await createStripeCheckout(user.uid, user.email, {
         type: 'subscription',
         priceId: PRICE_IDS.SUBSCRIPTION,

@@ -21,6 +21,19 @@ export async function createStripeCheckout(
     returnUrl?: string;
   }
 ): Promise<string> {
+  if (
+    typeof uid !== 'string' || !uid.trim() ||
+    typeof options.priceId !== 'string' || !options.priceId.trim()
+  ) {
+    console.warn('Missing uid or priceId for createStripeCheckout', {
+      uid,
+      priceId: options.priceId,
+    });
+    throw new Error('Missing uid or priceId');
+  }
+
+  console.log('Creating Stripe session with:', { uid, priceId: options.priceId });
+
   let headers;
   try {
     headers = await getAuthHeaders();
