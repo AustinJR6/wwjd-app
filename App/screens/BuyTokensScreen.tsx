@@ -69,6 +69,13 @@ export default function BuyTokensScreen({ navigation }: Props) {
           : amount === 15
           ? PRICE_IDS.TOKENS_50
           : PRICE_IDS.TOKENS_100;
+      if (!user.uid || !priceId) {
+        console.warn('Missing uid or priceId when starting Stripe checkout', {
+          uid: user.uid,
+          priceId,
+        });
+        return;
+      }
       const url = await createStripeCheckout(user.uid, user.email, {
         type: 'tokens',
         priceId,
