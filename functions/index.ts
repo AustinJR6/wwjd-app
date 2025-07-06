@@ -230,7 +230,7 @@ export const awardPointsToUser = functions
           return;
         }
         const userData = userSnap.data() || {};
-        const religionId = userData.religion;
+        const religionId = userData?.religion ?? "SpiritGuide";
         const organizationId = userData.organizationId;
 
         await db.runTransaction(async (t) => {
@@ -802,7 +802,7 @@ export const skipDailyChallenge = functions
         weekStart = now;
       }
       cost = newSkipCount === 0 ? 0 : Math.pow(2, newSkipCount);
-      const tokens = data.tokens || 0;
+      const tokens = data?.tokens ?? 0;
       if (tokens < cost) {
         return false;
       }
@@ -1455,12 +1455,14 @@ export const onUserCreate = functions
   .user()
   .onCreate(async (user: admin.auth.UserRecord) => {
     const uid = user.uid;
-    logger.info(`onUserCreate triggered for ${uid}`);
+    console.log(`onUserCreate triggered for ${uid}`);
     try {
       const timestamp = admin.firestore.FieldValue.serverTimestamp();
       await db.collection("users").doc(uid).set({
         uid,
         email: user.email || "",
+        displayName: user.displayName || "New User",
+        emailVerified: user.emailVerified || false,
         createdAt: timestamp,
         isSubscribed: false,
         lastFreeAsk: timestamp,
@@ -1475,15 +1477,15 @@ export const onUserCreate = functions
       });
 
       await Promise.all([
-        db.collection("journalEntries").doc(uid).set({ entries: [] }),
-        db.collection("confessionalSessions").doc(uid).set({ messages: [] }),
+        db.collection("journalEntries").doc(uid).set({ placeholder: true }),
+        db.collection("confessionalSessions").doc(uid).set({ placeholder: true }),
         db.collection("dailyChallenges").doc(uid).set({ seenChallenges: [] }),
         db.collection("leaderboards").doc(uid).set({ score: 0 }),
         db.collection("tokens").doc(uid).set({ earned: 0, spent: 0 }),
       ]);
 
-      logger.info(`onUserCreate completed for ${uid}`);
+      console.log(`onUserCreate completed for ${uid}`);
     } catch (err) {
-      logger.error(`onUserCreate failed for ${uid}`, err);
+      console.error(`onUserCreate failed for ${uid}`, err);
     }
   });

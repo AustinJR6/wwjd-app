@@ -9,9 +9,6 @@ import { useUser } from '@/hooks/useUser';
 import { useUserStore } from '@/state/userStore';
 import { getTokenCount } from '@/utils/TokenManager';
 import { getDocument, setDocument } from '@/services/firestoreService';
-import axios from 'axios';
-import { FIRESTORE_BASE } from '../../../firebaseRest';
-import { getIdToken } from '@/utils/authUtils';
 import { useLookupLists } from '@/hooks/useLookupLists';
 import { updateUserFields } from '@/services/userService';
 import { useTheme } from '@/components/theme/theme';
@@ -21,6 +18,8 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/navigation/RootStackParamList';
 import AuthGate from '@/components/AuthGate';
 import { useAuth } from '@/hooks/useAuth';
+import { doc, updateDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 export default function ProfileScreen() {
   const { user } = useUser();
@@ -105,14 +104,9 @@ export default function ProfileScreen() {
     if (!uidVal) return;
     setReligionUpdating(true);
     console.log('➡️ Updating religion to', value);
-    const body = { fields: { religion: { stringValue: value } } };
     try {
-      const token = await getIdToken(true);
-      const url = `${FIRESTORE_BASE}/users/${uidVal}`;
-      const res = await axios.patch(url, body, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      console.log('✅ Religion update response', res.data);
+      await updateDoc(doc(db, 'users', uidVal), { religion: value });
+      console.log('✅ Religion updated');
       updateUser({ religion: value });
       await setDocument(`users/${uidVal}`, { lastChallenge: null });
       Alert.alert('Religion Updated');
