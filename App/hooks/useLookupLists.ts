@@ -3,7 +3,14 @@ import { fetchRegionList, RegionItem } from '../../regionRest';
 import { getReligions, ReligionItem } from '../../firebase/religion';
 
 const FALLBACK_REGION: RegionItem = { id: 'unknown', name: 'Unknown' };
-const FALLBACK_RELIGION: ReligionItem = { id: 'spiritual', name: 'Spiritual Guide' };
+const FALLBACK_RELIGION: ReligionItem = {
+  id: 'spiritual',
+  name: 'Spiritual Guide',
+  aiVoice: '',
+  defaultChallenges: [],
+  totalPoints: 0,
+  language: '',
+};
 
 export function useLookupLists() {
   const [regions, setRegions] = useState<RegionItem[]>([]);

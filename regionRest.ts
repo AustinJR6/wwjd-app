@@ -22,14 +22,14 @@ export async function fetchRegionList(): Promise<RegionItem[]> {
     const res = await axios.get(url, {
       headers: { Authorization: `Bearer ${idToken}` },
     });
-    const docs = res.data.documents || [];
+    const docs = (res.data as any).documents || [];
     regionCache = docs.map((doc: any) => {
       const id = doc.name.split('/').pop() || '';
       const fields = doc.fields || {};
       const name = fields.name?.stringValue || 'Unnamed';
       return { id, name };
     });
-    return regionCache;
+    return regionCache ?? [];
   } catch (err: any) {
     logFirestoreError('GET', 'regions', err);
     throw new Error('Unable to fetch regions');

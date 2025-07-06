@@ -21,21 +21,21 @@ interface UserStore {
   updateTokens: (tokens: number) => void;
 }
 
-export const useUserStore = create<UserStore>((set) => ({
+export const useUserStore = create<UserStore>((set: any) => ({
   user: null,
 
-  setUser: (user) => set({ user }),
+  setUser: (user: UserData) => set({ user }),
 
-  updateUser: (updates) =>
-    set((state) => {
+  updateUser: (updates: Partial<UserData>) =>
+    set((state: UserStore) => {
       if (!state.user) return state;
       return { user: { ...state.user, ...updates } };
     }),
 
   clearUser: () => set({ user: null }),
 
-  updateTokens: (tokens) =>
-    set((state) => {
+  updateTokens: (tokens: number) =>
+    set((state: UserStore) => {
       if (!state.user) return state;
       return { user: { ...state.user, tokens } };
     }),

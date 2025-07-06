@@ -94,7 +94,8 @@ export default function ConfessionalScreen() {
 
       console.log('Firebase currentUser:', await getCurrentUserId());
       let token = await getToken(true);
-      console.log('Using token', token ? token.slice(0, 10) : 'none');
+      if (!token) throw new Error('Missing token');
+      console.log('Using token', token.slice(0, 10));
 
       const userData = await getDocument(`users/${uid}`);
       const religion = userData?.religion ?? 'SpiritGuide';
@@ -122,7 +123,7 @@ export default function ConfessionalScreen() {
           },
         );
 
-      let response;
+      let response: any;
       try {
         response = await makeRequest(token);
       } catch (err: any) {
@@ -130,7 +131,8 @@ export default function ConfessionalScreen() {
         if (err.response?.status === 401) {
           console.warn('Token expired, refreshing...');
           token = await getToken(true);
-          console.log('Refreshed token', token ? token.slice(0, 10) : 'none');
+          if (!token) throw new Error('Missing token');
+          console.log('Refreshed token', token.slice(0, 10));
           response = await makeRequest(token);
         } else {
           throw err;

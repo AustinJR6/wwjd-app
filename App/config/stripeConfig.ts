@@ -1,21 +1,21 @@
 import Constants from 'expo-constants';
 
 export const STRIPE_SUCCESS_URL =
-  Constants.expoConfig.extra.EXPO_PUBLIC_STRIPE_SUCCESS_URL ||
+  Constants.expoConfig?.extra?.EXPO_PUBLIC_STRIPE_SUCCESS_URL ||
   'https://example.com/success';
 export const STRIPE_CANCEL_URL =
-  Constants.expoConfig.extra.EXPO_PUBLIC_STRIPE_CANCEL_URL ||
+  Constants.expoConfig?.extra?.EXPO_PUBLIC_STRIPE_CANCEL_URL ||
   'https://example.com/cancel';
 
 const PRICE_IDS = {
   SUBSCRIPTION:
-    Constants.expoConfig.extra.EXPO_PUBLIC_STRIPE_SUB_PRICE_ID || '',
+    Constants.expoConfig?.extra?.EXPO_PUBLIC_STRIPE_SUB_PRICE_ID || '',
   TOKENS_20:
-    Constants.expoConfig.extra.EXPO_PUBLIC_STRIPE_20_TOKEN_PRICE_ID || '',
+    Constants.expoConfig?.extra?.EXPO_PUBLIC_STRIPE_20_TOKEN_PRICE_ID || '',
   TOKENS_50:
-    Constants.expoConfig.extra.EXPO_PUBLIC_STRIPE_50_TOKEN_PRICE_ID || '',
+    Constants.expoConfig?.extra?.EXPO_PUBLIC_STRIPE_50_TOKEN_PRICE_ID || '',
   TOKENS_100:
-    Constants.expoConfig.extra.EXPO_PUBLIC_STRIPE_100_TOKEN_PRICE_ID || '',
+    Constants.expoConfig?.extra?.EXPO_PUBLIC_STRIPE_100_TOKEN_PRICE_ID || '',
 };
 
 if (!PRICE_IDS.SUBSCRIPTION) {

@@ -224,6 +224,8 @@ export default function ChallengeScreen() {
     const uid = await ensureAuth(await getCurrentUserId());
 
     try {
+      const userData = (await getDocument(`users/${uid}`)) || {};
+      const religion = userData?.religion ?? 'SpiritGuide';
       await createMultiDayChallenge('Provide a 3-day gratitude challenge.', 3, religion);
       fetchChallenge(true);
     } catch (err) {

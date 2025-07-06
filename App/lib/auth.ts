@@ -6,7 +6,7 @@ import Constants from 'expo-constants';
 const TOKEN_KEY = 'firebase_id_token';
 const REFRESH_KEY = 'firebase_refresh_token';
 const UID_KEY = 'firebase_uid';
-const API_KEY = Constants.expoConfig.extra.EXPO_PUBLIC_FIREBASE_API_KEY || '';
+const API_KEY = Constants.expoConfig?.extra?.EXPO_PUBLIC_FIREBASE_API_KEY || '';
 if (!API_KEY) {
   console.warn('⚠️ Missing EXPO_PUBLIC_FIREBASE_API_KEY in .env');
 }
@@ -97,11 +97,19 @@ export async function getIdToken(forceRefresh = false): Promise<string | null> {
     return currentToken;
   }
   const url = `https://securetoken.googleapis.com/v1/token?key=${API_KEY}`;
-  const res = await axios.post(url, { grant_type: 'refresh_token', refresh_token: currentRefresh });
-  currentToken = res.data.id_token;
-  currentRefresh = res.data.refresh_token;
-  await setItem(TOKEN_KEY, currentToken);
-  await setItem(REFRESH_KEY, currentRefresh);
+  const res = await axios.post(url, {
+    grant_type: 'refresh_token',
+    refresh_token: currentRefresh,
+  });
+  const { id_token, refresh_token } = res.data as {
+    id_token?: string;
+    refresh_token?: string;
+  };
+  currentToken = id_token ?? null;
+  currentRefresh = refresh_token ?? null;
+  if (!currentToken || !currentRefresh) return null;
+  await setItem(TOKEN_KEY, currentToken ?? '');
+  await setItem(REFRESH_KEY, currentRefresh ?? '');
   return currentToken;
 }
 

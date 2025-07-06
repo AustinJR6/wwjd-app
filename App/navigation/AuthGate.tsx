@@ -72,20 +72,21 @@ export default function AuthGate() {
       let profile = useUserStore.getState().user;
       if (!profile || profile.uid !== uid) {
         try {
-          profile = await fetchUserProfile(uid);
-          if (profile) {
+          const fetched = await fetchUserProfile(uid);
+          if (fetched) {
             useUserStore.getState().setUser({
-              uid: profile.uid,
-              email: profile.email,
-              username: profile.username ?? '',
-              displayName: profile.displayName ?? '',
-              religion: profile?.religion ?? 'SpiritGuide',
-              region: profile.region ?? '',
-              organizationId: profile.organizationId,
-              isSubscribed: profile?.isSubscribed ?? false,
-              onboardingComplete: profile.onboardingComplete,
+              uid: fetched.uid,
+              email: fetched.email,
+              username: fetched.username ?? '',
+              displayName: fetched.displayName ?? '',
+              religion: fetched?.religion ?? 'SpiritGuide',
+              region: fetched.region ?? '',
+              organizationId: fetched.organizationId,
+              isSubscribed: fetched?.isSubscribed ?? false,
+              onboardingComplete: fetched.onboardingComplete,
               tokens: 0,
             });
+            profile = useUserStore.getState().user;
           }
         } catch (err) {
           console.warn('Failed to fetch profile', err);

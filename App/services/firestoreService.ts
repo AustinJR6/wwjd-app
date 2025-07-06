@@ -4,7 +4,7 @@ import { showPermissionDeniedForPath } from '@/utils/gracefulError';
 import { logFirestoreError } from '@/lib/logging';
 import Constants from 'expo-constants';
 
-const PROJECT_ID = Constants.expoConfig.extra.EXPO_PUBLIC_FIREBASE_PROJECT_ID || '';
+const PROJECT_ID = Constants.expoConfig?.extra?.EXPO_PUBLIC_FIREBASE_PROJECT_ID || '';
 if (!PROJECT_ID) {
   console.warn('⚠️ Missing EXPO_PUBLIC_FIREBASE_PROJECT_ID in .env');
 }
@@ -128,8 +128,11 @@ export async function addDocument(collectionPath: string, data: any): Promise<st
   try {
     const body = { fields: toFirestoreFields(data) };
     console.log('➡️ Firestore ADD', collectionPath, data);
-    const res = await axios.post(`${BASE}/${collectionPath}`, body, { headers: await authHeaders() });
-    const parts = res.data.name.split('/');
+    const res = await axios.post(`${BASE}/${collectionPath}`, body, {
+      headers: await authHeaders(),
+    });
+    const resData = res.data as { name: string };
+    const parts = resData.name.split('/');
     return parts[parts.length - 1];
   } catch (err: any) {
     logFirestoreError('POST', collectionPath, err);
@@ -162,8 +165,10 @@ export async function queryCollection(collectionPath: string): Promise<any[]> {
   warnIfInvalidPath(collectionPath, false);
   try {
     console.log('➡️ Firestore QUERY', collectionPath);
-    const res = await axios.get(`${BASE}/${collectionPath}`, { headers: await authHeaders() });
-    const docs = res.data.documents || [];
+    const res = await axios.get(`${BASE}/${collectionPath}`, {
+      headers: await authHeaders(),
+    });
+    const docs = (res.data as any).documents || [];
     return docs.map((d: any) => ({ id: d.name.split('/').pop(), ...fromFirestore(d) }));
   } catch (err: any) {
     logFirestoreError('GET', collectionPath, err);
@@ -180,8 +185,10 @@ export async function runStructuredQuery(query: any): Promise<any[]> {
   const url = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents:runQuery`;
   try {
     console.log('➡️ Firestore RUNQUERY', JSON.stringify(query));
-    const res = await axios.post(url, { structuredQuery: query }, { headers: await authHeaders() });
-    const docs = Array.isArray(res.data) ? res.data : [];
+    const res = await axios.post(url, { structuredQuery: query }, {
+      headers: await authHeaders(),
+    });
+    const docs = Array.isArray(res.data) ? (res.data as any[]) : [];
     return docs
       .filter((d: any) => d.document)
       .map((d: any) => ({ id: d.document.name.split('/').pop(), ...fromFirestore(d.document) }));

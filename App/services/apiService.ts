@@ -53,7 +53,7 @@ export async function createStripeCheckout(
     const res = await sendRequestWithGusBugLogging(() =>
       axios.post<StripeCheckoutResponse>(STRIPE_CHECKOUT_URL, payload, {
         headers,
-      })
+      }) as unknown as Promise<Axios.AxiosXHR<StripeCheckoutResponse>>
     );
     return res.data.url;
   } catch (err: any) {
