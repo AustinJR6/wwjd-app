@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { STRIPE_CHECKOUT_URL, TOKEN_CHECKOUT_URL } from '@/config/apiConfig';
+import { STRIPE_CHECKOUT_URL, TOKEN_CHECKOUT_URL, SUBSCRIPTION_CHECKOUT_URL } from '@/config/apiConfig';
 import { STRIPE_SUCCESS_URL, STRIPE_CANCEL_URL } from '@/config/stripeConfig';
 import { getAuthHeaders } from '@/utils/authUtils';
 import { sendRequestWithGusBugLogging } from '@/utils/gusBugLogger';
@@ -91,6 +91,39 @@ export async function startTokenCheckout(uid: string, priceId: string): Promise<
     return url;
   } catch (err: any) {
     console.warn('❌ Firestore REST error on startTokenCheckout:', err.response?.data || err.message);
+    if (err.response?.status === 403) {
+      console.warn('Firestore 403 – not a session issue', err);
+      showPermissionDenied();
+      throw new Error('Permission denied');
+    }
+    throw new Error(err.response?.data?.error || 'Unable to start checkout.');
+  }
+}
+
+export async function startSubscriptionCheckout(uid: string, priceId: string): Promise<string> {
+  if (typeof uid !== 'string' || !uid.trim() || typeof priceId !== 'string' || !priceId.trim()) {
+    console.warn('Missing uid or priceId for startSubscriptionCheckout', { uid, priceId });
+    throw new Error('Missing uid or priceId');
+  }
+
+  console.log('📦 Starting OneVine+ subscription...', { uid, priceId });
+
+  let headers;
+  try {
+    headers = await getAuthHeaders();
+  } catch {
+    logTokenIssue('startSubscriptionCheckout');
+    throw new Error('Missing auth token');
+  }
+
+  try {
+    const payload = { uid, priceId };
+    const res = await axios.post<StripeCheckoutResponse>(SUBSCRIPTION_CHECKOUT_URL, payload, { headers });
+    const url = (res.data as any).checkoutUrl || res.data.url;
+    console.log('🔗 Redirecting to:', url);
+    return url;
+  } catch (err: any) {
+    console.warn('❌ Firestore REST error on startSubscriptionCheckout:', err.response?.data || err.message);
     if (err.response?.status === 403) {
       console.warn('Firestore 403 – not a session issue', err);
       showPermissionDenied();

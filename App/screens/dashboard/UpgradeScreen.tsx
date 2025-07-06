@@ -1,15 +1,14 @@
 import React, { useState } from 'react';
 import CustomText from '@/components/CustomText';
-import { View, StyleSheet, Alert } from 'react-native';
-import * as WebBrowser from 'expo-web-browser';
+import { View, StyleSheet, Alert, Linking } from 'react-native';
 import Button from '@/components/common/Button';
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { useTheme } from "@/components/theme/theme";
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from "@/navigation/RootStackParamList";
 import { useUser } from '@/hooks/useUser';
-import { createStripeCheckout } from '@/services/apiService';
-import { PRICE_IDS } from '@/config/stripeConfig';
+import { startSubscriptionCheckout } from '@/services/apiService';
+import { ONEVINE_PLUS_PRICE_ID } from '@/config/stripeConfig';
 import { getAuthHeaders } from '@/utils/TokenManager';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Upgrade'>;
@@ -65,20 +64,17 @@ export default function UpgradeScreen({ navigation }: Props) {
         return;
       }
 
-      if (!user.uid || !PRICE_IDS.SUBSCRIPTION) {
+      if (!user.uid || !ONEVINE_PLUS_PRICE_ID) {
         console.warn('Missing uid or priceId when starting Stripe checkout', {
           uid: user.uid,
-          priceId: PRICE_IDS.SUBSCRIPTION,
+          priceId: ONEVINE_PLUS_PRICE_ID,
         });
         return;
       }
 
-      const url = await createStripeCheckout(user.uid, user.email, {
-        type: 'subscription',
-        priceId: PRICE_IDS.SUBSCRIPTION,
-      });
+      const url = await startSubscriptionCheckout(user.uid, ONEVINE_PLUS_PRICE_ID);
       if (url) {
-        await WebBrowser.openBrowserAsync(url);
+        await Linking.openURL(url);
       } else {
         Alert.alert('Checkout Error', 'Unable to start checkout. Please try again later.');
       }
@@ -106,7 +102,7 @@ export default function UpgradeScreen({ navigation }: Props) {
         <CustomText style={styles.price}>$9.99 / month</CustomText>
 
         <View style={styles.buttonWrap}>
-          <Button title="Join OneVine+" onPress={handleUpgrade} disabled={loading} />
+          <Button title="Join OneVine+" onPress={handleUpgrade} disabled={loading} loading={loading} />
         </View>
 
         <View style={styles.buttonWrap}>
