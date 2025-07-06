@@ -115,7 +115,7 @@ export async function loadUser(uid: string): Promise<void> {
       username: user.username ?? '',
       displayName: user.displayName ?? "",
       isSubscribed: user.isSubscribed,
-      religion: user.religion,
+      religion: user.religion ?? 'SpiritGuide',
       region: user.region ?? "",
       organizationId: user.organizationId,
       onboardingComplete: user.onboardingComplete,

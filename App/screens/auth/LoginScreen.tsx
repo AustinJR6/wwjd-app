@@ -41,7 +41,7 @@ export default function LoginScreen() {
             username: profile.username ?? '',
             displayName: profile.displayName ?? '',
             isSubscribed: profile.isSubscribed,
-            religion: profile.religion,
+            religion: profile.religion ?? 'SpiritGuide',
             region: profile.region ?? '',
             organizationId: profile.organizationId,
             onboardingComplete: profile.onboardingComplete,
