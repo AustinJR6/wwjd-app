@@ -14,9 +14,9 @@ export async function canLoadNewChallenge(): Promise<boolean> {
   if (!uid) return false;
 
   const userData = (await getDocument(`users/${uid}`)) || {};
-  const isSubscribed = userData.isSubscribed || false;
-  const tokens = userData.tokens || 0;
-  let dailyChallengeCount = userData.dailyChallengeCount || 0;
+  const isSubscribed = userData?.isSubscribed ?? false;
+  const tokens = userData?.tokens ?? 0;
+  let dailyChallengeCount = userData?.dailyChallengeCount ?? 0;
   const lastDate = userData.lastChallengeLoadDate
     ? new Date(userData.lastChallengeLoadDate).toISOString().split('T')[0]
     : null;

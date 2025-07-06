@@ -79,10 +79,10 @@ export default function AuthGate() {
               email: profile.email,
               username: profile.username ?? '',
               displayName: profile.displayName ?? '',
-              religion: profile.religion,
+              religion: profile?.religion ?? 'SpiritGuide',
               region: profile.region ?? '',
               organizationId: profile.organizationId,
-              isSubscribed: profile.isSubscribed,
+              isSubscribed: profile?.isSubscribed ?? false,
               onboardingComplete: profile.onboardingComplete,
               tokens: 0,
             });

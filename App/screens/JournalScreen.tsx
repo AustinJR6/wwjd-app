@@ -162,7 +162,7 @@ export default function JournalScreen() {
         );
         setEntries(list);
         const userData = await getDocument(`users/${uid}`);
-        setReligion(userData?.religion || '');
+        setReligion(userData?.religion ?? 'SpiritGuide');
       } catch (err: any) {
         console.error('🔥 API Error:', err?.response?.data || err.message);
       } finally {

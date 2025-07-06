@@ -32,7 +32,7 @@ export default function ProfileScreen() {
   );
   const { regions, religions, loading: listsLoading } = useLookupLists();
   const [region, setRegion] = useState(user?.region || '');
-  const [religion, setReligion] = useState(user?.religion || '');
+  const [religion, setReligion] = useState(user?.religion ?? 'SpiritGuide');
   const [tokens, setTokens] = useState(0);
   const [points, setPoints] = useState(0);
   const [organization, setOrganization] = useState<string>('');
@@ -77,7 +77,7 @@ export default function ProfileScreen() {
         setPoints(profile.individualPoints || 0);
         setUsername(profile.username || profile.displayName || '');
         setRegion(profile.region || '');
-        setReligion(profile.religion || '');
+        setReligion(profile.religion ?? 'SpiritGuide');
         console.log('🙏 Current religion from Firestore:', profile.religion);
         if (profile.organizationName) {
           setOrganization(profile.organizationName);

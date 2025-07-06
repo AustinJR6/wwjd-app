@@ -6,7 +6,7 @@ export const getTokenCount = async () => {
   if (!uid) return 0;
   try {
     const snapshot = await getDocument(`users/${uid}`);
-    const count = snapshot && snapshot.tokens ? snapshot.tokens : 0;
+    const count = snapshot?.tokens ?? 0;
     console.log('🪙 Token count:', count);
     return count;
   } catch (err) {
