@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import CustomText from '@/components/CustomText';
 import {
   View,
@@ -7,12 +7,13 @@ import {
   ActivityIndicator,
   StyleSheet,
   Alert,
-  ScrollView} from 'react-native';
+  ScrollView,
+  ToastAndroid,
+} from 'react-native';
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import Button from '@/components/common/Button';
 import { useTheme } from "@/components/theme/theme";
 import { getDocument } from '@/services/firestoreService';
-import { useUser } from '@/hooks/useUser';
 import { ensureAuth } from '@/utils/authGuard';
 import { getToken, getCurrentUserId } from '@/utils/TokenManager';
 import { showGracefulError } from '@/utils/gracefulError';
@@ -21,11 +22,8 @@ import type { GeminiMessage } from '@/services/geminiService';
 import { getPersonaPrompt } from '@/utils/religionPersona';
 import { CONFESSIONAL_AI_URL } from '@/utils/constants';
 import { useAuth } from '@/hooks/useAuth';
-import {
-  saveConfessionalMessage,
-  fetchConfessionalHistory,
-  ConfessionalMessage,
-} from '@/services/confessionalChatService';
+import { saveTempMessage, fetchTempSession } from '@/services/confessionalSessionService';
+import { useConfessionalSession } from '@/hooks/useConfessionalSession';
 import AuthGate from '@/components/AuthGate';
 
 export default function ConfessionalScreen() {
@@ -81,23 +79,8 @@ export default function ConfessionalScreen() {
     [theme],
   );
   const [text, setText] = useState('');
-  const [messages, setMessages] = useState<ConfessionalMessage[]>([]);
   const [loading, setLoading] = useState(false);
-  const { user } = useUser();
-
-  useEffect(() => {
-    if (!authReady) return;
-    if (!uid) return;
-    const load = async () => {
-      const uidCheck = await ensureAuth(await getCurrentUserId());
-      console.log('Firebase currentUser:', await getCurrentUserId());
-      const preview = await getToken(true);
-      console.log('ID Token:', preview);
-      const hist = await fetchConfessionalHistory(uidCheck);
-      setMessages(hist);
-    };
-    load();
-  }, [authReady, uid, user]);
+  const { messages, setMessages, endSession } = useConfessionalSession();
 
   const handleConfess = async () => {
     if (!text.trim()) {
@@ -114,16 +97,16 @@ export default function ConfessionalScreen() {
       console.log('Using token', token ? token.slice(0, 10) : 'none');
 
       const userData = await getDocument(`users/${uid}`);
-      const religion = userData.religion || 'Spiritual Guide';
+      const religion = userData.religion;
       const role = getPersonaPrompt(religion);
-      console.log('👤 Persona resolved', { religion, role });
+      console.log('👤 Persona resolved', { religionId: religion, role });
 
-      await saveConfessionalMessage(uid, 'user', text);
+      await saveTempMessage(uid, 'user', text);
 
-      const history = await fetchConfessionalHistory(uid);
+      const history = await fetchTempSession(uid);
       const historyMsgs: GeminiMessage[] = history.map((m) => ({
         role: m.role,
-        text: m.content,
+        text: m.text,
       }));
 
       const makeRequest = (idTok: string) =>
@@ -158,9 +141,9 @@ export default function ConfessionalScreen() {
       console.log('✝️ Confessional input:', text);
       console.log('🕊️ Confessional AI reply:', answer);
 
-      await saveConfessionalMessage(uid, 'assistant', answer);
+      await saveTempMessage(uid, 'assistant', answer);
 
-      setMessages([...history, { role: 'assistant', content: answer }]);
+      setMessages([...history, { role: 'assistant', text: answer }]);
       setText('');
     } catch (err) {
       console.error('❌ Confession error:', err);
@@ -186,9 +169,12 @@ export default function ConfessionalScreen() {
         <View style={styles.buttonWrap}>
           <Button title="Send" onPress={handleConfess} disabled={loading} />
         </View>
+        <View style={styles.buttonWrap}>
+          <Button title="Finish Session" onPress={async () => { await endSession(); ToastAndroid.show('Session saved', ToastAndroid.SHORT); }} />
+        </View>
         {loading && <ActivityIndicator size="large" color={theme.colors.primary} />}
-        {messages.map((m, idx) => (
-          <CustomText key={idx} style={styles.response}>{m.role === 'user' ? 'You: ' : ''}{m.content}</CustomText>
+        {messages.map((m) => (
+          <CustomText key={m.id} style={styles.response}>{m.role === 'user' ? 'You: ' : ''}{m.text}</CustomText>
         ))}
       </ScrollView>
     </ScreenContainer>

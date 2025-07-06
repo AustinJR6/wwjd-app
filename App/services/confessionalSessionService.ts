@@ -19,10 +19,10 @@ export async function saveTempMessage(
 ): Promise<void> {
   const storedUid = await ensureAuth(uid);
   if (!storedUid) return;
-  console.warn('🔥 Attempting Firestore access:', `confessionalSessions/${storedUid}/messages`);
+  console.warn('🔥 Attempting Firestore access:', `tempConfessionalSessions/${storedUid}/messages`);
   console.warn('👤 Using UID:', storedUid);
   try {
-    await addDocument(`confessionalSessions/${storedUid}/messages`, {
+    await addDocument(`tempConfessionalSessions/${storedUid}/messages`, {
       role,
       text,
       timestamp: new Date().toISOString(),
@@ -37,11 +37,11 @@ export async function saveTempMessage(
 export async function fetchTempSession(uid: string): Promise<TempMessage[]> {
   const storedUid = await ensureAuth(uid);
   if (!storedUid) return [];
-  console.warn('🔥 Attempting Firestore access:', `confessionalSessions/${storedUid}/messages`);
+  console.warn('🔥 Attempting Firestore access:', `tempConfessionalSessions/${storedUid}/messages`);
   console.warn('👤 Using UID:', storedUid);
   try {
     return await querySubcollection(
-      `confessionalSessions/${storedUid}`,
+      `tempConfessionalSessions/${storedUid}`,
       'messages',
       'timestamp',
       'ASCENDING',
@@ -55,12 +55,12 @@ export async function fetchTempSession(uid: string): Promise<TempMessage[]> {
 export async function clearConfessionalSession(uid: string): Promise<void> {
   const storedUid = await ensureAuth(uid);
   if (!storedUid) return;
-  console.warn('🔥 Attempting Firestore access:', `confessionalSessions/${storedUid}/messages`);
+  console.warn('🔥 Attempting Firestore access:', `tempConfessionalSessions/${storedUid}/messages`);
   console.warn('👤 Using UID:', storedUid);
   try {
-    const docs = await querySubcollection(`confessionalSessions/${storedUid}`, 'messages');
+    const docs = await querySubcollection(`tempConfessionalSessions/${storedUid}`, 'messages');
     for (const msg of docs) {
-      await deleteDocument(`confessionalSessions/${storedUid}/messages/${msg.id}`);
+      await deleteDocument(`tempConfessionalSessions/${storedUid}/messages/${msg.id}`);
     }
   } catch (error: any) {
     console.warn('💬 Confessional Error', error.response?.status, error.message);
