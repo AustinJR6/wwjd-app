@@ -1,10 +1,9 @@
 import React from 'react';
 import CustomText from '@/components/CustomText';
-import { View, StyleSheet, Alert } from 'react-native';
-import * as WebBrowser from 'expo-web-browser';
+import { View, StyleSheet, Alert, Linking } from 'react-native';
 import Button from '@/components/common/Button';
 import { useUser } from '@/hooks/useUser';
-import { createStripeCheckout } from '@/services/apiService';
+import { startTokenCheckout } from '@/services/apiService';
 import { PRICE_IDS } from '@/config/stripeConfig';
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { useTheme } from "@/components/theme/theme";
@@ -60,35 +59,35 @@ export default function BuyTokensScreen({ navigation }: Props) {
     [theme],
   );
   const { user } = useUser();
+  const [loading, setLoading] = React.useState<number | null>(null);
   const purchase = async (amount: number) => {
     if (!user) return;
+    setLoading(amount);
     try {
       const priceId =
-        amount === 5
+        amount === 20
           ? PRICE_IDS.TOKENS_20
-          : amount === 15
+          : amount === 50
           ? PRICE_IDS.TOKENS_50
           : PRICE_IDS.TOKENS_100;
       if (!user.uid || !priceId) {
-        console.warn('Missing uid or priceId when starting Stripe checkout', {
-          uid: user.uid,
-          priceId,
-        });
+        console.warn('Missing uid or priceId when starting Stripe checkout', { uid: user.uid, priceId });
         return;
       }
-      const url = await createStripeCheckout(user.uid, user.email, {
-        type: 'tokens',
-        priceId,
-        quantity: amount,
-      });
+      const payload = { uid: user.uid, priceId };
+      console.log('🪙 Starting Stripe checkout for', amount, 'tokens...', payload);
+      const url = await startTokenCheckout(user.uid, priceId);
       if (url) {
-        await WebBrowser.openBrowserAsync(url);
+        console.log('🔗 Redirecting to Stripe:', url);
+        await Linking.openURL(url);
       } else {
         Alert.alert('Checkout Error', 'Unable to start checkout. Please try again later.');
       }
-    } catch (err) {
-      console.error('Purchase error:', err);
-      Alert.alert('Checkout Error', 'Unable to start checkout. Please try again later.');
+    } catch (err: any) {
+      console.error('❌ Checkout error:', err?.message || err);
+      Alert.alert('Checkout Error', 'Please try again later.');
+    } finally {
+      setLoading(null);
     }
   };
 
@@ -101,23 +100,23 @@ export default function BuyTokensScreen({ navigation }: Props) {
 
         <View style={styles.pack}>
           <CustomText style={styles.amount}>
-            5 Tokens — <CustomText style={styles.price}>$1.99</CustomText>
+            20 Tokens — <CustomText style={styles.price}>$4.99</CustomText>
           </CustomText>
-          <Button title="Buy 5 Tokens" onPress={() => purchase(5)} />
+          <Button title="Buy 20 Tokens" onPress={() => purchase(20)} loading={loading === 20} />
         </View>
 
         <View style={styles.pack}>
           <CustomText style={styles.amount}>
-            15 Tokens — <CustomText style={styles.price}>$4.99</CustomText>
+            50 Tokens — <CustomText style={styles.price}>$9.99</CustomText>
           </CustomText>
-          <Button title="Buy 15 Tokens" onPress={() => purchase(15)} />
+          <Button title="Buy 50 Tokens" onPress={() => purchase(50)} loading={loading === 50} />
         </View>
 
         <View style={styles.pack}>
           <CustomText style={styles.amount}>
-            40 Tokens — <CustomText style={styles.price}>$9.99</CustomText>
+            100 Tokens — <CustomText style={styles.price}>$19.99</CustomText>
           </CustomText>
-          <Button title="Buy 40 Tokens" onPress={() => purchase(40)} />
+          <Button title="Buy 100 Tokens" onPress={() => purchase(100)} loading={loading === 100} />
         </View>
 
         <View style={styles.buttonWrap}>
