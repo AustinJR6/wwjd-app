@@ -32,7 +32,7 @@ export default function OnboardingScreen() {
   const navigation = useNavigation<OnboardingScreenProps["navigation"]>();
   const theme = useTheme();
   const { regions, religions, loading: listsLoading } = useLookupLists();
-  const [religion, setReligion] = useState(user?.religion ?? "");
+  const [religion, setReligion] = useState(user?.religion ?? 'SpiritGuide');
   const [username, setUsername] = useState(
     user?.username ?? user?.displayName ?? ""
   );

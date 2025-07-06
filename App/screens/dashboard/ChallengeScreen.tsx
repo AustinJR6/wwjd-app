@@ -189,7 +189,9 @@ export default function ChallengeScreen() {
     let history = userData.dailyChallengeHistory || { date: today, completed: 0, skipped: 0 };
     if (history.date !== today) history = { date: today, completed: 0, skipped: 0 };
 
-    let { tokens = 0, dailySkipCount = 0, lastSkipDate } = userData;
+    const tokens = userData?.tokens ?? 0;
+    let dailySkipCount = userData?.dailySkipCount ?? 0;
+    const lastSkipDate = userData?.lastSkipDate;
     const lastDate = lastSkipDate ? new Date(lastSkipDate).toISOString().split('T')[0] : '';
 
     if (lastDate !== today) {
@@ -255,7 +257,7 @@ export default function ChallengeScreen() {
       history = { date: today, completed: 0, skipped: 0 };
     }
 
-    const limit = userData.isSubscribed ? 3 : 1;
+    const limit = (userData?.isSubscribed ?? false) ? 3 : 1;
     let useToken = false;
     if (history.completed >= limit) {
       const tokens = await getTokenCount();
