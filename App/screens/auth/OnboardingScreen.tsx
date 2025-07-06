@@ -6,10 +6,7 @@ import ScreenContainer from "@/components/theme/ScreenContainer";
 import Button from "@/components/common/Button";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { updateUserFields, completeOnboarding } from "@/services/userService";
-import {
-  saveUsernameAndProceed,
-} from "@/services/onboardingService";
+import { updateUserProfile } from "../../../utils/firestoreHelpers";
 import { useUserStore } from "@/state/userStore";
 import { useAuthStore } from "@/state/authStore";
 import { SCREENS } from "@/navigation/screens";
@@ -66,13 +63,12 @@ export default function OnboardingScreen() {
     console.log('💾 Submitting onboarding', { username, region, religion });
     try {
       if (uid) {
-        await saveUsernameAndProceed(username.trim());
-        await updateUserFields(uid, {
+        await updateUserProfile({
+          username: username.trim(),
           region,
           religion,
-          organizationId: organization || undefined,
+          onboardingComplete: true,
         });
-        await completeOnboarding(uid);
         await SecureStore.setItemAsync(`hasSeenOnboarding-${uid}`, 'true');
         useUserStore.getState().updateUser({
           onboardingComplete: true,
@@ -87,6 +83,7 @@ export default function OnboardingScreen() {
           region: check?.region,
           religion: check?.religion,
         });
+        navigation.reset({ index: 0, routes: [{ name: SCREENS.MAIN.HOME }] });
       }
     } catch (err: any) {
       Alert.alert(
