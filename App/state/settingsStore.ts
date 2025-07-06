@@ -10,12 +10,12 @@ interface SettingsState {
   setReminderTime: (time: string) => void
 }
 
-export const useSettingsStore = create<SettingsState>((set) => ({
+export const useSettingsStore = create<SettingsState>((set: any) => ({
   nightMode: false,
-  toggleNightMode: () => set((s) => ({ nightMode: !s.nightMode })),
-  setNightMode: (value) => set({ nightMode: value }),
+  toggleNightMode: () => set((s: SettingsState) => ({ nightMode: !s.nightMode })),
+  setNightMode: (value: boolean) => set({ nightMode: value }),
   reminderEnabled: false,
   reminderTime: '19:00',
-  setReminderEnabled: (val) => set({ reminderEnabled: val }),
-  setReminderTime: (time) => set({ reminderTime: time }),
+  setReminderEnabled: (val: boolean) => set({ reminderEnabled: val }),
+  setReminderTime: (time: string) => set({ reminderTime: time }),
 }))

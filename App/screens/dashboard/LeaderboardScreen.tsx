@@ -18,7 +18,7 @@ import AuthGate from '@/components/AuthGate';
 import { useAuth } from '@/hooks/useAuth';
 
 const PROJECT_ID =
-  Constants.expoConfig.extra.EXPO_PUBLIC_FIREBASE_PROJECT_ID || '';
+  Constants.expoConfig?.extra?.EXPO_PUBLIC_FIREBASE_PROJECT_ID || '';
 if (!PROJECT_ID) {
   console.warn('⚠️ Missing EXPO_PUBLIC_FIREBASE_PROJECT_ID in .env');
 }
@@ -41,7 +41,8 @@ async function fetchTopReligions(idToken: string) {
       },
     });
 
-    return response.data
+    const data = response.data as any[];
+    return data
       .map((doc: any) => doc.document)
       .filter(Boolean)
       .map((doc: any) => ({
@@ -72,7 +73,8 @@ async function fetchTopOrganizations(idToken: string) {
       },
     });
 
-    return response.data
+    const data = response.data as any[];
+    return data
       .map((doc: any) => doc.document)
       .filter(Boolean)
       .map((doc: any) => ({

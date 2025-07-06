@@ -5,7 +5,7 @@ import { useAuthStore } from '@/state/authStore';
 import Constants from 'expo-constants';
 
 export const LOGGING_MODE =
-  Constants.expoConfig.extra.EXPO_PUBLIC_LOGGING_MODE || 'gusbug';
+  Constants.expoConfig?.extra?.EXPO_PUBLIC_LOGGING_MODE || 'gusbug';
 
 export async function sendRequestWithGusBugLogging<T>(
   requestFn: () => Promise<T>,

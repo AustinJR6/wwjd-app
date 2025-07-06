@@ -1,7 +1,9 @@
 import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
 
-const isDevClient = !Constants.appOwnership || Constants.appOwnership === 'expo-dev-client';
+const isDevClient =
+  !Constants.appOwnership ||
+  (Constants.appOwnership as unknown as string) === 'expo-dev-client';
 
 export async function scheduleDailyNotification(title: string, body: string) {
   if (!isDevClient) {

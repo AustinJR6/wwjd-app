@@ -2,7 +2,9 @@ import * as Notifications from 'expo-notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 
-const isDevClient = !Constants.appOwnership || Constants.appOwnership === 'expo-dev-client';
+const isDevClient =
+  !Constants.appOwnership ||
+  (Constants.appOwnership as unknown as string) === 'expo-dev-client';
 
 const STORAGE_KEY = 'reflectionReminderId';
 

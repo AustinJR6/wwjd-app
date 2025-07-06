@@ -22,8 +22,9 @@ export async function getReligions(forceRefresh = false): Promise<ReligionItem[]
     const res = await axios.get(url, {
       headers: { Authorization: `Bearer ${token}` },
     });
+    const docs = (res.data as any).documents || [];
 
-    religionsCache = (res.data.documents || []).map((doc: any) => ({
+    religionsCache = docs.map((doc: any) => ({
       id: doc.name.split('/').pop(),
       name: doc.fields.name?.stringValue ?? '',
       aiVoice: doc.fields.aiVoice?.stringValue ?? '',
@@ -45,7 +46,7 @@ export async function updateReligionPoints(religionId: string, pointsToAdd: numb
   const token = await getIdToken();
   const docPath = `projects/wwjd-app/databases/(default)/documents/religion/${religionId}`;
 
-  const current = religionsCache.find((r) => r.id === religionId)?.totalPoints ?? 0;
+  const current = religionsCache?.find((r) => r.id === religionId)?.totalPoints ?? 0;
   const newTotal = current + pointsToAdd;
 
   try {

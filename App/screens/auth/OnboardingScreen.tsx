@@ -176,7 +176,7 @@ export default function OnboardingScreen() {
         >
           <Picker.Item label="Select your region" value="" />
           {regions.map((r) => (
-            <Picker.Item key={r.id || r.code} label={r.name} value={r.name} />
+            <Picker.Item key={r.id} label={r.name} value={r.name} />
           ))}
         </Picker>
       </View>

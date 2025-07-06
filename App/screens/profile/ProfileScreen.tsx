@@ -163,9 +163,9 @@ export default function ProfileScreen() {
             onValueChange={(v) => setRegion(v)}
             style={styles.picker}
           >
-            {regions.map((r) => (
-              <Picker.Item key={r.id || r.code} label={r.name} value={r.name} />
-            ))}
+              {regions.map((r) => (
+                <Picker.Item key={r.id} label={r.name} value={r.name} />
+              ))}
           </Picker>
         </View>
 

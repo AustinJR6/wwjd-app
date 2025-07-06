@@ -1,6 +1,6 @@
 import Constants from 'expo-constants';
 
-const API_URL = Constants.expoConfig.extra.EXPO_PUBLIC_API_URL;
+const API_URL = Constants.expoConfig?.extra?.EXPO_PUBLIC_API_URL ?? '';
 if (!API_URL) {
   console.warn('⚠️ Missing EXPO_PUBLIC_API_URL in .env');
 }

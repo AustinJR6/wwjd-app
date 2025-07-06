@@ -2,8 +2,8 @@ import axios from 'axios';
 import { logFirestoreError } from './App/lib/logging';
 import Constants from 'expo-constants';
 
-const API_KEY = Constants.expoConfig.extra.EXPO_PUBLIC_FIREBASE_API_KEY || '';
-const PROJECT_ID = Constants.expoConfig.extra.EXPO_PUBLIC_FIREBASE_PROJECT_ID || '';
+const API_KEY = Constants.expoConfig?.extra?.EXPO_PUBLIC_FIREBASE_API_KEY || '';
+const PROJECT_ID = Constants.expoConfig?.extra?.EXPO_PUBLIC_FIREBASE_PROJECT_ID || '';
 if (!API_KEY) {
   console.warn('⚠️ Missing EXPO_PUBLIC_FIREBASE_API_KEY in .env');
 }
@@ -39,7 +39,7 @@ export async function signUpWithEmailAndPassword(email: string, password: string
       console.error('❌ Failed to create default user document', err);
     }
 
-    return res.data;
+    return res.data as AuthResponse;
   } catch (err: any) {
     if (err.response) {
       console.error('❌ signup error response', err.response.data);
@@ -54,7 +54,7 @@ export async function signUpWithEmailAndPassword(email: string, password: string
 export async function signInWithEmailAndPassword(email: string, password: string): Promise<AuthResponse> {
   const url = `${ID_BASE}/accounts:signInWithPassword?key=${API_KEY}`;
   const res = await axios.post(url, { email, password, returnSecureToken: true });
-  return res.data;
+  return res.data as AuthResponse;
 }
 
 export async function getUserData(uid: string, idToken: string) {
@@ -71,7 +71,8 @@ export async function getUserData(uid: string, idToken: string) {
 
 function toFirestoreFields(obj: any): any {
   const fields: any = {};
-  for (const [k, v] of Object.entries(obj)) {
+  for (const k of Object.keys(obj)) {
+    const v = (obj as any)[k];
     if (v === null) fields[k] = { nullValue: null };
     else if (typeof v === 'number') fields[k] = { integerValue: v };
     else if (typeof v === 'boolean') fields[k] = { booleanValue: v };

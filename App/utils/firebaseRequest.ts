@@ -20,5 +20,7 @@ export async function sendSecureFirebaseRequest(url: string, data: any) {
   console.log('Current user:', useAuthStore.getState().uid);
   console.log('ID Token:', token);
   console.log('📤 Sending ID token in Authorization header');
-  return sendRequestWithGusBugLogging(() => axios.post(url, data, { headers }));
+  return sendRequestWithGusBugLogging(() =>
+    axios.post(url, data, { headers }) as unknown as Promise<any>
+  );
 }
