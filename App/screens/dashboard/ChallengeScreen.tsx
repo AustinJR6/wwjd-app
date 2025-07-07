@@ -17,7 +17,7 @@ import {
   setDocument,
   getOrCreateActiveChallenge,
 } from '@/services/firestoreService';
-import { updateUserProfile } from '@/utils/firestoreHelpers';
+import { updateUserProfile } from '../../../utils/firestoreHelpers';
 import { canLoadNewChallenge } from '@/services/challengeLimitService';
 import { completeChallengeWithStreakCheck } from '@/services/challengeStreakService';
 import {

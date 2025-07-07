@@ -1,6 +1,6 @@
 import { navigationRef } from '@/navigation/navigationRef';
 import { setDocument, getDocument } from '@/services/firestoreService';
-import { updateUserProfile } from '@/utils/firestoreHelpers';
+import { updateUserProfile } from '../../utils/firestoreHelpers';
 import { ensureAuth } from '@/utils/authGuard';
 
 export async function saveUsernameAndProceed(username: string): Promise<void> {

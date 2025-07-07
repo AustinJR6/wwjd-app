@@ -1,5 +1,5 @@
 import { getDocument, setDocument } from "@/services/firestoreService";
-import { updateUserProfile } from "@/utils/firestoreHelpers";
+import { updateUserProfile } from "../../utils/firestoreHelpers";
 import { useUserStore } from "@/state/userStore";
 import { ensureAuth } from "@/utils/authGuard";
 

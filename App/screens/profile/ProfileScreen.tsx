@@ -10,7 +10,7 @@ import { useUserStore } from '@/state/userStore';
 import { getTokenCount } from '@/utils/TokenManager';
 import { getDocument, setDocument } from '@/services/firestoreService';
 import { useLookupLists } from '@/hooks/useLookupLists';
-import { updateUserProfile } from '../../utils/firestoreHelpers';
+import { updateUserProfile } from '../../../utils/firestoreHelpers';
 import { useTheme } from '@/components/theme/theme';
 import { ensureAuth } from '@/utils/authGuard';
 import { useNavigation } from '@react-navigation/native';

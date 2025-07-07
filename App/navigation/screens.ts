@@ -24,4 +24,4 @@ export const SCREENS = {
     MANAGE_ORGANIZATION: 'OrganizationManagement',
     SELECT_RELIGION: 'SelectReligion'
   }
-}
+} as const;

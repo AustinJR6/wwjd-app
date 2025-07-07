@@ -16,7 +16,7 @@ import ScreenContainer from '@/components/theme/ScreenContainer';
 import { useTheme } from '@/components/theme/theme';
 import { ASK_GEMINI_SIMPLE } from '@/utils/constants';
 import { getDocument, setDocument } from '@/services/firestoreService';
-import { updateUserProfile } from '@/utils/firestoreHelpers';
+import { updateUserProfile } from '../../../utils/firestoreHelpers';
 import { callFunction, awardPointsToUser } from '@/services/functionService';
 import { ensureAuth } from '@/utils/authGuard';
 import AuthGate from '@/components/AuthGate';
