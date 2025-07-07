@@ -77,11 +77,12 @@ app.post('/leaderboard/:uid/points', verifyFirebaseIdToken, async (req: AuthedRe
 });
 
 app.patch('/users', verifyFirebaseIdToken, async (req: AuthedRequest, res) => {
-  console.log('📥 PATCH /users body:', req.body);
   const { uid, fields } = req.body || {};
+  console.log('🔧 PATCH /users request:', req.body);
+
   if (!uid || !fields) {
-    console.error('PATCH /users missing uid or fields');
-    return res.status(400).json({ error: 'uid and fields required' });
+    console.warn('❌ Missing uid or fields in request body');
+    return res.status(400).json({ error: 'Missing uid or fields' });
   }
 
   if (req.uid !== uid) {
@@ -89,16 +90,18 @@ app.patch('/users', verifyFirebaseIdToken, async (req: AuthedRequest, res) => {
   }
 
   try {
-    if (typeof fields.religion === 'string') {
+    if (fields.religion && typeof fields.religion === 'string') {
       fields.religion = db.collection('religions').doc(fields.religion);
+      fields.religionSlug = fields.religion.id;
     }
 
     await db.collection('users').doc(uid).set(fields, { merge: true });
-    console.log(`✅ Updated Firestore user doc: users/${uid}`);
-    res.json({ success: true });
-  } catch (error) {
-    console.error('❌ Failed to update Firestore user profile', error);
-    res.status(500).json({ error: 'Failed to update user' });
+
+    console.log('✅ Firestore update success for uid:', uid);
+    return res.status(200).json({ message: 'Profile updated' });
+  } catch (err: any) {
+    console.error('🔥 Firestore update failed:', err);
+    return res.status(500).json({ error: err.message });
   }
 });
 
