@@ -120,15 +120,10 @@ service cloud.firestore {
       allow read: if request.auth != null;
     }
 
-    // ✅ Allow authed read on religion docs, restrict updates to admins
-    match /religion/{religionId} {
-      allow read: if request.auth != null;
-      allow update: if request.auth != null && request.auth.token.admin == true;
-    }
-
-    // 🛐 Public religion content
+    // ✅ Religion collection - read open, writes restricted to admins
     match /religion/{religionId} {
       allow read: if true;
+      allow write: if request.auth != null && request.auth.token.admin == true;
     }
 
     // 🏆 Leaderboards

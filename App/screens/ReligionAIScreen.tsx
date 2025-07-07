@@ -18,8 +18,7 @@ import { useTheme } from "@/components/theme/theme";
 import { getTokenCount, setTokenCount } from "@/utils/TokenManager";
 import { showGracefulError } from '@/utils/gracefulError';
 import { ASK_GEMINI_V2 } from "@/utils/constants";
-import { getDocument, setDocument } from '@/services/firestoreService';
-import { updateUserProfile, getUserAIPrompt } from '../../utils/userProfile';
+import { loadUserProfile, updateUserProfile, getUserAIPrompt } from '../../utils/userProfile';
 import { useUser } from '@/hooks/useUser';
 import { ensureAuth } from '@/utils/authGuard';
 import { getToken, getCurrentUserId } from '@/utils/TokenManager';
@@ -122,7 +121,7 @@ export default function ReligionAIScreen() {
       }
       const uid = await ensureAuth(firebaseUid);
       try {
-        const userData = await getDocument(`users/${uid}`) || {};
+        const userData = (await loadUserProfile(uid)) || {};
         const subscribed = await checkIfUserIsSubscribed(uid);
         setIsSubscribed(subscribed);
         const hist = await fetchHistory(uid, subscribed);
@@ -174,7 +173,7 @@ export default function ReligionAIScreen() {
       const firebaseUid = await getCurrentUserId();
       const uid = await ensureAuth(firebaseUid ?? undefined);
 
-      const userData = await getDocument(`users/${uid}`) || {};
+      const userData = (await loadUserProfile(uid)) || {};
       const lastAsk = userData.lastFreeAsk?.toDate?.();
       const now = new Date();
       const oneDay = 24 * 60 * 60 * 1000;

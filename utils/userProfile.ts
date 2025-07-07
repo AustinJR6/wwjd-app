@@ -1,8 +1,8 @@
 import axios from 'axios';
 import { API_URL, getAuthHeaders } from '../App/config/firebaseApp';
 import { getCurrentUserId } from '../App/utils/authUtils';
-import { getDocument } from '../App/services/firestoreService';
 import type { CachedProfile, ReligionDocument, UserProfile } from '../types/profile';
+import { getReligionProfile } from '../religionRest';
 
 let cachedProfile: CachedProfile | null = null;
 
@@ -14,14 +14,12 @@ export async function loadUserProfile(uid?: string): Promise<UserProfile | null>
   }
 
   try {
-    const user = await getDocument(`users/${userId}`);
-    if (!user) return null;
+    const headers = await getAuthHeaders();
+    const res = await axios.get(`${API_URL}/users/${userId}`, { headers });
+    const user = res.data as UserProfile;
     let religionData: ReligionDocument | null = null;
     if (user.religion) {
-      religionData = await getDocument(`religion/${user.religion}`);
-      if (religionData && !('prompt' in religionData)) {
-        console.log(`⚠️ Religion ${user.religion} missing 'prompt' field`);
-      }
+      religionData = await getReligionProfile(user.religion);
     }
     cachedProfile = { uid: userId, ...user, religionData } as CachedProfile;
     return cachedProfile;
@@ -45,7 +43,7 @@ export async function updateUserProfile(
     await axios.patch(`${API_URL}/users/${userId}`, fields, { headers });
     if (cachedProfile && cachedProfile.uid === userId) {
       if ('religion' in fields) {
-        const religionData = await getDocument(`religion/${fields.religion}`);
+        const religionData = await getReligionProfile(fields.religion);
         cachedProfile = {
           ...cachedProfile,
           ...fields,
@@ -71,6 +69,7 @@ export function setCachedUserProfile(profile: CachedProfile | null) {
 
 export function getUserAIPrompt(): string {
   return (
-    cachedProfile?.religionData?.prompt || 'Speak as a compassionate guide.'
+    cachedProfile?.religionData?.prompt ||
+    'Respond with empathy, logic, and gentle spirituality.'
   );
 }

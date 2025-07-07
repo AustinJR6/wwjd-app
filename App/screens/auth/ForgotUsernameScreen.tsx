@@ -4,7 +4,8 @@ import { View, StyleSheet, Alert } from 'react-native';
 import ScreenContainer from '@/components/theme/ScreenContainer';
 import TextField from '@/components/TextField';
 import Button from '@/components/common/Button';
-import { getDocument, queryCollection } from '@/services/firestoreService';
+import { queryCollection } from '@/services/firestoreService';
+import { loadUserProfile } from '../../../utils/userProfile';
 import { ensureAuth } from '@/utils/authGuard';
 import { useTheme } from '@/components/theme/theme';
 import { Picker } from '@react-native-picker/picker';
@@ -78,7 +79,7 @@ export default function ForgotUsernameScreen() {
 
     setLoading(true);
     try {
-      const doc = await getDocument(`users/${uid}`);
+      const doc = await loadUserProfile(uid);
       if (doc && doc.displayName === name && doc.region === region) {
         setEmail(doc.email);
       } else {

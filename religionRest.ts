@@ -8,7 +8,13 @@ export interface ReligionItem {
   name: string;
 }
 
+export interface ReligionProfile extends ReligionItem {
+  prompt?: string;
+  aiVoice?: string;
+}
+
 let cachedReligions: ReligionItem[] | null = null;
+const religionCache: Record<string, ReligionProfile> = {};
 
 /**
  * Retrieve the list of religions, using an in-memory cache to avoid
@@ -28,6 +34,29 @@ export async function getReligions(): Promise<ReligionItem[]> {
     console.error('getReligions failed', err);
     console.log('⚠️ Returning empty religion list');
     return [];
+  }
+}
+
+export async function getReligionProfile(id: string): Promise<ReligionProfile | null> {
+  if (religionCache[id]) {
+    return religionCache[id];
+  }
+  const idToken = await getIdToken();
+  const url = `${FIRESTORE_BASE}/religion/${id}`;
+  try {
+    const res = await axios.get(url, { headers: { Authorization: `Bearer ${idToken}` } });
+    const fields = res.data.fields || {};
+    const profile: ReligionProfile = {
+      id,
+      name: fields.name?.stringValue || id,
+      prompt: fields.prompt?.stringValue,
+      aiVoice: fields.aiVoice?.stringValue,
+    };
+    religionCache[id] = profile;
+    return profile;
+  } catch (err: any) {
+    logFirestoreError('GET', `religion/${id}`, err);
+    return null;
   }
 }
 
