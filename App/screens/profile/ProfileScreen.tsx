@@ -8,9 +8,9 @@ import { Picker } from '@react-native-picker/picker';
 import { useUser } from '@/hooks/useUser';
 import { useUserStore } from '@/state/userStore';
 import { getTokenCount } from '@/utils/TokenManager';
-import { getDocument } from '@/services/firestoreService';
 import { useLookupLists } from '@/hooks/useLookupLists';
-import { updateUserProfile, loadUserProfile, setCachedUserProfile } from '../../../utils/userProfile';
+import { loadUserProfile, updateUserProfile, setCachedUserProfile } from '../../../utils/userProfile';
+import { getDocument } from '@/services/firestoreService';
 import { useTheme } from '@/components/theme/theme';
 import { ensureAuth } from '@/utils/authGuard';
 import { useNavigation } from '@react-navigation/native';
@@ -68,7 +68,7 @@ export default function ProfileScreen() {
     try {
       const [tokenCount, profile] = await Promise.all([
         getTokenCount(),
-        getDocument(`users/${uid}`),
+        loadUserProfile(uid),
       ]);
       setTokens(tokenCount);
       if (profile) {

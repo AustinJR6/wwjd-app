@@ -13,7 +13,7 @@ import { SCREENS } from "@/navigation/screens";
 import { useTheme } from "@/components/theme/theme";
 import { Picker } from "@react-native-picker/picker";
 import type { RootStackParamList } from "@/navigation/RootStackParamList";
-import { getDocument } from "@/services/firestoreService";
+import { loadUserProfile } from "../../../utils/userProfile";
 import { useLookupLists } from "@/hooks/useLookupLists";
 
 type OnboardingScreenProps = NativeStackScreenProps<
@@ -82,7 +82,7 @@ export default function OnboardingScreen() {
           region,
           religion,
         });
-        const check = await getDocument(`users/${uid}`);
+        const check = await loadUserProfile(uid);
         console.log('✅ profile after onboarding', {
           username: check?.username,
           region: check?.region,

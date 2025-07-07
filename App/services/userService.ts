@@ -132,11 +132,13 @@ export async function createUserProfile({
     uid,
     email,
     username,
-    displayName,
+    displayName: displayName || 'New User',
     religion,
     region,
     individualPoints: 0,
     isSubscribed: false,
+    skipTokensUsed: 0,
+    nightModeEnabled: false,
     onboardingComplete: false,
     createdAt: now,
     streak: { current: 0, longest: 0, lastUpdated: new Date().toISOString() },
@@ -145,7 +147,7 @@ export async function createUserProfile({
     dailySkipCount: 0,
     lastChallengeLoadDate: null,
     lastSkipDate: null,
-  };
+  } as any;
 
   if (organizationId) {
     (userData as any).organizationId = organizationId;

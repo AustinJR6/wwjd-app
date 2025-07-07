@@ -8,6 +8,7 @@ import {
   ActivityIndicator} from 'react-native';
 import Button from '@/components/common/Button';
 import { getDocument, setDocument } from '@/services/firestoreService';
+import { loadUserProfile } from '../../../utils/userProfile';
 import { useUser } from '@/hooks/useUser';
 import { getAuthHeaders } from '@/utils/TokenManager';
 import ScreenContainer from '@/components/theme/ScreenContainer';
@@ -100,7 +101,7 @@ export default function OrganizationManagementScreen() {
     if (!uid) return;
     setLoading(true);
     try {
-      const userSnap = await getDocument(`users/${uid}`);
+      const userSnap = await loadUserProfile(uid);
       const orgId = userSnap?.organizationId;
       if (!orgId) throw new Error('No organization found');
 

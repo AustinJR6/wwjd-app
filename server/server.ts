@@ -76,6 +76,23 @@ app.post('/leaderboard/:uid/points', verifyFirebaseIdToken, async (req: AuthedRe
   }
 });
 
+app.get('/users/:uid', verifyFirebaseIdToken, async (req: AuthedRequest, res) => {
+  const { uid } = req.params;
+  if (req.uid !== uid) {
+    return res.status(403).json({ error: 'Unauthorized' });
+  }
+  try {
+    const snap = await db.collection('users').doc(uid).get();
+    if (!snap.exists) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    res.json(snap.data());
+  } catch (err) {
+    console.error('get user failed', err);
+    res.status(500).json({ error: 'Failed to fetch user' });
+  }
+});
+
 app.patch('/users', verifyFirebaseIdToken, async (req: AuthedRequest, res) => {
   const { uid, fields } = req.body || {};
   console.log('🔧 PATCH /users request:', req.body);
