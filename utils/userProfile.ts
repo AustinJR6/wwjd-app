@@ -18,7 +18,7 @@ export async function loadUserProfile(uid?: string): Promise<UserProfile | null>
     if (!user) return null;
     let religionData: ReligionDocument | null = null;
     if (user.religion) {
-      religionData = await getDocument(`religions/${user.religion}`);
+      religionData = await getDocument(`religion/${user.religion}`);
       if (religionData && !('prompt' in religionData)) {
         console.log(`⚠️ Religion ${user.religion} missing 'prompt' field`);
       }
@@ -45,7 +45,7 @@ export async function updateUserProfile(
     await axios.patch(`${API_URL}/users/${userId}`, fields, { headers });
     if (cachedProfile && cachedProfile.uid === userId) {
       if ('religion' in fields) {
-        const religionData = await getDocument(`religions/${fields.religion}`);
+        const religionData = await getDocument(`religion/${fields.religion}`);
         cachedProfile = {
           ...cachedProfile,
           ...fields,
@@ -65,6 +65,12 @@ export function getCachedUserProfile(): UserProfile | null {
   return cachedProfile;
 }
 
+export function setCachedUserProfile(profile: CachedProfile | null) {
+  cachedProfile = profile;
+}
+
 export function getUserAIPrompt(): string {
-  return cachedProfile?.religionData?.prompt || '';
+  return (
+    cachedProfile?.religionData?.prompt || 'Speak as a compassionate guide.'
+  );
 }

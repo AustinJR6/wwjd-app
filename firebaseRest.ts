@@ -76,7 +76,18 @@ function toFirestoreFields(obj: any): any {
     if (v === null) fields[k] = { nullValue: null };
     else if (typeof v === 'number') fields[k] = { integerValue: v };
     else if (typeof v === 'boolean') fields[k] = { booleanValue: v };
-    else if (Array.isArray(v)) fields[k] = { arrayValue: { values: v.map((x) => ({ stringValue: String(x) })) } };
+    else if (typeof v === 'string') fields[k] = { stringValue: v };
+    else if (Array.isArray(v))
+      fields[k] = {
+        arrayValue: {
+          values: v.map((x) =>
+            typeof x === 'object'
+              ? { mapValue: { fields: toFirestoreFields(x) } }
+              : { stringValue: String(x) }
+          ),
+        },
+      };
+    else if (typeof v === 'object') fields[k] = { mapValue: { fields: toFirestoreFields(v) } };
     else fields[k] = { stringValue: String(v) };
   }
   return fields;
@@ -93,7 +104,7 @@ export async function createDefaultUserDoc(uid: string, idToken: string) {
     totalPoints: 0,
     hasCompletedToday: false,
     onboardingComplete: false,
-    streak: 0,
+    streak: { current: 0, longest: 0, lastUpdated: new Date().toISOString() },
     lastCompleted: null,
     createdAt: new Date().toISOString(),
   };

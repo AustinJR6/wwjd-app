@@ -78,10 +78,7 @@ async function fetchReligionContext(religionId?: string) {
   const fallback = { name: "Spiritual Guide", aiVoice: "Reflective Mentor" };
   if (!religionId) return fallback;
   try {
-    let doc = await db.collection("religion").doc(religionId).get();
-    if (!doc.exists) {
-      doc = await db.collection("religions").doc(religionId).get();
-    }
+    const doc = await db.collection("religion").doc(religionId).get();
     if (!doc.exists) return fallback;
     const data = doc.data() || {};
     return {
@@ -195,7 +192,7 @@ export const incrementReligionPoints = functions
           return;
         }
 
-        const ref = db.collection("religions").doc(religion);
+        const ref = db.collection("religion").doc(religion);
         await db.runTransaction(async (t: FirebaseFirestore.Transaction) => {
           const snap = await t.get(ref);
           const current = snap.exists ? (snap.data()?.totalPoints ?? 0) : 0;
@@ -235,7 +232,7 @@ export const awardPointsToUser = functions
 
         await db.runTransaction(async (t) => {
           if (religionId) {
-            const ref = db.doc(`religions/${religionId}`);
+            const ref = db.doc(`religion/${religionId}`);
             const snap = await t.get(ref);
             const current = snap.exists ? (snap.data()?.totalPoints ?? 0) : 0;
             t.set(ref, { name: religionId, totalPoints: current + points }, { merge: true });
@@ -429,7 +426,7 @@ export const completeChallengeDay = functions
       const userSnap = await t.get(userRef);
       const userData = userSnap.exists ? userSnap.data() || {} : {};
       const relRef: FirebaseFirestore.DocumentReference | null =
-        userData.religionRef || (userData.religion ? db.doc(`religions/${userData.religion}`) : null);
+        userData.religionRef || (userData.religion ? db.doc(`religion/${userData.religion}`) : null);
 
       const basePoints = data.basePoints || 10;
       let points = basePoints;
@@ -1400,7 +1397,7 @@ export const seedFirestore = functions
       ensureDocument('dailyChallenges/dummy', { placeholder: true }),
       ensureDocument('activeChallenges/dummy', { placeholder: true }),
       ensureDocument('completedChallenges/dummy', { placeholder: true }),
-      ensureDocument('religions/dummy', { name: 'Dummy Religion' }),
+      ensureDocument('religion/dummy', { name: 'Dummy Religion' }),
       ensureDocument('organizations/dummy', { name: 'Dummy Org' }),
       ensureDocument('regions/SW', { name: 'Southwest', code: 'SW', sortOrder: 1 }),
       ensureDocument('regions/NE', { name: 'Northeast', code: 'NE', sortOrder: 2 }),
