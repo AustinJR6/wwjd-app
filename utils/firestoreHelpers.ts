@@ -21,6 +21,7 @@ export async function updateUserProfile(
 
   try {
     const headers = await getAuthHeaders();
+    console.log('➡️ PATCH /users', { uid, fields });
     await axios.patch(`${API_URL}/users/${uid}`, fields, { headers });
     console.log('✅ Profile updated:', fields);
   } catch (error) {
