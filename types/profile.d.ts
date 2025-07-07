@@ -8,6 +8,12 @@ export interface ReligionDocument {
   totalPoints?: number;
 }
 
+export interface Streak {
+  current: number;
+  longest: number;
+  lastUpdated: string;
+}
+
 export interface UserProfile {
   uid: string;
   displayName?: string;
@@ -15,7 +21,7 @@ export interface UserProfile {
   region?: string;
   religion: string;
   points?: number;
-  streak?: number;
+  streak?: Streak;
   currentChallenge?: any;
   onboardingComplete?: boolean;
   [key: string]: any;
@@ -23,4 +29,16 @@ export interface UserProfile {
 
 export interface CachedProfile extends UserProfile {
   religionData?: ReligionDocument | null;
+}
+
+export interface FirestoreUser extends UserProfile {
+  email: string;
+  isSubscribed: boolean;
+  createdAt: number;
+  challengeStreak?: { count: number; lastCompletedDate: string | null };
+  dailyChallengeCount?: number;
+  dailySkipCount?: number;
+  lastChallengeLoadDate?: string | null;
+  lastSkipDate?: string | null;
+  organizationId?: string;
 }

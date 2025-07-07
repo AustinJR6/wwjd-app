@@ -1,32 +1,8 @@
-import { getDocument, setDocument } from "@/services/firestoreService";
+import { getDocument } from "@/services/firestoreService";
 import { updateUserProfile } from "../../utils/firestoreHelpers";
 import { useUserStore } from "@/state/userStore";
 import { ensureAuth } from "@/utils/authGuard";
-
-/**
- * Firestore user document structure
- */
-export interface FirestoreUser {
-  uid: string;
-  email: string;
-  username?: string;
-  displayName?: string;
-  religion: string;
-  region?: string;
-  organizationId?: string;
-  individualPoints?: number;
-  isSubscribed: boolean;
-  onboardingComplete: boolean;
-  createdAt: number;
-  challengeStreak?: {
-    count: number;
-    lastCompletedDate: string | null;
-  };
-  dailyChallengeCount?: number;
-  dailySkipCount?: number;
-  lastChallengeLoadDate?: string | null;
-  lastSkipDate?: string | null;
-}
+import type { FirestoreUser } from "../../types/profile";
 
 /**
  * Initialize optional user fields if they're missing.
@@ -163,6 +139,7 @@ export async function createUserProfile({
     isSubscribed: false,
     onboardingComplete: false,
     createdAt: now,
+    streak: { current: 0, longest: 0, lastUpdated: new Date().toISOString() },
     challengeStreak: { count: 0, lastCompletedDate: null },
     dailyChallengeCount: 0,
     dailySkipCount: 0,

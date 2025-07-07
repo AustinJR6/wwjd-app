@@ -25,7 +25,19 @@ function toFirestoreFields(obj: any): any {
     if (v === null) fields[k] = { nullValue: null };
     else if (typeof v === 'number') fields[k] = { integerValue: v };
     else if (typeof v === 'boolean') fields[k] = { booleanValue: v };
-    else if (Array.isArray(v)) fields[k] = { arrayValue: { values: v.map((x) => ({ stringValue: String(x) })) } };
+    else if (typeof v === 'string') fields[k] = { stringValue: v };
+    else if (Array.isArray(v))
+      fields[k] = {
+        arrayValue: {
+          values: v.map((x) =>
+            typeof x === 'object'
+              ? { mapValue: { fields: toFirestoreFields(x) } }
+              : { stringValue: String(x) }
+          ),
+        },
+      };
+    else if (typeof v === 'object')
+      fields[k] = { mapValue: { fields: toFirestoreFields(v) } };
     else fields[k] = { stringValue: String(v) };
   }
   return fields;
@@ -219,11 +231,11 @@ export async function fetchTopUsersByPoints(limit = 10): Promise<any[]> {
 
 export async function fetchTopReligions(limit = 10): Promise<any[]> {
   const query = {
-    from: [{ collectionId: 'religions' }],
+    from: [{ collectionId: 'religion' }],
     orderBy: [{ field: { fieldPath: 'totalPoints' }, direction: 'DESCENDING' }],
     limit,
   };
-  console.warn('📄 Structured query path:', 'religions');
+  console.warn('📄 Structured query path:', 'religion');
   console.warn('🔍 Structured query filters:', {
     orderBy: query.orderBy,
     limit,

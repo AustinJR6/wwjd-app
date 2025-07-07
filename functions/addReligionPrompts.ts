@@ -15,7 +15,7 @@ const prompts: Record<string, string> = {
 
 export async function addReligionPrompts() {
   const ops = Object.entries(prompts).map(([id, prompt]) =>
-    db.collection('religions').doc(id).set({ prompt }, { merge: true })
+    db.collection('religion').doc(id).set({ prompt }, { merge: true })
   );
   await Promise.all(ops);
   console.log('Added prompts for', Object.keys(prompts).length, 'religions');

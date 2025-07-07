@@ -7,7 +7,7 @@ if (!admin.apps.length) {
 const db = admin.firestore();
 
 export async function seedReligionFields() {
-  const snap = await db.collection('religions').get();
+  const snap = await db.collection('religion').get();
   const batch = db.batch();
   snap.docs.forEach((doc) => {
     const data = doc.data();

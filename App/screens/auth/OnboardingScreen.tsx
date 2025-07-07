@@ -6,7 +6,7 @@ import ScreenContainer from "@/components/theme/ScreenContainer";
 import Button from "@/components/common/Button";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { updateUserProfile } from "../../../utils/userProfile";
+import { updateUserProfile, loadUserProfile, setCachedUserProfile } from "../../../utils/userProfile";
 import { useUserStore } from "@/state/userStore";
 import { useAuthStore } from "@/state/authStore";
 import { SCREENS } from "@/navigation/screens";
@@ -72,6 +72,8 @@ export default function OnboardingScreen() {
         };
         console.log('🔧 updateUserProfile', { uid, ...fields });
         await updateUserProfile(fields);
+        const updated = await loadUserProfile(uid);
+        setCachedUserProfile(updated as any);
         await SecureStore.setItemAsync(`hasSeenOnboarding-${uid}`, 'true');
         useUserStore.getState().updateUser({
           onboardingComplete: true,

@@ -91,7 +91,7 @@ app.patch('/users', verifyFirebaseIdToken, async (req: AuthedRequest, res) => {
 
   try {
     if (fields.religion && typeof fields.religion === 'string') {
-      fields.religion = db.collection('religions').doc(fields.religion);
+      fields.religion = db.collection('religion').doc(fields.religion);
       fields.religionSlug = fields.religion.id;
     }
 
@@ -116,13 +116,13 @@ app.patch('/users/:uid', verifyFirebaseIdToken, async (req: AuthedRequest, res) 
     console.log('➡️ /users PATCH', { uid, religionId, religionSlug, fields });
     let relId = religionId as string | undefined;
     if (!relId && religionSlug) {
-      const q = await db.collection('religions').where('slug', '==', religionSlug).limit(1).get();
+      const q = await db.collection('religion').where('slug', '==', religionSlug).limit(1).get();
       if (!q.empty) {
         relId = q.docs[0].id;
       }
     }
     if (relId) {
-      fields.religionRef = db.doc(`religions/${relId}`);
+      fields.religionRef = db.doc(`religion/${relId}`);
       fields.religion = relId;
     }
 
