@@ -19,7 +19,7 @@ import { getTokenCount, setTokenCount } from "@/utils/TokenManager";
 import { showGracefulError } from '@/utils/gracefulError';
 import { ASK_GEMINI_V2 } from "@/utils/constants";
 import { getDocument, setDocument } from '@/services/firestoreService';
-import { updateUserProfile } from '../../utils/firestoreHelpers';
+import { updateUserProfile, getUserAIPrompt } from '../../utils/userProfile';
 import { useUser } from '@/hooks/useUser';
 import { ensureAuth } from '@/utils/authGuard';
 import { getToken, getCurrentUserId } from '@/utils/TokenManager';
@@ -191,7 +191,8 @@ export default function ReligionAIScreen() {
         return;
       }
       const promptRole = getPersonaPrompt(religion);
-      console.log('👤 Persona resolved', { religion, promptRole });
+      const basePrompt = getUserAIPrompt();
+      console.log('👤 Persona resolved', { religion, promptRole, basePrompt });
 
       if (!subscribed) {
         if (!canAskFree) {
@@ -232,7 +233,7 @@ export default function ReligionAIScreen() {
       }));
 
       const prompt =
-        `You are a ${promptRole} of the ${religion} faith. Answer the user using teachings from that tradition and cite any relevant scriptures.\n${question}`;
+        `${basePrompt || `You are a ${promptRole} of the ${religion} faith. Answer the user using teachings from that tradition and cite any relevant scriptures.`}\n${question}`;
       console.log('📡 Sending Gemini prompt:', prompt);
       console.log('👤 Role:', promptRole);
 
