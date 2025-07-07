@@ -1,6 +1,5 @@
 import { create } from 'zustand';
-import { getDocument, setDocument } from '@/services/firestoreService';
-import { updateUserProfile } from '../../utils/firestoreHelpers';
+import { loadUserProfile, updateUserProfile } from '../../utils/userProfile';
 import { ensureAuth } from '@/utils/authGuard';
 
 interface ChallengeStore {
@@ -38,7 +37,7 @@ export const useChallengeStore = create<ChallengeStore>((set, get) => ({
     const uid = await ensureAuth();
     if (!uid) return;
 
-    const data = await getDocument(`users/${uid}`);
+    const data = await loadUserProfile(uid);
     if (data) {
       set({
         lastCompleted: data.lastStreakDate ? new Date(data.lastStreakDate).getTime() : null,
