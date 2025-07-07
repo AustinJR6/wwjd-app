@@ -9,7 +9,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useUser } from '@/hooks/useUser';
 import { useUserStore } from '@/state/userStore';
 import { initAuthState } from '@/services/authService';
-import { fetchUserProfile } from '@/services/userService';
+import { loadUserProfile } from '../../utils/userProfile';
 
 // Auth Screens
 import LoginScreen from '@/screens/auth/LoginScreen';
@@ -72,7 +72,7 @@ export default function AuthGate() {
       let profile = useUserStore.getState().user;
       if (!profile || profile.uid !== uid) {
         try {
-          const fetched = await fetchUserProfile(uid);
+          const fetched = await loadUserProfile(uid);
           if (fetched) {
             useUserStore.getState().setUser({
               uid: fetched.uid,
