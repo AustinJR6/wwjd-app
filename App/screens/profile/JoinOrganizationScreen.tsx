@@ -12,7 +12,7 @@ import { useUser } from '@/hooks/useUser';
 import ScreenContainer from '@/components/theme/ScreenContainer';
 import { useTheme } from '@/components/theme/theme';
 import { queryCollection, setDocument, getDocument } from '@/services/firestoreService';
-import { updateUserProfile } from '@/utils/firestoreHelpers';
+import { updateUserProfile } from '../../../utils/firestoreHelpers';
 import { getAuthHeaders } from '@/utils/TokenManager';
 import { ensureAuth } from '@/utils/authGuard';
 import { useNavigation } from '@react-navigation/native';

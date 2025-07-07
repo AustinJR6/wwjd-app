@@ -12,7 +12,7 @@ import { useTheme } from "@/components/theme/theme";
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { useUser } from "@/hooks/useUser";
 import { setDocument } from '@/services/firestoreService';
-import { updateUserProfile } from '@/utils/firestoreHelpers';
+import { updateUserProfile } from '../../../utils/firestoreHelpers';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from "@/navigation/RootStackParamList";
 import { ensureAuth } from '@/utils/authGuard';

@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { getDocument, setDocument } from '@/services/firestoreService';
-import { updateUserProfile } from '@/utils/firestoreHelpers';
+import { updateUserProfile } from '../../utils/firestoreHelpers';
 import { ensureAuth } from '@/utils/authGuard';
 
 interface ChallengeStore {
