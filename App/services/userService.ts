@@ -186,28 +186,3 @@ export async function completeOnboarding(uid: string) {
   await setDocument(`users/${storedUid}`, { onboardingComplete: true });
 }
 
-/**
- * Update religion or subscription status
- */
-export async function updateUserFields(
-  uid: string,
-  updates: Partial<FirestoreUser>,
-) {
-  const storedUid = await ensureAuth(uid);
-  if (!storedUid) return;
-
-  const filtered = Object.fromEntries(
-    Object.entries(updates).filter(([k, v]) => {
-      if (v === undefined) return false;
-      if (k === 'username' && typeof v === 'string' && v.trim() === '') {
-        return false;
-      }
-      if (k === 'region' && typeof v === 'string' && v.trim() === '') {
-        return false;
-      }
-      return true;
-    }),
-  );
-  console.log('➡️ updateUserFields payload', { uid: storedUid, ...filtered });
-  await setDocument(`users/${storedUid}`, filtered);
-}
