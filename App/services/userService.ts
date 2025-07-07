@@ -1,5 +1,4 @@
-import { getDocument } from "@/services/firestoreService";
-import { updateUserProfile } from "../../utils/firestoreHelpers";
+import { loadUserProfile, updateUserProfile } from "../../utils/userProfile";
 import { useUserStore } from "@/state/userStore";
 import { ensureAuth } from "@/utils/authGuard";
 import type { FirestoreUser } from "../../types/profile";
@@ -8,7 +7,7 @@ import type { FirestoreUser } from "../../types/profile";
  * Initialize optional user fields if they're missing.
  */
 export async function initializeUserDataIfNeeded(uid: string): Promise<void> {
-  const data = (await getDocument(`users/${uid}`)) || {};
+  const data = (await loadUserProfile(uid)) || {};
   const payload: any = {};
 
   if (!data.challengeStreak) {
@@ -40,7 +39,7 @@ export async function ensureUserDocExists(
   email?: string,
 ): Promise<boolean> {
   try {
-    await getDocument(`users/${uid}`);
+    await loadUserProfile(uid);
     console.log("📄 User doc already exists for", uid);
     return false;
   } catch (err: any) {
@@ -63,7 +62,7 @@ export async function fetchUserProfile(
   uid: string,
 ): Promise<FirestoreUser | null> {
   try {
-    const data = await getDocument(`users/${uid}`);
+    const data = await loadUserProfile(uid);
     return data as FirestoreUser;
   } catch (err: any) {
     if (err?.response?.status === 404) return null;
@@ -82,7 +81,7 @@ export async function loadUser(uid: string): Promise<void> {
   await ensureUserDocExists(storedUid);
   await initializeUserDataIfNeeded(storedUid);
 
-  const snapshot = await getDocument(`users/${storedUid}`);
+  const snapshot = await loadUserProfile(storedUid);
 
   if (snapshot) {
     const user = snapshot as FirestoreUser;

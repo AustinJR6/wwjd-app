@@ -37,7 +37,9 @@ export async function getReligions(): Promise<ReligionItem[]> {
   }
 }
 
-export async function getReligionProfile(id: string): Promise<ReligionProfile | null> {
+export async function getReligionProfile(
+  id: string,
+): Promise<ReligionProfile | null> {
   if (religionCache[id]) {
     return religionCache[id];
   }
@@ -49,7 +51,9 @@ export async function getReligionProfile(id: string): Promise<ReligionProfile | 
     const profile: ReligionProfile = {
       id,
       name: fields.name?.stringValue || id,
-      prompt: fields.prompt?.stringValue,
+      prompt:
+        fields.prompt?.stringValue ||
+        'Respond with empathy, logic, and gentle spirituality.',
       aiVoice: fields.aiVoice?.stringValue,
     };
     religionCache[id] = profile;

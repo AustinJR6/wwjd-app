@@ -1,6 +1,6 @@
 import { Alert } from 'react-native';
-import { getDocument, setDocument } from '@/services/firestoreService';
-import { updateUserProfile } from '../../utils/firestoreHelpers';
+
+import { loadUserProfile, updateUserProfile } from '../../utils/userProfile';
 import { getCurrentUserId } from '@/utils/TokenManager';
 import { ensureAuth } from '@/utils/authGuard';
 
@@ -14,7 +14,7 @@ export async function canLoadNewChallenge(): Promise<boolean> {
   const uid = await ensureAuth(await getCurrentUserId());
   if (!uid) return false;
 
-  const userData = (await getDocument(`users/${uid}`)) || {};
+  const userData = (await loadUserProfile(uid)) || {};
   const isSubscribed = userData?.isSubscribed ?? false;
   const tokens = userData?.tokens ?? 0;
   let dailyChallengeCount = userData?.dailyChallengeCount ?? 0;
