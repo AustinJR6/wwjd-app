@@ -138,6 +138,7 @@ export async function createUserProfile({
     isSubscribed: false,
     skipTokensUsed: 0,
     nightModeEnabled: false,
+    religionPrefix: '',
     onboardingComplete: false,
     createdAt: now,
     streak: { current: 0, longest: 0, lastUpdated: new Date().toISOString() },

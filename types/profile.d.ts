@@ -24,6 +24,12 @@ export interface UserProfile {
   streak?: Streak;
   currentChallenge?: any;
   onboardingComplete?: boolean;
+  /** Tokens spent on skipping challenges */
+  skipTokensUsed?: number;
+  /** Dark mode preference */
+  nightModeEnabled?: boolean;
+  /** Optional custom prefix for AI prompts */
+  religionPrefix?: string;
   [key: string]: any;
 }
 
@@ -40,5 +46,11 @@ export interface FirestoreUser extends UserProfile {
   dailySkipCount?: number;
   lastChallengeLoadDate?: string | null;
   lastSkipDate?: string | null;
+  /** Tokens spent on skipping challenges */
+  skipTokensUsed: number;
+  /** Dark mode preference */
+  nightModeEnabled: boolean;
+  /** Optional custom prefix for AI prompts */
+  religionPrefix?: string;
   organizationId?: string;
 }
