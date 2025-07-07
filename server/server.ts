@@ -77,7 +77,7 @@ app.post('/leaderboard/:uid/points', verifyFirebaseIdToken, async (req: AuthedRe
 });
 
 app.patch('/users', verifyFirebaseIdToken, async (req: AuthedRequest, res) => {
-  console.log('📥 Incoming PATCH /users', req.body);
+  console.log('📥 PATCH /users body:', req.body);
   const { uid, fields } = req.body || {};
   if (!uid || !fields) {
     console.error('PATCH /users missing uid or fields');
@@ -94,9 +94,10 @@ app.patch('/users', verifyFirebaseIdToken, async (req: AuthedRequest, res) => {
     }
 
     await db.collection('users').doc(uid).set(fields, { merge: true });
+    console.log(`✅ Updated Firestore user doc: users/${uid}`);
     res.json({ success: true });
-  } catch (err) {
-    console.error('update user failed', err);
+  } catch (error) {
+    console.error('❌ Failed to update Firestore user profile', error);
     res.status(500).json({ error: 'Failed to update user' });
   }
 });
