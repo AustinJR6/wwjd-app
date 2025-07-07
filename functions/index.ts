@@ -426,6 +426,11 @@ export const completeChallengeDay = functions
       const logRef = challengeRef.collection("challengeLogs").doc();
       t.set(logRef, { day: currentDay, timestamp: now });
 
+      const userSnap = await t.get(userRef);
+      const userData = userSnap.exists ? userSnap.data() || {} : {};
+      const relRef: FirebaseFirestore.DocumentReference | null =
+        userData.religionRef || (userData.religion ? db.doc(`religions/${userData.religion}`) : null);
+
       const basePoints = data.basePoints || 10;
       let points = basePoints;
       if (isComplete && doubleBonusEligible && completed.length === totalDays) {
@@ -436,6 +441,11 @@ export const completeChallengeDay = functions
       t.update(userRef, {
         individualPoints: admin.firestore.FieldValue.increment(points),
       });
+      if (relRef) {
+        const rs = await t.get(relRef);
+        const current = rs.exists ? (rs.data()?.totalPoints ?? 0) : 0;
+        t.set(relRef, { totalPoints: current + points }, { merge: true });
+      }
     });
 
     await updateStreakAndXPInternal(uid, "challenge");
@@ -473,8 +483,19 @@ export const askGeminiSimple = functions
           parts: [{ text: msg.text }],
         })),
       });
+
+      const userSnap = await db.collection("users").doc(uid).get();
+      const userData = userSnap.data() || {};
+      let promptPrefix = "";
+      if (userData.religionRef) {
+        try {
+          const relSnap = await userData.religionRef.get();
+          promptPrefix = relSnap.data()?.prompt || "";
+        } catch {}
+      }
       const { name, aiVoice } = await fetchReligionContext(religionId);
-      const fullPrompt = `As a ${aiVoice} within the ${name} tradition, respond to the following:\n"${prompt}"`;
+      const system = promptPrefix || `As a ${aiVoice} within the ${name} tradition,`;
+      const fullPrompt = `${system} respond to the following:\n"${prompt}"`;
       const result = await chat.sendMessage(fullPrompt);
       text = result?.response?.text?.() ?? "No response text returned.";
     } catch (gemErr) {
@@ -560,8 +581,20 @@ export const askGeminiV2 = functions
           parts: [{ text: msg.text }],
         })),
       });
+
+      const userSnap = await db.collection("users").doc(decoded.uid).get();
+      const userData = userSnap.data() || {};
+      let promptPrefix = "";
+      if (userData.religionRef) {
+        try {
+          const relSnap = await userData.religionRef.get();
+          promptPrefix = relSnap.data()?.prompt || "";
+        } catch {}
+      }
+
       const { name, aiVoice } = await fetchReligionContext(religionId);
-      const fullPrompt = `As a ${aiVoice} within the ${name} tradition, respond to the following:\n"${prompt}"`;
+      const system = promptPrefix || `As a ${aiVoice} within the ${name} tradition,`;
+      const fullPrompt = `${system} respond to the following:\n"${prompt}"`;
       const result = await chat.sendMessage(fullPrompt);
       text = result?.response?.text?.() ?? "No response text returned.";
       logger.info("💬 Gemini response:", text);

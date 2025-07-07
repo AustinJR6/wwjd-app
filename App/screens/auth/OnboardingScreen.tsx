@@ -63,12 +63,14 @@ export default function OnboardingScreen() {
     console.log('💾 Submitting onboarding', { username, region, religion });
     try {
       if (uid) {
-        await updateUserProfile({
-          username: username.trim(),
+        const fields = {
+          displayName: username.trim(),
           region,
           religion,
           onboardingComplete: true,
-        });
+        };
+        console.log('🔧 updateUserProfile', { uid, ...fields });
+        await updateUserProfile(fields);
         await SecureStore.setItemAsync(`hasSeenOnboarding-${uid}`, 'true');
         useUserStore.getState().updateUser({
           onboardingComplete: true,
