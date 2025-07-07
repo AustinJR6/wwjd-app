@@ -83,7 +83,10 @@ export default function OnboardingScreen() {
           region: check?.region,
           religion: check?.religion,
         });
-        navigation.reset({ index: 0, routes: [{ name: SCREENS.MAIN.HOME }] });
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'Home' as keyof RootStackParamList }],
+        });
       }
     } catch (err: any) {
       Alert.alert(
