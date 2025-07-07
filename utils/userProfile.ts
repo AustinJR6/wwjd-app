@@ -2,31 +2,9 @@ import axios from 'axios';
 import { API_URL, getAuthHeaders } from '../App/config/firebaseApp';
 import { getCurrentUserId } from '../App/utils/authUtils';
 import { getDocument } from '../App/services/firestoreService';
+import type { CachedProfile, ReligionDocument, UserProfile } from '../types/profile';
 
-export interface ReligionData {
-  id: string;
-  name?: string;
-  aiVoice?: string;
-  prompt?: string;
-  defaultChallenges?: any[];
-  totalPoints?: number;
-}
-
-export interface UserProfile {
-  uid: string;
-  displayName?: string;
-  username?: string;
-  region?: string;
-  religion: string;
-  points?: number;
-  streak?: number;
-  currentChallenge?: any;
-  onboardingComplete?: boolean;
-  religionData?: ReligionData | null;
-  [key: string]: any;
-}
-
-let cachedProfile: UserProfile | null = null;
+let cachedProfile: CachedProfile | null = null;
 
 export async function loadUserProfile(uid?: string): Promise<UserProfile | null> {
   const userId = uid ?? (await getCurrentUserId());
@@ -38,14 +16,14 @@ export async function loadUserProfile(uid?: string): Promise<UserProfile | null>
   try {
     const user = await getDocument(`users/${userId}`);
     if (!user) return null;
-    let religionData: ReligionData | null = null;
+    let religionData: ReligionDocument | null = null;
     if (user.religion) {
       religionData = await getDocument(`religions/${user.religion}`);
       if (religionData && !('prompt' in religionData)) {
         console.log(`⚠️ Religion ${user.religion} missing 'prompt' field`);
       }
     }
-    cachedProfile = { uid: userId, ...user, religionData } as UserProfile;
+    cachedProfile = { uid: userId, ...user, religionData } as CachedProfile;
     return cachedProfile;
   } catch (err) {
     console.error('loadUserProfile failed', err);
@@ -66,7 +44,16 @@ export async function updateUserProfile(
     const headers = await getAuthHeaders();
     await axios.patch(`${API_URL}/users/${userId}`, fields, { headers });
     if (cachedProfile && cachedProfile.uid === userId) {
-      cachedProfile = { ...cachedProfile, ...fields };
+      if ('religion' in fields) {
+        const religionData = await getDocument(`religions/${fields.religion}`);
+        cachedProfile = {
+          ...cachedProfile,
+          ...fields,
+          religionData: religionData || null,
+        } as CachedProfile;
+      } else {
+        cachedProfile = { ...cachedProfile, ...fields } as CachedProfile;
+      }
     }
     console.log('✅ Profile updated', fields);
   } catch (err) {

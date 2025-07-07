@@ -12,7 +12,7 @@ import { useUser } from '@/hooks/useUser';
 import ScreenContainer from '@/components/theme/ScreenContainer';
 import { useTheme } from '@/components/theme/theme';
 import { queryCollection, setDocument, getDocument } from '@/services/firestoreService';
-import { updateUserProfile } from '../../../utils/firestoreHelpers';
+import { loadUserProfile, updateUserProfile } from '../../../utils/userProfile';
 import { getAuthHeaders } from '@/utils/TokenManager';
 import { ensureAuth } from '@/utils/authGuard';
 import { useNavigation } from '@react-navigation/native';
@@ -127,7 +127,7 @@ export default function JoinOrganizationScreen() {
     const uid = await ensureAuth(user.uid);
     if (!uid) return;
 
-    const profile = await getDocument(`users/${uid}`);
+    const profile = await loadUserProfile(uid);
     if (profile?.organizationId) {
       Alert.alert(
         'Already Joined',

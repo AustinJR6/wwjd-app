@@ -12,7 +12,7 @@ import { useTheme } from "@/components/theme/theme";
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { useUser } from "@/hooks/useUser";
 import { setDocument } from '@/services/firestoreService';
-import { updateUserProfile } from '../../../utils/firestoreHelpers';
+import { loadUserProfile, updateUserProfile } from '../../../utils/userProfile';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from "@/navigation/RootStackParamList";
 import { ensureAuth } from '@/utils/authGuard';
@@ -73,6 +73,7 @@ export default function SelectReligionScreen({ navigation }: Props) {
 
     try {
       await updateUserProfile(uid, { religion: selected });
+      await loadUserProfile(uid);
 
       navigation.replace('Quote');
     } catch (err) {
