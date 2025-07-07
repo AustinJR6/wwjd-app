@@ -76,4 +76,32 @@ app.post('/leaderboard/:uid/points', verifyFirebaseIdToken, async (req: AuthedRe
   }
 });
 
+app.patch('/users/:uid', verifyFirebaseIdToken, async (req: AuthedRequest, res) => {
+  const { uid } = req.params;
+  if (req.uid !== uid) {
+    return res.status(403).json({ error: 'Unauthorized' });
+  }
+
+  const { religionId, religionSlug, ...fields } = req.body || {};
+  try {
+    let relId = religionId as string | undefined;
+    if (!relId && religionSlug) {
+      const q = await db.collection('religions').where('slug', '==', religionSlug).limit(1).get();
+      if (!q.empty) {
+        relId = q.docs[0].id;
+      }
+    }
+    if (relId) {
+      fields.religionRef = db.doc(`religions/${relId}`);
+      fields.religion = relId;
+    }
+
+    await db.collection('users').doc(uid).set(fields, { merge: true });
+    res.json({ success: true });
+  } catch (err) {
+    console.error('update user failed', err);
+    res.status(500).json({ error: 'Failed to update user' });
+  }
+});
+
 export default app;
