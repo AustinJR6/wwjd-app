@@ -84,6 +84,7 @@ app.patch('/users/:uid', verifyFirebaseIdToken, async (req: AuthedRequest, res) 
 
   const { religionId, religionSlug, ...fields } = req.body || {};
   try {
+    console.log('➡️ /users PATCH', { uid, religionId, religionSlug, fields });
     let relId = religionId as string | undefined;
     if (!relId && religionSlug) {
       const q = await db.collection('religions').where('slug', '==', religionSlug).limit(1).get();
@@ -97,6 +98,7 @@ app.patch('/users/:uid', verifyFirebaseIdToken, async (req: AuthedRequest, res) 
     }
 
     await db.collection('users').doc(uid).set(fields, { merge: true });
+    console.log('✅ user updated', { uid, fields });
     res.json({ success: true });
   } catch (err) {
     console.error('update user failed', err);

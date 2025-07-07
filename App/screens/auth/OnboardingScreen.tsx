@@ -66,7 +66,7 @@ export default function OnboardingScreen() {
         const fields = {
           displayName: username.trim(),
           region,
-          religion,
+          religionSlug: religion,
           onboardingComplete: true,
         };
         console.log('🔧 updateUserProfile', { uid, ...fields });

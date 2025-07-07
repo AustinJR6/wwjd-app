@@ -9,6 +9,8 @@ export async function incrementUserReligionOrgPoints(uid: string, points: number
   const religion = data.religion as string | undefined;
   const organizationId = data.organizationId as string | undefined;
 
+  console.log('➡️ incrementUserReligionOrgPoints', { uid, points, religion, organizationId });
+
   await db.runTransaction(async (t: any) => {
     if (religion) {
       const ref = db.collection('religions').doc(religion);
@@ -23,4 +25,6 @@ export async function incrementUserReligionOrgPoints(uid: string, points: number
       t.set(ref, { name: organizationId, totalPoints: current + points }, { merge: true });
     }
   });
+
+  console.log('✅ incrementUserReligionOrgPoints complete', { uid, points });
 }
