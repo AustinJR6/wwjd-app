@@ -17,6 +17,7 @@ import {
   setDocument,
   getOrCreateActiveChallenge,
 } from '@/services/firestoreService';
+import { updateUserProfile } from '@/utils/firestoreHelpers';
 import { canLoadNewChallenge } from '@/services/challengeLimitService';
 import { completeChallengeWithStreakCheck } from '@/services/challengeStreakService';
 import {
@@ -78,7 +79,7 @@ export default function ChallengeScreen() {
       const reward = current >= 30 ? 10 : current >= 14 ? 7 : 5;
       const tokens = await getTokenCount();
       await setTokenCount(tokens + reward);
-      await setDocument(`users/${uid}`, {
+      await updateUserProfile(uid, {
         streakMilestones: { ...granted, [key]: true },
       });
 
@@ -181,7 +182,7 @@ export default function ChallengeScreen() {
         setChallenge(newChallenge);
       }
 
-      await setDocument(`users/${uid}`, {
+      await updateUserProfile(uid, {
         lastChallenge: new Date().toISOString(),
         lastChallengeText: newChallenge || '',
       });
@@ -220,7 +221,7 @@ export default function ChallengeScreen() {
     }
 
     try {
-      await setDocument(`users/${uid}`, {
+      await updateUserProfile(uid, {
         tokens: tokens - skipCost,
         dailySkipCount: dailySkipCount + 1,
         lastSkipDate: new Date().toISOString(),
@@ -301,7 +302,7 @@ export default function ChallengeScreen() {
     }
 
     history.completed += 1;
-    await setDocument(`users/${uid}`, { dailyChallengeHistory: history });
+    await updateUserProfile(uid, { dailyChallengeHistory: history });
     try {
       console.log('Current user:', await getCurrentUserId());
       const cfToken = await getToken(true);
@@ -328,7 +329,7 @@ export default function ChallengeScreen() {
     const currentTokens = await getTokenCount();
     await setTokenCount(currentTokens + 1);
 
-    await setDocument(`users/${uid}`, {
+    await updateUserProfile(uid, {
       individualPoints: (userData.individualPoints || 0) + 2,
     });
 

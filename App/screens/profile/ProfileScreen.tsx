@@ -106,7 +106,7 @@ export default function ProfileScreen() {
       await updateUserProfile({ religion: value });
       console.log('✅ Religion updated');
       updateUser({ religion: value });
-      await setDocument(`users/${uidVal}`, { lastChallenge: null });
+      await updateUserProfile(uidVal, { lastChallenge: null });
       Alert.alert('Religion Updated');
     } catch (err: any) {
       console.error('Religion update failed', err);

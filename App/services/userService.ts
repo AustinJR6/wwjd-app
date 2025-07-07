@@ -1,4 +1,5 @@
 import { getDocument, setDocument } from "@/services/firestoreService";
+import { updateUserProfile } from "@/utils/firestoreHelpers";
 import { useUserStore } from "@/state/userStore";
 import { ensureAuth } from "@/utils/authGuard";
 
@@ -51,7 +52,7 @@ export async function initializeUserDataIfNeeded(uid: string): Promise<void> {
   }
 
   if (Object.keys(payload).length > 0) {
-    await setDocument(`users/${uid}`, payload);
+    await updateUserProfile(uid, payload);
   }
 }
 
@@ -70,7 +71,7 @@ export async function ensureUserDocExists(
     if (err?.response?.status === 404) {
       const payload: any = { uid, createdAt: Date.now(), individualPoints: 0 };
       if (email) payload.email = email;
-      await setDocument(`users/${uid}`, payload);
+      await updateUserProfile(uid, payload);
       console.log("📄 Created user doc for", uid);
       return true;
     }
@@ -173,7 +174,7 @@ export async function createUserProfile({
     (userData as any).organizationId = organizationId;
   }
 
-  await setDocument(`users/${storedUid}`, userData);
+  await updateUserProfile(storedUid, userData);
 }
 
 /**
@@ -183,6 +184,6 @@ export async function completeOnboarding(uid: string) {
   const storedUid = await ensureAuth(uid);
   if (!storedUid) return;
 
-  await setDocument(`users/${storedUid}`, { onboardingComplete: true });
+  await updateUserProfile(storedUid, { onboardingComplete: true });
 }
 

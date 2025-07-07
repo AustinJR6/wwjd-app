@@ -19,6 +19,7 @@ import { getTokenCount, setTokenCount } from "@/utils/TokenManager";
 import { showGracefulError } from '@/utils/gracefulError';
 import { ASK_GEMINI_V2 } from "@/utils/constants";
 import { getDocument, setDocument } from '@/services/firestoreService';
+import { updateUserProfile } from '@/utils/firestoreHelpers';
 import { useUser } from '@/hooks/useUser';
 import { ensureAuth } from '@/utils/authGuard';
 import { getToken, getCurrentUserId } from '@/utils/TokenManager';
@@ -219,7 +220,7 @@ export default function ReligionAIScreen() {
 
           await setTokenCount(tokens - cost);
         } else {
-          await setDocument(`users/${uid}`, { lastFreeAsk: new Date().toISOString() });
+          await updateUserProfile(uid, { lastFreeAsk: new Date().toISOString() });
         }
       }
 
