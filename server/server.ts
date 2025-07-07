@@ -76,6 +76,31 @@ app.post('/leaderboard/:uid/points', verifyFirebaseIdToken, async (req: AuthedRe
   }
 });
 
+app.patch('/users', verifyFirebaseIdToken, async (req: AuthedRequest, res) => {
+  console.log('📥 Incoming PATCH /users', req.body);
+  const { uid, fields } = req.body || {};
+  if (!uid || !fields) {
+    console.error('PATCH /users missing uid or fields');
+    return res.status(400).json({ error: 'uid and fields required' });
+  }
+
+  if (req.uid !== uid) {
+    return res.status(403).json({ error: 'Unauthorized' });
+  }
+
+  try {
+    if (typeof fields.religion === 'string') {
+      fields.religion = db.collection('religions').doc(fields.religion);
+    }
+
+    await db.collection('users').doc(uid).set(fields, { merge: true });
+    res.json({ success: true });
+  } catch (err) {
+    console.error('update user failed', err);
+    res.status(500).json({ error: 'Failed to update user' });
+  }
+});
+
 app.patch('/users/:uid', verifyFirebaseIdToken, async (req: AuthedRequest, res) => {
   const { uid } = req.params;
   if (req.uid !== uid) {
