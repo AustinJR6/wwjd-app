@@ -1,8 +1,16 @@
 import { doc, setDoc } from "firebase/firestore";
 import { auth, db } from "../lib/firebase";
 
-export async function updateUserProfile(fields: Record<string, any>) {
-  const uid = auth.currentUser?.uid;
+// 🚨 Centralized user update function. All profile field changes must go through here.
+export async function updateUserProfile(
+  uidOrFields: string | Record<string, any>,
+  maybeFields?: Record<string, any>,
+) {
+  const uid =
+    typeof uidOrFields === "string" ? uidOrFields : auth.currentUser?.uid;
+  const fields =
+    typeof uidOrFields === "string" ? maybeFields || {} : uidOrFields;
+
   if (!uid) {
     console.warn("\u274C No UID available for user update.");
     return;

@@ -1,4 +1,5 @@
 import { getDocument, setDocument } from '@/services/firestoreService';
+import { updateUserProfile } from '@/utils/firestoreHelpers';
 import { ensureAuth } from '@/utils/authGuard';
 
 export const getTokenCount = async () => {
@@ -19,7 +20,7 @@ export const setTokenCount = async (count: number) => {
   const uid = await ensureAuth();
   if (!uid) return;
 
-  await setDocument(`users/${uid}`, { tokens: count });
+  await updateUserProfile(uid, { tokens: count });
   console.log('🪙 Token count:', count);
 };
 
@@ -59,7 +60,7 @@ export const syncSubscriptionStatus = async () => {
   const isSubscribed = !!sub && sub.active === true;
   console.log('💎 OneVine+ Status:', isSubscribed);
   if (isSubscribed) {
-    await setDocument(`users/${uid}`, { tokens: 9999 });
+    await updateUserProfile(uid, { tokens: 9999 });
   }
 };
 

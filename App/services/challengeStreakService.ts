@@ -1,4 +1,5 @@
 import { getDocument, setDocument } from '@/services/firestoreService';
+import { updateUserProfile } from '@/utils/firestoreHelpers';
 import { getCurrentUserId } from '@/utils/TokenManager';
 import { ensureAuth } from '@/utils/authGuard';
 
@@ -21,7 +22,7 @@ export async function completeChallengeWithStreakCheck(): Promise<number | null>
     newCount += 1;
   }
 
-  await setDocument(`users/${userId}`, {
+  await updateUserProfile(userId, {
     challengeStreak: {
       count: newCount,
       lastCompletedDate: new Date().toISOString(),

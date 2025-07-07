@@ -12,6 +12,7 @@ import { useUser } from '@/hooks/useUser';
 import ScreenContainer from '@/components/theme/ScreenContainer';
 import { useTheme } from '@/components/theme/theme';
 import { queryCollection, setDocument, getDocument } from '@/services/firestoreService';
+import { updateUserProfile } from '@/utils/firestoreHelpers';
 import { getAuthHeaders } from '@/utils/TokenManager';
 import { ensureAuth } from '@/utils/authGuard';
 import { useNavigation } from '@react-navigation/native';
@@ -100,7 +101,7 @@ export default function JoinOrganizationScreen() {
     const uid = await ensureAuth(user.uid);
     if (!uid) return;
     try {
-      await setDocument(`users/${uid}`, {
+      await updateUserProfile(uid, {
         organizationId: null,
         organizationName: null,
       });
@@ -151,7 +152,7 @@ export default function JoinOrganizationScreen() {
     }
 
     try {
-      await setDocument(`users/${uid}`, {
+      await updateUserProfile(uid, {
         organizationId: org.id,
         organizationName: org.name,
       });

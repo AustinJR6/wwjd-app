@@ -1,5 +1,6 @@
 import { Alert } from 'react-native';
 import { getDocument, setDocument } from '@/services/firestoreService';
+import { updateUserProfile } from '@/utils/firestoreHelpers';
 import { getCurrentUserId } from '@/utils/TokenManager';
 import { ensureAuth } from '@/utils/authGuard';
 
@@ -27,7 +28,7 @@ export async function canLoadNewChallenge(): Promise<boolean> {
   }
 
   if (isSubscribed || dailyChallengeCount < 3) {
-    await setDocument(`users/${uid}`, {
+    await updateUserProfile(uid, {
       dailyChallengeCount: dailyChallengeCount + 1,
       lastChallengeLoadDate: new Date().toISOString(),
     });
@@ -42,7 +43,7 @@ export async function canLoadNewChallenge(): Promise<boolean> {
     return false;
   }
 
-  await setDocument(`users/${uid}`, {
+  await updateUserProfile(uid, {
     tokens: tokens - 5,
     dailyChallengeCount: dailyChallengeCount + 1,
     lastChallengeLoadDate: new Date().toISOString(),
