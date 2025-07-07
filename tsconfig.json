@@ -9,6 +9,7 @@
   },
   "include": [
     "App/**/*",
-    "App.tsx"
+    "App.tsx",
+    "types/**/*.d.ts"
   ]
 }

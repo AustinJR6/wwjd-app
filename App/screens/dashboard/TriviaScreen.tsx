@@ -15,8 +15,8 @@ import { sendGeminiPrompt } from '@/services/geminiService';
 import ScreenContainer from '@/components/theme/ScreenContainer';
 import { useTheme } from '@/components/theme/theme';
 import { ASK_GEMINI_SIMPLE } from '@/utils/constants';
-import { getDocument, setDocument } from '@/services/firestoreService';
-import { updateUserProfile } from '../../../utils/firestoreHelpers';
+import { setDocument } from '@/services/firestoreService';
+import { loadUserProfile, updateUserProfile, getUserAIPrompt } from '../../../utils/userProfile';
 import { callFunction, awardPointsToUser } from '@/services/functionService';
 import { ensureAuth } from '@/utils/authGuard';
 import AuthGate from '@/components/AuthGate';
@@ -90,7 +90,9 @@ export default function TriviaScreen() {
     setAnswer('');
 
     try {
-      const religion = user?.religion;
+      const profile = await loadUserProfile(uid);
+      const religion = profile?.religion;
+      const prefix = getUserAIPrompt();
       if (!uid || !religion) {
         console.warn('⚠️ askGemini blocked — missing uid or religion', { uid, religion });
         setLoading(false);
@@ -99,7 +101,7 @@ export default function TriviaScreen() {
 
       const data = await sendGeminiPrompt({
         url: ASK_GEMINI_SIMPLE,
-        prompt: `Give me a short moral story originally from any major world religion. Replace all real names and locations with fictional ones so that it seems to come from a different culture. Keep the meaning and lesson intact. After the story, add two lines: RELIGION: <religion> and STORY: <story name>.`,
+        prompt: `${prefix} Give me a short moral story originally from any major world religion. Replace all real names and locations with fictional ones so that it seems to come from a different culture. Keep the meaning and lesson intact. After the story, add two lines: RELIGION: <religion> and STORY: <story name>.`.trim(),
         history: [],
         religion,
       });
@@ -135,7 +137,7 @@ export default function TriviaScreen() {
       correctStory && storyGuess.trim().toLowerCase().includes(correctStory.toLowerCase());
 
     try {
-      const userData = await getDocument(`users/${uid}`) || {};
+      const userData = (await loadUserProfile(uid)) || {};
       const earned = (religionCorrect ? 1 : 0) + (storyCorrect ? 5 : 0);
 
       if (earned > 0) {

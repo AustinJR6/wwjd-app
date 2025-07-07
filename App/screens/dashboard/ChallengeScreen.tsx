@@ -12,12 +12,8 @@ import { useTheme } from "@/components/theme/theme";
 import { getTokenCount, setTokenCount } from "@/utils/TokenManager";
 import { showGracefulError } from '@/utils/gracefulError';
 import { ASK_GEMINI_SIMPLE, GENERATE_CHALLENGE_URL } from "@/utils/constants";
-import {
-  getDocument,
-  setDocument,
-  getOrCreateActiveChallenge,
-} from '@/services/firestoreService';
-import { updateUserProfile } from '../../../utils/firestoreHelpers';
+import { getOrCreateActiveChallenge } from '@/services/firestoreService';
+import { loadUserProfile, updateUserProfile, getUserAIPrompt } from '../../../utils/userProfile';
 import { canLoadNewChallenge } from '@/services/challengeLimitService';
 import { completeChallengeWithStreakCheck } from '@/services/challengeStreakService';
 import {
@@ -72,7 +68,7 @@ export default function ChallengeScreen() {
     if (!milestones.includes(current)) return;
     const uid = await ensureAuth(await getCurrentUserId());
     try {
-      const userData = await getDocument(`users/${uid}`) || {};
+      const userData = (await loadUserProfile(uid)) || {};
       const granted = userData.streakMilestones || {};
       const key = `m${current}`;
       if (granted[key]) return;
@@ -92,9 +88,10 @@ export default function ChallengeScreen() {
         return;
       }
 
+      const prefix = getUserAIPrompt();
       const blessing = await sendGeminiPrompt({
         url: ASK_GEMINI_SIMPLE,
-        prompt: `Provide a short blessing for a user who reached a ${current}-day spiritual challenge streak in the ${religion} tradition.`,
+        prompt: `${prefix} Provide a short blessing for a user who reached a ${current}-day spiritual challenge streak in the ${religion} tradition.`.trim(),
         history: [],
         religion,
       });
@@ -111,7 +108,7 @@ export default function ChallengeScreen() {
   const loadChallengeStreak = async () => {
     const uid = await ensureAuth(await getCurrentUserId());
     if (!uid) return;
-    const data = await getDocument(`users/${uid}`);
+    const data = await loadUserProfile(uid);
     const streakData = data?.challengeStreak || {};
     setStreakCount(streakData.count || 0);
     setLastCompletedDate(streakData.lastCompletedDate ? new Date(streakData.lastCompletedDate) : null);
@@ -133,7 +130,7 @@ export default function ChallengeScreen() {
 
       setLoading(true);
 
-      const userData = await getDocument(`users/${uid}`) || {};
+      const userData = (await loadUserProfile(uid)) || {};
       const lastChallenge = userData.lastChallenge?.toDate?.();
       const now = new Date();
       const oneDay = 24 * 60 * 60 * 1000;
@@ -167,9 +164,10 @@ export default function ChallengeScreen() {
       const debugToken = await getToken(true);
       console.log('ID Token:', debugToken);
 
+      const prefix = getUserAIPrompt();
       const newChallenge = await sendGeminiPrompt({
         url: GENERATE_CHALLENGE_URL,
-        prompt,
+        prompt: `${prefix} ${prompt}`.trim(),
         history: [],
         token: debugToken || undefined,
         religion,
@@ -199,7 +197,7 @@ export default function ChallengeScreen() {
 
     await getOrCreateActiveChallenge(uid);
 
-    const userData = (await getDocument(`users/${uid}`)) || {};
+    const userData = (await loadUserProfile(uid)) || {};
     const today = new Date().toISOString().split('T')[0];
     let history = userData.dailyChallengeHistory || { date: today, completed: 0, skipped: 0 };
     if (history.date !== today) history = { date: today, completed: 0, skipped: 0 };
@@ -239,7 +237,7 @@ export default function ChallengeScreen() {
     const uid = await ensureAuth(await getCurrentUserId());
 
     try {
-      const userData = (await getDocument(`users/${uid}`)) || {};
+      const userData = (await loadUserProfile(uid)) || {};
       const religion = userData?.religion;
       if (!uid || !religion) {
         console.warn('⚠️ Challenge generation blocked — missing uid or religion', { uid, religion });
@@ -270,7 +268,7 @@ export default function ChallengeScreen() {
       return;
     }
 
-    const userData = await getDocument(`users/${uid}`) || {};
+    const userData = (await loadUserProfile(uid)) || {};
 
     const today = new Date().toISOString().slice(0, 10);
     let history = userData.dailyChallengeHistory || { date: today, completed: 0, skipped: 0 };

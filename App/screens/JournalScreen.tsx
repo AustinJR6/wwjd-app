@@ -16,7 +16,7 @@ import { useTheme } from "@/components/theme/theme";
 import { showGracefulError } from '@/utils/gracefulError';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { querySubcollection, addDocument, getDocument, setDocument } from '@/services/firestoreService';
-import { updateUserProfile } from '../../utils/firestoreHelpers';
+import { loadUserProfile, updateUserProfile, getUserAIPrompt } from '../../utils/userProfile';
 import { callFunction, awardPointsToUser } from '@/services/functionService';
 import { ASK_GEMINI_SIMPLE } from '@/utils/constants';
 import { ensureAuth } from '@/utils/authGuard';
@@ -162,7 +162,7 @@ export default function JournalScreen() {
           'entries'
         );
         setEntries(list);
-        const userData = await getDocument(`users/${uid}`);
+        const userData = await loadUserProfile(uid);
         setReligion(userData?.religion ?? 'SpiritGuide');
       } catch (err: any) {
         console.error('🔥 API Error:', err?.response?.data || err.message);
@@ -177,6 +177,7 @@ export default function JournalScreen() {
   const handleGuidedJournal = async () => {
     console.log('🔮 Start Guided Journal Pressed');
     const prompt = JOURNAL_PROMPTS[stage];
+    const prefix = getUserAIPrompt();
     setAiPrompt(prompt);
     setGuidedMode(true);
     try {
@@ -190,7 +191,7 @@ export default function JournalScreen() {
       }
       const answer = await sendGeminiPrompt({
         url: ASK_GEMINI_SIMPLE,
-        prompt,
+        prompt: `${prefix} ${prompt}`.trim(),
         history: [],
         token: token || undefined,
         religion,
@@ -225,7 +226,7 @@ export default function JournalScreen() {
       const tokenPreview = token ? token.slice(0, 8) : 'none';
       console.log('ID Token:', tokenPreview);
 
-      const userData = await getDocument(`users/${uid}`) || {};
+      const userData = (await loadUserProfile(uid)) || {};
 
       console.log(`📝 Attempting to save journal entry for UID ${uid}`);
       const path = `journalEntries/${uid}/entries`;

@@ -241,9 +241,10 @@ export default function ReligionAIScreen() {
       const debugToken = await getToken(true);
       console.log('ID Token:', debugToken);
 
+      const prefix = getUserAIPrompt();
       const answer = await sendGeminiPrompt({
         url: ASK_GEMINI_V2,
-        prompt,
+        prompt: `${prefix} ${prompt}`.trim(),
         history: formattedHistory,
         token: debugToken || undefined,
         religion,
