@@ -1,6 +1,31 @@
-import axios from 'axios';
-import { API_URL, getAuthHeaders } from '../App/config/firebaseApp';
+import axios, { AxiosError } from 'axios';
+import { FIRESTORE_BASE } from '../firebaseRest';
+import { getAuthHeaders } from '../App/utils/authUtils';
 import { getCurrentUserId } from '../App/utils/authUtils';
+
+function toFirestoreFields(obj: any): any {
+  const fields: any = {};
+  for (const k of Object.keys(obj)) {
+    const v = (obj as any)[k];
+    if (v === null) fields[k] = { nullValue: null };
+    else if (typeof v === 'number') fields[k] = { integerValue: v };
+    else if (typeof v === 'boolean') fields[k] = { booleanValue: v };
+    else if (typeof v === 'string') fields[k] = { stringValue: v };
+    else if (Array.isArray(v))
+      fields[k] = {
+        arrayValue: {
+          values: v.map((x) =>
+            typeof x === 'object'
+              ? { mapValue: { fields: toFirestoreFields(x) } }
+              : { stringValue: String(x) }
+          ),
+        },
+      };
+    else if (typeof v === 'object') fields[k] = { mapValue: { fields: toFirestoreFields(v) } };
+    else fields[k] = { stringValue: String(v) };
+  }
+  return fields;
+}
 
 // 🚨 Centralized user update function. All profile field changes must go through here.
 export async function updateUserProfile(
@@ -21,10 +46,12 @@ export async function updateUserProfile(
 
   try {
     const headers = await getAuthHeaders();
-    console.log('➡️ PATCH /users', { uid, fields });
-    await axios.patch(`${API_URL}/users/${uid}`, fields, { headers });
+    const url = `${FIRESTORE_BASE}/users/${uid}`;
+    console.log('➡️ PATCH', url, { payload: fields, headers });
+    await axios.patch(url, { fields: toFirestoreFields(fields) }, { headers });
     console.log('✅ Profile updated:', fields);
-  } catch (error) {
-    console.error('🔥 Failed to update user profile:', error);
+  } catch (error: any) {
+    const data = (error as AxiosError).response?.data;
+    console.error('🔥 Failed to update user profile:', data || error);
   }
 }

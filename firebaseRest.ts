@@ -112,12 +112,14 @@ export async function createDefaultUserDoc(uid: string, idToken: string) {
     createdAt: new Date().toISOString(),
   };
   const body = { fields: toFirestoreFields(payload) };
-  console.log('➡️ createUserDoc', { path, payload });
+  const headers = { Authorization: `Bearer ${idToken}` };
+  console.log('➡️ createUserDoc', { url, body, headers });
   try {
-    await axios.patch(url, body, { headers: { Authorization: `Bearer ${idToken}` } });
+    await axios.patch(url, body, { headers });
     console.log('✅ user doc created', uid);
   } catch (err: any) {
     logFirestoreError('SET', path, err);
+    console.error('createDefaultUserDoc error', err?.response?.data || err);
     throw err;
   }
 }
@@ -127,10 +129,13 @@ export async function saveJournalEntry(uid: string, data: Record<string, any>, i
   const url = `${FIRESTORE_BASE}/${path}`;
   const body = { fields: toFirestoreFields(data) };
   try {
-    const res = await axios.post(url, body, { headers: { Authorization: `Bearer ${idToken}` } });
+    const headers = { Authorization: `Bearer ${idToken}` };
+    console.log('➡️ POST', url, { body, headers });
+    const res = await axios.post(url, body, { headers });
     return res.data;
   } catch (err: any) {
     logFirestoreError('POST', path, err);
+    console.error('saveJournalEntry error', err?.response?.data || err);
     throw err;
   }
 }
