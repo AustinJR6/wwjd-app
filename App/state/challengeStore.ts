@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { loadUserProfile, updateUserProfile } from '../../utils/userProfile';
+import type { UserProfile } from '../../types/profile';
 import { ensureAuth } from '@/utils/authGuard';
 
 interface ChallengeStore {
@@ -37,7 +38,7 @@ export const useChallengeStore = create<ChallengeStore>((set, get) => ({
     const uid = await ensureAuth();
     if (!uid) return;
 
-    const data = await loadUserProfile(uid);
+    const data: UserProfile | null = await loadUserProfile(uid);
     if (data) {
       set({
         lastCompleted: data.lastStreakDate ? new Date(data.lastStreakDate).getTime() : null,
@@ -58,6 +59,6 @@ export const useChallengeStore = create<ChallengeStore>((set, get) => ({
         : new Date().toISOString(),
       streak,
     };
-    await updateUserProfile(uid, payload);
+    await updateUserProfile(payload, uid);
   },
 }));

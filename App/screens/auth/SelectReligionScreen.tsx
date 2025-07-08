@@ -72,7 +72,7 @@ export default function SelectReligionScreen({ navigation }: Props) {
     if (!uid) return;
 
     try {
-      await updateUserProfile(uid, { religion: selected });
+      await updateUserProfile({ religion: selected }, uid);
       await loadUserProfile(uid);
 
       navigation.replace('Quote');

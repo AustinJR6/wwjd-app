@@ -17,6 +17,7 @@ import { useTheme } from '@/components/theme/theme';
 import { ASK_GEMINI_SIMPLE } from '@/utils/constants';
 import { setDocument } from '@/services/firestoreService';
 import { loadUserProfile, updateUserProfile, getUserAIPrompt } from '../../../utils/userProfile';
+import type { UserProfile } from '../../../types/profile';
 import { callFunction, awardPointsToUser } from '@/services/functionService';
 import { ensureAuth } from '@/utils/authGuard';
 import AuthGate from '@/components/AuthGate';
@@ -137,13 +138,14 @@ export default function TriviaScreen() {
       correctStory && storyGuess.trim().toLowerCase().includes(correctStory.toLowerCase());
 
     try {
-      const userData = (await loadUserProfile(uid)) || {};
+      const userData: UserProfile | null = await loadUserProfile(uid);
+      const profile = userData ?? ({} as UserProfile);
       const earned = (religionCorrect ? 1 : 0) + (storyCorrect ? 5 : 0);
 
       if (earned > 0) {
-        await updateUserProfile(uid, {
-          individualPoints: (userData.individualPoints || 0) + earned,
-        });
+        await updateUserProfile({
+          individualPoints: (profile.individualPoints || 0) + earned,
+        }, uid);
 
         await setDocument(`completedChallenges/${uid}`, {
           lastTrivia: new Date().toISOString(),

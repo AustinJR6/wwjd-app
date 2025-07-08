@@ -19,6 +19,7 @@ import { getTokenCount, setTokenCount } from "@/utils/TokenManager";
 import { showGracefulError } from '@/utils/gracefulError';
 import { ASK_GEMINI_V2 } from "@/utils/constants";
 import { loadUserProfile, updateUserProfile, getUserAIPrompt } from '../../utils/userProfile';
+import type { UserProfile } from '../../types/profile';
 import { useUser } from '@/hooks/useUser';
 import { ensureAuth } from '@/utils/authGuard';
 import { getToken, getCurrentUserId } from '@/utils/TokenManager';
@@ -121,7 +122,8 @@ export default function ReligionAIScreen() {
       }
       const uid = await ensureAuth(firebaseUid);
       try {
-        const userData = (await loadUserProfile(uid)) || {};
+        const userData: UserProfile | null = await loadUserProfile(uid);
+        const profile = userData ?? ({} as UserProfile);
         const subscribed = await checkIfUserIsSubscribed(uid);
         setIsSubscribed(subscribed);
         const hist = await fetchHistory(uid, subscribed);
@@ -173,8 +175,9 @@ export default function ReligionAIScreen() {
       const firebaseUid = await getCurrentUserId();
       const uid = await ensureAuth(firebaseUid ?? undefined);
 
-      const userData = (await loadUserProfile(uid)) || {};
-      const lastAsk = userData.lastFreeAsk?.toDate?.();
+      const userData: UserProfile | null = await loadUserProfile(uid);
+      const profile = userData ?? ({} as UserProfile);
+      const lastAsk = profile.lastFreeAsk?.toDate?.();
       const now = new Date();
       const oneDay = 24 * 60 * 60 * 1000;
       const canAskFree = !lastAsk || now.getTime() - lastAsk.getTime() > oneDay;
@@ -183,7 +186,7 @@ export default function ReligionAIScreen() {
       setIsSubscribed(subscribed);
       console.log('💎 OneVine+ Status:', subscribed);
 
-      const religion = userData?.religion;
+      const religion = profile?.religion;
       if (!uid || !religion) {
         console.warn('⚠️ askGemini blocked — missing uid or religion', { uid, religion });
         setLoading(false);
@@ -220,7 +223,7 @@ export default function ReligionAIScreen() {
 
           await setTokenCount(tokens - cost);
         } else {
-          await updateUserProfile(uid, { lastFreeAsk: new Date().toISOString() });
+          await updateUserProfile({ lastFreeAsk: new Date().toISOString() }, uid);
         }
       }
 
