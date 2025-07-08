@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { logFirestoreError } from './App/lib/logging';
 import Constants from 'expo-constants';
+import { DEFAULT_RELIGION } from './App/config/constants';
 
 const API_KEY = Constants.expoConfig?.extra?.EXPO_PUBLIC_FIREBASE_API_KEY || '';
 const PROJECT_ID = Constants.expoConfig?.extra?.EXPO_PUBLIC_FIREBASE_PROJECT_ID || '';
@@ -32,9 +33,9 @@ export async function signUpWithEmailAndPassword(email: string, password: string
     console.log('✅ signup response', res.data);
 
     // After successful signup, create default Firestore user doc
-    const { localId, idToken } = res.data as AuthResponse;
+    const { localId, idToken, email: userEmail } = res.data as AuthResponse;
     try {
-      await createDefaultUserDoc(localId, idToken);
+      await createDefaultUserDoc(localId, idToken, userEmail);
     } catch (err) {
       console.error('❌ Failed to create default user document', err);
     }
@@ -93,24 +94,45 @@ function toFirestoreFields(obj: any): any {
   return fields;
 }
 
-export async function createDefaultUserDoc(uid: string, idToken: string) {
+export async function createDefaultUserDoc(
+  uid: string,
+  idToken: string,
+  email = '',
+  emailVerified = false,
+  displayName = 'New User',
+) {
   const path = `users/${uid}`;
   const url = `${FIRESTORE_BASE}/${path}`;
+
+  const slugify = (str: string) =>
+    str
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+
+  const now = new Date().toISOString();
+  const religion = DEFAULT_RELIGION;
+
   const payload = {
-    username: '',
+    uid,
+    email,
+    emailVerified,
+    displayName,
+    createdAt: now,
+    religion,
+    religionSlug: slugify(religion),
     region: '',
-    religion: '',
+    organization: null,
     individualPoints: 0,
-    totalPoints: 0,
-    hasCompletedToday: false,
-    onboardingComplete: false,
+    tokens: 5,
     skipTokensUsed: 0,
+    lastFreeAsk: null,
+    lastFreeSkip: null,
+    isSubscribed: false,
+    onboardingComplete: false,
     nightModeEnabled: false,
-    religionPrefix: '',
-    streak: { current: 0, longest: 0, lastUpdated: new Date().toISOString() },
-    lastCompleted: null,
-    createdAt: new Date().toISOString(),
   };
+
   const body = { fields: toFirestoreFields(payload) };
   const headers = { Authorization: `Bearer ${idToken}` };
   console.log('➡️ createUserDoc', { url, body, headers });

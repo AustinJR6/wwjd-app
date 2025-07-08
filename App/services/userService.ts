@@ -2,6 +2,7 @@ import { loadUserProfile, updateUserProfile } from "../../utils/userProfile";
 import { useUserStore } from "@/state/userStore";
 import { ensureAuth } from "@/utils/authGuard";
 import type { FirestoreUser, UserProfile } from "../../types/profile";
+import { DEFAULT_RELIGION } from "@/config/constants";
 
 /**
  * Initialize optional user fields if they're missing.
@@ -45,9 +46,14 @@ export async function ensureUserDocExists(
     return false;
   } catch (err: any) {
     if (err?.response?.status === 404) {
-      const payload: any = { uid, createdAt: Date.now(), individualPoints: 0 };
-      if (email) payload.email = email;
-      await updateUserProfile(payload, uid);
+      await createUserProfile({
+        uid,
+        email: email || '',
+        displayName: 'New User',
+        username: '',
+        religion: DEFAULT_RELIGION,
+        region: '',
+      });
       console.log("📄 Created user doc for", uid);
       return true;
     }
@@ -111,8 +117,8 @@ export async function createUserProfile({
   email,
   displayName,
   username,
-  religion = "SpiritGuide",
-  region = "",
+  religion = DEFAULT_RELIGION,
+  region = '',
   organizationId,
 }: {
   uid: string;
@@ -126,6 +132,12 @@ export async function createUserProfile({
   const storedUid = await ensureAuth(uid);
   if (!storedUid) return;
 
+  const slugify = (str: string) =>
+    str
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+
   const now = Date.now();
 
   const userData: FirestoreUser = {
@@ -134,10 +146,15 @@ export async function createUserProfile({
     username,
     displayName: displayName || 'New User',
     religion,
+    religionSlug: slugify(religion),
     region,
+    organization: organizationId || null,
     individualPoints: 0,
-    isSubscribed: false,
+    tokens: 5,
     skipTokensUsed: 0,
+    lastFreeAsk: null,
+    lastFreeSkip: null,
+    isSubscribed: false,
     nightModeEnabled: false,
     religionPrefix: '',
     onboardingComplete: false,
