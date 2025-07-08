@@ -6,5 +6,6 @@ export function logFirestoreError(operation: string, path: string, error: any) {
   console.error(`🔥 Firestore ${operation} failed on ${path}`, {
     status,
     message: msg,
+    response: error?.response?.data,
   });
 }

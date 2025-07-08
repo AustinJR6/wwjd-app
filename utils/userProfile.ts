@@ -1,8 +1,32 @@
-import axios from 'axios';
-import { API_URL, getAuthHeaders } from '../App/config/firebaseApp';
-import { getCurrentUserId } from '../App/utils/authUtils';
+import axios, { AxiosError } from 'axios';
+import { FIRESTORE_BASE } from '../firebaseRest';
+import { getAuthHeaders, getCurrentUserId } from '../App/utils/authUtils';
 import type { CachedProfile, ReligionDocument, UserProfile } from '../types/profile';
 import { getReligionProfile } from '../religionRest';
+
+function toFirestoreFields(obj: any): any {
+  const fields: any = {};
+  for (const k of Object.keys(obj)) {
+    const v = (obj as any)[k];
+    if (v === null) fields[k] = { nullValue: null };
+    else if (typeof v === 'number') fields[k] = { integerValue: v };
+    else if (typeof v === 'boolean') fields[k] = { booleanValue: v };
+    else if (typeof v === 'string') fields[k] = { stringValue: v };
+    else if (Array.isArray(v))
+      fields[k] = {
+        arrayValue: {
+          values: v.map((x) =>
+            typeof x === 'object'
+              ? { mapValue: { fields: toFirestoreFields(x) } }
+              : { stringValue: String(x) }
+          ),
+        },
+      };
+    else if (typeof v === 'object') fields[k] = { mapValue: { fields: toFirestoreFields(v) } };
+    else fields[k] = { stringValue: String(v) };
+  }
+  return fields;
+}
 
 let cachedProfile: CachedProfile | null = null;
 
@@ -15,7 +39,9 @@ export async function loadUserProfile(uid?: string): Promise<UserProfile | null>
 
   try {
     const headers = await getAuthHeaders();
-    const res = await axios.get(`${API_URL}/users/${userId}`, { headers });
+    const url = `${FIRESTORE_BASE}/users/${userId}`;
+    console.log('➡️ GET', url, { headers });
+    const res = await axios.get(url, { headers });
     const user = res.data as UserProfile;
     let religionData: ReligionDocument | null = null;
     if (user.religion) {
@@ -23,8 +49,9 @@ export async function loadUserProfile(uid?: string): Promise<UserProfile | null>
     }
     cachedProfile = { uid: userId, ...user, religionData } as CachedProfile;
     return cachedProfile;
-  } catch (err) {
-    console.error('loadUserProfile failed', err);
+  } catch (err: any) {
+    const errorData = (err as AxiosError).response?.data;
+    console.error('loadUserProfile failed', errorData || err);
     return null;
   }
 }
@@ -40,7 +67,9 @@ export async function updateUserProfile(
   }
   try {
     const headers = await getAuthHeaders();
-    await axios.patch(`${API_URL}/users/${userId}`, fields, { headers });
+    const url = `${FIRESTORE_BASE}/users/${userId}`;
+    console.log('➡️ PATCH', url, { payload: fields, headers });
+    await axios.patch(url, { fields: toFirestoreFields(fields) }, { headers });
     if (cachedProfile && cachedProfile.uid === userId) {
       if ('religion' in fields) {
         const religionData = await getReligionProfile(fields.religion);
@@ -54,8 +83,9 @@ export async function updateUserProfile(
       }
     }
     console.log('✅ Profile updated', fields);
-  } catch (err) {
-    console.error('updateUserProfile failed', err);
+  } catch (err: any) {
+    const errorData = (err as AxiosError).response?.data;
+    console.error('updateUserProfile failed', errorData || err);
   }
 }
 
