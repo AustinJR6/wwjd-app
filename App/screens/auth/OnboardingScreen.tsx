@@ -13,7 +13,6 @@ import { SCREENS } from "@/navigation/screens";
 import { useTheme } from "@/components/theme/theme";
 import { Picker } from "@react-native-picker/picker";
 import type { RootStackParamList } from "@/navigation/RootStackParamList";
-import { loadUserProfile } from "../../../utils/userProfile";
 import { useLookupLists } from "@/hooks/useLookupLists";
 
 type OnboardingScreenProps = NativeStackScreenProps<
