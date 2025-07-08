@@ -6,7 +6,8 @@ import ScreenContainer from "@/components/theme/ScreenContainer";
 import Button from "@/components/common/Button";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { loadUserProfile, setCachedUserProfile } from "../../../utils/userProfile";
+import { loadUserProfile, setCachedUserProfile, updateUserProfile } from "../../../utils/userProfile";
+import { fetchUserProfile } from "../../services/userService";
 import { createDefaultUserDoc } from "../../../firebaseRest";
 import { getIdToken } from "@/utils/authUtils";
 import type { UserProfile } from "../../../types/profile";
@@ -66,14 +67,28 @@ export default function OnboardingScreen() {
     try {
       if (uid) {
         const token = await getIdToken(true);
-        await createDefaultUserDoc({
-          uid,
-          email: user?.email || '',
-          displayName: username.trim(),
-          region,
-          religion,
-          idToken: token || '',
-        });
+        const existing = await fetchUserProfile(uid);
+        if (!existing) {
+          await createDefaultUserDoc({
+            uid,
+            email: user?.email || '',
+            displayName: username.trim(),
+            username: username.trim(),
+            region,
+            religion,
+            idToken: token || '',
+          });
+        } else {
+          await updateUserProfile(
+            {
+              displayName: username.trim(),
+              username: username.trim(),
+              region,
+              religion,
+            },
+            uid,
+          );
+        }
         const updated: UserProfile | null = await loadUserProfile(uid);
         setCachedUserProfile(updated as any);
         await SecureStore.setItemAsync(`hasSeenOnboarding-${uid}`, 'true');
@@ -84,6 +99,9 @@ export default function OnboardingScreen() {
           region,
           religion,
         });
+        if (!updated?.region || !updated?.religion || !updated?.username || !updated?.email) {
+          console.warn('⚠️ Missing required profile fields after onboarding:', updated);
+        }
         navigation.reset({
           index: 0,
           routes: [{ name: 'Home' as keyof RootStackParamList }],

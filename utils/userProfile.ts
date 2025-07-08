@@ -1,6 +1,7 @@
 import axios, { AxiosError } from 'axios';
 import { FIRESTORE_BASE } from '../firebaseRest';
 import { getAuthHeaders, getCurrentUserId } from '../App/utils/authUtils';
+import { getDocument } from '../App/services/firestoreService';
 import type { CachedProfile, ReligionDocument, UserProfile } from '../types/profile';
 import { getReligionProfile } from '../religionRest';
 
@@ -38,16 +39,18 @@ export async function loadUserProfile(uid?: string): Promise<UserProfile | null>
   }
 
   try {
-    const headers = await getAuthHeaders();
-    const url = `${FIRESTORE_BASE}/users/${userId}`;
-    console.log('➡️ GET', url, { headers });
-    const res = await axios.get(url, { headers });
-    const user = res.data as UserProfile;
+    const user = await getDocument(`users/${userId}`);
+    if (!user) {
+      return null;
+    }
     let religionData: ReligionDocument | null = null;
     if (user.religion) {
       religionData = await getReligionProfile(user.religion);
     }
     cachedProfile = { uid: userId, ...user, religionData } as CachedProfile;
+    if (!user?.region || !user?.religion || !user?.username) {
+      console.warn('⚠️ Missing required profile fields after onboarding:', user);
+    }
     return cachedProfile;
   } catch (err: any) {
     const errorData = (err as AxiosError).response?.data;
