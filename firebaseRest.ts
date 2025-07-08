@@ -103,19 +103,23 @@ function toFirestoreFields(obj: any): any {
 
 export interface DefaultUserData {
   uid: string;
-  email: string;
-  displayName: string;
-  region: string;
-  religion: string;
+  email?: string;
+  emailVerified?: boolean;
+  displayName?: string;
+  username?: string;
+  region?: string;
+  religion?: string;
   idToken: string;
 }
 
 export async function createDefaultUserDoc({
   uid,
-  email,
-  displayName,
-  region,
-  religion,
+  email = '',
+  emailVerified = false,
+  displayName = 'New User',
+  username = '',
+  region = '',
+  religion = '',
   idToken,
 }: DefaultUserData) {
   const path = `users/${uid}`;
@@ -132,8 +136,9 @@ export async function createDefaultUserDoc({
   const payload = {
     uid,
     email,
-    emailVerified: false,
+    emailVerified,
     displayName,
+    username,
     createdAt: now,
     religion,
     religionSlug: slugify(religion),
@@ -145,7 +150,7 @@ export async function createDefaultUserDoc({
     lastFreeAsk: null,
     lastFreeSkip: null,
     isSubscribed: false,
-    onboardingComplete: true,
+    onboardingComplete: false,
     nightModeEnabled: false,
   };
 
