@@ -8,6 +8,7 @@ import Button from "@/components/common/Button";
 import { login, resetPassword } from "@/services/authService";
 import { ensureUserDocExists } from "@/services/userService";
 import { loadUserProfile } from "../../../utils/userProfile";
+import type { UserProfile } from "../../../types/profile";
 import { checkIfUserIsNewAndRoute } from "@/services/onboardingService";
 import { useUserStore } from "@/state/userStore";
 import { useAuthStore } from "@/state/authStore";
@@ -34,7 +35,7 @@ export default function LoginScreen() {
       if (result.localId) {
         setUid(result.localId);
         await ensureUserDocExists(result.localId, result.email);
-        const profile = await loadUserProfile(result.localId);
+        const profile: UserProfile | null = await loadUserProfile(result.localId);
         if (profile) {
           useUserStore.getState().setUser({
             uid: profile.uid,

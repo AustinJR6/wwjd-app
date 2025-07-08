@@ -13,6 +13,7 @@ import ScreenContainer from '@/components/theme/ScreenContainer';
 import { useTheme } from '@/components/theme/theme';
 import { queryCollection, setDocument, getDocument } from '@/services/firestoreService';
 import { loadUserProfile, updateUserProfile } from '../../../utils/userProfile';
+import type { UserProfile } from '../../../types/profile';
 import { getAuthHeaders } from '@/utils/TokenManager';
 import { ensureAuth } from '@/utils/authGuard';
 import { useNavigation } from '@react-navigation/native';
@@ -101,10 +102,10 @@ export default function JoinOrganizationScreen() {
     const uid = await ensureAuth(user.uid);
     if (!uid) return;
     try {
-      await updateUserProfile(uid, {
+      await updateUserProfile({
         organizationId: null,
         organizationName: null,
-      });
+      }, uid);
 
       updateUser({ organizationId: undefined });
 
@@ -127,7 +128,7 @@ export default function JoinOrganizationScreen() {
     const uid = await ensureAuth(user.uid);
     if (!uid) return;
 
-    const profile = await loadUserProfile(uid);
+    const profile: UserProfile | null = await loadUserProfile(uid);
     if (profile?.organizationId) {
       Alert.alert(
         'Already Joined',
@@ -152,10 +153,10 @@ export default function JoinOrganizationScreen() {
     }
 
     try {
-      await updateUserProfile(uid, {
+      await updateUserProfile({
         organizationId: org.id,
         organizationName: org.name,
-      });
+      }, uid);
 
       updateUser({ organizationId: org.id });
 

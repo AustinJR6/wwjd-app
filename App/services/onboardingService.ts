@@ -4,7 +4,7 @@ import { ensureAuth } from '@/utils/authGuard';
 
 export async function saveUsernameAndProceed(username: string): Promise<void> {
   const uid = await ensureAuth();
-  await updateUserProfile(uid, { username });
+  await updateUserProfile({ username }, uid);
   if (navigationRef.isReady()) {
     navigationRef.reset({ index: 0, routes: [{ name: 'Home' }] });
   }

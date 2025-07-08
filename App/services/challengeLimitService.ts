@@ -1,6 +1,7 @@
 import { Alert } from 'react-native';
 
 import { loadUserProfile, updateUserProfile } from '../../utils/userProfile';
+import type { UserProfile } from '../../types/profile';
 import { getCurrentUserId } from '@/utils/TokenManager';
 import { ensureAuth } from '@/utils/authGuard';
 
@@ -14,11 +15,12 @@ export async function canLoadNewChallenge(): Promise<boolean> {
   const uid = await ensureAuth(await getCurrentUserId());
   if (!uid) return false;
 
-  const userData = (await loadUserProfile(uid)) || {};
-  const isSubscribed = userData?.isSubscribed ?? false;
-  const tokens = userData?.tokens ?? 0;
-  let dailyChallengeCount = userData?.dailyChallengeCount ?? 0;
-  const lastDate = userData.lastChallengeLoadDate
+  const userData: UserProfile | null = await loadUserProfile(uid);
+  const profile = userData ?? ({} as UserProfile);
+  const isSubscribed = profile?.isSubscribed ?? false;
+  const tokens = profile?.tokens ?? 0;
+  let dailyChallengeCount = profile?.dailyChallengeCount ?? 0;
+  const lastDate = profile.lastChallengeLoadDate
     ? new Date(userData.lastChallengeLoadDate).toISOString().split('T')[0]
     : null;
   const today = new Date().toISOString().split('T')[0];
@@ -28,10 +30,10 @@ export async function canLoadNewChallenge(): Promise<boolean> {
   }
 
   if (isSubscribed || dailyChallengeCount < 3) {
-    await updateUserProfile(uid, {
+    await updateUserProfile({
       dailyChallengeCount: dailyChallengeCount + 1,
       lastChallengeLoadDate: new Date().toISOString(),
-    });
+    }, uid);
     return true;
   }
 
@@ -43,11 +45,11 @@ export async function canLoadNewChallenge(): Promise<boolean> {
     return false;
   }
 
-  await updateUserProfile(uid, {
+  await updateUserProfile({
     tokens: tokens - 5,
     dailyChallengeCount: dailyChallengeCount + 1,
     lastChallengeLoadDate: new Date().toISOString(),
-  });
+  }, uid);
 
   return true;
 }

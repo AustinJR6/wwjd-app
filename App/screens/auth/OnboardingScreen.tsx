@@ -7,6 +7,7 @@ import Button from "@/components/common/Button";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { updateUserProfile, loadUserProfile, setCachedUserProfile } from "../../../utils/userProfile";
+import type { UserProfile } from "../../../types/profile";
 import { useUserStore } from "@/state/userStore";
 import { useAuthStore } from "@/state/authStore";
 import { SCREENS } from "@/navigation/screens";
@@ -71,7 +72,7 @@ export default function OnboardingScreen() {
         };
         console.log('🔧 updateUserProfile', { uid, ...fields });
         await updateUserProfile(fields);
-        const updated = await loadUserProfile(uid);
+        const updated: UserProfile | null = await loadUserProfile(uid);
         setCachedUserProfile(updated as any);
         await SecureStore.setItemAsync(`hasSeenOnboarding-${uid}`, 'true');
         useUserStore.getState().updateUser({
@@ -81,7 +82,7 @@ export default function OnboardingScreen() {
           region,
           religion,
         });
-        const check = await loadUserProfile(uid);
+        const check: UserProfile | null = await loadUserProfile(uid);
         console.log('✅ profile after onboarding', {
           username: check?.username,
           region: check?.region,

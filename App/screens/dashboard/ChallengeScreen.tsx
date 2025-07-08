@@ -68,18 +68,19 @@ export default function ChallengeScreen() {
     if (!milestones.includes(current)) return;
     const uid = await ensureAuth(await getCurrentUserId());
     try {
-      const userData = (await loadUserProfile(uid)) || {};
-      const granted = userData.streakMilestones || {};
+      const userData: UserProfile | null = await loadUserProfile(uid);
+      const profile = userData ?? ({} as UserProfile);
+      const granted = profile.streakMilestones || {};
       const key = `m${current}`;
       if (granted[key]) return;
       const reward = current >= 30 ? 10 : current >= 14 ? 7 : 5;
       const tokens = await getTokenCount();
       await setTokenCount(tokens + reward);
-      await updateUserProfile(uid, {
+      await updateUserProfile({
         streakMilestones: { ...granted, [key]: true },
-      });
+      }, uid);
 
-      const religion = userData?.religion;
+      const religion = profile?.religion;
       if (!uid || !religion) {
         console.warn('⚠️ Challenge generation blocked — missing uid or religion', {
           uid,
@@ -130,13 +131,14 @@ export default function ChallengeScreen() {
 
       setLoading(true);
 
-      const userData = (await loadUserProfile(uid)) || {};
-      const lastChallenge = userData.lastChallenge?.toDate?.();
+      const userData: UserProfile | null = await loadUserProfile(uid);
+      const profile = userData ?? ({} as UserProfile);
+      const lastChallenge = profile.lastChallenge?.toDate?.();
       const now = new Date();
       const oneDay = 24 * 60 * 60 * 1000;
 
       if (!forceNew && lastChallenge && now.getTime() - lastChallenge.getTime() < oneDay) {
-        setChallenge(userData.lastChallengeText || '');
+        setChallenge(profile.lastChallengeText || '');
         setCanSkip(false);
         setLoading(false);
         return;
@@ -148,7 +150,7 @@ export default function ChallengeScreen() {
         return;
       }
 
-      const religion = userData?.religion;
+      const religion = profile?.religion;
       if (!uid || !religion) {
         console.warn('⚠️ Challenge generation blocked — missing uid or religion', { uid, religion });
         setLoading(false);
@@ -180,10 +182,10 @@ export default function ChallengeScreen() {
         setChallenge(newChallenge);
       }
 
-      await updateUserProfile(uid, {
+      await updateUserProfile({
         lastChallenge: new Date().toISOString(),
         lastChallengeText: newChallenge || '',
-      });
+      }, uid);
     } catch (err: any) {
       console.error('🔥 API Error:', err?.response?.data || err.message);
       showGracefulError('Unable to load challenge data — please try again later');
@@ -197,14 +199,15 @@ export default function ChallengeScreen() {
 
     await getOrCreateActiveChallenge(uid);
 
-    const userData = (await loadUserProfile(uid)) || {};
+    const userData: UserProfile | null = await loadUserProfile(uid);
+    const profile = userData ?? ({} as UserProfile);
     const today = new Date().toISOString().split('T')[0];
-    let history = userData.dailyChallengeHistory || { date: today, completed: 0, skipped: 0 };
+    let history = profile.dailyChallengeHistory || { date: today, completed: 0, skipped: 0 };
     if (history.date !== today) history = { date: today, completed: 0, skipped: 0 };
 
-    const tokens = userData?.tokens ?? 0;
-    let dailySkipCount = userData?.dailySkipCount ?? 0;
-    const lastSkipDate = userData?.lastSkipDate;
+    const tokens = profile?.tokens ?? 0;
+    let dailySkipCount = profile?.dailySkipCount ?? 0;
+    const lastSkipDate = profile?.lastSkipDate;
     const lastDate = lastSkipDate ? new Date(lastSkipDate).toISOString().split('T')[0] : '';
 
     if (lastDate !== today) {
@@ -219,12 +222,12 @@ export default function ChallengeScreen() {
     }
 
     try {
-      await updateUserProfile(uid, {
+      await updateUserProfile({
         tokens: tokens - skipCost,
         dailySkipCount: dailySkipCount + 1,
         lastSkipDate: new Date().toISOString(),
         dailyChallengeHistory: { ...history, skipped: history.skipped + 1 },
-      });
+      }, uid);
       setCanSkip(true);
       fetchChallenge(true);
     } catch (error: any) {
@@ -237,8 +240,9 @@ export default function ChallengeScreen() {
     const uid = await ensureAuth(await getCurrentUserId());
 
     try {
-      const userData = (await loadUserProfile(uid)) || {};
-      const religion = userData?.religion;
+      const userData: UserProfile | null = await loadUserProfile(uid);
+      const profile = userData ?? ({} as UserProfile);
+      const religion = profile?.religion;
       if (!uid || !religion) {
         console.warn('⚠️ Challenge generation blocked — missing uid or religion', { uid, religion });
         return;
@@ -268,15 +272,16 @@ export default function ChallengeScreen() {
       return;
     }
 
-    const userData = (await loadUserProfile(uid)) || {};
+    const userData: UserProfile | null = await loadUserProfile(uid);
+    const profile = userData ?? ({} as UserProfile);
 
     const today = new Date().toISOString().slice(0, 10);
-    let history = userData.dailyChallengeHistory || { date: today, completed: 0, skipped: 0 };
+    let history = profile.dailyChallengeHistory || { date: today, completed: 0, skipped: 0 };
     if (history.date !== today) {
       history = { date: today, completed: 0, skipped: 0 };
     }
 
-    const limit = (userData?.isSubscribed ?? false) ? 3 : 1;
+    const limit = (profile?.isSubscribed ?? false) ? 3 : 1;
     let useToken = false;
     if (history.completed >= limit) {
       const tokens = await getTokenCount();
@@ -300,7 +305,7 @@ export default function ChallengeScreen() {
     }
 
     history.completed += 1;
-    await updateUserProfile(uid, { dailyChallengeHistory: history });
+    await updateUserProfile({ dailyChallengeHistory: history }, uid);
     try {
       console.log('Current user:', await getCurrentUserId());
       const cfToken = await getToken(true);
@@ -327,9 +332,9 @@ export default function ChallengeScreen() {
     const currentTokens = await getTokenCount();
     await setTokenCount(currentTokens + 1);
 
-    await updateUserProfile(uid, {
-      individualPoints: (userData.individualPoints || 0) + 2,
-    });
+    await updateUserProfile({
+      individualPoints: (profile.individualPoints || 0) + 2,
+    }, uid);
 
     try {
       await awardPointsToUser(2);
