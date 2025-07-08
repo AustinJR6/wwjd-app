@@ -35,7 +35,14 @@ export async function signUpWithEmailAndPassword(email: string, password: string
     // After successful signup, create default Firestore user doc
     const { localId, idToken, email: userEmail } = res.data as AuthResponse;
     try {
-      await createDefaultUserDoc(localId, idToken, userEmail);
+      await createDefaultUserDoc({
+        uid: localId,
+        email: userEmail,
+        displayName: 'New User',
+        region: '',
+        religion: DEFAULT_RELIGION,
+        idToken,
+      });
     } catch (err) {
       console.error('❌ Failed to create default user document', err);
     }
@@ -94,13 +101,23 @@ function toFirestoreFields(obj: any): any {
   return fields;
 }
 
-export async function createDefaultUserDoc(
-  uid: string,
-  idToken: string,
-  email = '',
-  emailVerified = false,
-  displayName = 'New User',
-) {
+export interface DefaultUserData {
+  uid: string;
+  email: string;
+  displayName: string;
+  region: string;
+  religion: string;
+  idToken: string;
+}
+
+export async function createDefaultUserDoc({
+  uid,
+  email,
+  displayName,
+  region,
+  religion,
+  idToken,
+}: DefaultUserData) {
   const path = `users/${uid}`;
   const url = `${FIRESTORE_BASE}/${path}`;
 
@@ -111,17 +128,16 @@ export async function createDefaultUserDoc(
       .replace(/^-+|-+$/g, '');
 
   const now = new Date().toISOString();
-  const religion = DEFAULT_RELIGION;
 
   const payload = {
     uid,
     email,
-    emailVerified,
+    emailVerified: false,
     displayName,
     createdAt: now,
     religion,
     religionSlug: slugify(religion),
-    region: '',
+    region,
     organization: null,
     individualPoints: 0,
     tokens: 5,
@@ -129,7 +145,7 @@ export async function createDefaultUserDoc(
     lastFreeAsk: null,
     lastFreeSkip: null,
     isSubscribed: false,
-    onboardingComplete: false,
+    onboardingComplete: true,
     nightModeEnabled: false,
   };
 

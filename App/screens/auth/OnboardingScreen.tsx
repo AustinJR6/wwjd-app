@@ -6,7 +6,9 @@ import ScreenContainer from "@/components/theme/ScreenContainer";
 import Button from "@/components/common/Button";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { updateUserProfile, loadUserProfile, setCachedUserProfile } from "../../../utils/userProfile";
+import { loadUserProfile, setCachedUserProfile } from "../../../utils/userProfile";
+import { createDefaultUserDoc } from "../../../firebaseRest";
+import { getIdToken } from "@/utils/authUtils";
 import type { UserProfile } from "../../../types/profile";
 import { useUserStore } from "@/state/userStore";
 import { useAuthStore } from "@/state/authStore";
@@ -63,15 +65,15 @@ export default function OnboardingScreen() {
     console.log('💾 Submitting onboarding', { username, region, religion });
     try {
       if (uid) {
-        const fields = {
+        const token = await getIdToken(true);
+        await createDefaultUserDoc({
+          uid,
+          email: user?.email || '',
           displayName: username.trim(),
           region,
           religion,
-          religionSlug: religion,
-          onboardingComplete: true,
-        };
-        console.log('🔧 updateUserProfile', { uid, ...fields });
-        await updateUserProfile(fields);
+          idToken: token || '',
+        });
         const updated: UserProfile | null = await loadUserProfile(uid);
         setCachedUserProfile(updated as any);
         await SecureStore.setItemAsync(`hasSeenOnboarding-${uid}`, 'true');
@@ -81,12 +83,6 @@ export default function OnboardingScreen() {
           displayName: username.trim(),
           region,
           religion,
-        });
-        const check: UserProfile | null = await loadUserProfile(uid);
-        console.log('✅ profile after onboarding', {
-          username: check?.username,
-          region: check?.region,
-          religion: check?.religion,
         });
         navigation.reset({
           index: 0,
