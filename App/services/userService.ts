@@ -1,8 +1,10 @@
 import { loadUserProfile, updateUserProfile } from "../../utils/userProfile";
 import { useUserStore } from "@/state/userStore";
 import { ensureAuth } from "@/utils/authGuard";
+import { getIdToken } from "@/utils/authUtils";
 import type { FirestoreUser, UserProfile } from "../../types/profile";
 import { DEFAULT_RELIGION } from "@/config/constants";
+import { createDefaultUserDoc } from "../../firebaseRest";
 
 /**
  * Initialize optional user fields if they're missing.
@@ -39,6 +41,7 @@ export async function initializeUserDataIfNeeded(uid: string): Promise<void> {
 export async function ensureUserDocExists(
   uid: string,
   email?: string,
+  displayName?: string,
 ): Promise<boolean> {
   try {
     await loadUserProfile(uid);
@@ -46,14 +49,15 @@ export async function ensureUserDocExists(
     return false;
   } catch (err: any) {
     if (err?.response?.status === 404) {
-      await createUserProfile({
+      const idToken = await getIdToken(true);
+      if (!idToken) throw new Error("Unable to get auth token");
+      await createDefaultUserDoc(
         uid,
-        email: email || '',
-        displayName: 'New User',
-        username: '',
-        religion: DEFAULT_RELIGION,
-        region: '',
-      });
+        idToken,
+        email || "",
+        false,
+        displayName || "New User",
+      );
       console.log("📄 Created user doc for", uid);
       return true;
     }
@@ -73,7 +77,7 @@ export async function fetchUserProfile(
     return data as FirestoreUser;
   } catch (err: any) {
     if (err?.response?.status === 404) return null;
-    console.warn('⚠️ fetchUserProfile failed', err);
+    console.warn("⚠️ fetchUserProfile failed", err);
     throw err;
   }
 }
@@ -95,10 +99,10 @@ export async function loadUser(uid: string): Promise<void> {
     useUserStore.getState().setUser({
       uid: user.uid,
       email: user.email,
-      username: user.username ?? '',
+      username: user.username ?? "",
       displayName: user.displayName ?? "",
       isSubscribed: user?.isSubscribed ?? false,
-      religion: user?.religion ?? 'SpiritGuide',
+      religion: user?.religion ?? "SpiritGuide",
       region: user.region ?? "",
       organizationId: user.organizationId,
       onboardingComplete: user.onboardingComplete,
@@ -118,7 +122,7 @@ export async function createUserProfile({
   displayName,
   username,
   religion = DEFAULT_RELIGION,
-  region = '',
+  region = "",
   organizationId,
 }: {
   uid: string;
@@ -135,8 +139,8 @@ export async function createUserProfile({
   const slugify = (str: string) =>
     str
       .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '');
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
 
   const now = Date.now();
 
@@ -144,7 +148,7 @@ export async function createUserProfile({
     uid,
     email,
     username,
-    displayName: displayName || 'New User',
+    displayName: displayName || "New User",
     religion,
     religionSlug: slugify(religion),
     region,
@@ -156,7 +160,7 @@ export async function createUserProfile({
     lastFreeSkip: null,
     isSubscribed: false,
     nightModeEnabled: false,
-    religionPrefix: '',
+    religionPrefix: "",
     onboardingComplete: false,
     createdAt: now,
     streak: { current: 0, longest: 0, lastUpdated: new Date().toISOString() },
@@ -183,4 +187,3 @@ export async function completeOnboarding(uid: string) {
 
   await updateUserProfile({ onboardingComplete: true }, storedUid);
 }
-
