@@ -10,6 +10,7 @@ import { useUserStore } from '@/state/userStore';
 import { getTokenCount } from '@/utils/TokenManager';
 import { useLookupLists } from '@/hooks/useLookupLists';
 import { loadUserProfile, updateUserProfile, setCachedUserProfile } from '../../../utils/userProfile';
+import type { UserProfile } from '../../../types/profile';
 import { getDocument } from '@/services/firestoreService';
 import { useTheme } from '@/components/theme/theme';
 import { ensureAuth } from '@/utils/authGuard';
@@ -66,10 +67,11 @@ export default function ProfileScreen() {
     const uid = await ensureAuth(user?.uid);
     if (!uid) return;
     try {
-      const [tokenCount, profile] = await Promise.all([
+      const [tokenCount, loaded] = await Promise.all([
         getTokenCount(),
         loadUserProfile(uid),
       ]);
+      const profile: UserProfile | null = loaded;
       setTokens(tokenCount);
       if (profile) {
         setPoints(profile.individualPoints || 0);
@@ -108,7 +110,7 @@ export default function ProfileScreen() {
       const updated = await loadUserProfile(uidVal);
       setCachedUserProfile(updated as any);
       updateUser({ religion: value });
-      await updateUserProfile(uidVal, { lastChallenge: null });
+      await updateUserProfile({ lastChallenge: null }, uidVal);
       Alert.alert('Religion Updated');
     } catch (err: any) {
       console.error('Religion update failed', err);

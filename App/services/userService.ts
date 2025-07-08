@@ -1,33 +1,34 @@
 import { loadUserProfile, updateUserProfile } from "../../utils/userProfile";
 import { useUserStore } from "@/state/userStore";
 import { ensureAuth } from "@/utils/authGuard";
-import type { FirestoreUser } from "../../types/profile";
+import type { FirestoreUser, UserProfile } from "../../types/profile";
 
 /**
  * Initialize optional user fields if they're missing.
  */
 export async function initializeUserDataIfNeeded(uid: string): Promise<void> {
-  const data = (await loadUserProfile(uid)) || {};
+  const data: UserProfile | null = await loadUserProfile(uid);
+  const profile = data ?? ({} as UserProfile);
   const payload: any = {};
 
-  if (!data.challengeStreak) {
+  if (!profile.challengeStreak) {
     payload.challengeStreak = { count: 0, lastCompletedDate: null };
   }
-  if (data.dailyChallengeCount === undefined) {
+  if (profile.dailyChallengeCount === undefined) {
     payload.dailyChallengeCount = 0;
   }
-  if (data.dailySkipCount === undefined) {
+  if (profile.dailySkipCount === undefined) {
     payload.dailySkipCount = 0;
   }
-  if (!data.lastChallengeLoadDate) {
+  if (!profile.lastChallengeLoadDate) {
     payload.lastChallengeLoadDate = null;
   }
-  if (!data.lastSkipDate) {
+  if (!profile.lastSkipDate) {
     payload.lastSkipDate = null;
   }
 
   if (Object.keys(payload).length > 0) {
-    await updateUserProfile(uid, payload);
+    await updateUserProfile(payload, uid);
   }
 }
 
@@ -46,7 +47,7 @@ export async function ensureUserDocExists(
     if (err?.response?.status === 404) {
       const payload: any = { uid, createdAt: Date.now(), individualPoints: 0 };
       if (email) payload.email = email;
-      await updateUserProfile(uid, payload);
+      await updateUserProfile(payload, uid);
       console.log("📄 Created user doc for", uid);
       return true;
     }
@@ -153,7 +154,7 @@ export async function createUserProfile({
     (userData as any).organizationId = organizationId;
   }
 
-  await updateUserProfile(storedUid, userData);
+  await updateUserProfile(userData, storedUid);
 }
 
 /**
@@ -163,6 +164,6 @@ export async function completeOnboarding(uid: string) {
   const storedUid = await ensureAuth(uid);
   if (!storedUid) return;
 
-  await updateUserProfile(storedUid, { onboardingComplete: true });
+  await updateUserProfile({ onboardingComplete: true }, storedUid);
 }
 

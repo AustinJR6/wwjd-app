@@ -20,7 +20,7 @@ export const setTokenCount = async (count: number) => {
   const uid = await ensureAuth();
   if (!uid) return;
 
-  await updateUserProfile(uid, { tokens: count });
+  await updateUserProfile({ tokens: count }, uid);
   console.log('🪙 Token count:', count);
 };
 
@@ -60,7 +60,7 @@ export const syncSubscriptionStatus = async () => {
   const isSubscribed = !!sub && sub.active === true;
   console.log('💎 OneVine+ Status:', isSubscribed);
   if (isSubscribed) {
-    await updateUserProfile(uid, { tokens: 9999 });
+    await updateUserProfile({ tokens: 9999 }, uid);
   }
 };
 
