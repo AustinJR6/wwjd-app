@@ -51,13 +51,14 @@ export async function ensureUserDocExists(
     if (err?.response?.status === 404) {
       const idToken = await getIdToken(true);
       if (!idToken) throw new Error("Unable to get auth token");
-      await createDefaultUserDoc(
+      await createDefaultUserDoc({
         uid,
+        email: email || "",
+        displayName: displayName || "New User",
+        region: "",
+        religion: DEFAULT_RELIGION,
         idToken,
-        email || "",
-        false,
-        displayName || "New User",
-      );
+      });
       console.log("📄 Created user doc for", uid);
       return true;
     }
