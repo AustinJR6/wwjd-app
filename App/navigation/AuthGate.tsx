@@ -9,7 +9,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useUser } from '@/hooks/useUser';
 import { useUserStore } from '@/state/userStore';
 import { initAuthState } from '@/services/authService';
-import { loadUserProfile } from '../../utils/userProfile';
+import { loadUserProfile } from '../../utils';
 
 // Auth Screens
 import LoginScreen from '@/screens/auth/LoginScreen';

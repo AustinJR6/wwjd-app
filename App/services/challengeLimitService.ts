@@ -1,7 +1,7 @@
 import { Alert } from 'react-native';
 
-import { loadUserProfile, updateUserProfile } from '../../utils/userProfile';
-import type { UserProfile } from '../../types/profile';
+import { loadUserProfile, updateUserProfile } from '../../utils';
+import type { UserProfile } from '../../types';
 import { getCurrentUserId } from '@/utils/TokenManager';
 import { ensureAuth } from '@/utils/authGuard';
 

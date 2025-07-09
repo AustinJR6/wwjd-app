@@ -35,7 +35,7 @@ export async function signUpWithEmailAndPassword(email: string, password: string
     // After successful signup, create default Firestore user doc
     const { localId, idToken, email: userEmail } = res.data as AuthResponse;
     try {
-      await createDefaultUserDoc({
+      await createUserDoc({
         uid: localId,
         email: userEmail,
         displayName: 'New User',
@@ -112,19 +112,27 @@ export interface DefaultUserData {
   idToken: string;
 }
 
-export async function createDefaultUserDoc({
+export function generateDefaultUserData({
   uid,
   email = '',
   emailVerified = false,
   displayName = 'New User',
   username = '',
   region = '',
-  religion = '',
-  idToken,
-}: DefaultUserData) {
-  const path = `users/${uid}`;
-  const url = `${FIRESTORE_BASE}/${path}`;
-
+  religion = DEFAULT_RELIGION,
+}: Partial<DefaultUserData> & { uid: string }): Omit<DefaultUserData, 'idToken'> & {
+  createdAt: string;
+  lastFreeAsk: string;
+  lastFreeSkip: string;
+  onboardingComplete: boolean;
+  isSubscribed: boolean;
+  individualPoints: number;
+  tokens: number;
+  skipTokensUsed: number;
+  nightModeEnabled: boolean;
+  organization: null | string;
+  religionSlug: string;
+} {
   const slugify = (str: string) =>
     str
       .toLowerCase()
@@ -133,7 +141,7 @@ export async function createDefaultUserDoc({
 
   const now = new Date().toISOString();
 
-  const payload = {
+  return {
     uid,
     email,
     emailVerified,
@@ -147,22 +155,45 @@ export async function createDefaultUserDoc({
     individualPoints: 0,
     tokens: 5,
     skipTokensUsed: 0,
-    lastFreeAsk: null,
-    lastFreeSkip: null,
+    lastFreeAsk: now,
+    lastFreeSkip: now,
     isSubscribed: false,
     onboardingComplete: false,
     nightModeEnabled: false,
   };
+}
+
+export async function createUserDoc({
+  uid,
+  email = '',
+  emailVerified = false,
+  displayName = 'New User',
+  username = '',
+  region = '',
+  religion = '',
+  idToken,
+}: DefaultUserData) {
+  const path = `users/${uid}`;
+  const url = `${FIRESTORE_BASE}/${path}`;
+  const payload = generateDefaultUserData({
+    uid,
+    email,
+    emailVerified,
+    displayName,
+    username,
+    region,
+    religion,
+  });
 
   const body = { fields: toFirestoreFields(payload) };
-  const headers = { Authorization: `Bearer ${idToken}` };
+  const headers = { Authorization: `Bearer ${idToken}`, 'Content-Type': 'application/json' };
   console.log('➡️ createUserDoc', { url, body, headers });
   try {
     await axios.patch(url, body, { headers });
     console.log('✅ user doc created', uid);
   } catch (err: any) {
     logFirestoreError('SET', path, err);
-    console.error('createDefaultUserDoc error', err?.response?.data || err);
+    console.error('createUserDoc error', err?.response?.data || err);
     throw err;
   }
 }
@@ -188,4 +219,14 @@ export const FIREBASE_ENDPOINTS = {
   signIn: `${ID_BASE}/accounts:signInWithPassword`,
   refreshToken: `https://securetoken.googleapis.com/v1/token`,
   firestore: FIRESTORE_BASE,
+};
+
+export {
+  signUpWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  getUserData,
+  createUserDoc,
+  generateDefaultUserData,
+  saveJournalEntry,
+  FIREBASE_ENDPOINTS,
 };

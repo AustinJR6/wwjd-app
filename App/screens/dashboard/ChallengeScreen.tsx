@@ -13,7 +13,13 @@ import { getTokenCount, setTokenCount } from "@/utils/TokenManager";
 import { showGracefulError } from '@/utils/gracefulError';
 import { ASK_GEMINI_SIMPLE, GENERATE_CHALLENGE_URL } from "@/utils/constants";
 import { getOrCreateActiveChallenge } from '@/services/firestoreService';
-import { loadUserProfile, updateUserProfile, getUserAIPrompt } from '../../../utils/userProfile';
+import {
+  loadUserProfile,
+  updateUserProfile,
+  getUserAIPrompt,
+  incrementUserPoints,
+} from '../../../utils';
+import type { UserProfile } from '../../../types';
 import { canLoadNewChallenge } from '@/services/challengeLimitService';
 import { completeChallengeWithStreakCheck } from '@/services/challengeStreakService';
 import {
@@ -332,9 +338,7 @@ export default function ChallengeScreen() {
     const currentTokens = await getTokenCount();
     await setTokenCount(currentTokens + 1);
 
-    await updateUserProfile({
-      individualPoints: (profile.individualPoints || 0) + 2,
-    }, uid);
+    await incrementUserPoints(2, uid);
 
     try {
       await awardPointsToUser(2);

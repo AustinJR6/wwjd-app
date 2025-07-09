@@ -9,8 +9,12 @@ import { useUser } from '@/hooks/useUser';
 import { useUserStore } from '@/state/userStore';
 import { getTokenCount } from '@/utils/TokenManager';
 import { useLookupLists } from '@/hooks/useLookupLists';
-import { loadUserProfile, updateUserProfile, setCachedUserProfile } from '../../../utils/userProfile';
-import type { UserProfile } from '../../../types/profile';
+import {
+  loadUserProfile,
+  updateUserProfile,
+  setCachedUserProfile,
+} from '../../../utils';
+import type { UserProfile } from '../../../types';
 import { getDocument } from '@/services/firestoreService';
 import { useTheme } from '@/components/theme/theme';
 import { ensureAuth } from '@/utils/authGuard';

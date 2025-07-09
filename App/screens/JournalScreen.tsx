@@ -16,8 +16,8 @@ import { useTheme } from "@/components/theme/theme";
 import { showGracefulError } from '@/utils/gracefulError';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { querySubcollection, addDocument, getDocument, setDocument } from '@/services/firestoreService';
-import { loadUserProfile, updateUserProfile, getUserAIPrompt } from '../../utils/userProfile';
-import type { UserProfile } from '../../types/profile';
+import { loadUserProfile, incrementUserPoints, getUserAIPrompt } from '../../utils';
+import type { UserProfile } from '../../types';
 import { callFunction, awardPointsToUser } from '@/services/functionService';
 import { ASK_GEMINI_SIMPLE } from '@/utils/constants';
 import { ensureAuth } from '@/utils/authGuard';
@@ -241,9 +241,7 @@ export default function JournalScreen() {
       });
       console.log('✅ Journal entry saved');
 
-      await updateUserProfile({
-        individualPoints: (profile.individualPoints || 0) + 2,
-      }, uid);
+      await incrementUserPoints(2, uid);
 
       try {
         await callFunction('updateStreakAndXP', { type: 'journal' });

@@ -6,11 +6,15 @@ import ScreenContainer from "@/components/theme/ScreenContainer";
 import Button from "@/components/common/Button";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { loadUserProfile, setCachedUserProfile, updateUserProfile } from "../../../utils/userProfile";
-import { fetchUserProfile } from "../../services/userService";
-import { createDefaultUserDoc } from "../../../firebaseRest";
+import {
+  loadUserProfile,
+  setCachedUserProfile,
+  updateUserProfile,
+} from "../../../utils";
+import { fetchUserProfile, completeOnboarding } from "../../services/userService";
+import { createUserDoc } from "../../../firebaseRest";
 import { getIdToken } from "@/utils/authUtils";
-import type { UserProfile } from "../../../types/profile";
+import type { UserProfile } from "../../../types";
 import { useUserStore } from "@/state/userStore";
 import { useAuthStore } from "@/state/authStore";
 import { SCREENS } from "@/navigation/screens";
@@ -69,7 +73,7 @@ export default function OnboardingScreen() {
         const token = await getIdToken(true);
         const existing = await fetchUserProfile(uid);
         if (!existing) {
-          await createDefaultUserDoc({
+          await createUserDoc({
             uid,
             email: user?.email || '',
             displayName: username.trim(),
@@ -91,6 +95,7 @@ export default function OnboardingScreen() {
         }
         const updated: UserProfile | null = await loadUserProfile(uid);
         setCachedUserProfile(updated as any);
+        await completeOnboarding(uid);
         await SecureStore.setItemAsync(`hasSeenOnboarding-${uid}`, 'true');
         useUserStore.getState().updateUser({
           onboardingComplete: true,
