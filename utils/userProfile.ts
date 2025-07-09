@@ -2,6 +2,7 @@ import axios, { AxiosError } from 'axios';
 import { FIRESTORE_BASE } from '../firebaseRest';
 import { getAuthHeaders, getCurrentUserId } from '../App/utils/authUtils';
 import { getDocument } from '../App/services/firestoreService';
+import { logFirestoreError } from '../App/lib/logging';
 import type { CachedProfile, ReligionDocument, UserProfile } from '../types/profile';
 import { getReligionProfile } from '../religionRest';
 
@@ -68,27 +69,60 @@ export async function updateUserProfile(
     console.warn('updateUserProfile called with no uid');
     return;
   }
+  const sanitized: Record<string, any> = { ...fields };
+  if (typeof sanitized.username === 'string') {
+    sanitized.username = sanitized.username.trim();
+  }
+  if (typeof sanitized.displayName === 'string') {
+    sanitized.displayName = sanitized.displayName.trim();
+  }
   try {
     const headers = await getAuthHeaders();
     const url = `${FIRESTORE_BASE}/users/${userId}`;
-    console.log('➡️ PATCH', url, { payload: fields, headers });
-    await axios.patch(url, { fields: toFirestoreFields(fields) }, { headers });
+    console.log('➡️ PATCH', url, { payload: sanitized, headers });
+    await axios.patch(url, { fields: toFirestoreFields(sanitized) }, { headers });
     if (cachedProfile && cachedProfile.uid === userId) {
-      if ('religion' in fields) {
-        const religionData = await getReligionProfile(fields.religion);
+      if ('religion' in sanitized) {
+        const religionData = await getReligionProfile(sanitized.religion);
         cachedProfile = {
           ...cachedProfile,
-          ...fields,
+          ...sanitized,
           religionData: religionData || null,
         } as CachedProfile;
       } else {
-        cachedProfile = { ...cachedProfile, ...fields } as CachedProfile;
+        cachedProfile = { ...cachedProfile, ...sanitized } as CachedProfile;
       }
     }
-    console.log('✅ Profile updated', fields);
+    console.log('✅ Profile updated', sanitized);
   } catch (err: any) {
-    const errorData = (err as AxiosError).response?.data;
-    console.error('updateUserProfile failed', errorData || err);
+    logFirestoreError('PATCH', `users/${userId}`, err);
+    console.error('🔥 Firestore error:', err.response?.data || err.message);
+  }
+}
+
+export async function incrementUserPoints(points: number, uid?: string): Promise<void> {
+  const userId = uid ?? (await getCurrentUserId());
+  if (!userId) {
+    console.warn('incrementUserPoints called with no uid');
+    return;
+  }
+  try {
+    const headers = await getAuthHeaders();
+    const url = `${FIRESTORE_BASE}/users/${userId}`;
+    console.log('➡️ Sending Firestore request to:', url);
+    const res = await axios.get(url, { headers });
+    const current = Number(res.data?.fields?.individualPoints?.integerValue ?? 0);
+    const newTotal = current + points;
+    const body = { fields: toFirestoreFields({ individualPoints: newTotal }) };
+    console.log('➡️ Sending Firestore request to:', url, body);
+    await axios.patch(url, body, { headers });
+    if (cachedProfile && cachedProfile.uid === userId) {
+      cachedProfile = { ...cachedProfile, individualPoints: newTotal } as CachedProfile;
+    }
+    console.log('✅ Firestore response:', newTotal);
+  } catch (error: any) {
+    logFirestoreError('PATCH', `users/${userId}`, error);
+    console.error('🔥 Firestore error:', error.response?.data || error.message);
   }
 }
 
