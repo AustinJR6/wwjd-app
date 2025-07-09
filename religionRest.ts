@@ -48,7 +48,7 @@ export async function getReligionProfile(
   console.log('➡️ Sending Firestore request to:', url);
   try {
     const res = await axios.get(url, { headers: { Authorization: `Bearer ${idToken}` } });
-    const fields = res.data.fields || {};
+    const fields = (res.data as any).fields || {};
     const profile: ReligionProfile = {
       id,
       name: fields.name?.stringValue || id,
@@ -85,7 +85,7 @@ async function fetchReligionList(): Promise<ReligionItem[]> {
       },
     });
 
-    const docs = response.data.documents || [];
+    const docs = (response.data as any).documents || [];
     console.log('✅ Religions fetched', docs.map((d: any) => d.name.split('/').pop()));
 
     const religions: ReligionItem[] = docs.map((doc: any) => {

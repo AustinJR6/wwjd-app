@@ -3,6 +3,14 @@ import { logFirestoreError } from './App/lib/logging';
 import Constants from 'expo-constants';
 import { DEFAULT_RELIGION } from './App/config/constants';
 
+export function generateUsernameFromDisplayName(displayName: string): string {
+  return displayName
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
 const API_KEY = Constants.expoConfig?.extra?.EXPO_PUBLIC_FIREBASE_API_KEY || '';
 const PROJECT_ID = Constants.expoConfig?.extra?.EXPO_PUBLIC_FIREBASE_PROJECT_ID || '';
 if (!API_KEY) {
@@ -39,6 +47,7 @@ export async function signUpWithEmailAndPassword(email: string, password: string
         uid: localId,
         email: userEmail,
         displayName: 'New User',
+        username: generateUsernameFromDisplayName('New User'),
         region: '',
         religion: DEFAULT_RELIGION,
         idToken,
@@ -230,14 +239,4 @@ export const FIREBASE_ENDPOINTS = {
   signIn: `${ID_BASE}/accounts:signInWithPassword`,
   refreshToken: `https://securetoken.googleapis.com/v1/token`,
   firestore: FIRESTORE_BASE,
-};
-
-export {
-  signUpWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  getUserData,
-  createUserDoc,
-  generateDefaultUserData,
-  saveJournalEntry,
-  FIREBASE_ENDPOINTS,
 };

@@ -1,4 +1,4 @@
-import axios, { AxiosError } from 'axios';
+import axios from 'axios';
 import { FIRESTORE_BASE } from '../firebaseRest';
 import { getAuthHeaders, getCurrentUserId } from '../App/utils/authUtils';
 import { getDocument } from '../App/services/firestoreService';
@@ -54,7 +54,7 @@ export async function loadUserProfile(uid?: string): Promise<UserProfile | null>
     }
     return cachedProfile;
   } catch (err: any) {
-    const errorData = (err as AxiosError).response?.data;
+    const errorData = (err as any).response?.data;
     console.error('loadUserProfile failed', errorData || err);
     return null;
   }
@@ -111,7 +111,7 @@ export async function incrementUserPoints(points: number, uid?: string): Promise
     const url = `${FIRESTORE_BASE}/users/${userId}`;
     console.log('➡️ Sending Firestore request to:', url);
     const res = await axios.get(url, { headers });
-    const current = Number(res.data?.fields?.individualPoints?.integerValue ?? 0);
+    const current = Number((res.data as any)?.fields?.individualPoints?.integerValue ?? 0);
     const newTotal = current + points;
     const body = { fields: toFirestoreFields({ individualPoints: newTotal }) };
     console.log('➡️ Sending Firestore request to:', url, body);
@@ -126,32 +126,6 @@ export async function incrementUserPoints(points: number, uid?: string): Promise
   }
 }
 
-export async function incrementUserPoints(points: number, uid?: string): Promise<void> {
-  const userId = uid ?? (await getCurrentUserId());
-  if (!userId) {
-    console.warn('incrementUserPoints called with no uid');
-    return;
-  }
-  try {
-    const headers = await getAuthHeaders();
-    const url = `${FIRESTORE_BASE}/users/${userId}`;
-    console.log('➡️ Sending Firestore request to:', url);
-    const res = await axios.get(url, { headers });
-    const current = Number(res.data?.fields?.individualPoints?.integerValue ?? 0);
-    const newTotal = current + points;
-    const body = { fields: toFirestoreFields({ individualPoints: newTotal }) };
-    console.log('➡️ Sending Firestore request to:', url, body);
-    await axios.patch(url, body, { headers });
-    if (cachedProfile && cachedProfile.uid === userId) {
-      cachedProfile = { ...cachedProfile, individualPoints: newTotal } as CachedProfile;
-    }
-    console.log('✅ Firestore response:', newTotal);
-  } catch (error: any) {
-    logFirestoreError('PATCH', `users/${userId}`, error);
-    console.error('🔥 Firestore error:', error.message || error.response);
-
-  }
-}
 
 export function getCachedUserProfile(): UserProfile | null {
   return cachedProfile;
