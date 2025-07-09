@@ -13,13 +13,7 @@ import { getTokenCount, setTokenCount } from "@/utils/TokenManager";
 import { showGracefulError } from '@/utils/gracefulError';
 import { ASK_GEMINI_SIMPLE, GENERATE_CHALLENGE_URL } from "@/utils/constants";
 import { getOrCreateActiveChallenge } from '@/services/firestoreService';
-import {
-  loadUserProfile,
-  updateUserProfile,
-  getUserAIPrompt,
-  incrementUserPoints,
-} from '../../../utils';
-import type { UserProfile } from '../../../types';
+import { loadUserProfile, updateUserProfile, getUserAIPrompt, incrementUserPoints } from '../../../utils/userProfile';
 import { canLoadNewChallenge } from '@/services/challengeLimitService';
 import { completeChallengeWithStreakCheck } from '@/services/challengeStreakService';
 import {

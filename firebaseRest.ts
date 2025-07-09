@@ -112,7 +112,13 @@ export interface DefaultUserData {
   idToken: string;
 }
 
+
+
 export function generateDefaultUserData({
+
+export async function createUserDoc({
+
+
   uid,
   email = '',
   emailVerified = false,
