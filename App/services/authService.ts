@@ -18,17 +18,22 @@ export function initAuthState(): void {
   const setUid = useAuthStore.getState().setUid;
   const setIdToken = useAuthStore.getState().setIdToken;
   observeAuthState(async (user) => {
-    if (user) {
-      setUid(user.uid);
-      setIdToken(await fbGetIdToken(true));
-      await ensureUserDocExists(user.uid, user.email ?? undefined);
-      await loadUser(user.uid);
-    } else {
-      setUid(null);
-      setIdToken(null);
-      useUserStore.getState().clearUser();
+    try {
+      if (user) {
+        setUid(user.uid);
+        setIdToken(await fbGetIdToken(true));
+        await ensureUserDocExists(user.uid, user.email ?? undefined);
+        await loadUser(user.uid);
+      } else {
+        setUid(null);
+        setIdToken(null);
+        useUserStore.getState().clearUser();
+      }
+    } catch (err) {
+      console.warn('initAuthState failed', err);
+    } finally {
+      setAuthReady(true);
     }
-    setAuthReady(true);
   });
 }
 
