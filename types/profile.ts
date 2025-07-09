@@ -24,6 +24,11 @@ export interface UserProfile {
   streak?: Streak;
   currentChallenge?: any;
   onboardingComplete?: boolean;
+  lastChallenge?: any;
+  lastChallengeText?: string;
+  dailySkipCount?: number;
+  lastSkipDate?: string;
+  createdAt?: number;
   /** Tokens spent on skipping challenges */
   skipTokensUsed?: number;
   /** Dark mode preference */
