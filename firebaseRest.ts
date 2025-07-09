@@ -155,7 +155,7 @@ export async function createUserDoc({
   };
 
   const body = { fields: toFirestoreFields(payload) };
-  const headers = { Authorization: `Bearer ${idToken}` };
+  const headers = { Authorization: `Bearer ${idToken}`, 'Content-Type': 'application/json' };
   console.log('➡️ createUserDoc', { url, body, headers });
   try {
     await axios.patch(url, body, { headers });

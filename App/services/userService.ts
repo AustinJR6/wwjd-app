@@ -43,28 +43,24 @@ export async function ensureUserDocExists(
   email?: string,
   displayName?: string,
 ): Promise<boolean> {
-  try {
-    await loadUserProfile(uid);
-    console.log("📄 User doc already exists for", uid);
+  const existing = await fetchUserProfile(uid);
+  if (existing) {
+    console.log('📄 User doc already exists for', uid);
     return false;
-  } catch (err: any) {
-    if (err?.response?.status === 404) {
-      const idToken = await getIdToken(true);
-      if (!idToken) throw new Error("Unable to get auth token");
-      await createUserDoc({
-        uid,
-        email: email || "",
-        displayName: displayName || "New User",
-        region: "",
-        religion: DEFAULT_RELIGION,
-        idToken,
-      });
-      console.log("📄 Created user doc for", uid);
-      return true;
-    }
-    console.warn("⚠️ ensureUserDocExists failed", err);
-    throw err;
   }
+
+  const idToken = await getIdToken(true);
+  if (!idToken) throw new Error('Unable to get auth token');
+  await createUserDoc({
+    uid,
+    email: email || '',
+    displayName: displayName || 'New User',
+    region: '',
+    religion: DEFAULT_RELIGION,
+    idToken,
+  });
+  console.log('📄 Created user doc for', uid);
+  return true;
 }
 
 /**
