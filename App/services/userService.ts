@@ -4,7 +4,7 @@ import { ensureAuth } from "@/utils/authGuard";
 import { getIdToken } from "@/utils/authUtils";
 import type { FirestoreUser, UserProfile } from "../../types/profile";
 import { DEFAULT_RELIGION } from "@/config/constants";
-import { createDefaultUserDoc } from "../../firebaseRest";
+import { createUserDoc } from "../../firebaseRest";
 
 /**
  * Initialize optional user fields if they're missing.
@@ -51,7 +51,7 @@ export async function ensureUserDocExists(
     if (err?.response?.status === 404) {
       const idToken = await getIdToken(true);
       if (!idToken) throw new Error("Unable to get auth token");
-      await createDefaultUserDoc({
+      await createUserDoc({
         uid,
         email: email || "",
         displayName: displayName || "New User",
