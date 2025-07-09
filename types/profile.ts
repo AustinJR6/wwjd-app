@@ -21,13 +21,21 @@ export interface UserProfile {
   region?: string;
   religion: string;
   points?: number;
+  tokens?: number;
   streak?: Streak;
+  isSubscribed?: boolean;
   currentChallenge?: any;
   onboardingComplete?: boolean;
-  lastChallenge?: any;
+  lastChallenge?: Date;
   lastChallengeText?: string;
   dailySkipCount?: number;
-  lastSkipDate?: string;
+  lastSkipDate?: string | null;
+  dailyChallengeHistory?: {
+    date: string;
+    completed: number;
+    skipped: number;
+  };
+  streakMilestones?: Record<string, boolean>;
   createdAt?: number;
   /** Tokens spent on skipping challenges */
   skipTokensUsed?: number;

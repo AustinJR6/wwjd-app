@@ -27,7 +27,7 @@ import { getToken, getCurrentUserId } from '@/utils/TokenManager';
 import { useAuth } from '@/hooks/useAuth';
 import { sendGeminiPrompt } from '@/services/geminiService';
 import AuthGate from '@/components/AuthGate';
-import { UserProfile } from '../../types/user'; // adjust path if needed
+import { UserProfile } from '../../../types';
 export default function ChallengeScreen() {
   const theme = useTheme();
   const styles = React.useMemo(
@@ -133,7 +133,7 @@ export default function ChallengeScreen() {
 
       const userData: UserProfile | null = await loadUserProfile(uid);
       const profile = userData ?? ({} as UserProfile);
-      const lastChallenge = profile.lastChallenge?.toDate?.();
+      const lastChallenge = profile.lastChallenge ? new Date(profile.lastChallenge) : null;
       const now = new Date();
       const oneDay = 24 * 60 * 60 * 1000;
 
