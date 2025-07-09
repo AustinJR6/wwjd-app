@@ -35,7 +35,7 @@ export async function signUpWithEmailAndPassword(email: string, password: string
     // After successful signup, create default Firestore user doc
     const { localId, idToken, email: userEmail } = res.data as AuthResponse;
     try {
-      await createDefaultUserDoc({
+      await createUserDoc({
         uid: localId,
         email: userEmail,
         displayName: 'New User',
@@ -112,7 +112,7 @@ export interface DefaultUserData {
   idToken: string;
 }
 
-export async function createDefaultUserDoc({
+export async function createUserDoc({
   uid,
   email = '',
   emailVerified = false,
@@ -147,22 +147,22 @@ export async function createDefaultUserDoc({
     individualPoints: 0,
     tokens: 5,
     skipTokensUsed: 0,
-    lastFreeAsk: null,
-    lastFreeSkip: null,
+    lastFreeAsk: now,
+    lastFreeSkip: now,
     isSubscribed: false,
     onboardingComplete: false,
     nightModeEnabled: false,
   };
 
   const body = { fields: toFirestoreFields(payload) };
-  const headers = { Authorization: `Bearer ${idToken}` };
+  const headers = { Authorization: `Bearer ${idToken}`, 'Content-Type': 'application/json' };
   console.log('➡️ createUserDoc', { url, body, headers });
   try {
     await axios.patch(url, body, { headers });
     console.log('✅ user doc created', uid);
   } catch (err: any) {
     logFirestoreError('SET', path, err);
-    console.error('createDefaultUserDoc error', err?.response?.data || err);
+    console.error('createUserDoc error', err?.response?.data || err);
     throw err;
   }
 }
