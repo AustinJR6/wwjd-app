@@ -115,10 +115,6 @@ export interface DefaultUserData {
 
 
 export function generateDefaultUserData({
-
-export async function createUserDoc({
-
-
   uid,
   email = '',
   emailVerified = false,
@@ -171,14 +167,23 @@ export async function createUserDoc({
 
 export async function createUserDoc({
   uid,
-  email = '',
+  email,
   emailVerified = false,
-  displayName = 'New User',
-  username = '',
-  region = '',
-  religion = '',
+  displayName,
+  username,
+  region,
+  religion,
   idToken,
-}: DefaultUserData) {
+}: {
+  uid: string;
+  email: string;
+  emailVerified?: boolean;
+  displayName: string;
+  username: string;
+  region: string;
+  religion: string;
+  idToken: string;
+}) {
   const path = `users/${uid}`;
   const url = `${FIRESTORE_BASE}/${path}`;
   const payload = generateDefaultUserData({

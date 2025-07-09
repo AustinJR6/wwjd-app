@@ -31,6 +31,13 @@ export interface ChallengeHistoryEntry {
 // 🧠 This is what's loaded from Firestore or held in app state
 export interface UserProfile extends DefaultUserData {
   dailyChallengeHistory?: ChallengeHistoryEntry;
+  lastChallenge?: any;
+  lastChallengeText?: string;
+  dailySkipCount?: number;
+  lastSkipDate?: string;
+  challengeStreak?: { count: number; lastCompletedDate: string | null };
+  dailyChallengeCount?: number;
+  lastChallengeLoadDate?: string | null;
 }
 
 // 🛠️ When patching/updating a user — all fields optional
