@@ -6,6 +6,14 @@ import type { FirestoreUser, UserProfile } from "../../types";
 import { DEFAULT_RELIGION } from "@/config/constants";
 import { createUserDoc } from "../../firebaseRest";
 
+function generateUsernameFromDisplayName(displayName: string): string {
+  return displayName
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 /**
  * Initialize optional user fields if they're missing.
  */
@@ -62,6 +70,7 @@ export async function ensureUserDocExists(
     uid,
     email: email || '',
     displayName: displayName || 'New User',
+    username: generateUsernameFromDisplayName(displayName || 'New User'),
     region: '',
     religion: DEFAULT_RELIGION,
     idToken,
@@ -109,7 +118,7 @@ export async function loadUser(uid: string): Promise<void> {
       religion: user?.religion ?? "SpiritGuide",
       region: user.region ?? "",
       organizationId: user.organizationId,
-      onboardingComplete: user.onboardingComplete,
+        onboardingComplete: user.onboardingComplete ?? false,
       tokens: 0, // placeholder
     });
   } else {

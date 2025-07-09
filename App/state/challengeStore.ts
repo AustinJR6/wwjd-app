@@ -43,7 +43,7 @@ export const useChallengeStore = create<ChallengeStore>((set, get) => ({
       set({
         lastCompleted: data.lastStreakDate ? new Date(data.lastStreakDate).getTime() : null,
         lastStreakDate: data.lastStreakDate || null,
-        streak: data.streak || 0,
+        streak: typeof data.streak === 'number' ? data.streak : undefined,
       });
     }
   },
