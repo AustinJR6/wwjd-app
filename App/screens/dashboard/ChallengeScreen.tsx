@@ -27,7 +27,7 @@ import { getToken, getCurrentUserId } from '@/utils/TokenManager';
 import { useAuth } from '@/hooks/useAuth';
 import { sendGeminiPrompt } from '@/services/geminiService';
 import AuthGate from '@/components/AuthGate';
-
+import { UserProfile } from '../../types/user'; // adjust path if needed
 export default function ChallengeScreen() {
   const theme = useTheme();
   const styles = React.useMemo(
