@@ -1,5 +1,5 @@
 
-import { updateUserProfile, loadUserProfile } from '../../utils/userProfile';
+import { updateUserProfile, loadUserProfile } from '../../utils';
 import { getCurrentUserId } from '@/utils/TokenManager';
 import { ensureAuth } from '@/utils/authGuard';
 

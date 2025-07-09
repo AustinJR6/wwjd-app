@@ -13,7 +13,7 @@ import {
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import Button from '@/components/common/Button';
 import { useTheme } from "@/components/theme/theme";
-import { loadUserProfile } from '../../utils/userProfile';
+import { loadUserProfile } from '../../utils';
 import { ensureAuth } from '@/utils/authGuard';
 import { getToken, getCurrentUserId } from '@/utils/TokenManager';
 import { showGracefulError } from '@/utils/gracefulError';

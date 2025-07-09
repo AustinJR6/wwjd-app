@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
-import { loadUserProfile, updateUserProfile, getCachedUserProfile } from '../../utils/userProfile';
+import { loadUserProfile, updateUserProfile, getCachedUserProfile } from '../../utils';
 import { useAuthStore } from '@/state/authStore';
-import type { UserProfile } from '../../types/profile';
+import type { UserProfile } from '../../types';
 
 export function useUserProfile() {
   const uid = useAuthStore((s) => s.uid);

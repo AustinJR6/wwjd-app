@@ -149,6 +149,7 @@ export async function incrementUserPoints(points: number, uid?: string): Promise
   } catch (error: any) {
     logFirestoreError('PATCH', `users/${userId}`, error);
     console.error('🔥 Firestore error:', error.message || error.response);
+
   }
 }
 

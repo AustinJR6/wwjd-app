@@ -113,9 +113,11 @@ export interface DefaultUserData {
 }
 
 
+
 export function generateDefaultUserData({
-=======
+
 export async function createUserDoc({
+
 
   uid,
   email = '',
@@ -223,4 +225,14 @@ export const FIREBASE_ENDPOINTS = {
   signIn: `${ID_BASE}/accounts:signInWithPassword`,
   refreshToken: `https://securetoken.googleapis.com/v1/token`,
   firestore: FIRESTORE_BASE,
+};
+
+export {
+  signUpWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  getUserData,
+  createUserDoc,
+  generateDefaultUserData,
+  saveJournalEntry,
+  FIREBASE_ENDPOINTS,
 };

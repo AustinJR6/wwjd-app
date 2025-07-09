@@ -7,15 +7,10 @@ import Button from "@/components/common/Button";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { loadUserProfile, setCachedUserProfile, updateUserProfile } from "../../../utils/userProfile";
-
-
 import { fetchUserProfile, completeOnboarding } from "../../services/userService";
-
-
-
 import { createUserDoc } from "../../../firebaseRest";
 import { getIdToken } from "@/utils/authUtils";
-import type { UserProfile } from "../../../types/profile";
+import type { UserProfile } from "../../../types";
 import { useUserStore } from "@/state/userStore";
 import { useAuthStore } from "@/state/authStore";
 import { SCREENS } from "@/navigation/screens";

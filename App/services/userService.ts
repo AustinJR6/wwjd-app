@@ -1,8 +1,8 @@
-import { loadUserProfile, updateUserProfile } from "../../utils/userProfile";
+import { loadUserProfile, updateUserProfile } from "../../utils";
 import { useUserStore } from "@/state/userStore";
 import { ensureAuth } from "@/utils/authGuard";
 import { getIdToken } from "@/utils/authUtils";
-import type { FirestoreUser, UserProfile } from "../../types/profile";
+import type { FirestoreUser, UserProfile } from "../../types";
 import { DEFAULT_RELIGION } from "@/config/constants";
 import { createUserDoc } from "../../firebaseRest";
 
@@ -49,6 +49,7 @@ export async function ensureUserDocExists(
     return false;
 
 
+
   } catch (err: any) {
     if (err?.response?.status === 404) {
       const idToken = await getIdToken(true);
@@ -66,6 +67,7 @@ export async function ensureUserDocExists(
     }
     console.warn("⚠️ ensureUserDocExists failed", err);
     throw err;
+
 
   }
 

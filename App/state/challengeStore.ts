@@ -1,6 +1,6 @@
 import { create } from 'zustand';
-import { loadUserProfile, updateUserProfile } from '../../utils/userProfile';
-import type { UserProfile } from '../../types/profile';
+import { loadUserProfile, updateUserProfile } from '../../utils';
+import type { UserProfile } from '../../types';
 import { ensureAuth } from '@/utils/authGuard';
 
 interface ChallengeStore {
