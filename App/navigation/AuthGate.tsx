@@ -83,7 +83,7 @@ export default function AuthGate() {
               region: fetched.region ?? '',
               organizationId: fetched.organizationId,
               isSubscribed: fetched?.isSubscribed ?? false,
-              onboardingComplete: fetched.onboardingComplete,
+              onboardingComplete: fetched.onboardingComplete ?? false,
               tokens: 0,
             });
             profile = useUserStore.getState().user;

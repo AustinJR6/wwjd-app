@@ -16,6 +16,7 @@ export async function canLoadNewChallenge(): Promise<boolean> {
   if (!uid) return false;
 
   const userData: UserProfile | null = await loadUserProfile(uid);
+  if (!userData) return true;
   const profile = userData ?? ({} as UserProfile);
   const isSubscribed = profile?.isSubscribed ?? false;
   const tokens = profile?.tokens ?? 0;

@@ -22,12 +22,15 @@ export async function completeChallengeWithStreakCheck(): Promise<number | null>
     newCount += 1;
   }
 
-  await updateUserProfile(userId, {
-    challengeStreak: {
-      count: newCount,
-      lastCompletedDate: new Date().toISOString(),
+  await updateUserProfile(
+    {
+      challengeStreak: {
+        count: newCount,
+        lastCompletedDate: new Date().toISOString(),
+      },
     },
-  });
+    userId,
+  );
 
   return newCount;
 }

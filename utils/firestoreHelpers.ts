@@ -1,4 +1,4 @@
-import axios, { AxiosError } from 'axios';
+import axios from 'axios';
 import { FIRESTORE_BASE } from '../firebaseRest';
 import { getAuthHeaders } from '../App/utils/authUtils';
 import { getCurrentUserId } from '../App/utils/authUtils';
@@ -51,7 +51,7 @@ export async function updateUserProfile(
     await axios.patch(url, { fields: toFirestoreFields(fields) }, { headers });
     console.log('✅ Profile updated:', fields);
   } catch (error: any) {
-    const data = (error as AxiosError).response?.data;
+    const data = (error as any).response?.data;
     console.error('🔥 Failed to update user profile:', data || error);
   }
 }
