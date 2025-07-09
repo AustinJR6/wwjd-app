@@ -48,6 +48,7 @@ export async function ensureUserDocExists(
     console.log('📄 User doc already exists for', uid);
     return false;
 
+
   } catch (err: any) {
     if (err?.response?.status === 404) {
       const idToken = await getIdToken(true);

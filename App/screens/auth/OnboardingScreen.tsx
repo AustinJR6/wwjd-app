@@ -8,7 +8,9 @@ import { useNavigation } from "@react-navigation/native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { loadUserProfile, setCachedUserProfile, updateUserProfile } from "../../../utils/userProfile";
 
+
 import { fetchUserProfile, completeOnboarding } from "../../services/userService";
+
 
 
 import { createUserDoc } from "../../../firebaseRest";

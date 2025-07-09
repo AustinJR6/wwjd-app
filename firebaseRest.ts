@@ -112,19 +112,31 @@ export interface DefaultUserData {
   idToken: string;
 }
 
+
+export function generateDefaultUserData({
+=======
 export async function createUserDoc({
+
   uid,
   email = '',
   emailVerified = false,
   displayName = 'New User',
   username = '',
   region = '',
-  religion = '',
-  idToken,
-}: DefaultUserData) {
-  const path = `users/${uid}`;
-  const url = `${FIRESTORE_BASE}/${path}`;
-
+  religion = DEFAULT_RELIGION,
+}: Partial<DefaultUserData> & { uid: string }): Omit<DefaultUserData, 'idToken'> & {
+  createdAt: string;
+  lastFreeAsk: string;
+  lastFreeSkip: string;
+  onboardingComplete: boolean;
+  isSubscribed: boolean;
+  individualPoints: number;
+  tokens: number;
+  skipTokensUsed: number;
+  nightModeEnabled: boolean;
+  organization: null | string;
+  religionSlug: string;
+} {
   const slugify = (str: string) =>
     str
       .toLowerCase()
@@ -133,7 +145,7 @@ export async function createUserDoc({
 
   const now = new Date().toISOString();
 
-  const payload = {
+  return {
     uid,
     email,
     emailVerified,
@@ -153,6 +165,29 @@ export async function createUserDoc({
     onboardingComplete: false,
     nightModeEnabled: false,
   };
+}
+
+export async function createUserDoc({
+  uid,
+  email = '',
+  emailVerified = false,
+  displayName = 'New User',
+  username = '',
+  region = '',
+  religion = '',
+  idToken,
+}: DefaultUserData) {
+  const path = `users/${uid}`;
+  const url = `${FIRESTORE_BASE}/${path}`;
+  const payload = generateDefaultUserData({
+    uid,
+    email,
+    emailVerified,
+    displayName,
+    username,
+    region,
+    religion,
+  });
 
   const body = { fields: toFirestoreFields(payload) };
   const headers = { Authorization: `Bearer ${idToken}`, 'Content-Type': 'application/json' };
