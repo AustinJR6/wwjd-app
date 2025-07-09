@@ -46,7 +46,7 @@ export default function LoginScreen() {
             religion: profile?.religion ?? 'SpiritGuide',
             region: profile.region ?? '',
             organizationId: profile.organizationId,
-            onboardingComplete: profile.onboardingComplete,
+              onboardingComplete: profile.onboardingComplete ?? false,
             tokens: 0,
           });
         }
