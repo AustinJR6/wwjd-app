@@ -11,7 +11,7 @@ import { fetchUserProfile, completeOnboarding } from "../../services/userService
 import { createUserDoc } from "../../../firebaseRest";
 import { getIdToken } from "@/utils/authUtils";
 import type { UserProfile } from "../../../types";
-import { useUserStore } from "@/state/userStore";
+import { useUserProfileStore } from "@/state/userProfile";
 import { useAuthStore } from "@/state/authStore";
 import { SCREENS } from "@/navigation/screens";
 import { useTheme } from "@/components/theme/theme";
@@ -25,7 +25,7 @@ type OnboardingScreenProps = NativeStackScreenProps<
 >;
 
 export default function OnboardingScreen() {
-  const user = useUserStore((state: any) => state.user);
+  const user = useUserProfileStore((state: any) => state.profile);
   const uidFromAuth = useAuthStore((state) => state.uid);
   const navigation = useNavigation<OnboardingScreenProps["navigation"]>();
   const theme = useTheme();
@@ -93,13 +93,15 @@ export default function OnboardingScreen() {
         setCachedUserProfile(updated as any);
         await completeOnboarding(uid);
         await SecureStore.setItemAsync(`hasSeenOnboarding-${uid}`, 'true');
-        useUserStore.getState().updateUser({
+        const current = useUserProfileStore.getState().profile;
+        useUserProfileStore.getState().setUserProfile({
+          ...(current || { uid }),
           onboardingComplete: true,
           username: username.trim(),
           displayName: username.trim(),
           region,
           religion,
-        });
+        } as any);
         if (!updated?.region || !updated?.religion || !updated?.username || !updated?.email) {
           console.warn('⚠️ Missing required profile fields after onboarding:', updated);
         }
