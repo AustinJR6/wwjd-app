@@ -1,4 +1,4 @@
-import axios from 'axios';
+import apiClient from '@/utils/apiClient';
 import { FIRESTORE_BASE } from '../firebaseRest';
 import { getAuthHeaders } from '../App/utils/authUtils';
 import { getCurrentUserId } from '../App/utils/authUtils';
@@ -48,7 +48,7 @@ export async function updateUserProfile(
     const headers = await getAuthHeaders();
     const url = `${FIRESTORE_BASE}/users/${uid}`;
     console.log('➡️ PATCH', url, { payload: fields, headers });
-    await axios.patch(url, { fields: toFirestoreFields(fields) }, { headers });
+    await apiClient.patch(url, { fields: toFirestoreFields(fields) }, { headers });
     console.log('✅ Profile updated:', fields);
   } catch (error: any) {
     const data = (error as any).response?.data;

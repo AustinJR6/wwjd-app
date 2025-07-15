@@ -1361,6 +1361,43 @@ export const updateStreakAndXP = functions
     }),
   );
 
+export const getUserProfile = functions
+  .region("us-central1")
+  .https.onRequest(
+    withCors(async (req: Request, res: Response) => {
+      let authData: { uid: string; token: string };
+      try {
+        authData = await verifyAuth(req);
+      } catch (err) {
+        logTokenVerificationError("getUserProfile", extractAuthToken(req), err);
+        res.status(401).json({ error: "Unauthorized" });
+        return;
+      }
+
+      const reqUid =
+        typeof req.query.uid === "string"
+          ? (req.query.uid as string)
+          : req.body?.uid || authData.uid;
+
+      if (reqUid !== authData.uid) {
+        res.status(403).json({ error: "Forbidden" });
+        return;
+      }
+
+      try {
+        const snap = await db.collection("users").doc(reqUid).get();
+        if (!snap.exists) {
+          res.status(404).json({ error: "Not found" });
+          return;
+        }
+        res.status(200).json({ uid: reqUid, ...snap.data() });
+      } catch (err: any) {
+        logError("getUserProfile", err);
+        res.status(500).json({ error: err.message || "Failed" });
+      }
+    })
+  );
+
 async function ensureDocument(
   path: string,
   data: Record<string, any>,

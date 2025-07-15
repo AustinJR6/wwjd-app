@@ -10,6 +10,7 @@ import {
   getIdToken as fbGetIdToken,
   observeAuthState,
 } from '@/lib/auth';
+import { startTokenRefresh, stopTokenRefresh } from '@/lib/tokenRefresh';
 import { resetToLogin } from '@/navigation/navigationRef';
 import { ensureUserDocExists, loadUser } from './userService';
 
@@ -22,11 +23,13 @@ export function initAuthState(): void {
       if (user) {
         setUid(user.uid);
         setIdToken(await fbGetIdToken(true));
+        startTokenRefresh();
         await ensureUserDocExists(user.uid, user.email ?? undefined);
         await loadUser(user.uid);
       } else {
         setUid(null);
         setIdToken(null);
+        stopTokenRefresh();
         useUserStore.getState().clearUser();
       }
     } catch (err) {

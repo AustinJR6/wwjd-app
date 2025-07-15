@@ -1,7 +1,7 @@
-import axios from 'axios';
+import apiClient from '@/utils/apiClient';
 import { FIRESTORE_BASE } from '../firebaseRest';
 import { getAuthHeaders, getCurrentUserId } from '../App/utils/authUtils';
-import { getDocument } from '../App/services/firestoreService';
+import { callFunction } from '../App/services/functionService';
 import { logFirestoreError } from '../App/lib/logging';
 import type { CachedProfile, ReligionDocument, UserProfile } from '../types/profile';
 import { getReligionProfile } from '../religionRest';
@@ -40,7 +40,7 @@ export async function loadUserProfile(uid?: string): Promise<UserProfile | null>
   }
 
   try {
-    const user = await getDocument(`users/${userId}`);
+    const user = await callFunction('getUserProfile', { uid: userId });
     if (!user) {
       return null;
     }
@@ -80,7 +80,7 @@ export async function updateUserProfile(
     const headers = await getAuthHeaders();
     const url = `${FIRESTORE_BASE}/users/${userId}`;
     console.log('➡️ PATCH', url, { payload: sanitized, headers });
-    await axios.patch(url, { fields: toFirestoreFields(sanitized) }, { headers });
+    await apiClient.patch(url, { fields: toFirestoreFields(sanitized) }, { headers });
     if (cachedProfile && cachedProfile.uid === userId) {
       if ('religion' in sanitized) {
         const religionData = await getReligionProfile(sanitized.religion);
@@ -110,12 +110,12 @@ export async function incrementUserPoints(points: number, uid?: string): Promise
     const headers = await getAuthHeaders();
     const url = `${FIRESTORE_BASE}/users/${userId}`;
     console.log('➡️ Sending Firestore request to:', url);
-    const res = await axios.get(url, { headers });
+    const res = await apiClient.get(url, { headers });
     const current = Number((res.data as any)?.fields?.individualPoints?.integerValue ?? 0);
     const newTotal = current + points;
     const body = { fields: toFirestoreFields({ individualPoints: newTotal }) };
     console.log('➡️ Sending Firestore request to:', url, body);
-    await axios.patch(url, body, { headers });
+    await apiClient.patch(url, body, { headers });
     if (cachedProfile && cachedProfile.uid === userId) {
       cachedProfile = { ...cachedProfile, individualPoints: newTotal } as CachedProfile;
     }

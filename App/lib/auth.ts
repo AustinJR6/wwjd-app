@@ -38,8 +38,28 @@ function notify(cb: (user: any | null) => void) {
 }
 
 export function observeAuthState(cb: (user: any | null) => void) {
-  loadStoredCredentials().then(() => notify(cb));
-  return () => {};
+  let cancelled = false;
+  const check = async () => {
+    await loadStoredCredentials();
+    if (!currentRefresh) {
+      if (!cancelled) cb(null);
+      return;
+    }
+    try {
+      const token = await getIdToken(true);
+      if (!token) throw new Error('refresh_failed');
+      if (!cancelled) notify(cb);
+    } catch (err) {
+      await logout();
+      if (!cancelled) cb(null);
+    }
+  };
+  check();
+  const id = setInterval(check, 5 * 60 * 1000);
+  return () => {
+    cancelled = true;
+    clearInterval(id);
+  };
 }
 
 export async function signup(email: string, password: string) {

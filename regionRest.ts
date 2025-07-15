@@ -1,4 +1,4 @@
-import axios from 'axios';
+import apiClient from '@/utils/apiClient';
 import { FIRESTORE_BASE } from './firebaseRest';
 import { getIdToken } from './authRest';
 import { logFirestoreError } from './App/lib/logging';
@@ -19,7 +19,7 @@ export async function fetchRegionList(): Promise<RegionItem[]> {
   const idToken = await getIdToken();
   const url = `${FIRESTORE_BASE}/regions`;
   try {
-    const res = await axios.get(url, {
+    const res = await apiClient.get(url, {
       headers: { Authorization: `Bearer ${idToken}` },
     });
     const docs = (res.data as any).documents || [];
