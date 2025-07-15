@@ -132,6 +132,10 @@ Stripe subscription flow is being integrated with Firebase webhook handling
 
 Onboarding uses anonymous login, upgraded to email if subscribed
 
+- New `getUserProfile` Cloud Function centralizes user profile retrieval and verifies ID tokens server-side.
+- `observeAuthState` now checks token validity every few minutes and logs users out if refresh fails.
+- A background token refresh service keeps ID tokens fresh in SecureStore.
+
 Note: Even when using `app.config.js` in the bare workflow, keep a minimal
 `app.json` alongside it so Metro and other legacy tools can resolve the app
 name during builds.
@@ -144,6 +148,7 @@ The app communicates with Firebase using the following REST endpoints:
 * `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword` – email/password sign in
 * `https://securetoken.googleapis.com/v1/token` – refresh ID tokens
 * `https://firestore.googleapis.com/v1/projects/{projectId}/databases/(default)/documents/...` – Firestore reads and writes
+* `https://us-central1-{projectId}.cloudfunctions.net/getUserProfile` – secure profile fetch
 
 ## 📚 Codex Prompt Library
 

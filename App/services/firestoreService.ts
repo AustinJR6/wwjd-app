@@ -1,4 +1,4 @@
-import axios from 'axios';
+import apiClient from '@/utils/apiClient';
 import { getIdToken, getCurrentUserId } from '@/utils/authUtils';
 import { showPermissionDeniedForPath } from '@/utils/gracefulError';
 import { logFirestoreError } from '@/lib/logging';
@@ -96,7 +96,7 @@ export async function getDocument(path: string): Promise<any | null> {
   warnIfInvalidPath(path, true);
   try {
     console.log('➡️ Firestore GET', path);
-    const res = await axios.get(`${BASE}/${path}`, { headers: await authHeaders() });
+    const res = await apiClient.get(`${BASE}/${path}`, { headers: await authHeaders() });
     return fromFirestore(res.data);
   } catch (err: any) {
     logFirestoreError('GET', path, err);
@@ -119,7 +119,7 @@ export async function setDocument(path: string, data: any): Promise<void> {
   try {
     const body = { fields: toFirestoreFields(data) };
     console.log('➡️ Firestore SET', path, data);
-    await axios.patch(`${BASE}/${path}`, body, { headers: await authHeaders() });
+    await apiClient.patch(`${BASE}/${path}`, body, { headers: await authHeaders() });
   } catch (err: any) {
     logFirestoreError('SET', path, err);
     if (err.response?.status === 403) {
@@ -140,7 +140,7 @@ export async function addDocument(collectionPath: string, data: any): Promise<st
   try {
     const body = { fields: toFirestoreFields(data) };
     console.log('➡️ Firestore ADD', collectionPath, data);
-    const res = await axios.post(`${BASE}/${collectionPath}`, body, {
+    const res = await apiClient.post(`${BASE}/${collectionPath}`, body, {
       headers: await authHeaders(),
     });
     const resData = res.data as { name: string };
@@ -161,7 +161,7 @@ export async function deleteDocument(path: string): Promise<void> {
   warnIfInvalidPath(path, true);
   try {
     console.log('➡️ Firestore DELETE', path);
-    await axios.delete(`${BASE}/${path}`, { headers: await authHeaders() });
+    await apiClient.delete(`${BASE}/${path}`, { headers: await authHeaders() });
   } catch (err: any) {
     logFirestoreError('DELETE', path, err);
     if (err.response?.status === 403) {
@@ -177,7 +177,7 @@ export async function queryCollection(collectionPath: string): Promise<any[]> {
   warnIfInvalidPath(collectionPath, false);
   try {
     console.log('➡️ Firestore QUERY', collectionPath);
-    const res = await axios.get(`${BASE}/${collectionPath}`, {
+    const res = await apiClient.get(`${BASE}/${collectionPath}`, {
       headers: await authHeaders(),
     });
     const docs = (res.data as any).documents || [];
@@ -197,7 +197,7 @@ export async function runStructuredQuery(query: any): Promise<any[]> {
   const url = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents:runQuery`;
   try {
     console.log('➡️ Firestore RUNQUERY', JSON.stringify(query));
-    const res = await axios.post(url, { structuredQuery: query }, {
+    const res = await apiClient.post(url, { structuredQuery: query }, {
       headers: await authHeaders(),
     });
     const docs = Array.isArray(res.data) ? (res.data as any[]) : [];

@@ -1,6 +1,6 @@
-import axios from 'axios';
 import { getAuthHeaders } from '@/utils/authUtils';
 import { logTokenIssue } from '@/services/authService';
+import apiClient from '@/utils/apiClient';
 import Constants from 'expo-constants';
 
 const API_URL = Constants.expoConfig?.extra?.EXPO_PUBLIC_API_URL || '';
@@ -18,7 +18,7 @@ export async function callFunction(name: string, data: any): Promise<any> {
   }
 
   try {
-    const res = await axios.post(`${API_URL}/${name}`, data, { headers });
+    const res = await apiClient.post(`${API_URL}/${name}`, data, { headers });
     return res.data as any;
   } catch (err: any) {
     console.error('🔥 Function error:', err?.message || err);

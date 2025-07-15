@@ -1,4 +1,4 @@
-import axios from 'axios';
+import apiClient from '@/utils/apiClient';
 import { FIRESTORE_BASE } from './firebaseRest';
 import { getIdToken } from './authRest';
 import { logFirestoreError } from './App/lib/logging';
@@ -47,7 +47,7 @@ export async function getReligionProfile(
   const url = `${FIRESTORE_BASE}/religion/${id}`;
   console.log('➡️ Sending Firestore request to:', url);
   try {
-    const res = await axios.get(url, { headers: { Authorization: `Bearer ${idToken}` } });
+    const res = await apiClient.get(url, { headers: { Authorization: `Bearer ${idToken}` } });
     const fields = (res.data as any).fields || {};
     const profile: ReligionProfile = {
       id,
@@ -79,7 +79,7 @@ async function fetchReligionList(): Promise<ReligionItem[]> {
   console.log('➡️ Fetching religions from', url);
 
   try {
-    const response = await axios.get(url, {
+    const response = await apiClient.get(url, {
       headers: {
         Authorization: `Bearer ${idToken}`,
       },

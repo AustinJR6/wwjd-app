@@ -1,4 +1,4 @@
-import axios from 'axios';
+import apiClient from '@/utils/apiClient';
 import { logTokenIssue } from '@/services/authService';
 import { getIdToken } from '@/utils/authUtils';
 import { useAuthStore } from '@/state/authStore';
@@ -21,6 +21,6 @@ export async function sendSecureFirebaseRequest(url: string, data: any) {
   console.log('ID Token:', token);
   console.log('📤 Sending ID token in Authorization header');
   return sendRequestWithGusBugLogging(() =>
-    axios.post(url, data, { headers }) as unknown as Promise<any>
+    apiClient.post(url, data, { headers }) as unknown as Promise<any>
   );
 }
