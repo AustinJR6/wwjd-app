@@ -21,12 +21,12 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/navigation/RootStackParamList';
 import AuthGate from '@/components/AuthGate';
 import { useAuth } from '@/hooks/useAuth';
-import { useUserStore } from '@/state/userStore';
+import { useUserProfileStore } from '@/state/userProfile';
 
 export default function JoinOrganizationScreen() {
   const theme = useTheme();
   const { authReady, uid } = useAuth();
-  const updateUser = useUserStore((s) => s.updateUser);
+  const setProfile = useUserProfileStore((s) => s.setUserProfile);
   const styles = React.useMemo(
     () =>
       StyleSheet.create({
@@ -107,7 +107,7 @@ export default function JoinOrganizationScreen() {
         organizationName: null,
       }, uid);
 
-      updateUser({ organizationId: undefined });
+      setProfile(user ? { ...user, organizationId: undefined } as any : undefined as any);
 
       const orgData = await getDocument(`organizations/${orgId}`);
       const members = (orgData?.members || []).filter((m: string) => m !== uid);
@@ -158,7 +158,7 @@ export default function JoinOrganizationScreen() {
         organizationName: org.name,
       }, uid);
 
-      updateUser({ organizationId: org.id });
+      setProfile(user ? { ...user, organizationId: org.id } as any : undefined as any);
 
       const orgData = await getDocument(`organizations/${org.id}`);
       const members = orgData?.members || [];

@@ -6,11 +6,10 @@ import ScreenContainer from "@/components/theme/ScreenContainer";
 import TextField from "@/components/TextField";
 import Button from "@/components/common/Button";
 import { login, resetPassword } from "@/services/authService";
-import { ensureUserDocExists } from "@/services/userService";
 import { loadUserProfile } from "../../../utils";
+import { useUserProfileStore } from "@/state/userProfile";
 import type { UserProfile } from "../../../types";
 import { checkIfUserIsNewAndRoute } from "@/services/onboardingService";
-import { useUserStore } from "@/state/userStore";
 import { useAuthStore } from "@/state/authStore";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -34,21 +33,9 @@ export default function LoginScreen() {
       const result = await login(email, password);
       if (result.localId) {
         setUid(result.localId);
-        await ensureUserDocExists(result.localId, result.email);
         const profile: UserProfile | null = await loadUserProfile(result.localId);
         if (profile) {
-          useUserStore.getState().setUser({
-            uid: profile.uid,
-            email: profile.email,
-            username: profile.username ?? '',
-            displayName: profile.displayName ?? '',
-            isSubscribed: profile?.isSubscribed ?? false,
-            religion: profile?.religion ?? 'SpiritGuide',
-            region: profile.region ?? '',
-            organizationId: profile.organizationId,
-              onboardingComplete: profile.onboardingComplete ?? false,
-            tokens: 0,
-          });
+          useUserProfileStore.getState().setUserProfile(profile as any);
         }
 
         await checkIfUserIsNewAndRoute();

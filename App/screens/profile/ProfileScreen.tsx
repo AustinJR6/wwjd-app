@@ -6,7 +6,7 @@ import TextField from '@/components/TextField';
 import Button from '@/components/common/Button';
 import { Picker } from '@react-native-picker/picker';
 import { useUser } from '@/hooks/useUser';
-import { useUserStore } from '@/state/userStore';
+import { useUserProfileStore } from '@/state/userProfile';
 import { getTokenCount } from '@/utils/TokenManager';
 import { useLookupLists } from '@/hooks/useLookupLists';
 import {
@@ -26,7 +26,7 @@ import { useAuth } from '@/hooks/useAuth';
 
 export default function ProfileScreen() {
   const { user } = useUser();
-  const updateUser = useUserStore((s) => s.updateUser);
+  const setProfile = useUserProfileStore((s) => s.setUserProfile);
   const theme = useTheme();
   const { authReady, uid } = useAuth();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -113,7 +113,7 @@ export default function ProfileScreen() {
       console.log('✅ Religion updated');
       const updated = await loadUserProfile(uidVal);
       setCachedUserProfile(updated as any);
-      updateUser({ religion: value });
+      setProfile({ ...user, religion: value } as any);
       await updateUserProfile({ lastChallenge: null }, uidVal);
       Alert.alert('Religion Updated');
     } catch (err: any) {
@@ -136,11 +136,14 @@ export default function ProfileScreen() {
       const updates: Record<string, any> = { displayName: username, region };
       if (username.trim()) updates.username = username.trim();
       await updateUserProfile(updates);
-      updateUser({
-        displayName: username,
-        ...(username.trim() ? { username } : {}),
-        region,
-      });
+      if (user) {
+        setProfile({
+          ...user,
+          displayName: username,
+          ...(username.trim() ? { username } : {}),
+          region,
+        } as any);
+      }
       Alert.alert('Profile Updated');
     } catch (err: any) {
       Alert.alert('Error', err.message || 'Could not update profile');

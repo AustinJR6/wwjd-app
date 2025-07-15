@@ -1,5 +1,7 @@
 import { loadUserProfile, updateUserProfile } from "../../utils";
 import { useUserStore } from "@/state/userStore";
+import { useUserProfileStore } from "@/state/userProfile";
+import { callFunction } from "@/services/functionService";
 import { ensureAuth } from "@/utils/authGuard";
 import { getIdToken } from "@/utils/authUtils";
 import type { FirestoreUser, UserProfile } from "../../types";
@@ -218,4 +220,17 @@ export async function completeOnboarding(uid: string) {
   if (!storedUid) return;
 
   await updateUserProfile({ onboardingComplete: true }, storedUid);
+}
+
+export async function initializeProfile(uid: string) {
+  try {
+    const profile = await callFunction('createUserProfile', { uid });
+    if (profile) {
+      useUserProfileStore.getState().setUserProfile(profile as any);
+    }
+    return profile as UserProfile;
+  } catch (err) {
+    console.warn('initializeProfile failed', err);
+    return null;
+  }
 }

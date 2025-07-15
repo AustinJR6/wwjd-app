@@ -16,6 +16,8 @@ import {
   extractAuthToken,
 } from "./helpers";
 
+export { createUserProfile } from "./users/createUserProfile";
+
 function logTokenVerificationError(context: string, token: string | undefined, err: any) {
   logger.error(`${context} token verification failed`, {
     tokenPrefix: token ? token.slice(0, 10) : "none",
