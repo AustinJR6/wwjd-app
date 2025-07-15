@@ -79,6 +79,14 @@ export async function ensureUserDocExists(
   return true;
 }
 
+export async function refreshLastActive(uid: string): Promise<void> {
+  const storedUid = await ensureAuth(uid);
+  if (!storedUid) return;
+  const lastActive = new Date().toISOString();
+  useUserStore.getState().updateUser({ lastActive });
+  await updateUserProfile({ lastActive }, storedUid);
+}
+
 /**
  * Fetch a user profile document without creating it
  */
@@ -114,11 +122,17 @@ export async function loadUser(uid: string): Promise<void> {
       email: user.email,
       username: user.username ?? "",
       displayName: user.displayName ?? "",
+      preferredName: user.preferredName ?? "",
+      pronouns: user.pronouns ?? "",
+      avatarURL: user.avatarURL ?? "",
       isSubscribed: user?.isSubscribed ?? false,
       religion: user?.religion ?? "SpiritGuide",
       region: user.region ?? "",
       organizationId: user.organizationId,
         onboardingComplete: user.onboardingComplete ?? false,
+      profileComplete: user.profileComplete ?? false,
+      profileSchemaVersion: user.profileSchemaVersion,
+      lastActive: user.lastActive,
       tokens: 0, // placeholder
     });
   } else {
@@ -158,7 +172,6 @@ export async function createUserProfile({
   const now = Date.now();
 
   const userData: FirestoreUser = {
-    uid,
     email,
     username,
     displayName: displayName || "New User",
@@ -167,7 +180,7 @@ export async function createUserProfile({
     region,
     organization: organizationId || null,
     individualPoints: 0,
-    tokens: 5,
+    tokens: 0,
     skipTokensUsed: 0,
     lastFreeAsk: null,
     lastFreeSkip: null,
@@ -175,6 +188,12 @@ export async function createUserProfile({
     nightModeEnabled: false,
     religionPrefix: "",
     onboardingComplete: false,
+    profileComplete: false,
+    profileSchemaVersion: 1,
+    lastActive: new Date().toISOString(),
+    preferredName: "",
+    pronouns: "",
+    avatarURL: "",
     createdAt: now,
     streak: { current: 0, longest: 0, lastUpdated: new Date().toISOString() },
     challengeStreak: { count: 0, lastCompletedDate: null },

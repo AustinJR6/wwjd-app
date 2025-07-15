@@ -135,6 +135,9 @@ Onboarding uses anonymous login, upgraded to email if subscribed
 - New `getUserProfile` Cloud Function centralizes user profile retrieval and verifies ID tokens server-side.
 - `observeAuthState` now checks token validity every few minutes and logs users out if refresh fails.
 - A background token refresh service keeps ID tokens fresh in SecureStore.
+- User profiles now include `lastActive`, `preferredName`, `pronouns`, `avatarURL`,
+  `profileComplete`, and `profileSchemaVersion` to support richer onboarding and
+  future migrations.
 
 Note: Even when using `app.config.js` in the bare workflow, keep a minimal
 `app.json` alongside it so Metro and other legacy tools can resolve the app

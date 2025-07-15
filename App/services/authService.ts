@@ -12,7 +12,7 @@ import {
 } from '@/lib/auth';
 import { startTokenRefresh, stopTokenRefresh } from '@/lib/tokenRefresh';
 import { resetToLogin } from '@/navigation/navigationRef';
-import { ensureUserDocExists, loadUser } from './userService';
+import { ensureUserDocExists, loadUser, refreshLastActive } from './userService';
 
 export function initAuthState(): void {
   const setAuthReady = useAuthStore.getState().setAuthReady;
@@ -26,6 +26,7 @@ export function initAuthState(): void {
         startTokenRefresh();
         await ensureUserDocExists(user.uid, user.email ?? undefined);
         await loadUser(user.uid);
+        await refreshLastActive(user.uid);
       } else {
         setUid(null);
         setIdToken(null);

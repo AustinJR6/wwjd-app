@@ -19,6 +19,9 @@ export interface UserProfile {
   displayName?: string;
   username?: string;
   region?: string;
+  preferredName?: string;
+  pronouns?: string;
+  avatarURL?: string;
   religion: string;
   points?: number;
   tokens?: number;
@@ -41,6 +44,9 @@ export interface UserProfile {
   skipTokensUsed?: number;
   /** Dark mode preference */
   nightModeEnabled?: boolean;
+  profileComplete?: boolean;
+  profileSchemaVersion?: number;
+  lastActive?: string;
   /** Optional custom prefix for AI prompts */
   religionPrefix?: string;
   [key: string]: any;
@@ -63,7 +69,13 @@ export interface FirestoreUser extends UserProfile {
   skipTokensUsed: number;
   /** Dark mode preference */
   nightModeEnabled: boolean;
+  profileComplete: boolean;
+  profileSchemaVersion: number;
+  lastActive?: string;
   /** Optional custom prefix for AI prompts */
   religionPrefix?: string;
   organizationId?: string;
+  preferredName?: string;
+  pronouns?: string;
+  avatarURL?: string;
 }

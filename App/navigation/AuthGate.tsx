@@ -10,6 +10,7 @@ import { useUser } from '@/hooks/useUser';
 import { useUserStore } from '@/state/userStore';
 import { initAuthState } from '@/services/authService';
 import { loadUserProfile } from '../../utils';
+import { refreshLastActive } from '@/services/userService';
 
 // Auth Screens
 import LoginScreen from '@/screens/auth/LoginScreen';
@@ -130,7 +131,12 @@ export default function AuthGate() {
   }
 
   return (
-    <NavigationContainer ref={navigationRef}>
+    <NavigationContainer
+      ref={navigationRef}
+      onStateChange={() => {
+        if (uid) refreshLastActive(uid);
+      }}
+    >
       <Stack.Navigator
         initialRouteName={initialRoute}
         screenOptions={{
