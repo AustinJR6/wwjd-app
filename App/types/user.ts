@@ -5,6 +5,9 @@ export interface DefaultUserData {
   displayName?: string;
   username?: string;
   region?: string;
+  preferredName?: string;
+  pronouns?: string;
+  avatarURL?: string;
   religion?: string;
   idToken?: string;
 
@@ -13,6 +16,9 @@ export interface DefaultUserData {
   lastFreeAsk: string;
   lastFreeSkip: string;
   onboardingComplete: boolean;
+  profileComplete: boolean;
+  profileSchemaVersion: number;
+  lastActive: string;
   isSubscribed: boolean;
   individualPoints: number;
   tokens: number;

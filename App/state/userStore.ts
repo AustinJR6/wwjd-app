@@ -7,9 +7,15 @@ interface UserData {
   displayName: string;
   religion: string;
   region: string;
+  preferredName?: string;
+  pronouns?: string;
+  avatarURL?: string;
   organizationId?: string;
   isSubscribed: boolean;
   onboardingComplete: boolean;
+  profileComplete: boolean;
+  profileSchemaVersion?: number;
+  lastActive?: string;
   tokens: number;
 }
 

@@ -6,6 +6,8 @@ import { logFirestoreError } from '../App/lib/logging';
 import type { CachedProfile, ReligionDocument, UserProfile } from '../types/profile';
 import { getReligionProfile } from '../religionRest';
 
+export const CURRENT_PROFILE_SCHEMA = 1;
+
 function toFirestoreFields(obj: any): any {
   const fields: any = {};
   for (const k of Object.keys(obj)) {
@@ -49,6 +51,11 @@ export async function loadUserProfile(uid?: string): Promise<UserProfile | null>
       religionData = await getReligionProfile(user.religion);
     }
     cachedProfile = { uid: userId, ...user, religionData } as CachedProfile;
+    if (user.profileSchemaVersion && user.profileSchemaVersion !== CURRENT_PROFILE_SCHEMA) {
+      console.warn(
+        `\u26A0\uFE0F profileSchemaVersion mismatch: expected ${CURRENT_PROFILE_SCHEMA}, got ${user.profileSchemaVersion}`,
+      );
+    }
     if (!user?.region || !user?.religion || !user?.username) {
       console.warn('⚠️ Missing required profile fields after onboarding:', user);
     }
@@ -57,6 +64,28 @@ export async function loadUserProfile(uid?: string): Promise<UserProfile | null>
     const errorData = (err as any).response?.data;
     console.error('loadUserProfile failed', errorData || err);
     return null;
+  }
+}
+
+export async function fetchProfileWithCounts(uid?: string): Promise<(UserProfile & { counts: Record<string, number> }) | null> {
+  const profile = await loadUserProfile(uid);
+  const userId = uid ?? (await getCurrentUserId());
+  if (!profile || !userId) return null;
+  try {
+    const headers = await getAuthHeaders();
+    const collections = ['confessionalSessions', 'journalEntries', 'dailyChallenges'];
+    const counts: Record<string, number> = {};
+    await Promise.all(
+      collections.map(async (c) => {
+        const url = `${FIRESTORE_BASE}/users/${userId}/${c}`;
+        const res = await apiClient.get(url, { params: { pageSize: 1000 }, headers });
+        counts[c] = Array.isArray(res.data.documents) ? res.data.documents.length : 0;
+      }),
+    );
+    return { ...profile, counts };
+  } catch (err: any) {
+    logFirestoreError('GET', `users/${userId}/*`, err);
+    return { ...profile, counts: {} };
   }
 }
 

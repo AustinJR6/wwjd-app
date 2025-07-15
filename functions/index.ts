@@ -1491,7 +1491,6 @@ export const createUserDocOnSignup = functions
     if (!snap.exists) {
       await userRef.set({
         email: user.email || "",
-        uid: user.uid,
         displayName: "",
         individualPoints: 0,
         isSubscribed: false,
@@ -1504,6 +1503,12 @@ export const createUserDocOnSignup = functions
         },
         nightModeEnabled: false,
         onboardingComplete: false,
+        profileComplete: false,
+        profileSchemaVersion: 1,
+        lastActive: admin.firestore.FieldValue.serverTimestamp(),
+        preferredName: "",
+        pronouns: "",
+        avatarURL: "",
         recentChallenges: [],
         dailyChallengeHistory: {
           completed: 0,
@@ -1526,21 +1531,26 @@ export const onUserCreate = functions
     try {
       const timestamp = admin.firestore.FieldValue.serverTimestamp();
       await db.collection("users").doc(uid).set({
-        uid,
         email: user.email || "",
         displayName: user.displayName || "New User",
         emailVerified: user.emailVerified || false,
         createdAt: timestamp,
+        lastActive: timestamp,
         isSubscribed: false,
         lastFreeAsk: timestamp,
         lastFreeSkip: timestamp,
         nightModeEnabled: false,
         onboardingComplete: false,
+        profileComplete: false,
+        profileSchemaVersion: 1,
         organization: null,
         religion: "SpiritGuide",
         skipTokensUsed: 0,
-        tokens: 5,
+        tokens: 0,
         individualPoints: 0,
+        preferredName: "",
+        pronouns: "",
+        avatarURL: "",
       });
 
       await Promise.all([

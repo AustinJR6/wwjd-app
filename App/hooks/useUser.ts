@@ -5,11 +5,17 @@ export interface User {
   email: string;
   username: string;
   displayName: string;
+  preferredName?: string;
+  pronouns?: string;
+  avatarURL?: string;
   religion: string;
   region: string;
   organizationId?: string;
   isSubscribed: boolean;
   onboardingComplete: boolean;
+  profileComplete: boolean;
+  profileSchemaVersion?: number;
+  lastActive?: string;
   tokens: number;
 }
 

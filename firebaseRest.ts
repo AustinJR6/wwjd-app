@@ -51,6 +51,9 @@ export async function signUpWithEmailAndPassword(email: string, password: string
         region: '',
         religion: DEFAULT_RELIGION,
         idToken,
+        preferredName: '',
+        pronouns: '',
+        avatarURL: '',
       });
     } catch (err) {
       console.error('❌ Failed to create default user document', err);
@@ -119,6 +122,9 @@ export interface DefaultUserData {
   region?: string;
   religion?: string;
   idToken: string;
+  preferredName?: string;
+  pronouns?: string;
+  avatarURL?: string;
 }
 
 
@@ -131,11 +137,15 @@ export function generateDefaultUserData({
   username = '',
   region = '',
   religion = DEFAULT_RELIGION,
+  preferredName = '',
+  pronouns = '',
+  avatarURL = '',
 }: Partial<DefaultUserData> & { uid: string }): Omit<DefaultUserData, 'idToken'> & {
   createdAt: string;
   lastFreeAsk: string;
   lastFreeSkip: string;
   onboardingComplete: boolean;
+  profileComplete: boolean;
   isSubscribed: boolean;
   individualPoints: number;
   tokens: number;
@@ -143,6 +153,8 @@ export function generateDefaultUserData({
   nightModeEnabled: boolean;
   organization: null | string;
   religionSlug: string;
+  lastActive: string;
+  profileSchemaVersion: number;
 } {
   const slugify = (str: string) =>
     str
@@ -153,18 +165,23 @@ export function generateDefaultUserData({
   const now = new Date().toISOString();
 
   return {
-    uid,
     email,
     emailVerified,
     displayName,
     username,
     createdAt: now,
+    lastActive: now,
     religion,
     religionSlug: slugify(religion),
     region,
     organization: null,
+    preferredName,
+    pronouns,
+    avatarURL,
+    profileComplete: false,
+    profileSchemaVersion: 1,
     individualPoints: 0,
-    tokens: 5,
+    tokens: 0,
     skipTokensUsed: 0,
     lastFreeAsk: now,
     lastFreeSkip: now,
@@ -183,6 +200,9 @@ export async function createUserDoc({
   region,
   religion,
   idToken,
+  preferredName = '',
+  pronouns = '',
+  avatarURL = '',
 }: {
   uid: string;
   email: string;
@@ -192,6 +212,9 @@ export async function createUserDoc({
   region: string;
   religion: string;
   idToken: string;
+  preferredName?: string;
+  pronouns?: string;
+  avatarURL?: string;
 }) {
   const path = `users/${uid}`;
   const url = `${FIRESTORE_BASE}/${path}`;
@@ -203,6 +226,9 @@ export async function createUserDoc({
     username,
     region,
     religion,
+    preferredName,
+    pronouns,
+    avatarURL,
   });
 
   const body = { fields: toFirestoreFields(payload) };
