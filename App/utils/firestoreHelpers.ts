@@ -1,7 +1,7 @@
 import apiClient from '@/utils/apiClient';
-import { FIRESTORE_BASE } from '../firebaseRest';
-import { getAuthHeaders } from '../App/utils/authUtils';
-import { getCurrentUserId } from '../App/utils/authUtils';
+import { FIRESTORE_BASE } from '../../firebaseRest';
+import { getAuthHeaders } from './authUtils';
+import { getCurrentUserId } from './authUtils';
 
 function toFirestoreFields(obj: any): any {
   const fields: any = {};
