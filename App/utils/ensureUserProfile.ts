@@ -1,4 +1,4 @@
-import { loadUserProfile, updateUserProfile } from '../../utils';
+import { loadUserProfile, updateUserProfile } from '@/utils';
 import type { UserProfile } from '../../types';
 import { logProfileSync } from '@/lib/logProfileSync';
 import { callFunction } from '@/services/functionService';

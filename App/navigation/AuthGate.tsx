@@ -9,7 +9,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useUser } from '@/hooks/useUser';
 import { useUserStore } from '@/state/userStore';
 import { initAuthState } from '@/services/authService';
-import { loadUserProfile } from '../../utils';
+import { loadUserProfile } from '@/utils';
 import { refreshLastActive } from '@/services/userService';
 
 // Auth Screens
@@ -85,6 +85,7 @@ export default function AuthGate() {
               organizationId: fetched.organizationId,
               isSubscribed: fetched?.isSubscribed ?? false,
               onboardingComplete: fetched.onboardingComplete ?? false,
+              profileComplete: fetched.profileComplete ?? false,
               tokens: 0,
             });
             profile = useUserStore.getState().user;

@@ -1,4 +1,4 @@
-import axios, { AxiosRequestConfig } from 'axios';
+import axios from 'axios';
 import { getIdToken } from '@/utils/authUtils';
 import { signOutAndRetry } from '@/services/authService';
 
@@ -18,9 +18,9 @@ async function getValidToken(force = false): Promise<string | null> {
   return refreshPromise;
 }
 
-const client = axios.create();
+const client = axios.create({});
 
-client.interceptors.request.use(async (config: AxiosRequestConfig) => {
+client.interceptors.request.use(async (config: any) => {
   const token = await getValidToken();
   if (token) {
     config.headers = config.headers || {};

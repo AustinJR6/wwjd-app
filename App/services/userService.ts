@@ -1,4 +1,4 @@
-import { loadUserProfile, updateUserProfile } from "../../utils";
+import { loadUserProfile, updateUserProfile } from "@/utils";
 import { useUserStore } from "@/state/userStore";
 import { useUserProfileStore } from "@/state/userProfile";
 import { callFunction } from "@/services/functionService";

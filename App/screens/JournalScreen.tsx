@@ -17,7 +17,7 @@ import { showGracefulError } from '@/utils/gracefulError';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { querySubcollection, addDocument, getDocument, setDocument } from '@/services/firestoreService';
 
-import { loadUserProfile, incrementUserPoints, getUserAIPrompt } from '../../utils/userProfile';
+import { loadUserProfile, incrementUserPoints, getUserAIPrompt } from '@/utils/userProfile';
 import type { UserProfile } from '../../types/profile';
 
 import { callFunction, awardPointsToUser } from '@/services/functionService';

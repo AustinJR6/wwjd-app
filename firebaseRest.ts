@@ -165,6 +165,7 @@ export function generateDefaultUserData({
   const now = new Date().toISOString();
 
   return {
+    uid,
     email,
     emailVerified,
     displayName,
