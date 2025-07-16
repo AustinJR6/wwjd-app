@@ -1,10 +1,10 @@
 import apiClient from '@/utils/apiClient';
-import { FIRESTORE_BASE } from '../firebaseRest';
-import { getAuthHeaders, getCurrentUserId } from '../App/utils/authUtils';
-import { callFunction } from '../App/services/functionService';
-import { logFirestoreError } from '../App/lib/logging';
-import type { CachedProfile, ReligionDocument, UserProfile } from '../types/profile';
-import { getReligionProfile } from '../religionRest';
+import { FIRESTORE_BASE } from '../../firebaseRest';
+import { getAuthHeaders, getCurrentUserId } from '@/utils/authUtils';
+import { callFunction } from '@/services/functionService';
+import { logFirestoreError } from '@/lib/logging';
+import type { CachedProfile, ReligionDocument, UserProfile } from '../../types/profile';
+import { getReligionProfile } from '../../religionRest';
 
 export const CURRENT_PROFILE_SCHEMA = 1;
 
@@ -78,7 +78,7 @@ export async function fetchProfileWithCounts(uid?: string): Promise<(UserProfile
     await Promise.all(
       collections.map(async (c) => {
         const url = `${FIRESTORE_BASE}/users/${userId}/${c}`;
-        const res = await apiClient.get(url, { params: { pageSize: 1000 }, headers });
+        const res = await apiClient.get<any>(url, { params: { pageSize: 1000 }, headers });
         counts[c] = Array.isArray(res.data.documents) ? res.data.documents.length : 0;
       }),
     );
@@ -139,7 +139,7 @@ export async function incrementUserPoints(points: number, uid?: string): Promise
     const headers = await getAuthHeaders();
     const url = `${FIRESTORE_BASE}/users/${userId}`;
     console.log('➡️ Sending Firestore request to:', url);
-    const res = await apiClient.get(url, { headers });
+    const res = await apiClient.get<any>(url, { headers });
     const current = Number((res.data as any)?.fields?.individualPoints?.integerValue ?? 0);
     const newTotal = current + points;
     const body = { fields: toFirestoreFields({ individualPoints: newTotal }) };

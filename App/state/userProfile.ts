@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { loadUserProfile, updateUserProfile } from '../../utils';
+import { loadUserProfile, updateUserProfile } from '@/utils';
 import { ensureAuth } from '@/utils/authGuard';
 import type { UserProfile } from '../../types';
 import { logProfileSync } from '@/lib/logProfileSync';

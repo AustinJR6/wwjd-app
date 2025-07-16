@@ -6,7 +6,7 @@ import ScreenContainer from "@/components/theme/ScreenContainer";
 import TextField from "@/components/TextField";
 import Button from "@/components/common/Button";
 import { login, resetPassword } from "@/services/authService";
-import { loadUserProfile } from "../../../utils";
+import { loadUserProfile } from "@/utils";
 import { useUserProfileStore } from "@/state/userProfile";
 import type { UserProfile } from "../../../types";
 import { checkIfUserIsNewAndRoute } from "@/services/onboardingService";
