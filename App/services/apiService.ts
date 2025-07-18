@@ -3,7 +3,7 @@ import { STRIPE_CHECKOUT_URL, TOKEN_CHECKOUT_URL, SUBSCRIPTION_CHECKOUT_URL } fr
 import { STRIPE_SUCCESS_URL, STRIPE_CANCEL_URL } from '@/config/stripeConfig';
 import { getAuthHeaders } from '@/utils/authUtils';
 import { sendRequestWithGusBugLogging } from '@/utils/gusBugLogger';
-import { logTokenIssue } from '@/services/authLogger';
+import { logTokenIssue } from '@/shared/tokenLogger';
 import { showPermissionDenied } from '@/utils/gracefulError';
 
 type StripeCheckoutResponse = {

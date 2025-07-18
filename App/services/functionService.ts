@@ -1,5 +1,5 @@
 import { getAuthHeaders } from '@/utils/authUtils';
-import { logTokenIssue } from '@/services/authLogger';
+import { logTokenIssue } from '@/shared/tokenLogger';
 import apiClient from '@/utils/apiClient';
 import Constants from 'expo-constants';
 

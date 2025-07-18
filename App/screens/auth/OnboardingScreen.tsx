@@ -7,7 +7,7 @@ import Button from "@/components/common/Button";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { loadUserProfile, setCachedUserProfile, updateUserProfile } from "@/utils/userProfile";
-import { fetchUserProfile, completeOnboarding } from "../../services/userService";
+import { fetchUserProfile } from "../../services/userService";
 import { createUserDoc } from "../../../firebaseRest";
 import { getIdToken } from "@/utils/authUtils";
 import type { UserProfile } from "../../../types";
@@ -78,20 +78,24 @@ export default function OnboardingScreen() {
             religion,
             idToken: token || '',
           });
-        } else {
-          await updateUserProfile(
-            {
-              displayName: username.trim(),
-              username: username.trim(),
-              region,
-              religion,
-            },
-            uid,
-          );
         }
+        await updateUserProfile(
+          {
+            displayName: username.trim(),
+            username: username.trim(),
+            region,
+            religion,
+            onboardingComplete: true,
+            challengeStreak: { count: 0, lastCompletedDate: null },
+            dailyChallengeCount: 0,
+            dailySkipCount: 0,
+            lastChallengeLoadDate: null,
+            lastSkipDate: null,
+          },
+          uid,
+        );
         const updated: UserProfile | null = await loadUserProfile(uid);
         setCachedUserProfile(updated as any);
-        await completeOnboarding(uid);
         await SecureStore.setItemAsync(`hasSeenOnboarding-${uid}`, 'true');
         const current = useUserProfileStore.getState().profile;
         useUserProfileStore.getState().setUserProfile({
@@ -107,7 +111,7 @@ export default function OnboardingScreen() {
         }
         navigation.reset({
           index: 0,
-          routes: [{ name: 'Home' as keyof RootStackParamList }],
+          routes: [{ name: SCREENS.MAIN.HOME }],
         });
       }
     } catch (err: any) {

@@ -2,14 +2,12 @@ import * as Notifications from 'expo-notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 
-const isDevClient =
-  !Constants.appOwnership ||
-  (Constants.appOwnership as unknown as string) === 'expo-dev-client';
+const canUseNotifications = Constants.appOwnership !== 'expo';
 
 const STORAGE_KEY = 'reflectionReminderId';
 
 export async function scheduleReflectionReminder(time: string) {
-  if (!isDevClient) {
+  if (!canUseNotifications) {
     console.warn('⚠️ Push notifications disabled in Expo Go.');
     return;
   }
@@ -26,7 +24,7 @@ export async function scheduleReflectionReminder(time: string) {
 }
 
 export async function cancelReflectionReminder() {
-  if (!isDevClient) {
+  if (!canUseNotifications) {
     console.warn('⚠️ Push notifications disabled in Expo Go.');
     return;
   }

@@ -3,12 +3,12 @@ import { useUserStore } from '@/state/userStore';
 import {
   signup as fbSignup,
   login as fbLogin,
-  logout as fbLogout,
   resetPassword as fbResetPassword,
   changePassword as fbChangePassword,
   getIdToken as fbGetIdToken,
   observeAuthState,
 } from '@/lib/auth';
+import { performLogout } from '@/shared/logout';
 import { startTokenRefresh, stopTokenRefresh } from '@/lib/tokenRefresh';
 import { resetToLogin } from '@/navigation/navigationRef';
 import { ensureUserDocExists, loadUser, refreshLastActive } from './userService';
@@ -57,10 +57,7 @@ export async function login(email: string, password: string) {
 }
 
 export async function logout(): Promise<void> {
-  await fbLogout();
-  useUserStore.getState().clearUser();
-  useAuthStore.getState().setUid(null);
-  useAuthStore.getState().setIdToken(null);
+  await performLogout();
 }
 
 export function resetPassword(email: string) {
