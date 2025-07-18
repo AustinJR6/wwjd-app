@@ -217,29 +217,63 @@ export async function createUserDoc({
   pronouns?: string;
   avatarURL?: string;
 }) {
+  const string = (v: string) => ({ stringValue: v });
+  const bool = (v: boolean) => ({ booleanValue: v });
+  const int = (v: number) => ({ integerValue: v.toString() });
+  const time = (d: Date) => ({ timestampValue: d.toISOString() });
+  const nullVal = () => ({ nullValue: null });
+
+  const now = new Date();
   const path = `users/${uid}`;
   const url = `${FIRESTORE_BASE}/${path}`;
-  const payload = generateDefaultUserData({
-    uid,
-    email,
-    emailVerified,
-    displayName,
-    username,
-    region,
-    religion,
-    preferredName,
-    pronouns,
-    avatarURL,
-  });
 
-  const body = { fields: toFirestoreFields(payload) };
-  const headers = { Authorization: `Bearer ${idToken}`, 'Content-Type': 'application/json' };
-  console.log('➡️ createUserDoc', { url, body, headers });
+  const body = {
+    fields: {
+      uid: string(uid),
+      email: string(email),
+      emailVerified: bool(emailVerified),
+      displayName: string(displayName),
+      createdAt: time(now),
+      lastActive: time(now),
+      lastFreeAsk: time(now),
+      lastFreeSkip: time(now),
+      onboardingComplete: bool(false),
+      religion: string(religion || DEFAULT_RELIGION),
+      tokens: int(5),
+      skipTokensUsed: int(0),
+      individualPoints: int(0),
+      isSubscribed: bool(false),
+      nightModeEnabled: bool(false),
+      preferredName: preferredName ? string(preferredName) : nullVal(),
+      pronouns: pronouns ? string(pronouns) : nullVal(),
+      avatarURL: avatarURL ? string(avatarURL) : nullVal(),
+      profileComplete: bool(false),
+      profileSchemaVersion: string('v1'),
+      challengeStreak: {
+        mapValue: {
+          fields: {
+            count: int(0),
+            lastCompletedDate: nullVal(),
+          },
+        },
+      },
+      dailyChallengeCount: int(0),
+      dailySkipCount: int(0),
+      lastChallengeLoadDate: nullVal(),
+      lastSkipDate: nullVal(),
+    },
+  };
+
+  const headers = {
+    Authorization: `Bearer ${idToken}`,
+    'Content-Type': 'application/json',
+  };
+  console.log('➡️ createUserDoc', { url, body });
   try {
-    await axios.patch(url, body, { headers });
+    await axios.post(url, body, { headers });
     console.log('✅ user doc created', uid);
   } catch (err: any) {
-    logFirestoreError('SET', path, err);
+    logFirestoreError('POST', path, err);
     console.error('createUserDoc error', err?.response?.data || err);
     throw err;
   }
