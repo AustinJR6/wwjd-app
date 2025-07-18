@@ -1,12 +1,81 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+
+    function isSignedIn() {
+      return request.auth != null;
     }
 
-    match /{document=**} {
-      allow read: if request.auth != null;
+    // 🔐 User profile document
+    match /users/{userId} {
+      allow read, write: if isSignedIn() && request.auth.uid == userId;
+    }
+
+    // ✅ Active challenge document
+    match /activeChallenge/{docId} {
+      allow read, write: if isSignedIn() && request.auth.uid == docId;
+    }
+
+    // 📊 Read-only subcollections used for counts
+    match /{subCollection}/{docId} {
+      allow read: if isSignedIn() && request.auth.uid == docId &&
+        subCollection in ['confessionalSessions', 'journalEntries', 'dailyChallenges'];
+    }
+
+    // 📓 Journal entries stored outside the user document
+    match /journalEntries/{userId}/entries/{entryId} {
+      allow read, write: if isSignedIn() && request.auth.uid == userId;
+    }
+
+    // 🕊️ Religion chat history
+    match /religionChats/{userId}/messages/{messageId} {
+      allow read, write: if isSignedIn() && request.auth.uid == userId;
+    }
+
+    // 🕊️ Temporary religion chat history
+    match /tempReligionChat/{userId}/messages/{messageId} {
+      allow read, write: if isSignedIn() && request.auth.uid == userId;
+    }
+
+    // 🙏 Temporary confessional sessions
+    match /tempConfessionalSessions/{userId}/messages/{messageId} {
+      allow read, write: if isSignedIn() && request.auth.uid == userId;
+    }
+
+    // ✅ Completed challenges tracker
+    match /completedChallenges/{userId} {
+      allow read, write: if isSignedIn() && request.auth.uid == userId;
+    }
+
+    // ⏳ Free ask cooldown document
+    match /freeAsk/{userId} {
+      allow read, write: if isSignedIn() && request.auth.uid == userId;
+    }
+
+    // 📬 Subscription status
+    match /subscriptions/{userId} {
+      allow read, write: if isSignedIn() && request.auth.uid == userId;
+    }
+
+    // 📸 Public collection used when submitting challenge proof
+    // ⚠️ Consider using a per-user subcollection instead of a shared one.
+    match /challengeProofs/{docId} {
+      allow create: if isSignedIn();
+    }
+
+    // 🏢 Organization documents
+    // ⚠️ Writable by any authenticated user — recommend restricting to org admins.
+    match /organizations/{orgId} {
+      allow read, write: if isSignedIn();
+    }
+
+    // 🌍 Static lookup collections
+    match /religion/{docId} {
+      allow read: if isSignedIn();
+    }
+
+    match /regions/{docId} {
+      allow read: if isSignedIn();
     }
   }
 }
