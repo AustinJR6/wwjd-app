@@ -1,2 +1,1 @@
-export * from './userProfile';
-export * from './ensureUserProfile';
+// Utilities entrypoint intentionally left minimal.

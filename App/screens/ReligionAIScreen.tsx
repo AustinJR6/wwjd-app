@@ -18,7 +18,11 @@ import { useTheme } from "@/components/theme/theme";
 import { getTokenCount, setTokenCount } from "@/utils/TokenManager";
 import { showGracefulError } from '@/utils/gracefulError';
 import { ASK_GEMINI_V2 } from "@/utils/constants";
-import { loadUserProfile, updateUserProfile, getUserAIPrompt } from '@/utils';
+import {
+  loadUserProfile,
+  updateUserProfile,
+  getUserAIPrompt,
+} from '@/utils/userProfile';
 import type { UserProfile } from '../../types';
 import { useUser } from '@/hooks/useUser';
 import { ensureAuth } from '@/utils/authGuard';

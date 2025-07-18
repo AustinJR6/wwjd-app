@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { getIdToken } from '@/utils/authUtils';
-import { signOutAndRetry } from '@/services/authService';
+import { signOutAndRetry } from '@/services/authLogger';
 
 let refreshPromise: Promise<string | null> | null = null;
 
