@@ -1,5 +1,5 @@
 import apiClient from '@/utils/apiClient';
-import { logTokenIssue } from '@/services/authLogger';
+import { logTokenIssue } from '@/shared/tokenLogger';
 import { getIdToken } from '@/utils/authUtils';
 import { useAuthStore } from '@/state/authStore';
 import { sendRequestWithGusBugLogging } from '@/utils/gusBugLogger';
