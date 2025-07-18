@@ -76,6 +76,10 @@ export async function ensureUserDocExists(
     region: '',
     religion: DEFAULT_RELIGION,
     idToken,
+    preferredName: '',
+    pronouns: '',
+    avatarURL: '',
+    organization: null,
   });
   console.log('📄 Created user doc for', uid);
   return true;

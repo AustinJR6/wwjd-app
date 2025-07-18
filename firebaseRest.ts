@@ -204,6 +204,7 @@ export async function createUserDoc({
   preferredName = '',
   pronouns = '',
   avatarURL = '',
+  organization = null,
 }: {
   uid: string;
   email: string;
@@ -216,6 +217,7 @@ export async function createUserDoc({
   preferredName?: string;
   pronouns?: string;
   avatarURL?: string;
+  organization?: string | null;
 }) {
   const string = (v: string) => ({ stringValue: v });
   const bool = (v: boolean) => ({ booleanValue: v });
@@ -261,6 +263,7 @@ export async function createUserDoc({
       dailySkipCount: int(0),
       lastChallengeLoadDate: nullVal(),
       lastSkipDate: nullVal(),
+      organization: typeof organization === 'string' ? string(organization) : nullVal(),
     },
   };
 

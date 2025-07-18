@@ -10,6 +10,7 @@ import { loadUserProfile, setCachedUserProfile, updateUserProfile } from "@/util
 import { fetchUserProfile } from "../../services/userService";
 import { createUserDoc } from "../../../firebaseRest";
 import { getIdToken } from "@/utils/authUtils";
+import { DEFAULT_RELIGION } from "@/config/constants";
 import type { UserProfile } from "../../../types";
 import { useUserProfileStore } from "@/state/userProfile";
 import { useAuthStore } from "@/state/authStore";
@@ -63,34 +64,45 @@ export default function OnboardingScreen() {
     }
 
     setSaving(true);
-    console.log('💾 Submitting onboarding', { username, region, religion });
+    console.log('💾 Submitting onboarding', { username, region, religion, organization });
     try {
       if (uid) {
         const token = await getIdToken(true);
         const existing = await fetchUserProfile(uid);
+        // Collect all required fields for Firestore user doc
+        const userDocFields = {
+          uid,
+          email: user?.email || '',
+          displayName: username.trim(),
+          username: username.trim(),
+          region: region || '',
+          religion: religion || DEFAULT_RELIGION,
+          idToken: token || '',
+          preferredName: user?.preferredName || '',
+          pronouns: user?.pronouns || '',
+          avatarURL: user?.avatarURL || '',
+          // organization is optional, but pass as string or null
+          organization: organization || null,
+        };
         if (!existing) {
-          await createUserDoc({
-            uid,
-            email: user?.email || '',
-            displayName: username.trim(),
-            username: username.trim(),
-            region,
-            religion,
-            idToken: token || '',
-          });
+          await createUserDoc(userDocFields);
         }
         await updateUserProfile(
           {
             displayName: username.trim(),
             username: username.trim(),
-            region,
-            religion,
+            region: region || '',
+            religion: religion || DEFAULT_RELIGION,
             onboardingComplete: true,
             challengeStreak: { count: 0, lastCompletedDate: null },
             dailyChallengeCount: 0,
             dailySkipCount: 0,
             lastChallengeLoadDate: null,
             lastSkipDate: null,
+            preferredName: user?.preferredName || '',
+            pronouns: user?.pronouns || '',
+            avatarURL: user?.avatarURL || '',
+            organization: organization || null,
           },
           uid,
         );
@@ -103,8 +115,12 @@ export default function OnboardingScreen() {
           onboardingComplete: true,
           username: username.trim(),
           displayName: username.trim(),
-          region,
-          religion,
+          region: region || '',
+          religion: religion || DEFAULT_RELIGION,
+          preferredName: user?.preferredName || '',
+          pronouns: user?.pronouns || '',
+          avatarURL: user?.avatarURL || '',
+          organization: organization || null,
         } as any);
         if (!updated?.region || !updated?.religion || !updated?.username || !updated?.email) {
           console.warn('⚠️ Missing required profile fields after onboarding:', updated);
