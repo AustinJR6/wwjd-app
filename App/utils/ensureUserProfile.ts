@@ -1,12 +1,14 @@
-import { loadUserProfile, updateUserProfile } from '@/utils';
+import { loadUserProfile, updateUserProfile } from './userProfile';
 import type { UserProfile } from '../../types';
 import { logProfileSync } from '@/lib/logProfileSync';
 import { callFunction } from '@/services/functionService';
-import { useUserProfileStore } from '@/state/userProfile';
 import { DEFAULT_RELIGION } from '@/config/constants';
 
-export async function ensureUserProfile(uid: string): Promise<UserProfile | null> {
-  let profile = await loadUserProfile(uid);
+export async function ensureUserProfile(
+  input: string | UserProfile,
+): Promise<UserProfile | null> {
+  const uid = typeof input === 'string' ? input : input.uid;
+  let profile = typeof input === 'string' ? await loadUserProfile(input) : input;
 
   // If the profile doesn't exist, create one via cloud function
   if (!profile) {
@@ -109,9 +111,6 @@ export async function ensureUserProfile(uid: string): Promise<UserProfile | null
     logProfileSync('ensure', fixes);
     profile = { ...profile, ...fixes } as UserProfile;
   }
-
-  // Update Zustand store
-  useUserProfileStore.getState().setUserProfile(profile as UserProfile);
 
   return profile as UserProfile;
 }

@@ -1,5 +1,5 @@
 import { navigationRef } from '@/navigation/navigationRef';
-import { loadUserProfile, updateUserProfile } from '@/utils';
+import { loadUserProfile, updateUserProfile } from '@/utils/userProfile';
 import { ensureAuth } from '@/utils/authGuard';
 
 export async function saveUsernameAndProceed(username: string): Promise<void> {

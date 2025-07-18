@@ -13,7 +13,7 @@ import {
   loadUserProfile,
   updateUserProfile,
   setCachedUserProfile,
-} from '@/utils';
+} from '@/utils/userProfile';
 import type { UserProfile } from '../../../types';
 import { getDocument } from '@/services/firestoreService';
 import { useTheme } from '@/components/theme/theme';

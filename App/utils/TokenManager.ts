@@ -1,5 +1,5 @@
 import { getDocument, setDocument } from '@/services/firestoreService';
-import { updateUserProfile } from '@/utils';
+import { updateUserProfile } from './userProfile';
 import { ensureAuth } from '@/utils/authGuard';
 
 export const getTokenCount = async () => {

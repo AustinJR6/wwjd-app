@@ -1,5 +1,9 @@
 import { useEffect, useState, useCallback } from 'react';
-import { loadUserProfile, updateUserProfile, getCachedUserProfile } from '@/utils';
+import {
+  loadUserProfile,
+  updateUserProfile,
+  getCachedUserProfile,
+} from '@/utils/userProfile';
 import { useAuthStore } from '@/state/authStore';
 import type { UserProfile } from '../../types';
 

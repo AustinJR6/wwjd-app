@@ -9,7 +9,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useUser } from '@/hooks/useUser';
 import { useUserStore } from '@/state/userStore';
 import { initAuthState } from '@/services/authService';
-import { loadUserProfile } from '@/utils';
+import { loadUserProfile } from '@/utils/userProfile';
 import { refreshLastActive } from '@/services/userService';
 
 // Auth Screens
@@ -146,6 +146,11 @@ export default function AuthGate() {
           headerTitleStyle: { fontWeight: 'bold', fontSize: 20, fontFamily: theme.fonts.title },
         }}
       >
+        <Stack.Screen
+          name="Onboarding"
+          component={OnboardingScreen}
+          options={{ headerShown: false }}
+        />
         {!user ? (
           <>
             <Stack.Screen name="Welcome" component={WelcomeScreen} options={{ headerShown: false }} />
@@ -157,7 +162,6 @@ export default function AuthGate() {
           </>
         ) : (
           <>
-            <Stack.Screen name="Onboarding" component={OnboardingScreen} options={{ headerShown: false }} />
             <Stack.Screen name="Quote" component={QuoteScreen} options={{ headerShown: false }} />
             <Stack.Screen name="SelectReligion" component={SelectReligionScreen} options={{ title: 'Select Religion' }} />
             <Stack.Screen name="Home" component={HomeScreen} />

@@ -1,4 +1,4 @@
-import { signOutAndRetry, logTokenIssue } from '@/services/authService';
+import { signOutAndRetry, logTokenIssue } from '@/services/authLogger';
 import { getIdToken } from '@/utils/authUtils';
 import { showPermissionDenied } from '@/utils/gracefulError';
 import { useAuthStore } from '@/state/authStore';
