@@ -1,23 +1,24 @@
-import axios from 'axios';
-import { logFirestoreError } from './App/lib/logging';
-import Constants from 'expo-constants';
-import { DEFAULT_RELIGION } from './App/config/constants';
+import axios from "axios";
+import { logFirestoreError } from "./App/lib/logging";
+import Constants from "expo-constants";
+import { DEFAULT_RELIGION } from "./App/config/constants";
 
 export function generateUsernameFromDisplayName(displayName: string): string {
   return displayName
     .trim()
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
 }
 
-const API_KEY = Constants.expoConfig?.extra?.EXPO_PUBLIC_FIREBASE_API_KEY || '';
-const PROJECT_ID = Constants.expoConfig?.extra?.EXPO_PUBLIC_FIREBASE_PROJECT_ID || '';
+const API_KEY = Constants.expoConfig?.extra?.EXPO_PUBLIC_FIREBASE_API_KEY || "";
+const PROJECT_ID =
+  Constants.expoConfig?.extra?.EXPO_PUBLIC_FIREBASE_PROJECT_ID || "";
 if (!API_KEY) {
-  console.warn('⚠️ Missing EXPO_PUBLIC_FIREBASE_API_KEY in .env');
+  console.warn("⚠️ Missing EXPO_PUBLIC_FIREBASE_API_KEY in .env");
 }
 if (!PROJECT_ID) {
-  console.warn('⚠️ Missing EXPO_PUBLIC_FIREBASE_PROJECT_ID in .env');
+  console.warn("⚠️ Missing EXPO_PUBLIC_FIREBASE_PROJECT_ID in .env");
 }
 
 const ID_BASE = `https://identitytoolkit.googleapis.com/v1`;
@@ -30,15 +31,18 @@ export interface AuthResponse {
   email: string;
 }
 
-export async function signUpWithEmailAndPassword(email: string, password: string): Promise<AuthResponse> {
+export async function signUpWithEmailAndPassword(
+  email: string,
+  password: string,
+): Promise<AuthResponse> {
   const url = `${ID_BASE}/accounts:signUp?key=${API_KEY}`;
   const payload = { email, password, returnSecureToken: true };
-  console.log('➡️ signup request', { url, payload });
+  console.log("➡️ signup request", { url, payload });
   try {
     const res = await axios.post(url, payload, {
-      headers: { 'Content-Type': 'application/json' },
+      headers: { "Content-Type": "application/json" },
     });
-    console.log('✅ signup response', res.data);
+    console.log("✅ signup response", res.data);
 
     // After successful signup, create default Firestore user doc
     const { localId, idToken, email: userEmail } = res.data as AuthResponse;
@@ -46,46 +50,54 @@ export async function signUpWithEmailAndPassword(email: string, password: string
       await createUserDoc({
         uid: localId,
         email: userEmail,
-        displayName: 'New User',
-        username: generateUsernameFromDisplayName('New User'),
-        region: '',
+        displayName: "New User",
+        username: generateUsernameFromDisplayName("New User"),
+        region: "",
         religion: DEFAULT_RELIGION,
         idToken,
-        preferredName: '',
-        pronouns: '',
-        avatarURL: '',
+        preferredName: "",
+        pronouns: "",
+        avatarURL: "",
       });
     } catch (err) {
-      console.error('❌ Failed to create default user document', err);
+      console.error("❌ Failed to create default user document", err);
     }
 
     return res.data as AuthResponse;
   } catch (err: any) {
     if (err.response) {
-      console.error('❌ signup error response', err.response.data);
+      console.error("❌ signup error response", err.response.data);
     } else {
-      console.error('❌ signup error', err.message);
+      console.error("❌ signup error", err.message);
     }
-    console.warn('🚫 Signup Failed:', err.response?.data?.error?.message);
+    console.warn("🚫 Signup Failed:", err.response?.data?.error?.message);
     throw err;
   }
 }
 
-export async function signInWithEmailAndPassword(email: string, password: string): Promise<AuthResponse> {
+export async function signInWithEmailAndPassword(
+  email: string,
+  password: string,
+): Promise<AuthResponse> {
   const url = `${ID_BASE}/accounts:signInWithPassword?key=${API_KEY}`;
-  const res = await axios.post(url, { email, password, returnSecureToken: true });
+  const res = await axios.post(url, {
+    email,
+    password,
+    returnSecureToken: true,
+  });
   return res.data as AuthResponse;
 }
 
 export async function getUserData(uid: string, idToken: string) {
-
   const path = `users/${uid}`;
   const url = `${FIRESTORE_BASE}/${path}`;
   try {
-    const res = await axios.get(url, { headers: { Authorization: `Bearer ${idToken}` } });
+    const res = await axios.get(url, {
+      headers: { Authorization: `Bearer ${idToken}` },
+    });
     return res.data;
   } catch (err: any) {
-    logFirestoreError('GET', path, err);
+    logFirestoreError("GET", path, err);
     throw err;
   }
 }
@@ -98,23 +110,23 @@ function toFirestoreFields(obj: any): any {
       fields[k] = { nullValue: null };
     } else if (v instanceof Date) {
       fields[k] = { timestampValue: v.toISOString() };
-    } else if (typeof v === 'number') {
+    } else if (typeof v === "number") {
       fields[k] = { integerValue: v.toString() };
-    } else if (typeof v === 'boolean') {
+    } else if (typeof v === "boolean") {
       fields[k] = { booleanValue: v };
-    } else if (typeof v === 'string') {
+    } else if (typeof v === "string") {
       fields[k] = { stringValue: v };
     } else if (Array.isArray(v)) {
       fields[k] = {
         arrayValue: {
           values: v.map((x) =>
-            typeof x === 'object'
+            typeof x === "object"
               ? { mapValue: { fields: toFirestoreFields(x) } }
-              : { stringValue: String(x) }
+              : { stringValue: String(x) },
           ),
         },
       };
-    } else if (typeof v === 'object') {
+    } else if (typeof v === "object") {
       fields[k] = { mapValue: { fields: toFirestoreFields(v) } };
     } else {
       fields[k] = { stringValue: String(v) };
@@ -137,20 +149,21 @@ export interface DefaultUserData {
   avatarURL?: string;
 }
 
-
-
 export function generateDefaultUserData({
   uid,
-  email = '',
+  email = "",
   emailVerified = false,
-  displayName = 'New User',
-  username = '',
-  region = '',
+  displayName = "New User",
+  username = "",
+  region = "",
   religion = DEFAULT_RELIGION,
-  preferredName = '',
-  pronouns = '',
-  avatarURL = '',
-}: Partial<DefaultUserData> & { uid: string }): Omit<DefaultUserData, 'idToken'> & {
+  preferredName = "",
+  pronouns = "",
+  avatarURL = "",
+}: Partial<DefaultUserData> & { uid: string }): Omit<
+  DefaultUserData,
+  "idToken"
+> & {
   createdAt: string;
   lastFreeAsk: string;
   lastFreeSkip: string;
@@ -169,8 +182,8 @@ export function generateDefaultUserData({
   const slugify = (str: string) =>
     str
       .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '');
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
 
   const now = new Date().toISOString();
 
@@ -211,9 +224,9 @@ export async function createUserDoc({
   region,
   religion,
   idToken,
-  preferredName = '',
-  pronouns = '',
-  avatarURL = '',
+  preferredName = "",
+  pronouns = "",
+  avatarURL = "",
   organization = null,
 }: {
   uid: string;
@@ -230,7 +243,7 @@ export async function createUserDoc({
   organization?: string | null;
 }) {
   if (!uid) {
-    throw new Error('createUserDoc requires a uid');
+    throw new Error("createUserDoc requires a uid");
   }
 
   const string = (v: string) => ({ stringValue: v });
@@ -241,7 +254,8 @@ export async function createUserDoc({
 
   const now = new Date();
   const path = `users/${uid}`;
-  const url = `${FIRESTORE_BASE}/${path}`;
+  // Use POST with documentId query to ensure the doc ID matches the uid
+  const url = `${FIRESTORE_BASE}/users?documentId=${uid}`;
 
   const fields = {
     uid: string(uid),
@@ -263,7 +277,7 @@ export async function createUserDoc({
     pronouns: pronouns ? string(pronouns) : nullVal(),
     avatarURL: avatarURL ? string(avatarURL) : nullVal(),
     profileComplete: bool(false),
-    profileSchemaVersion: string('v1'),
+    profileSchemaVersion: int(1),
     challengeStreak: {
       mapValue: {
         fields: {
@@ -276,38 +290,43 @@ export async function createUserDoc({
     dailySkipCount: int(0),
     lastChallengeLoadDate: nullVal(),
     lastSkipDate: nullVal(),
-    organization: typeof organization === 'string' ? string(organization) : nullVal(),
+    organization:
+      typeof organization === "string" ? string(organization) : nullVal(),
   };
 
   const body = { fields };
 
   const headers = {
     Authorization: `Bearer ${idToken}`,
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   };
-  console.log('➡️ createUserDoc', { url, body });
+  console.log("➡️ createUserDoc", { url, body });
   try {
-    await axios.patch(url, body, { headers });
-    console.log('✅ user doc created', uid);
+    await axios.post(url, body, { headers });
+    console.log("✅ user doc created", uid);
   } catch (err: any) {
-    logFirestoreError('PATCH', path, err);
-    console.error('createUserDoc error', err?.response?.data || err);
+    logFirestoreError("POST", path, err);
+    console.error("createUserDoc error", err?.response?.data || err);
     throw err;
   }
 }
 
-export async function saveJournalEntry(uid: string, data: Record<string, any>, idToken: string) {
+export async function saveJournalEntry(
+  uid: string,
+  data: Record<string, any>,
+  idToken: string,
+) {
   const path = `journalEntries/${uid}/entries`;
   const url = `${FIRESTORE_BASE}/${path}`;
   const body = { fields: toFirestoreFields(data) };
   try {
     const headers = { Authorization: `Bearer ${idToken}` };
-    console.log('➡️ POST', url, { body, headers });
+    console.log("➡️ POST", url, { body, headers });
     const res = await axios.post(url, body, { headers });
     return res.data;
   } catch (err: any) {
-    logFirestoreError('POST', path, err);
-    console.error('saveJournalEntry error', err?.response?.data || err);
+    logFirestoreError("POST", path, err);
+    console.error("saveJournalEntry error", err?.response?.data || err);
     throw err;
   }
 }
