@@ -44,7 +44,7 @@ export default function SignupScreen() {
       const result = await signup(email, password);
       if (!result.localId) throw new Error("User creation failed.");
 
-      await seedUserProfile(result.localId, { email });
+      await seedUserProfile(result.localId, result.idToken!, { email: result.email });
       await initializeProfile(result.localId);
       await checkIfUserIsNewAndRoute();
     } catch (err: any) {
