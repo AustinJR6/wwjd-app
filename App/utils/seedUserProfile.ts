@@ -1,5 +1,6 @@
 const PROJECT_ID = 'wwjd-app';
-const FIRESTORE_URL = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents/users`;
+const FIRESTORE_URL =
+  `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents/users`;
 
 // Type for the authUser argument
 interface AuthUser {
@@ -16,7 +17,7 @@ interface FirestoreSeedBody {
 export async function seedUserProfile(
   uid: string,
   idToken: string,
-  authUser: AuthUser = {}
+  authUser: AuthUser = {},
 ): Promise<void> {
   const now = new Date().toISOString();
 
@@ -58,8 +59,8 @@ export async function seedUserProfile(
     }
   };
 
-  const res = await fetch(`${FIRESTORE_URL}/${uid}`, {
-    method: 'PUT',
+  const res = await fetch(`${FIRESTORE_URL}?documentId=${uid}`, {
+    method: 'POST',
     headers: {
       Authorization: `Bearer ${idToken}`,
       'Content-Type': 'application/json'
@@ -68,11 +69,15 @@ export async function seedUserProfile(
   });
 
   if (!res.ok) {
-    const err = await res.text();
-    console.error('🔥 Firestore seed failed:', res.status, err);
+    let errorMsg: any = null;
+    try {
+      errorMsg = await res.json();
+    } catch {
+      errorMsg = await res.text();
+    }
+    console.error('🔥 Firestore seed failed:', res.status, errorMsg);
     throw new Error(`Firestore seed failed with status ${res.status}`);
   }
 
-  const json = await res.json();
-  console.log('✅ Firestore seed success:', json.name);
+  console.log('✅ Document created:', res.status);
 }

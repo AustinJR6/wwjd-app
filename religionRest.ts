@@ -47,7 +47,9 @@ export async function getReligionProfile(
   const url = `${FIRESTORE_BASE}/religion/${id}`;
   console.log('➡️ Sending Firestore request to:', url);
   try {
-    const res = await apiClient.get(url, { headers: { Authorization: `Bearer ${idToken}` } });
+    const res = await apiClient.get(url, {
+      headers: { Authorization: `Bearer ${idToken}` },
+    });
     const fields = (res.data as any).fields || {};
     const profile: ReligionProfile = {
       id,
@@ -62,6 +64,15 @@ export async function getReligionProfile(
     return profile;
   } catch (err: any) {
     logFirestoreError('GET', `religion/${id}`, err);
+    if (err.response?.status === 404) {
+      console.warn(`⚠️ Religion document missing: ${id}`);
+      const fallback: ReligionProfile = {
+        id,
+        name: id,
+        prompt: 'Respond with empathy, logic, and gentle spirituality.',
+      };
+      return fallback;
+    }
     return null;
   }
 }
