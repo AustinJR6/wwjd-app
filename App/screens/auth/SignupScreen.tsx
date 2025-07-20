@@ -5,7 +5,6 @@ import ScreenContainer from "@/components/theme/ScreenContainer";
 import TextField from "@/components/TextField";
 import Button from "@/components/common/Button";
 import { signup } from "@/services/authService";
-import { initializeProfile } from "@/services/userService";
 import { seedUserProfile } from "@/utils/seedUserProfile";
 import { checkIfUserIsNewAndRoute } from "@/services/onboardingService";
 import { useNavigation } from "@react-navigation/native";
@@ -45,7 +44,6 @@ export default function SignupScreen() {
       if (!result.localId) throw new Error("User creation failed.");
 
       await seedUserProfile(result.localId, result.idToken!, { email: result.email });
-      await initializeProfile(result.localId);
       await checkIfUserIsNewAndRoute();
     } catch (err: any) {
       console.warn("🚫 Signup Failed:", err?.response?.data?.error?.message);

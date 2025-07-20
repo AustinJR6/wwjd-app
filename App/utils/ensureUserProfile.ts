@@ -1,8 +1,9 @@
 import { loadUserProfile, updateUserProfile } from './userProfile';
 import type { UserProfile } from '../../types';
 import { logProfileSync } from '@/lib/logProfileSync';
-import { callFunction } from '@/services/functionService';
 import { DEFAULT_RELIGION } from '@/config/constants';
+import { createUserDoc } from '../../firebaseRest';
+import { getIdToken } from '@/utils/authUtils';
 
 export async function ensureUserProfile(
   input: string | UserProfile,
@@ -10,10 +11,25 @@ export async function ensureUserProfile(
   const uid = typeof input === 'string' ? input : input.uid;
   let profile = typeof input === 'string' ? await loadUserProfile(input) : input;
 
-  // If the profile doesn't exist, create one via cloud function
+  // If the profile doesn't exist, create one via REST API
   if (!profile) {
     try {
-      profile = await callFunction('createUserProfile', { uid });
+      const token = await getIdToken(true);
+      if (!token) throw new Error('Missing token');
+      await createUserDoc({
+        uid,
+        email: '',
+        displayName: 'New User',
+        username: uid,
+        region: '',
+        religion: DEFAULT_RELIGION,
+        idToken: token,
+        preferredName: '',
+        pronouns: '',
+        avatarURL: '',
+        organization: null,
+      });
+      profile = await loadUserProfile(uid);
       logProfileSync('created', profile);
     } catch (err) {
       console.warn('ensureUserProfile create failed', err);
