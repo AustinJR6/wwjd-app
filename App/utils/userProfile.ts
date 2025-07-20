@@ -1,7 +1,6 @@
 import apiClient from '@/utils/apiClient';
 import { FIRESTORE_BASE } from '../../firebaseRest';
 import { getAuthHeaders, getCurrentUserId } from '@/utils/authUtils';
-import { callFunction } from '@/services/functionService';
 import { logFirestoreError } from '@/lib/logging';
 import type { CachedProfile, ReligionDocument, UserProfile } from '../../types/profile';
 import { getReligionProfile } from '../../religionRest';
@@ -41,6 +40,30 @@ function toFirestoreFields(obj: any): any {
   return fields;
 }
 
+function parseValue(v: any): any {
+  if (v == null) return undefined;
+  if ('stringValue' in v) return v.stringValue;
+  if ('integerValue' in v) return Number(v.integerValue);
+  if ('booleanValue' in v) return v.booleanValue;
+  if ('nullValue' in v) return null;
+  if ('timestampValue' in v) return v.timestampValue;
+  if ('mapValue' in v) return fromFirestore({ fields: (v as any).mapValue.fields });
+  if ('arrayValue' in v && Array.isArray((v as any).arrayValue.values)) {
+    return (v as any).arrayValue.values.map((x: any) => parseValue(x));
+  }
+  return undefined;
+}
+
+function fromFirestore(doc: any): any {
+  const out: any = {};
+  if (!doc || !doc.fields) return out;
+  for (const [k, v] of Object.entries(doc.fields)) {
+    const parsed = parseValue(v);
+    if (parsed !== undefined) out[k] = parsed;
+  }
+  return out;
+}
+
 let cachedProfile: CachedProfile | null = null;
 
 export async function loadUserProfile(uid?: string): Promise<UserProfile | null> {
@@ -51,10 +74,10 @@ export async function loadUserProfile(uid?: string): Promise<UserProfile | null>
   }
 
   try {
-    const user = await callFunction('getUserProfile', { uid: userId });
-    if (!user) {
-      return null;
-    }
+    const headers = await getAuthHeaders();
+    const url = `${FIRESTORE_BASE}/users/${userId}`;
+    const res = await apiClient.get(url, { headers });
+    const user = fromFirestore(res.data);
     let religionData: ReligionDocument | null = null;
     if (user.religion) {
       religionData = await getReligionProfile(user.religion);
@@ -70,7 +93,9 @@ export async function loadUserProfile(uid?: string): Promise<UserProfile | null>
     }
     return cachedProfile;
   } catch (err: any) {
-    const errorData = (err as any).response?.data;
+    const status = err?.response?.status;
+    if (status === 404) return null;
+    const errorData = err?.response?.data;
     console.error('loadUserProfile failed', errorData || err);
     return null;
   }

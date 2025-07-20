@@ -7,8 +7,7 @@ import Button from "@/components/common/Button";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { loadUserProfile, setCachedUserProfile, updateUserProfile } from "@/utils/userProfile";
-import { fetchUserProfile } from "../../services/userService";
-import { createUserDoc } from "../../../firebaseRest";
+
 import { getIdToken } from "@/utils/authUtils";
 import { DEFAULT_RELIGION } from "@/config/constants";
 import type { UserProfile } from "../../../types";
@@ -67,22 +66,7 @@ export default function OnboardingScreen() {
     console.log('💾 Submitting onboarding', { username, region, religion, organization });
     try {
       if (uid) {
-        const token = await getIdToken(true);
-        // Always call createUserDoc to ensure Firestore is seeded with all required fields
-        const userDocFields = {
-          uid,
-          email: user?.email || '',
-          displayName: username.trim(),
-          username: username.trim(),
-          region: region || '',
-          religion: religion || DEFAULT_RELIGION,
-          idToken: token || '',
-          preferredName: user?.preferredName || '',
-          pronouns: user?.pronouns || '',
-          avatarURL: user?.avatarURL || '',
-          organization: organization || null,
-        };
-        await createUserDoc(userDocFields);
+        await getIdToken(true); // ensure token valid
         // Always reload the full profile after creation/update
         await updateUserProfile(
           {

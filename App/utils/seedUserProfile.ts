@@ -19,6 +19,18 @@ export async function seedUserProfile(
   idToken: string,
   authUser: AuthUser = {},
 ): Promise<void> {
+  // Skip creation if document already exists
+  const checkRes = await fetch(`${FIRESTORE_URL}/${uid}`, {
+    headers: { Authorization: `Bearer ${idToken}` },
+  });
+  if (checkRes.ok) {
+    console.log('📄 User doc already exists, skipping seed');
+    return;
+  }
+  if (checkRes.status !== 404) {
+    console.error('🔥 Failed to check user doc', checkRes.status);
+    throw new Error(`Failed to verify user doc: ${checkRes.status}`);
+  }
   const now = new Date().toISOString();
 
   const body: FirestoreSeedBody = {
