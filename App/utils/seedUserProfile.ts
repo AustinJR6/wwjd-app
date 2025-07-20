@@ -59,7 +59,7 @@ export async function seedUserProfile(
   };
 
   const res = await fetch(`${FIRESTORE_URL}/${uid}`, {
-    method: 'PATCH',
+    method: 'PUT',
     headers: {
       Authorization: `Bearer ${idToken}`,
       'Content-Type': 'application/json'
