@@ -12,11 +12,17 @@ function toFirestoreFields(obj: any): any {
   const fields: any = {};
   for (const k of Object.keys(obj)) {
     const v = (obj as any)[k];
-    if (v === null) fields[k] = { nullValue: null };
-    else if (typeof v === 'number') fields[k] = { integerValue: v };
-    else if (typeof v === 'boolean') fields[k] = { booleanValue: v };
-    else if (typeof v === 'string') fields[k] = { stringValue: v };
-    else if (Array.isArray(v))
+    if (v === null) {
+      fields[k] = { nullValue: null };
+    } else if (v instanceof Date) {
+      fields[k] = { timestampValue: v.toISOString() };
+    } else if (typeof v === 'number') {
+      fields[k] = { integerValue: v.toString() };
+    } else if (typeof v === 'boolean') {
+      fields[k] = { booleanValue: v };
+    } else if (typeof v === 'string') {
+      fields[k] = { stringValue: v };
+    } else if (Array.isArray(v)) {
       fields[k] = {
         arrayValue: {
           values: v.map((x) =>
@@ -26,8 +32,11 @@ function toFirestoreFields(obj: any): any {
           ),
         },
       };
-    else if (typeof v === 'object') fields[k] = { mapValue: { fields: toFirestoreFields(v) } };
-    else fields[k] = { stringValue: String(v) };
+    } else if (typeof v === 'object') {
+      fields[k] = { mapValue: { fields: toFirestoreFields(v) } };
+    } else {
+      fields[k] = { stringValue: String(v) };
+    }
   }
   return fields;
 }

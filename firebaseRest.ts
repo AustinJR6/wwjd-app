@@ -94,11 +94,17 @@ function toFirestoreFields(obj: any): any {
   const fields: any = {};
   for (const k of Object.keys(obj)) {
     const v = (obj as any)[k];
-    if (v === null) fields[k] = { nullValue: null };
-    else if (typeof v === 'number') fields[k] = { integerValue: v };
-    else if (typeof v === 'boolean') fields[k] = { booleanValue: v };
-    else if (typeof v === 'string') fields[k] = { stringValue: v };
-    else if (Array.isArray(v))
+    if (v === null) {
+      fields[k] = { nullValue: null };
+    } else if (v instanceof Date) {
+      fields[k] = { timestampValue: v.toISOString() };
+    } else if (typeof v === 'number') {
+      fields[k] = { integerValue: v.toString() };
+    } else if (typeof v === 'boolean') {
+      fields[k] = { booleanValue: v };
+    } else if (typeof v === 'string') {
+      fields[k] = { stringValue: v };
+    } else if (Array.isArray(v)) {
       fields[k] = {
         arrayValue: {
           values: v.map((x) =>
@@ -108,8 +114,11 @@ function toFirestoreFields(obj: any): any {
           ),
         },
       };
-    else if (typeof v === 'object') fields[k] = { mapValue: { fields: toFirestoreFields(v) } };
-    else fields[k] = { stringValue: String(v) };
+    } else if (typeof v === 'object') {
+      fields[k] = { mapValue: { fields: toFirestoreFields(v) } };
+    } else {
+      fields[k] = { stringValue: String(v) };
+    }
   }
   return fields;
 }
@@ -223,6 +232,7 @@ export async function createUserDoc({
   if (!uid) {
     throw new Error('createUserDoc requires a uid');
   }
+
   const string = (v: string) => ({ stringValue: v });
   const bool = (v: boolean) => ({ booleanValue: v });
   const int = (v: number) => ({ integerValue: v.toString() });
@@ -233,43 +243,43 @@ export async function createUserDoc({
   const path = `users/${uid}`;
   const url = `${FIRESTORE_BASE}/${path}`;
 
-  const body = {
-    fields: {
-      uid: string(uid),
-      email: string(email),
-      emailVerified: bool(emailVerified),
-      displayName: string(displayName),
-      createdAt: time(now),
-      lastActive: time(now),
-      lastFreeAsk: time(now),
-      lastFreeSkip: time(now),
-      onboardingComplete: bool(false),
-      religion: string(religion || DEFAULT_RELIGION),
-      tokens: int(5),
-      skipTokensUsed: int(0),
-      individualPoints: int(0),
-      isSubscribed: bool(false),
-      nightModeEnabled: bool(false),
-      preferredName: preferredName ? string(preferredName) : nullVal(),
-      pronouns: pronouns ? string(pronouns) : nullVal(),
-      avatarURL: avatarURL ? string(avatarURL) : nullVal(),
-      profileComplete: bool(false),
-      profileSchemaVersion: string('v1'),
-      challengeStreak: {
-        mapValue: {
-          fields: {
-            count: int(0),
-            lastCompletedDate: nullVal(),
-          },
+  const fields = {
+    uid: string(uid),
+    email: string(email),
+    emailVerified: bool(emailVerified),
+    displayName: string(displayName),
+    createdAt: time(now),
+    lastActive: time(now),
+    lastFreeAsk: time(now),
+    lastFreeSkip: time(now),
+    onboardingComplete: bool(false),
+    religion: string(religion || DEFAULT_RELIGION),
+    tokens: int(5),
+    skipTokensUsed: int(0),
+    individualPoints: int(0),
+    isSubscribed: bool(false),
+    nightModeEnabled: bool(false),
+    preferredName: preferredName ? string(preferredName) : nullVal(),
+    pronouns: pronouns ? string(pronouns) : nullVal(),
+    avatarURL: avatarURL ? string(avatarURL) : nullVal(),
+    profileComplete: bool(false),
+    profileSchemaVersion: string('v1'),
+    challengeStreak: {
+      mapValue: {
+        fields: {
+          count: int(0),
+          lastCompletedDate: nullVal(),
         },
       },
-      dailyChallengeCount: int(0),
-      dailySkipCount: int(0),
-      lastChallengeLoadDate: nullVal(),
-      lastSkipDate: nullVal(),
-      organization: typeof organization === 'string' ? string(organization) : nullVal(),
     },
+    dailyChallengeCount: int(0),
+    dailySkipCount: int(0),
+    lastChallengeLoadDate: nullVal(),
+    lastSkipDate: nullVal(),
+    organization: typeof organization === 'string' ? string(organization) : nullVal(),
   };
+
+  const body = { fields };
 
   const headers = {
     Authorization: `Bearer ${idToken}`,
