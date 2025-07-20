@@ -1,111 +1,78 @@
-import { FIRESTORE_BASE } from '../../firebaseRest';
-import { logFirestoreError } from '@/lib/logging';
+const PROJECT_ID = 'wwjd-app';
+const FIRESTORE_URL = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents/users`;
 
-export interface AuthUserLike {
-  email?: string | null;
+// Type for the authUser argument
+interface AuthUser {
+  email?: string;
   emailVerified?: boolean;
-  displayName?: string | null;
+  displayName?: string;
+}
+
+// Type for the Firestore REST API body
+interface FirestoreSeedBody {
+  fields: Record<string, any>;
 }
 
 export async function seedUserProfile(
   uid: string,
   idToken: string,
-  authUser: AuthUserLike = {},
-): Promise<boolean> {
-  if (!uid) throw new Error('uid is required');
-
-  const now = new Date().toISOString();
-  const fields = {
-    uid: { stringValue: uid },
-    email: { stringValue: authUser.email ?? '' },
-    emailVerified: { booleanValue: authUser.emailVerified ?? false },
-    displayName: { stringValue: authUser.displayName ?? 'New User' },
-    createdAt: { timestampValue: now },
-    lastActive: { timestampValue: now },
-    lastFreeAsk: { timestampValue: now },
-    lastFreeSkip: { timestampValue: now },
-    onboardingComplete: { booleanValue: false },
-    religion: { stringValue: 'SpiritGuide' },
-    tokens: { integerValue: '5' },
-    skipTokensUsed: { integerValue: '0' },
-    individualPoints: { integerValue: '0' },
-    isSubscribed: { booleanValue: false },
-    nightModeEnabled: { booleanValue: false },
-    preferredName: { nullValue: null },
-    pronouns: { nullValue: null },
-    avatarURL: { nullValue: null },
-    profileComplete: { booleanValue: false },
-    profileSchemaVersion: { stringValue: 'v1' },
-    challengeStreak: {
-      mapValue: {
-        fields: {
-          count: { integerValue: '0' },
-          lastCompletedDate: { nullValue: null },
-        },
-      },
-    },
-    dailyChallengeCount: { integerValue: '0' },
-    dailySkipCount: { integerValue: '0' },
-    lastChallengeLoadDate: { nullValue: null },
-    lastSkipDate: { nullValue: null },
-    organization: { nullValue: null },
-  };
-
-  const url = `${FIRESTORE_BASE}/users/${uid}`;
-  const body = JSON.stringify({ fields });
-  const headers = {
-    Authorization: `Bearer ${idToken}`,
-    'Content-Type': 'application/json',
-  };
-
-  try {
-    const res = await fetch(url, { method: 'PATCH', headers, body });
-    if (!res.ok) {
-      const text = await res.text();
-      console.error('❌ seedUserProfile failed', res.status, text);
-      return false;
-    }
-    console.log('✅ user profile seeded', uid);
-    return true;
-  } catch (err: any) {
-    logFirestoreError('PATCH', `users/${uid}`, err);
-    console.error('seedUserProfile error', err);
-    return false;
-  }
-}
-
-export async function verifyUserProfile(
-  uid: string,
-  idToken: string,
+  authUser: AuthUser = {}
 ): Promise<void> {
-  const url = `${FIRESTORE_BASE}/users/${uid}`;
-  try {
-    const res = await fetch(url, {
-      method: 'GET',
-      headers: { Authorization: `Bearer ${idToken}` },
-    });
-    if (!res.ok) {
-      console.log('⚠️ Profile missing for', uid);
-      return;
+  const now = new Date().toISOString();
+
+  const body: FirestoreSeedBody = {
+    fields: {
+      uid: { stringValue: uid },
+      email: { stringValue: authUser.email || '' },
+      emailVerified: { booleanValue: !!authUser.emailVerified },
+      displayName: { stringValue: authUser.displayName || 'New User' },
+      createdAt: { timestampValue: now },
+      lastActive: { timestampValue: now },
+      lastFreeAsk: { timestampValue: now },
+      lastFreeSkip: { timestampValue: now },
+      onboardingComplete: { booleanValue: false },
+      religion: { stringValue: 'SpiritGuide' },
+      tokens: { integerValue: '5' },
+      skipTokensUsed: { integerValue: '0' },
+      individualPoints: { integerValue: '0' },
+      isSubscribed: { booleanValue: false },
+      nightModeEnabled: { booleanValue: false },
+      preferredName: { nullValue: null },
+      pronouns: { nullValue: null },
+      avatarURL: { nullValue: null },
+      profileComplete: { booleanValue: false },
+      profileSchemaVersion: { stringValue: 'v1' },
+      challengeStreak: {
+        mapValue: {
+          fields: {
+            count: { integerValue: '0' },
+            lastCompletedDate: { nullValue: null }
+          }
+        }
+      },
+      dailyChallengeCount: { integerValue: '0' },
+      dailySkipCount: { integerValue: '0' },
+      lastChallengeLoadDate: { nullValue: null },
+      lastSkipDate: { nullValue: null },
+      organization: { nullValue: null }
     }
-    const data = (await res.json()) as any;
-    const fields = data.fields || {};
-    const critical = [
-      'uid',
-      'email',
-      'displayName',
-      'createdAt',
-      'religion',
-      'tokens',
-    ];
-    const missing = critical.filter((k) => fields[k] === undefined);
-    if (missing.length) {
-      console.log('⚠️ Missing fields:', missing);
-    } else {
-      console.log('✅ Profile verified for', uid);
-    }
-  } catch (err: any) {
-    logFirestoreError('GET', `users/${uid}`, err);
-    console.error('verifyUserProfile error', err);
+  };
+
+  const res = await fetch(`${FIRESTORE_URL}/${uid}?updateMask.fieldPaths=*`, {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${idToken}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(body)
+  });
+
+  if (!res.ok) {
+    const err = await res.text();
+    console.error('🔥 Firestore seed failed:', res.status, err);
+    throw new Error(`Firestore seed failed with status ${res.status}`);
   }
+
+  const json = await res.json();
+  console.log('✅ Firestore seed success:', json.name);
 }

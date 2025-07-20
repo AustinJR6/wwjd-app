@@ -68,8 +68,7 @@ export default function OnboardingScreen() {
     try {
       if (uid) {
         const token = await getIdToken(true);
-        const existing = await fetchUserProfile(uid);
-        // Collect all required fields for Firestore user doc
+        // Always call createUserDoc to ensure Firestore is seeded with all required fields
         const userDocFields = {
           uid,
           email: user?.email || '',
@@ -81,12 +80,10 @@ export default function OnboardingScreen() {
           preferredName: user?.preferredName || '',
           pronouns: user?.pronouns || '',
           avatarURL: user?.avatarURL || '',
-          // organization is optional, but pass as string or null
           organization: organization || null,
         };
-        if (!existing) {
-          await createUserDoc(userDocFields);
-        }
+        await createUserDoc(userDocFields);
+        // Always reload the full profile after creation/update
         await updateUserProfile(
           {
             displayName: username.trim(),
@@ -106,23 +103,12 @@ export default function OnboardingScreen() {
           },
           uid,
         );
+        // Load the full profile from Firestore and set it in the store
         const updated: UserProfile | null = await loadUserProfile(uid);
         setCachedUserProfile(updated as any);
         await SecureStore.setItemAsync(`hasSeenOnboarding-${uid}`, 'true');
-        const current = useUserProfileStore.getState().profile;
-        useUserProfileStore.getState().setUserProfile({
-          ...(current || { uid }),
-          onboardingComplete: true,
-          username: username.trim(),
-          displayName: username.trim(),
-          region: region || '',
-          religion: religion || DEFAULT_RELIGION,
-          preferredName: user?.preferredName || '',
-          pronouns: user?.pronouns || '',
-          avatarURL: user?.avatarURL || '',
-          organization: organization || null,
-        } as any);
-        if (!updated?.region || !updated?.religion || !updated?.username || !updated?.email) {
+        useUserProfileStore.getState().setUserProfile(updated as any);
+        if (!updated?.region || !updated?.religion || !updated?.username || !updated?.email || !updated?.createdAt || !updated?.tokens) {
           console.warn('⚠️ Missing required profile fields after onboarding:', updated);
         }
         navigation.reset({
