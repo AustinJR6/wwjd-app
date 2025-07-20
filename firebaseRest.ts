@@ -78,6 +78,7 @@ export async function signInWithEmailAndPassword(email: string, password: string
 }
 
 export async function getUserData(uid: string, idToken: string) {
+
   const path = `users/${uid}`;
   const url = `${FIRESTORE_BASE}/${path}`;
   try {
@@ -219,6 +220,9 @@ export async function createUserDoc({
   avatarURL?: string;
   organization?: string | null;
 }) {
+  if (!uid) {
+    throw new Error('createUserDoc requires a uid');
+  }
   const string = (v: string) => ({ stringValue: v });
   const bool = (v: boolean) => ({ booleanValue: v });
   const int = (v: number) => ({ integerValue: v.toString() });
@@ -273,10 +277,10 @@ export async function createUserDoc({
   };
   console.log('➡️ createUserDoc', { url, body });
   try {
-    await axios.post(url, body, { headers });
+    await axios.patch(url, body, { headers });
     console.log('✅ user doc created', uid);
   } catch (err: any) {
-    logFirestoreError('POST', path, err);
+    logFirestoreError('PATCH', path, err);
     console.error('createUserDoc error', err?.response?.data || err);
     throw err;
   }
