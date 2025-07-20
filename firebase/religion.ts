@@ -54,7 +54,7 @@ export async function updateReligionPoints(religionId: string, pointsToAdd: numb
       `https://firestore.googleapis.com/v1/${docPath}?updateMask.fieldPaths=totalPoints`,
       {
         fields: {
-          totalPoints: { integerValue: newTotal },
+          totalPoints: { integerValue: newTotal.toString() },
         },
       },
       { headers: { Authorization: `Bearer ${token}` } }
