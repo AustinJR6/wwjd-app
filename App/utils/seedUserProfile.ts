@@ -41,7 +41,7 @@ export async function seedUserProfile(
       pronouns: { nullValue: null },
       avatarURL: { nullValue: null },
       profileComplete: { booleanValue: false },
-      profileSchemaVersion: { stringValue: 'v1' },
+      profileSchemaVersion: { integerValue: '1' },
       challengeStreak: {
         mapValue: {
           fields: {
@@ -58,7 +58,7 @@ export async function seedUserProfile(
     }
   };
 
-  const res = await fetch(`${FIRESTORE_URL}/${uid}?updateMask.fieldPaths=*`, {
+  const res = await fetch(`${FIRESTORE_URL}/${uid}`, {
     method: 'PATCH',
     headers: {
       Authorization: `Bearer ${idToken}`,
