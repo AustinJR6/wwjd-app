@@ -16,7 +16,6 @@ import {
   extractAuthToken,
 } from "./helpers";
 
-export { createUserProfile } from "./users/createUserProfile";
 
 function logTokenVerificationError(context: string, token: string | undefined, err: any) {
   logger.error(`${context} token verification failed`, {
@@ -1468,61 +1467,6 @@ export const seedFirestore = functions
   }
 });
 
-export const createSubscriptionOnSignup = functions
-  .auth
-  .user()
-  .onCreate(async (user: admin.auth.UserRecord) => {
-    const subRef = db.collection("subscriptions").doc(user.uid);
-    const snap = await subRef.get();
-    if (!snap.exists) {
-      await subRef.set({
-        active: false,
-        tier: "free",
-        subscribedAt: admin.firestore.FieldValue.serverTimestamp(),
-        expiresAt: null,
-      });
-    }
-  });
-
-export const createUserDocOnSignup = functions
-  .auth
-  .user()
-  .onCreate(async (user: admin.auth.UserRecord) => {
-    const userRef = db.collection("users").doc(user.uid);
-    const snap = await userRef.get();
-    if (!snap.exists) {
-      await userRef.set({
-        email: user.email || "",
-        displayName: "",
-        individualPoints: 0,
-        isSubscribed: false,
-        tokens: 0,
-        religion: null,
-        region: null,
-        streak: 0,
-        streakMilestones: {
-          m14: false,
-        },
-        nightModeEnabled: false,
-        onboardingComplete: false,
-        profileComplete: false,
-        profileSchemaVersion: 1,
-        lastActive: admin.firestore.FieldValue.serverTimestamp(),
-        preferredName: "",
-        pronouns: "",
-        avatarURL: "",
-        recentChallenges: [],
-        dailyChallengeHistory: {
-          completed: 0,
-          skipped: 0,
-          date: "",
-        },
-        lastChallenge: "",
-        lastChallengeText: "",
-        lastCompleted: "",
-      });
-    }
-  });
 
 export const onUserCreate = functions
   .auth
@@ -1533,26 +1477,32 @@ export const onUserCreate = functions
     try {
       const timestamp = admin.firestore.FieldValue.serverTimestamp();
       await db.collection("users").doc(uid).set({
+        uid,
         email: user.email || "",
+        emailVerified: !!user.emailVerified,
         displayName: user.displayName || "New User",
-        emailVerified: user.emailVerified || false,
         createdAt: timestamp,
         lastActive: timestamp,
-        isSubscribed: false,
         lastFreeAsk: timestamp,
         lastFreeSkip: timestamp,
-        nightModeEnabled: false,
         onboardingComplete: false,
-        profileComplete: false,
-        profileSchemaVersion: 1,
-        organization: null,
         religion: "SpiritGuide",
+        tokens: 5,
         skipTokensUsed: 0,
-        tokens: 0,
         individualPoints: 0,
-        preferredName: "",
-        pronouns: "",
-        avatarURL: "",
+        isSubscribed: false,
+        nightModeEnabled: false,
+        preferredName: null,
+        pronouns: null,
+        avatarURL: null,
+        profileComplete: false,
+        profileSchemaVersion: "v1",
+        challengeStreak: { count: 0, lastCompletedDate: null },
+        dailyChallengeCount: 0,
+        dailySkipCount: 0,
+        lastChallengeLoadDate: null,
+        lastSkipDate: null,
+        organization: null,
       });
 
       await Promise.all([
