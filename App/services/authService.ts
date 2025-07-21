@@ -11,7 +11,7 @@ import {
 import { performLogout } from '@/shared/logout';
 import { startTokenRefresh, stopTokenRefresh } from '@/lib/tokenRefresh';
 import { resetToLogin } from '@/navigation/navigationRef';
-import { ensureUserDocExists, loadUser, refreshLastActive } from './userService';
+import { loadUser, refreshLastActive } from './userService';
 
 export function initAuthState(): void {
   const setAuthReady = useAuthStore.getState().setAuthReady;
@@ -23,7 +23,6 @@ export function initAuthState(): void {
         setUid(user.uid);
         setIdToken(await fbGetIdToken(true));
         startTokenRefresh();
-        await ensureUserDocExists(user.uid, user.email ?? undefined);
         await loadUser(user.uid);
         await refreshLastActive(user.uid);
       } else {
