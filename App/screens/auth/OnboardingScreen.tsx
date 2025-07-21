@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import CustomText from "@/components/CustomText";
-import { View, StyleSheet, Alert, ActivityIndicator } from "react-native";
+import { View, StyleSheet, Alert, ActivityIndicator, ScrollView } from "react-native";
 import TextField from "@/components/TextField";
 import * as SecureStore from "expo-secure-store";
 import ScreenContainer from "@/components/theme/ScreenContainer";
@@ -239,8 +239,9 @@ export default function OnboardingScreen() {
 
   return (
     <ScreenContainer>
-      <CustomText style={styles.title}>Welcome to OneVine 🌿</CustomText>
-      <CustomText style={styles.subtitle}>Tell us about yourself:</CustomText>
+      <ScrollView contentContainerStyle={{ paddingBottom: theme.spacing.lg }}>
+        <CustomText style={styles.title}>Welcome to OneVine 🌿</CustomText>
+        <CustomText style={styles.subtitle}>Tell us about yourself:</CustomText>
 
       <TextField
         label="Username *"
@@ -327,12 +328,13 @@ export default function OnboardingScreen() {
           loading={backfilling}
         />
       )}
-      <CustomText
-        style={styles.link}
-        onPress={() => navigation.navigate("Login")}
-      >
-        Already have an account? Log in
-      </CustomText>
+        <CustomText
+          style={styles.link}
+          onPress={() => navigation.navigate("Login")}
+        >
+          Already have an account? Log in
+        </CustomText>
+      </ScrollView>
     </ScreenContainer>
   );
 }

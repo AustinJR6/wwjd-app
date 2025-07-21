@@ -1477,8 +1477,8 @@ export const onUserCreate = functions
       const docRef = admin.firestore().doc(`users/${uid}`);
       const timestamp = admin.firestore.FieldValue.serverTimestamp();
       const profile = {
-        uid,
-        email: user.email || "",
+        uid: user.uid,
+        email: user.email ?? "",
         emailVerified: !!user.emailVerified,
         displayName: user.displayName || "",
         username: "",
@@ -1507,6 +1507,8 @@ export const onUserCreate = functions
         organization: null,
         religionPrefix: "",
       };
+
+      logger.info("onUserCreate profile", profile);
 
       await docRef.set(profile, { merge: false });
     } catch (err) {
