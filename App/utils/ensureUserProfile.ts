@@ -63,6 +63,9 @@ export async function ensureUserProfile(
   }
 
   const requiredFields: (keyof UserProfile)[] = [
+    'preferredName',
+    'pronouns',
+    'avatarURL',
     'email',
     'emailVerified',
     'displayName',
@@ -79,16 +82,20 @@ export async function ensureUserProfile(
     'nightModeEnabled',
   ];
 
-  let complete = true;
-  for (const k of requiredFields) {
-    const val = fixes[k] ?? (profile as any)[k];
-    if (val === undefined || val === null || val === '') {
-      complete = false;
-      break;
+  let profileComplete = true;
+  const patchedFields: Partial<UserProfile> = {};
+  for (const field of requiredFields) {
+    const value = (profile as any)[field];
+    if (typeof value !== 'string' || value.trim() === '') {
+      (profile as any)[field] = '';
+      patchedFields[field] = '' as any;
+      fixes[field] = '' as any;
+      profileComplete = false;
     }
   }
-  if ((profile as any).profileComplete !== complete) {
-    fixes.profileComplete = complete;
+  if ((profile as any).profileComplete !== profileComplete) {
+    patchedFields.profileComplete = profileComplete as any;
+    fixes.profileComplete = profileComplete as any;
   }
 
   // Always update lastActive on access
@@ -96,6 +103,7 @@ export async function ensureUserProfile(
 
   if (Object.keys(fixes).length) {
     await updateUserProfile(fixes, uid);
+    console.log('[\uD83D\uDD27 ensureUserProfile] Patched missing fields:', patchedFields);
     logProfileSync('ensure', fixes);
     profile = { ...profile, ...fixes } as UserProfile;
   }

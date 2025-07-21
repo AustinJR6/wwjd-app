@@ -5,6 +5,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { navigationRef } from './navigationRef';
 import { RootStackParamList } from './RootStackParamList';
 import { useTheme } from '@/components/theme/theme';
+import LoadingScreen from '@/components/common/LoadingScreen';
 import { useAuth } from '@/hooks/useAuth';
 import { useUser } from '@/hooks/useUser';
 import { useUserStore } from '@/state/userStore';
@@ -129,6 +130,10 @@ export default function AuthGate() {
         <ActivityIndicator size="large" color={theme.colors.primary} />
       </View>
     );
+  }
+
+  if (!user || !user.profileComplete) {
+    return <LoadingScreen message="Finalizing profile..." />;
   }
 
   return (

@@ -75,7 +75,7 @@ export interface FirestoreUser extends UserProfile {
   /** Optional custom prefix for AI prompts */
   religionPrefix?: string;
   organizationId?: string;
-  preferredName?: string;
-  pronouns?: string;
-  avatarURL?: string;
+  preferredName: string;
+  pronouns: string;
+  avatarURL: string;
 }

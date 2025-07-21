@@ -36,6 +36,9 @@ export default function OnboardingScreen() {
   );
   const [region, setRegion] = useState("");
   const [organization, setOrganization] = useState("");
+  const [preferredNameInput, setPreferredNameInput] = useState(user?.preferredName ?? '');
+  const [pronounsInput, setPronounsInput] = useState(user?.pronouns ?? '');
+  const [avatarURLInput, setAvatarURLInput] = useState(user?.avatarURL ?? '');
   const [saving, setSaving] = useState(false);
   const [religionError, setReligionError] = useState("");
 
@@ -80,13 +83,15 @@ export default function OnboardingScreen() {
             dailySkipCount: 0,
             lastChallengeLoadDate: null,
             lastSkipDate: null,
-            preferredName: user?.preferredName || '',
-            pronouns: user?.pronouns || '',
-            avatarURL: user?.avatarURL || '',
+            preferredName: preferredNameInput || '',
+            pronouns: pronounsInput || '',
+            avatarURL: avatarURLInput || '',
             organization: organization || null,
+            profileComplete: true,
           },
           uid,
         );
+        console.log('[✅ Onboarding Complete] User profile updated and marked complete');
         // Load the full profile from Firestore and set it in the store
         const updated: UserProfile | null = await loadUserProfile(uid);
         setCachedUserProfile(updated as any);
