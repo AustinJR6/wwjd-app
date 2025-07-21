@@ -1632,13 +1632,82 @@ export const updateUserProfileCallable = functions
     const docRef = admin.firestore().collection("users").doc(uid);
     logger.info(`updateUserProfileCallable`, { uid, fields });
     try {
-      await docRef.update(fields);
+      await docRef.set(fields, { merge: true });
       return { success: true };
     } catch (err: any) {
       logger.error(`updateUserProfileCallable failed for ${uid}`, err);
       throw new functions.https.HttpsError(
         "internal",
         err?.message || "Update failed",
+      );
+    }
+  });
+
+export const completeSignupAndProfile = functions
+  .region("us-central1")
+  .https.onCall(async (data, context) => {
+    if (!context.auth) {
+      throw new functions.https.HttpsError(
+        "unauthenticated",
+        "Authentication required",
+      );
+    }
+
+    const uid: string | undefined = data?.uid;
+    const profile = data?.profile || {};
+
+    if (!uid || uid !== context.auth.uid) {
+      throw new functions.https.HttpsError(
+        "permission-denied",
+        "UID mismatch",
+      );
+    }
+
+    const timestamp = admin.firestore.FieldValue.serverTimestamp();
+
+    const defaultProfile = {
+      uid,
+      email: profile.email || "",
+      emailVerified: false,
+      displayName: profile.displayName || profile.username || "",
+      username: profile.username || "",
+      region: profile.region || "",
+      createdAt: timestamp,
+      lastActive: timestamp,
+      lastFreeAsk: timestamp,
+      lastFreeSkip: timestamp,
+      onboardingComplete: true,
+      religion: profile.religion || "SpiritGuide",
+      tokens: 0,
+      skipTokensUsed: 0,
+      individualPoints: 0,
+      isSubscribed: false,
+      nightModeEnabled: false,
+      preferredName: profile.preferredName || "",
+      pronouns: profile.pronouns || "",
+      avatarURL: profile.avatarURL || "",
+      profileComplete: true,
+      profileSchemaVersion: CURRENT_PROFILE_SCHEMA,
+      challengeStreak: { count: 0, lastCompletedDate: null },
+      dailyChallengeCount: 0,
+      dailySkipCount: 0,
+      lastChallengeLoadDate: null,
+      lastSkipDate: null,
+      organization: profile.organization || null,
+      organizationId: null,
+      religionPrefix: "",
+    };
+
+    const docRef = admin.firestore().collection("users").doc(uid);
+    logger.info(`completeSignupAndProfile`, { uid });
+    try {
+      await docRef.set(defaultProfile, { merge: true });
+      return { success: true };
+    } catch (err: any) {
+      logger.error(`completeSignupAndProfile failed for ${uid}`, err);
+      throw new functions.https.HttpsError(
+        "internal",
+        err?.message || "Profile creation failed",
       );
     }
   });

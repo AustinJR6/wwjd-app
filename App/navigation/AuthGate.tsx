@@ -19,7 +19,6 @@ import SignupScreen from '@/screens/auth/SignupScreen';
 import WelcomeScreen from '@/screens/auth/WelcomeScreen';
 import ForgotPasswordScreen from '@/screens/auth/ForgotPasswordScreen';
 import ForgotUsernameScreen from '@/screens/auth/ForgotUsernameScreen';
-import OnboardingScreen from '@/screens/auth/OnboardingScreen';
 import SelectReligionScreen from '@/screens/auth/SelectReligionScreen';
 import OrganizationSignupScreen from '@/screens/auth/OrganizationSignupScreen';
 
@@ -106,13 +105,8 @@ export default function AuthGate() {
         return;
       }
 
-      if (profile.onboardingComplete) {
-        console.log('➡️ route -> Home');
-        setInitialRoute('Home');
-      } else {
-        console.log('➡️ route -> Onboarding');
-        setInitialRoute('Onboarding');
-      }
+      console.log('➡️ route -> Home');
+      setInitialRoute('Home');
       setChecking(false);
     }
     verify();
@@ -143,11 +137,6 @@ export default function AuthGate() {
           headerTitleStyle: { fontWeight: 'bold', fontSize: 20, fontFamily: theme.fonts.title },
         }}
       >
-        <Stack.Screen
-          name="Onboarding"
-          component={OnboardingScreen}
-          options={{ headerShown: false }}
-        />
         {!user ? (
           <>
             <Stack.Screen name="Welcome" component={WelcomeScreen} options={{ headerShown: false }} />

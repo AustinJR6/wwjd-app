@@ -2,7 +2,6 @@ export const SCREENS = {
   AUTH: {
     LOGIN: 'Login',
     SIGNUP: 'Signup',
-    ONBOARDING: 'Onboarding',
     ORGANIZATION_SIGNUP: 'OrganizationSignup'
     // FORGOT_PASSWORD: 'ForgotPassword' // Optional: add if needed
   },
