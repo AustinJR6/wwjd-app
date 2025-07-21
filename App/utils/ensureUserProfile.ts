@@ -62,39 +62,47 @@ export async function ensureUserProfile(
     fixes.profileSchemaVersion = 1 as any;
   }
 
-  const requiredFields: (keyof UserProfile)[] = [
-    'preferredName',
-    'pronouns',
-    'avatarURL',
-    'email',
-    'emailVerified',
-    'displayName',
-    'createdAt',
-    'lastFreeAsk',
-    'lastFreeSkip',
-    'onboardingComplete',
-    'religion',
-    'organization',
-    'tokens',
-    'skipTokensUsed',
-    'individualPoints',
-    'isSubscribed',
-    'nightModeEnabled',
-  ];
+  const requiredChecks: Record<keyof UserProfile, (val: any) => boolean> = {
+    preferredName: (v) => typeof v === 'string' && v.trim() !== '',
+    pronouns: (v) => typeof v === 'string' && v.trim() !== '',
+    avatarURL: (v) => typeof v === 'string' && v.trim() !== '',
+    email: (v) => typeof v === 'string' && v.trim() !== '',
+    emailVerified: (v) => typeof v === 'boolean',
+    displayName: (v) => typeof v === 'string' && v.trim() !== '',
+    createdAt: (v) => typeof v === 'string' && v.trim() !== '',
+    lastFreeAsk: (v) => typeof v === 'string' && v.trim() !== '',
+    lastFreeSkip: (v) => typeof v === 'string' && v.trim() !== '',
+    onboardingComplete: (v) => typeof v === 'boolean',
+    religion: (v) => typeof v === 'string' && v.trim() !== '',
+    organization: () => true,
+    tokens: (v) => typeof v === 'number',
+    skipTokensUsed: (v) => typeof v === 'number',
+    individualPoints: (v) => typeof v === 'number',
+    isSubscribed: (v) => typeof v === 'boolean',
+    nightModeEnabled: (v) => typeof v === 'boolean',
+    profileComplete: () => true,
+    profileSchemaVersion: () => true,
+    lastActive: () => true,
+    religionPrefix: () => true,
+    uid: () => true,
+    username: () => true,
+    region: () => true,
+    points: () => true,
+    streak: () => true,
+    currentChallenge: () => true,
+    lastChallenge: () => true,
+    lastChallengeText: () => true,
+    dailySkipCount: () => true,
+    lastSkipDate: () => true,
+    dailyChallengeHistory: () => true,
+    streakMilestones: () => true,
+  };
 
-  let profileComplete = true;
-  const patchedFields: Partial<UserProfile> = {};
-  for (const field of requiredFields) {
-    const value = (profile as any)[field];
-    if (typeof value !== 'string' || value.trim() === '') {
-      (profile as any)[field] = '';
-      patchedFields[field] = '' as any;
-      fixes[field] = '' as any;
-      profileComplete = false;
-    }
-  }
+  let profileComplete = Object.entries(requiredChecks).every(([field, check]) =>
+    check((profile as any)[field as keyof UserProfile]),
+  );
+
   if ((profile as any).profileComplete !== profileComplete) {
-    patchedFields.profileComplete = profileComplete as any;
     fixes.profileComplete = profileComplete as any;
   }
 
@@ -103,7 +111,7 @@ export async function ensureUserProfile(
 
   if (Object.keys(fixes).length) {
     await updateUserProfile(fixes, uid);
-    console.log('[\uD83D\uDD27 ensureUserProfile] Patched missing fields:', patchedFields);
+    console.log('[\uD83D\uDD27 ensureUserProfile] Patched fields:', fixes);
     logProfileSync('ensure', fixes);
     profile = { ...profile, ...fixes } as UserProfile;
   }

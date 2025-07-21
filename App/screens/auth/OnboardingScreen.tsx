@@ -30,15 +30,17 @@ export default function OnboardingScreen() {
   const navigation = useNavigation<OnboardingScreenProps["navigation"]>();
   const theme = useTheme();
   const { regions, religions, loading: listsLoading } = useLookupLists();
-  const [religion, setReligion] = useState(user?.religion ?? 'SpiritGuide');
+  const [religion, setReligion] = useState(user?.religion ?? "SpiritGuide");
   const [username, setUsername] = useState(
     user?.username ?? user?.displayName ?? ""
   );
   const [region, setRegion] = useState("");
   const [organization, setOrganization] = useState("");
-  const [preferredNameInput, setPreferredNameInput] = useState(user?.preferredName ?? '');
-  const [pronounsInput, setPronounsInput] = useState(user?.pronouns ?? '');
-  const [avatarURLInput, setAvatarURLInput] = useState(user?.avatarURL ?? '');
+  const [preferredNameInput, setPreferredNameInput] = useState(
+    user?.preferredName ?? ""
+  );
+  const [pronounsInput, setPronounsInput] = useState(user?.pronouns ?? "");
+  const [avatarURLInput, setAvatarURLInput] = useState(user?.avatarURL ?? "");
   const [saving, setSaving] = useState(false);
   const [religionError, setReligionError] = useState("");
 
@@ -55,6 +57,21 @@ export default function OnboardingScreen() {
 
     if (!username.trim()) {
       Alert.alert('Missing Info', 'Username is required.');
+      return;
+    }
+
+    if (!preferredNameInput.trim()) {
+      Alert.alert('Missing Info', 'Preferred name is required.');
+      return;
+    }
+
+    if (!pronounsInput.trim()) {
+      Alert.alert('Missing Info', 'Pronouns are required.');
+      return;
+    }
+
+    if (!avatarURLInput.trim()) {
+      Alert.alert('Missing Info', 'Avatar URL is required.');
       return;
     }
 
@@ -83,9 +100,9 @@ export default function OnboardingScreen() {
             dailySkipCount: 0,
             lastChallengeLoadDate: null,
             lastSkipDate: null,
-            preferredName: preferredNameInput || '',
-            pronouns: pronounsInput || '',
-            avatarURL: avatarURLInput || '',
+            preferredName: preferredNameInput.trim(),
+            pronouns: pronounsInput.trim(),
+            avatarURL: avatarURLInput.trim(),
             organization: organization || null,
             profileComplete: true,
           },
@@ -179,6 +196,27 @@ export default function OnboardingScreen() {
         placeholder="Username"
         value={username}
         onChangeText={setUsername}
+      />
+
+      <TextInput
+        style={styles.input}
+        placeholder="Preferred Name"
+        value={preferredNameInput}
+        onChangeText={setPreferredNameInput}
+      />
+
+      <TextInput
+        style={styles.input}
+        placeholder="Pronouns"
+        value={pronounsInput}
+        onChangeText={setPronounsInput}
+      />
+
+      <TextInput
+        style={styles.input}
+        placeholder="Avatar URL"
+        value={avatarURLInput}
+        onChangeText={setAvatarURLInput}
       />
 
       <CustomText style={styles.subtitle}>Select your region:</CustomText>
