@@ -142,6 +142,10 @@ export async function updateUserProfile(
   try {
     const headers = await getAuthHeaders();
     const url = `${FIRESTORE_BASE}/users/${userId}`;
+    console.log('➡️ Firestore PATCH Request Details:');
+    console.log('URL:', url);
+    console.log('Headers:', headers);
+    console.log('Payload:', { fields: toFirestoreFields(sanitized) });
     console.log('➡️ PATCH', url, { payload: sanitized, headers });
     await apiClient.patch(url, { fields: toFirestoreFields(sanitized) }, { headers });
     if (cachedProfile && cachedProfile.uid === userId) {
