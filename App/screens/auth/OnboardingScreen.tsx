@@ -1,12 +1,13 @@
 import React, { useState } from "react";
 import CustomText from "@/components/CustomText";
-import { View, StyleSheet, Alert, TextInput, ActivityIndicator } from "react-native";
+import { View, StyleSheet, Alert, ActivityIndicator } from "react-native";
+import TextField from "@/components/TextField";
 import * as SecureStore from "expo-secure-store";
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import Button from "@/components/common/Button";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { loadUserProfile, setCachedUserProfile, updateUserProfile } from "@/utils/userProfile";
+import { setCachedUserProfile, updateUserProfile } from "@/utils/userProfile";
 
 import { getIdToken } from "@/utils/authUtils";
 import { DEFAULT_RELIGION } from "@/config/constants";
@@ -18,6 +19,7 @@ import { useTheme } from "@/components/theme/theme";
 import { Picker } from "@react-native-picker/picker";
 import type { RootStackParamList } from "@/navigation/RootStackParamList";
 import { useLookupLists } from "@/hooks/useLookupLists";
+import { ensureUserProfile } from "@/services/userValidationService";
 
 type OnboardingScreenProps = NativeStackScreenProps<
   RootStackParamList,
@@ -108,15 +110,18 @@ export default function OnboardingScreen() {
           },
           uid,
         );
+
         console.log('[✅ Onboarding Complete] User profile updated and marked complete');
-        // Load the full profile from Firestore and set it in the store
-        const updated: UserProfile | null = await loadUserProfile(uid);
-        setCachedUserProfile(updated as any);
-        await SecureStore.setItemAsync(`hasSeenOnboarding-${uid}`, 'true');
-        useUserProfileStore.getState().setUserProfile(updated as any);
-        if (!updated?.region || !updated?.religion || !updated?.username || !updated?.email || !updated?.createdAt || !updated?.tokens) {
-          console.warn('⚠️ Missing required profile fields after onboarding:', updated);
+
+        const ensured = await ensureUserProfile(uid);
+        if (!ensured?.profileComplete) {
+          throw new Error('Profile missing required fields');
         }
+
+        setCachedUserProfile(ensured as any);
+        await SecureStore.setItemAsync(`hasSeenOnboarding-${uid}`, 'true');
+        useUserProfileStore.getState().setUserProfile(ensured as any);
+
         navigation.reset({
           index: 0,
           routes: [{ name: SCREENS.MAIN.HOME }],
@@ -160,15 +165,6 @@ export default function OnboardingScreen() {
           color: theme.colors.text,
           backgroundColor: theme.colors.inputBackground || theme.colors.surface,
         },
-        input: {
-          borderWidth: 1,
-          borderColor: theme.colors.border,
-          borderRadius: 8,
-          padding: 12,
-          marginBottom: 16,
-          backgroundColor: theme.colors.surface,
-          color: theme.colors.text,
-        },
         link: {
           color: theme.colors.primary,
           marginTop: 16,
@@ -191,32 +187,32 @@ export default function OnboardingScreen() {
       <CustomText style={styles.title}>Welcome to OneVine 🌿</CustomText>
       <CustomText style={styles.subtitle}>Tell us about yourself:</CustomText>
 
-      <TextInput
-        style={styles.input}
-        placeholder="Username"
+      <TextField
+        label="Username *"
         value={username}
         onChangeText={setUsername}
+        placeholder="johndoe"
       />
 
-      <TextInput
-        style={styles.input}
-        placeholder="Preferred Name"
+      <TextField
+        label="Preferred Name *"
         value={preferredNameInput}
         onChangeText={setPreferredNameInput}
+        placeholder="John"
       />
 
-      <TextInput
-        style={styles.input}
-        placeholder="Pronouns"
+      <TextField
+        label="Pronouns *"
         value={pronounsInput}
         onChangeText={setPronounsInput}
+        placeholder="he/him"
       />
 
-      <TextInput
-        style={styles.input}
-        placeholder="Avatar URL"
+      <TextField
+        label="Avatar URL *"
         value={avatarURLInput}
         onChangeText={setAvatarURLInput}
+        placeholder="https://example.com/avatar.jpg"
       />
 
       <CustomText style={styles.subtitle}>Select your region:</CustomText>
@@ -261,11 +257,11 @@ export default function OnboardingScreen() {
         </CustomText>
       ) : null}
 
-      <TextInput
-        style={styles.input}
-        placeholder="Organization (optional)"
+      <TextField
+        label="Organization"
         value={organization}
         onChangeText={setOrganization}
+        placeholder="Optional"
       />
 
       <Button title="Continue" onPress={handleContinue} loading={saving} />
