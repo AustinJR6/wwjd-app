@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, ActivityIndicator } from 'react-native';
+
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { navigationRef } from './navigationRef';
@@ -125,15 +125,7 @@ export default function AuthGate() {
   }, [initialRoute]);
 
   if (checking) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: theme.colors.background }}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
-      </View>
-    );
-  }
-
-  if (!user || !user.profileComplete) {
-    return <LoadingScreen message="Finalizing profile..." />;
+    return <LoadingScreen message="Loading..." />;
   }
 
   return (
