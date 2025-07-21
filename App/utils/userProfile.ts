@@ -1,6 +1,7 @@
 import apiClient from '@/utils/apiClient';
 import { FIRESTORE_BASE } from '../../firebaseRest';
 import { getAuthHeaders, getCurrentUserId } from '@/utils/authUtils';
+import { API_URL } from '@/config/firebaseApp';
 import { logFirestoreError } from '@/lib/logging';
 import type { CachedProfile, ReligionDocument, UserProfile } from '../../types/profile';
 import { getReligionProfile } from '../../religionRest';
@@ -141,13 +142,16 @@ export async function updateUserProfile(
   }
   try {
     const headers = await getAuthHeaders();
-    const url = `${FIRESTORE_BASE}/users/${userId}`;
-    console.log('➡️ Firestore PATCH Request Details:');
-    console.log('URL:', url);
-    console.log('Headers:', headers);
-    console.log('Payload:', { fields: toFirestoreFields(sanitized) });
-    console.log('➡️ PATCH', url, { payload: sanitized, headers });
-    await apiClient.patch(url, { fields: toFirestoreFields(sanitized) }, { headers });
+    const url = `${API_URL}/updateUserProfileCallable`;
+    const res = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ data: { uid: userId, fields: sanitized } }),
+    });
+    if (!res.ok) {
+      const text = await res.text();
+      throw { response: { status: res.status, data: text } };
+    }
     if (cachedProfile && cachedProfile.uid === userId) {
       if ('religion' in sanitized) {
         const religionData = await getReligionProfile(sanitized.religion);
