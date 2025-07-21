@@ -1605,3 +1605,40 @@ export const backfillUserProfiles = functions
     logger.info(`Backfill complete`, { processed, updated });
     return { processed, updated };
   });
+
+export const updateUserProfileCallable = functions
+  .region("us-central1")
+  .https.onCall(async (data, context) => {
+    if (!context.auth) {
+      throw new functions.https.HttpsError(
+        "unauthenticated",
+        "Authentication required",
+      );
+    }
+
+    const uid: string | undefined = data?.uid || context.auth.uid;
+    const fields = data?.fields || {};
+
+    if (!uid) {
+      throw new functions.https.HttpsError("invalid-argument", "Missing uid");
+    }
+    if (typeof fields !== "object" || Array.isArray(fields)) {
+      throw new functions.https.HttpsError(
+        "invalid-argument",
+        "fields must be an object",
+      );
+    }
+
+    const docRef = admin.firestore().collection("users").doc(uid);
+    logger.info(`updateUserProfileCallable`, { uid, fields });
+    try {
+      await docRef.update(fields);
+      return { success: true };
+    } catch (err: any) {
+      logger.error(`updateUserProfileCallable failed for ${uid}`, err);
+      throw new functions.https.HttpsError(
+        "internal",
+        err?.message || "Update failed",
+      );
+    }
+  });
