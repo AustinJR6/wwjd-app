@@ -43,6 +43,8 @@ const STRIPE_20_TOKEN_PRICE_ID = process.env.STRIPE_20_TOKEN_PRICE_ID || "";
 const STRIPE_50_TOKEN_PRICE_ID = process.env.STRIPE_50_TOKEN_PRICE_ID || "";
 const STRIPE_100_TOKEN_PRICE_ID = process.env.STRIPE_100_TOKEN_PRICE_ID || "";
 
+const CURRENT_PROFILE_SCHEMA = 1;
+
 if (!process.env.STRIPE_SUB_PRICE_ID) {
   logger.warn("⚠️ Missing STRIPE_SUB_PRICE_ID in .env");
 }
@@ -1489,22 +1491,23 @@ export const onUserCreate = functions
         lastFreeSkip: timestamp,
         onboardingComplete: false,
         religion: "SpiritGuide",
-        tokens: 5,
+        tokens: 0,
         skipTokensUsed: 0,
         individualPoints: 0,
         isSubscribed: false,
         nightModeEnabled: false,
-        preferredName: "",
+        preferredName: user.displayName || "",
         pronouns: "",
         avatarURL: "",
         profileComplete: false,
-        profileSchemaVersion: 1,
+        profileSchemaVersion: CURRENT_PROFILE_SCHEMA,
         challengeStreak: { count: 0, lastCompletedDate: null },
         dailyChallengeCount: 0,
         dailySkipCount: 0,
         lastChallengeLoadDate: null,
         lastSkipDate: null,
         organization: null,
+        organizationId: null,
         religionPrefix: "",
       };
 
