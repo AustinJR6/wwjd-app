@@ -1473,27 +1473,20 @@ export const onUserCreate = functions
   .user()
   .onCreate(async (user: admin.auth.UserRecord) => {
     const uid = user.uid;
-    console.log(`onUserCreate triggered for ${uid}`);
     try {
       const docRef = admin.firestore().doc(`users/${uid}`);
-      const existing = await docRef.get();
-      if (existing.exists) {
-        console.log(`User document already exists for ${uid}`);
-        return;
-      }
-
       const timestamp = admin.firestore.FieldValue.serverTimestamp();
       const profile = {
         uid,
         email: user.email || "",
         emailVerified: !!user.emailVerified,
-        displayName: null,
+        displayName: "",
         createdAt: timestamp,
         lastActive: timestamp,
         lastFreeAsk: null,
         lastFreeSkip: null,
         onboardingComplete: false,
-        religion: null,
+        religion: "SpiritGuide",
         tokens: 5,
         skipTokensUsed: 0,
         individualPoints: 0,
@@ -1503,14 +1496,17 @@ export const onUserCreate = functions
         pronouns: null,
         avatarURL: null,
         profileComplete: false,
-        profileSchemaVersion: "v1",
+        profileSchemaVersion: 1,
         challengeStreak: { count: 0, lastCompletedDate: null },
+        dailyChallengeCount: 0,
+        dailySkipCount: 0,
+        lastChallengeLoadDate: null,
+        lastSkipDate: null,
+        organization: null,
       };
 
       await docRef.set(profile, { merge: false });
-
-      console.log(`onUserCreate completed for ${uid}`);
     } catch (err) {
-      console.error(`onUserCreate failed for ${uid}`, err);
+      logger.error(`onUserCreate failed for ${uid}`, err);
     }
   });

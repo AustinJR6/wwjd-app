@@ -2,40 +2,12 @@ import { loadUserProfile, updateUserProfile } from './userProfile';
 import type { UserProfile } from '../../types';
 import { logProfileSync } from '@/lib/logProfileSync';
 import { DEFAULT_RELIGION } from '@/config/constants';
-import { createUserDoc } from '../../firebaseRest';
-import { getIdToken } from '@/utils/authUtils';
 
 export async function ensureUserProfile(
   input: string | UserProfile,
 ): Promise<UserProfile | null> {
   const uid = typeof input === 'string' ? input : input.uid;
   let profile = typeof input === 'string' ? await loadUserProfile(input) : input;
-
-  // If the profile doesn't exist, create one via REST API
-  if (!profile) {
-    try {
-      const token = await getIdToken(true);
-      if (!token) throw new Error('Missing token');
-      await createUserDoc({
-        uid,
-        email: '',
-        displayName: 'New User',
-        username: uid,
-        region: '',
-        religion: DEFAULT_RELIGION,
-        idToken: token,
-        preferredName: '',
-        pronouns: '',
-        avatarURL: '',
-        organization: null,
-      });
-      profile = await loadUserProfile(uid);
-      logProfileSync('created', profile);
-    } catch (err) {
-      console.warn('ensureUserProfile create failed', err);
-      return null;
-    }
-  }
 
   if (!profile) return null;
 
@@ -87,7 +59,7 @@ export async function ensureUserProfile(
   ensureString('avatarURL', '');
   ensureTimestamp('lastActive', now);
   if ((profile as any).profileSchemaVersion === undefined) {
-    fixes.profileSchemaVersion = 'v1' as any;
+    fixes.profileSchemaVersion = 1 as any;
   }
 
   const requiredFields: (keyof UserProfile)[] = [

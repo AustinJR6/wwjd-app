@@ -43,26 +43,6 @@ export async function signUpWithEmailAndPassword(
       headers: { "Content-Type": "application/json" },
     });
     console.log("✅ signup response", res.data);
-
-    // After successful signup, create default Firestore user doc
-    const { localId, idToken, email: userEmail } = res.data as AuthResponse;
-    try {
-      await createUserDoc({
-        uid: localId,
-        email: userEmail,
-        displayName: "New User",
-        username: generateUsernameFromDisplayName("New User"),
-        region: "",
-        religion: DEFAULT_RELIGION,
-        idToken,
-        preferredName: "",
-        pronouns: "",
-        avatarURL: "",
-      });
-    } catch (err) {
-      console.error("❌ Failed to create default user document", err);
-    }
-
     return res.data as AuthResponse;
   } catch (err: any) {
     if (err.response) {
@@ -215,101 +195,6 @@ export function generateDefaultUserData({
   };
 }
 
-export async function createUserDoc({
-  uid,
-  email,
-  emailVerified = false,
-  displayName,
-  username,
-  region,
-  religion,
-  idToken,
-  preferredName = "",
-  pronouns = "",
-  avatarURL = "",
-  organization = null,
-}: {
-  uid: string;
-  email: string;
-  emailVerified?: boolean;
-  displayName: string;
-  username: string;
-  region: string;
-  religion: string;
-  idToken: string;
-  preferredName?: string;
-  pronouns?: string;
-  avatarURL?: string;
-  organization?: string | null;
-}) {
-  if (!uid) {
-    throw new Error("createUserDoc requires a uid");
-  }
-
-  const string = (v: string) => ({ stringValue: v });
-  const bool = (v: boolean) => ({ booleanValue: v });
-  const int = (v: number) => ({ integerValue: v.toString() });
-  const time = (d: Date) => ({ timestampValue: d.toISOString() });
-  const nullVal = () => ({ nullValue: null });
-
-  const now = new Date();
-  const path = `users/${uid}`;
-  // Use POST with documentId query to ensure the doc ID matches the uid
-  const url = `${FIRESTORE_BASE}/users?documentId=${uid}`;
-
-  const fields = {
-    uid: string(uid),
-    email: string(email),
-    emailVerified: bool(emailVerified),
-    displayName: string(displayName),
-    createdAt: time(now),
-    lastActive: time(now),
-    lastFreeAsk: time(now),
-    lastFreeSkip: time(now),
-    onboardingComplete: bool(false),
-    religion: string(religion || DEFAULT_RELIGION),
-    tokens: int(5),
-    skipTokensUsed: int(0),
-    individualPoints: int(0),
-    isSubscribed: bool(false),
-    nightModeEnabled: bool(false),
-    preferredName: preferredName ? string(preferredName) : nullVal(),
-    pronouns: pronouns ? string(pronouns) : nullVal(),
-    avatarURL: avatarURL ? string(avatarURL) : nullVal(),
-    profileComplete: bool(false),
-    profileSchemaVersion: int(1),
-    challengeStreak: {
-      mapValue: {
-        fields: {
-          count: int(0),
-          lastCompletedDate: nullVal(),
-        },
-      },
-    },
-    dailyChallengeCount: int(0),
-    dailySkipCount: int(0),
-    lastChallengeLoadDate: nullVal(),
-    lastSkipDate: nullVal(),
-    organization:
-      typeof organization === "string" ? string(organization) : nullVal(),
-  };
-
-  const body = { fields };
-
-  const headers = {
-    Authorization: `Bearer ${idToken}`,
-    "Content-Type": "application/json",
-  };
-  console.log("➡️ createUserDoc", { url, body });
-  try {
-    await axios.post(url, body, { headers });
-    console.log("✅ user doc created", uid);
-  } catch (err: any) {
-    logFirestoreError("POST", path, err);
-    console.error("createUserDoc error", err?.response?.data || err);
-    throw err;
-  }
-}
 
 export async function saveJournalEntry(
   uid: string,
