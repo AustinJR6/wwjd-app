@@ -17,7 +17,6 @@ export type RootStackParamList = {
   Signup: undefined;
   ForgotPassword: undefined;
   ForgotUsername: undefined;
-  Onboarding: undefined;
   OrganizationSignup: undefined;
 
   // Main app screens
