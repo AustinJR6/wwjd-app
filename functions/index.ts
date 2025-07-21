@@ -1513,3 +1513,90 @@ export const onUserCreate = functions
       logger.error(`onUserCreate failed for ${uid}`, err);
     }
   });
+
+export const backfillUserProfiles = functions
+  .region("us-central1")
+  .https.onCall(async (_data, context) => {
+    if (!context.auth) {
+      throw new functions.https.HttpsError(
+        "unauthenticated",
+        "Authentication required",
+      );
+    }
+
+    let processed = 0;
+    let updated = 0;
+    let lastDoc: FirebaseFirestore.QueryDocumentSnapshot | null = null;
+    const batchSize = 500;
+
+    const isMissing = (v: any) => v === undefined || v === null;
+    const isMissingString = (v: any) =>
+      isMissing(v) || (typeof v === "string" && v.trim() === "");
+
+    while (true) {
+      let query = db
+        .collection("users")
+        .orderBy(admin.firestore.FieldPath.documentId())
+        .limit(batchSize);
+      if (lastDoc) query = query.startAfter(lastDoc);
+
+      const snap = await query.get();
+      if (snap.empty) break;
+
+      for (const doc of snap.docs) {
+        const data = doc.data() as Record<string, any>;
+        const updates: Record<string, any> = {};
+
+        const serverTs = admin.firestore.FieldValue.serverTimestamp() as any;
+
+        if (isMissingString(data.email)) updates.email = "";
+        if (typeof data.isSubscribed !== "boolean") updates.isSubscribed = false;
+        if (isMissing(data.createdAt)) updates.createdAt = serverTs;
+        if (!data.challengeStreak)
+          updates.challengeStreak = { count: 0, lastCompletedDate: null };
+        if (typeof data.dailyChallengeCount !== "number")
+          updates.dailyChallengeCount = 0;
+        if (typeof data.dailySkipCount !== "number")
+          updates.dailySkipCount = 0;
+        if (!("lastChallengeLoadDate" in data)) updates.lastChallengeLoadDate = null;
+        if (!("lastSkipDate" in data)) updates.lastSkipDate = null;
+        if (typeof data.skipTokensUsed !== "number") updates.skipTokensUsed = 0;
+        if (typeof data.nightModeEnabled !== "boolean")
+          updates.nightModeEnabled = false;
+        updates.profileComplete = true;
+        if (typeof data.profileSchemaVersion !== "number")
+          updates.profileSchemaVersion = 1;
+        if (isMissing(data.lastActive)) updates.lastActive = serverTs;
+        if (isMissingString(data.religionPrefix)) updates.religionPrefix = "";
+        if (isMissingString((data as any).organizationId))
+          (updates as any).organizationId = null;
+        if (isMissingString(data.preferredName)) updates.preferredName = "";
+        if (isMissingString(data.pronouns)) updates.pronouns = "";
+        if (isMissingString(data.avatarURL)) updates.avatarURL = "";
+        if (isMissingString(data.displayName)) updates.displayName = "";
+        if (isMissingString(data.username)) updates.username = "";
+        if (isMissingString(data.region)) updates.region = "";
+        if (isMissingString(data.religion)) updates.religion = "SpiritGuide";
+        if (typeof data.tokens !== "number") updates.tokens = 0;
+        if (typeof data.individualPoints !== "number") updates.individualPoints = 0;
+        updates.onboardingComplete = true;
+        if (!("organization" in data)) (updates as any).organization = null;
+
+        if (Object.keys(updates).length) {
+          logger.info(`Backfilling user ${doc.id}`, updates);
+          await doc.ref.set(updates, { merge: true });
+          updated++;
+        } else {
+          logger.info(`No updates needed for ${doc.id}`);
+        }
+
+        processed++;
+      }
+
+      lastDoc = snap.docs[snap.docs.length - 1];
+      if (snap.size < batchSize) break;
+    }
+
+    logger.info(`Backfill complete`, { processed, updated });
+    return { processed, updated };
+  });
