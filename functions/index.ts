@@ -1475,18 +1475,25 @@ export const onUserCreate = functions
     const uid = user.uid;
     console.log(`onUserCreate triggered for ${uid}`);
     try {
+      const docRef = admin.firestore().doc(`users/${uid}`);
+      const existing = await docRef.get();
+      if (existing.exists) {
+        console.log(`User document already exists for ${uid}`);
+        return;
+      }
+
       const timestamp = admin.firestore.FieldValue.serverTimestamp();
-      await db.collection("users").doc(uid).set({
+      const profile = {
         uid,
         email: user.email || "",
         emailVerified: !!user.emailVerified,
-        displayName: user.displayName || "New User",
+        displayName: null,
         createdAt: timestamp,
         lastActive: timestamp,
-        lastFreeAsk: timestamp,
-        lastFreeSkip: timestamp,
+        lastFreeAsk: null,
+        lastFreeSkip: null,
         onboardingComplete: false,
-        religion: "SpiritGuide",
+        religion: null,
         tokens: 5,
         skipTokensUsed: 0,
         individualPoints: 0,
@@ -1498,20 +1505,9 @@ export const onUserCreate = functions
         profileComplete: false,
         profileSchemaVersion: "v1",
         challengeStreak: { count: 0, lastCompletedDate: null },
-        dailyChallengeCount: 0,
-        dailySkipCount: 0,
-        lastChallengeLoadDate: null,
-        lastSkipDate: null,
-        organization: null,
-      });
+      };
 
-      await Promise.all([
-        db.collection("journalEntries").doc(uid).set({ placeholder: true }),
-        db.collection("confessionalSessions").doc(uid).set({ placeholder: true }),
-        db.collection("dailyChallenges").doc(uid).set({ seenChallenges: [] }),
-        db.collection("leaderboards").doc(uid).set({ score: 0 }),
-        db.collection("tokens").doc(uid).set({ earned: 0, spent: 0 }),
-      ]);
+      await docRef.set(profile, { merge: false });
 
       console.log(`onUserCreate completed for ${uid}`);
     } catch (err) {
