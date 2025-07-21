@@ -10,6 +10,7 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { setCachedUserProfile, updateUserProfile } from "@/utils/userProfile";
 
 import { getIdToken } from "@/utils/authUtils";
+import { API_URL } from "@/config/firebaseApp";
 import { DEFAULT_RELIGION } from "@/config/constants";
 import type { UserProfile } from "../../../types";
 import { useUserProfileStore } from "@/state/userProfile";
@@ -44,6 +45,7 @@ export default function OnboardingScreen() {
   const [pronounsInput, setPronounsInput] = useState(user?.pronouns ?? "");
   const [avatarURLInput, setAvatarURLInput] = useState(user?.avatarURL ?? "");
   const [saving, setSaving] = useState(false);
+  const [backfilling, setBackfilling] = useState(false);
   const [religionError, setReligionError] = useState("");
 
   React.useEffect(() => {
@@ -134,6 +136,59 @@ export default function OnboardingScreen() {
       );
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleBackfillProfiles = async () => {
+    const uid = user?.uid || uidFromAuth;
+    setBackfilling(true);
+    try {
+      const idToken = await getIdToken(true);
+      if (!idToken) throw new Error('Missing auth token');
+      const url = `${API_URL}/backfillUserProfiles`;
+      console.log('➡️ Backfill request to', url);
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({ data: {} }),
+      });
+      const text = await res.text();
+      if (!res.ok) {
+        console.warn('❌ Backfill failed', res.status, text);
+        Alert.alert('Backfill Error', text || `Status ${res.status}`);
+        return;
+      }
+      let data: any = {};
+      try {
+        data = JSON.parse(text);
+      } catch {
+        console.warn('⚠️ Failed to parse backfill response', text);
+      }
+      const info = data.data || {};
+      Alert.alert(
+        'Backfill Complete',
+        `Processed ${info.processed ?? '?'}, updated ${info.updated ?? '?'}`,
+      );
+
+      if (uid) {
+        const ensured = await ensureUserProfile(uid);
+        if (ensured) {
+          setCachedUserProfile(ensured as any);
+          useUserProfileStore.getState().setUserProfile(ensured as any);
+          if (ensured.profileComplete) {
+            console.log('✅ Profile complete after backfill');
+            navigation.reset({ index: 0, routes: [{ name: SCREENS.MAIN.HOME }] });
+          }
+        }
+      }
+    } catch (err: any) {
+      console.warn('Backfill error', err);
+      Alert.alert('Error', err.message || 'Failed to backfill');
+    } finally {
+      setBackfilling(false);
     }
   };
 
@@ -265,6 +320,13 @@ export default function OnboardingScreen() {
       />
 
       <Button title="Continue" onPress={handleContinue} loading={saving} />
+      {__DEV__ && (
+        <Button
+          title="Backfill Profiles"
+          onPress={handleBackfillProfiles}
+          loading={backfilling}
+        />
+      )}
       <CustomText
         style={styles.link}
         onPress={() => navigation.navigate("Login")}
