@@ -7,7 +7,7 @@ export const SCREENS = {
   },
 
   MAIN: {
-    HOME: 'Home',
+    HOME: 'HomeScreen',
     RELIGION_AI: 'ReligionAI',
     JOURNAL: 'Journal',
     CHALLENGE: 'Challenge',

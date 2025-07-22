@@ -6,13 +6,13 @@ export async function saveUsernameAndProceed(username: string): Promise<void> {
   const uid = await ensureAuth();
   await updateUserProfile({ username }, uid);
   if (navigationRef.isReady()) {
-    navigationRef.reset({ index: 0, routes: [{ name: 'Home' }] });
+    navigationRef.reset({ index: 0, routes: [{ name: 'HomeScreen' }] });
   }
 }
 
 export async function checkIfUserIsNewAndRoute(): Promise<void> {
   const uid = await ensureAuth();
   if (navigationRef.isReady()) {
-    navigationRef.reset({ index: 0, routes: [{ name: 'Home' }] });
+    navigationRef.reset({ index: 0, routes: [{ name: 'HomeScreen' }] });
   }
 }

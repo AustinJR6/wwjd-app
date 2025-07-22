@@ -121,7 +121,7 @@ export default function BuyTokensScreen({ navigation }: Props) {
         </View>
 
         <View style={styles.buttonWrap}>
-          <Button title="Back to Home" onPress={() => navigation.navigate('Home')} />
+          <Button title="Back to Home" onPress={() => navigation.navigate('HomeScreen')} />
         </View>
       </View>
     </ScreenContainer>
