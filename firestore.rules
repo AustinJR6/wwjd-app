@@ -78,12 +78,12 @@ service cloud.firestore {
     match /religion/{docId} {
       // Religion list is used on the signup screen before auth
       // so allow public read access
-      allow read: if true;
+      allow read: true;
     }
 
     match /regions/{docId} {
       // Region list is required prior to authentication
-      allow read: if true;
+      allow read: true;
     }
   }
 }
