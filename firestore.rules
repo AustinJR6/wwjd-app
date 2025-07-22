@@ -8,9 +8,9 @@ service cloud.firestore {
 
     // 🔐 User profile document
     match /users/{userId} {
-      allow read: if isSignedIn() && request.auth.uid == userId;
-      allow create: if isSignedIn() && request.auth.uid == userId;
-      allow update: if isSignedIn() && request.auth.uid == userId;
+      allow read, update: if isSignedIn() && request.auth.uid == userId;
+      // Creation handled by the onUserCreate Cloud Function
+      allow create: if false;
     }
 
     // ✅ Active challenge document

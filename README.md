@@ -187,6 +187,36 @@ is saved back to `users/{uid}` so that returning users can skip onboarding.
 - App opens and navigates to all main screens
 - Backend functions verify tokens correctly
 
+### Handling Errors from Cloud Functions
+
+When calling HTTPS callable functions such as `completeSignupAndProfile` you may
+receive a structured error with a `status` code. Handle these responses before
+processing the result:
+
+```ts
+try {
+  const res = await fetch(`${API_URL}/completeSignupAndProfile`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ data: { uid, profile } }),
+  });
+  if (!res.ok) {
+    const { error } = await res.json();
+    switch (error?.status) {
+      case 'permission-denied':
+      case 'unauthenticated':
+        throw new Error('Please sign in again.');
+      case 'invalid-argument':
+        throw new Error(error.message);
+      default:
+        throw new Error(error?.message || `HTTP ${res.status}`);
+    }
+  }
+} catch (err: any) {
+  Alert.alert('Signup Failed', err.message);
+}
+```
+
 🙏 Contributing
 We welcome faith leaders, engineers, designers, and visionaries to collaborate.
 
