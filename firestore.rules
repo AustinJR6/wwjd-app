@@ -68,8 +68,7 @@ service cloud.firestore {
     // 🏢 Organization documents
     match /organizations/{orgId} {
       allow read: if isSignedIn();
-      allow update, delete: if isSignedIn() &&
-        request.auth.uid in resource.data.admins;
+      allow update, delete: if isSignedIn() && request.auth.uid in resource.data.admins;
       // Creation of organizations should be done via a trusted server process
       allow create: if false;
     }
