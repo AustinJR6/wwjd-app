@@ -123,12 +123,15 @@ export default function SignupScreen() {
         body: JSON.stringify({ data: { uid, profile } }),
       });
       if (!res.ok) {
-        let errMsg = `Status ${res.status}`;
         try {
-          const data = await res.json();
-          errMsg = data?.error?.message || errMsg;
-        } catch {}
-        throw new Error(errMsg);
+          const { error } = await res.json();
+          const e: any = new Error(error?.message || `HTTP ${res.status}`);
+          e.code = error?.status || error?.message;
+          throw e;
+        } catch (err) {
+          if (err instanceof Error) throw err;
+          throw new Error(`HTTP ${res.status}`);
+        }
       }
 
       const createdProfile = await loadUserProfile(uid);
@@ -137,8 +140,8 @@ export default function SignupScreen() {
       }
       navigation.reset({ index: 0, routes: [{ name: SCREENS.MAIN.HOME }] });
     } catch (err: any) {
-      console.warn("🚫 Signup Failed:", err?.response?.data?.error?.message);
-      const code = err?.response?.data?.error?.message;
+      console.warn("🚫 Signup Failed:", err?.response?.data?.error?.message || err);
+      const code = err.code || err?.response?.data?.error?.message;
       let friendly = err.message;
       switch (code) {
         case "EMAIL_EXISTS":
@@ -150,8 +153,21 @@ export default function SignupScreen() {
         case "WEAK_PASSWORD":
           friendly = "Password should be at least 6 characters.";
           break;
+        case "already-exists":
+          friendly = "This username is already taken.";
+          break;
+        case "invalid-argument":
+          friendly = err.message || "Invalid information provided.";
+          break;
+        case "permission-denied":
+        case "unauthenticated":
+          friendly = "Please sign in again.";
+          break;
+        case "internal":
+          friendly = "Server error. Please try again.";
+          break;
         default:
-          if (code) friendly = code;
+          if (code) friendly = err.message;
       }
       setErrorMsg(friendly);
       Alert.alert("Signup Failed", friendly);
