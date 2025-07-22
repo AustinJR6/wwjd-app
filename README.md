@@ -217,6 +217,43 @@ try {
 }
 ```
 
+If you use the Firebase SDK to call the function, the error object will contain a
+`code` property matching the `HttpsError` codes thrown in the Cloud Function. The
+logic below can live in the handler for your profile submission button:
+
+```ts
+import { getFunctions, httpsCallable } from 'firebase/functions';
+
+const completeSignupAndProfile = httpsCallable(
+  getFunctions(),
+  'completeSignupAndProfile',
+);
+
+async function submitProfile(profile: any) {
+  try {
+    await completeSignupAndProfile({ uid: user.uid, profile });
+    // Navigate to the main screen on success
+  } catch (err: any) {
+    switch (err.code) {
+      case 'unauthenticated':
+        Alert.alert('Signup Failed', 'You need to be logged in to complete your profile.');
+        break;
+      case 'permission-denied':
+        Alert.alert('Signup Failed', 'You do not have permission to perform this action.');
+        break;
+      case 'invalid-argument':
+        Alert.alert('Signup Failed', 'Please check the information you entered. Some fields are invalid.');
+        break;
+      case 'already-exists':
+        Alert.alert('Signup Failed', 'This username is already taken. Please choose a different one.');
+        break;
+      default:
+        Alert.alert('Signup Failed', 'An unexpected error occurred. Please try again later.');
+    }
+  }
+}
+```
+
 🙏 Contributing
 We welcome faith leaders, engineers, designers, and visionaries to collaborate.
 
