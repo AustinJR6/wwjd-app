@@ -76,11 +76,14 @@ service cloud.firestore {
 
     // 🌍 Static lookup collections
     match /religion/{docId} {
-      allow read: if isSignedIn();
+      // Religion list is used on the signup screen before auth
+      // so allow public read access
+      allow read: if true;
     }
 
     match /regions/{docId} {
-      allow read: if isSignedIn();
+      // Region list is required prior to authentication
+      allow read: if true;
     }
   }
 }
