@@ -9,6 +9,7 @@ import LoadingScreen from '@/components/common/LoadingScreen';
 import { useAuth } from '@/hooks/useAuth';
 import { useUser } from '@/hooks/useUser';
 import { useUserStore } from '@/state/userStore';
+import { useUserProfileStore } from '@/state/userProfile';
 import { initAuthState } from '@/services/authService';
 import { loadUserProfile } from '@/utils/userProfile';
 import { refreshLastActive } from '@/services/userService';
@@ -75,6 +76,7 @@ export default function AuthGate() {
         try {
           const fetched = await loadUserProfile(uid);
           if (fetched) {
+            useUserProfileStore.getState().setUserProfile(fetched as any);
             useUserStore.getState().setUser({
               uid: fetched.uid,
               email: fetched.email,
