@@ -45,6 +45,57 @@ const STRIPE_100_TOKEN_PRICE_ID = process.env.STRIPE_100_TOKEN_PRICE_ID || "";
 
 const CURRENT_PROFILE_SCHEMA = 1;
 
+function validateSignupProfile(profile: any): Required<Pick<any,
+  'email' | 'displayName' | 'username' | 'religion' | 'preferredName' | 'pronouns' | 'avatarURL'>> & {
+  region?: string;
+  organization?: string | null;
+} {
+  if (!profile || typeof profile !== 'object') {
+    throw new functions.https.HttpsError('invalid-argument', 'profile must be an object');
+  }
+
+  const requiredFields = [
+    'email',
+    'displayName',
+    'username',
+    'religion',
+    'preferredName',
+    'pronouns',
+    'avatarURL',
+  ];
+
+  const sanitized: any = {};
+  for (const field of requiredFields) {
+    const val = profile[field];
+    if (typeof val !== 'string' || !val.trim()) {
+      throw new functions.https.HttpsError('invalid-argument', `Invalid ${field}`);
+    }
+    sanitized[field] = val.trim();
+  }
+
+  if ('region' in profile) {
+    if (typeof profile.region !== 'string') {
+      throw new functions.https.HttpsError('invalid-argument', 'region must be a string');
+    }
+    sanitized.region = profile.region.trim();
+  }
+
+  if ('organization' in profile) {
+    if (
+      profile.organization !== null &&
+      typeof profile.organization !== 'string'
+    ) {
+      throw new functions.https.HttpsError(
+        'invalid-argument',
+        'organization must be a string or null',
+      );
+    }
+    sanitized.organization = profile.organization ?? null;
+  }
+
+  return sanitized;
+}
+
 if (!process.env.STRIPE_SUB_PRICE_ID) {
   logger.warn("⚠️ Missing STRIPE_SUB_PRICE_ID in .env");
 }
@@ -1654,7 +1705,7 @@ export const completeSignupAndProfile = functions
     }
 
     const uid: string | undefined = data?.uid;
-    const profile = data?.profile || {};
+    const rawProfile = data?.profile || {};
 
     if (!uid || uid !== context.auth.uid) {
       throw new functions.https.HttpsError(
@@ -1663,29 +1714,31 @@ export const completeSignupAndProfile = functions
       );
     }
 
+    const profile = validateSignupProfile(rawProfile);
+
     const timestamp = admin.firestore.FieldValue.serverTimestamp();
 
     const defaultProfile = {
       uid,
-      email: profile.email || "",
+      email: profile.email,
       emailVerified: false,
-      displayName: profile.displayName || profile.username || "",
-      username: profile.username || "",
+      displayName: profile.displayName || profile.username,
+      username: profile.username,
       region: profile.region || "",
       createdAt: timestamp,
       lastActive: timestamp,
       lastFreeAsk: timestamp,
       lastFreeSkip: timestamp,
       onboardingComplete: true,
-      religion: profile.religion || "SpiritGuide",
+      religion: profile.religion,
       tokens: 0,
       skipTokensUsed: 0,
       individualPoints: 0,
       isSubscribed: false,
       nightModeEnabled: false,
-      preferredName: profile.preferredName || "",
-      pronouns: profile.pronouns || "",
-      avatarURL: profile.avatarURL || "",
+      preferredName: profile.preferredName,
+      pronouns: profile.pronouns,
+      avatarURL: profile.avatarURL,
       profileComplete: true,
       profileSchemaVersion: CURRENT_PROFILE_SCHEMA,
       challengeStreak: { count: 0, lastCompletedDate: null },
@@ -1693,7 +1746,7 @@ export const completeSignupAndProfile = functions
       dailySkipCount: 0,
       lastChallengeLoadDate: null,
       lastSkipDate: null,
-      organization: profile.organization || null,
+      organization: profile.organization ?? null,
       organizationId: null,
       religionPrefix: "",
     };
