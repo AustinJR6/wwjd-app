@@ -107,8 +107,8 @@ export default function AuthGate() {
         return;
       }
 
-      console.log('➡️ route -> Home');
-      setInitialRoute('Home');
+      console.log('➡️ route -> HomeScreen');
+      setInitialRoute('HomeScreen');
       setChecking(false);
     }
     verify();
@@ -152,7 +152,7 @@ export default function AuthGate() {
           <>
             <Stack.Screen name="Quote" component={QuoteScreen} options={{ headerShown: false }} />
             <Stack.Screen name="SelectReligion" component={SelectReligionScreen} options={{ title: 'Select Religion' }} />
-            <Stack.Screen name="Home" component={HomeScreen} />
+            <Stack.Screen name="HomeScreen" component={HomeScreen} />
             <Stack.Screen name="ReligionAI" component={ReligionAIScreen} options={{ title: 'Religion AI' }} />
             <Stack.Screen name="Journal" component={JournalScreen} options={{ title: 'Quiet Journal' }} />
             <Stack.Screen name="Challenge" component={ChallengeScreen} options={{ title: 'Daily Challenge' }} />

@@ -20,7 +20,7 @@ export type RootStackParamList = {
   OrganizationSignup: undefined;
 
   // Main app screens
-  Home: undefined;
+  HomeScreen: undefined;
   ReligionAI: undefined;
   Journal: undefined;
   Challenge: undefined;

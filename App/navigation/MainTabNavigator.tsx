@@ -32,7 +32,7 @@ export default function MainTabNavigator() {
         },
         tabBarIcon: ({ color, size }) => {
           switch (route.name) {
-            case 'Home':
+            case 'HomeScreen':
               return <Ionicons name="home-outline" size={size} color={color} />;
             case 'ReligionAI':
               return <MaterialCommunityIcons name="cross" size={size} color={color} />;
@@ -56,7 +56,7 @@ export default function MainTabNavigator() {
         },
       })}
     >
-      <Tab.Screen name="Home" component={HomeScreen as React.ComponentType<any>} />
+      <Tab.Screen name="HomeScreen" component={HomeScreen as React.ComponentType<any>} />
       <Tab.Screen name="ReligionAI" component={ReligionAIScreen as React.ComponentType<any>} />
       <Tab.Screen name="Journal" component={JournalScreen as React.ComponentType<any>} />
       <Tab.Screen name="Challenge" component={ChallengeScreen as React.ComponentType<any>} />

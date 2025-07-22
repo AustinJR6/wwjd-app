@@ -11,7 +11,7 @@ import { RootStackParamList } from "@/navigation/RootStackParamList";
 import AuthGate from '@/components/AuthGate';
 import { useAuth } from '@/hooks/useAuth';
 
-type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
+type Props = NativeStackScreenProps<RootStackParamList, 'HomeScreen'>;
 
 export default function HomeScreen({ navigation }: Props) {
   const [tokens, setTokens] = useState<number>(0);
