@@ -73,6 +73,23 @@ function validateSignupProfile(profile: any): Required<Pick<any,
     sanitized[field] = val.trim();
   }
 
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(sanitized.email)) {
+    throw new functions.https.HttpsError('invalid-argument', 'Invalid email format');
+  }
+
+  const usernameRegex = /^[a-zA-Z0-9_-]{3,20}$/;
+  if (!usernameRegex.test(sanitized.username)) {
+    throw new functions.https.HttpsError('invalid-argument', 'Invalid username');
+  }
+
+  try {
+    // throws if url is invalid
+    new URL(sanitized.avatarURL);
+  } catch {
+    throw new functions.https.HttpsError('invalid-argument', 'Invalid avatarURL');
+  }
+
   if ('region' in profile) {
     if (typeof profile.region !== 'string') {
       throw new functions.https.HttpsError('invalid-argument', 'region must be a string');
@@ -1715,6 +1732,19 @@ export const completeSignupAndProfile = functions
     }
 
     const profile = validateSignupProfile(rawProfile);
+
+    const existing = await admin
+      .firestore()
+      .collection("users")
+      .where("username", "==", profile.username)
+      .limit(1)
+      .get();
+    if (!existing.empty && existing.docs[0].id !== uid) {
+      throw new functions.https.HttpsError(
+        "already-exists",
+        "Username already taken",
+      );
+    }
 
     const timestamp = admin.firestore.FieldValue.serverTimestamp();
 
