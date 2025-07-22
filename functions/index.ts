@@ -1699,7 +1699,7 @@ export const completeSignupAndProfile = functions
     };
 
     const docRef = admin.firestore().collection("users").doc(uid);
-    logger.info(`completeSignupAndProfile`, { uid });
+    logger.info(`completeSignupAndProfile`, { uid, profile: defaultProfile });
     try {
       await docRef.set(defaultProfile, { merge: true });
       return { success: true };

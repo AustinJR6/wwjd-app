@@ -7,6 +7,9 @@ import Button from "@/components/common/Button";
 import { signup } from "@/services/authService";
 import { API_URL } from "@/config/firebaseApp";
 import { getAuthHeaders } from "@/utils/authUtils";
+import { loadUserProfile, CURRENT_PROFILE_SCHEMA } from "@/utils/userProfile";
+import { useUserProfileStore } from "@/state/userProfile";
+import { DEFAULT_RELIGION } from "@/config/constants";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useTheme } from "@/components/theme/theme";
@@ -80,34 +83,76 @@ export default function SignupScreen() {
 
       const uid = result.localId;
       const headers = await getAuthHeaders();
+      const now = new Date().toISOString();
       const profile = {
+        uid,
         email: email.trim(),
-        username: username.trim(),
+        emailVerified: false,
         displayName: username.trim(),
+        username: username.trim(),
+        region: region || "",
+        createdAt: now,
+        lastActive: now,
+        lastFreeAsk: now,
+        lastFreeSkip: now,
+        onboardingComplete: true,
+        religion: religion || DEFAULT_RELIGION,
+        tokens: 0,
+        skipTokensUsed: 0,
+        individualPoints: 0,
+        isSubscribed: false,
+        nightModeEnabled: false,
         preferredName: preferredName.trim(),
         pronouns: pronouns.trim(),
         avatarURL: avatarURL.trim(),
-        region: region || "",
-        religion: religion || "SpiritGuide",
+        profileComplete: true,
+        profileSchemaVersion: CURRENT_PROFILE_SCHEMA,
+        challengeStreak: { count: 0, lastCompletedDate: null },
+        dailyChallengeCount: 0,
+        dailySkipCount: 0,
+        lastChallengeLoadDate: null,
+        lastSkipDate: null,
         organization: organization || null,
+        organizationId: null,
+        religionPrefix: "",
       };
+
       const res = await fetch(`${API_URL}/completeSignupAndProfile`, {
         method: "POST",
         headers,
         body: JSON.stringify({ data: { uid, profile } }),
       });
       if (!res.ok) {
-        const text = await res.text();
-        throw new Error(text || `Status ${res.status}`);
+        let errMsg = `Status ${res.status}`;
+        try {
+          const data = await res.json();
+          errMsg = data?.error?.message || errMsg;
+        } catch {}
+        throw new Error(errMsg);
       }
 
+      const createdProfile = await loadUserProfile(uid);
+      if (createdProfile) {
+        useUserProfileStore.getState().setUserProfile(createdProfile as any);
+      }
       navigation.reset({ index: 0, routes: [{ name: SCREENS.MAIN.HOME }] });
     } catch (err: any) {
       console.warn("🚫 Signup Failed:", err?.response?.data?.error?.message);
-      const fbMessage = err?.response?.data?.error?.message;
-      const message = fbMessage || err.message;
-      const friendly =
-        fbMessage === "EMAIL_EXISTS" ? "Email already in use." : message;
+      const code = err?.response?.data?.error?.message;
+      let friendly = err.message;
+      switch (code) {
+        case "EMAIL_EXISTS":
+          friendly = "Email already in use.";
+          break;
+        case "INVALID_EMAIL":
+          friendly = "Invalid email address.";
+          break;
+        case "WEAK_PASSWORD":
+          friendly = "Password should be at least 6 characters.";
+          break;
+        default:
+          if (code) friendly = code;
+      }
       setErrorMsg(friendly);
       Alert.alert("Signup Failed", friendly);
     } finally {
