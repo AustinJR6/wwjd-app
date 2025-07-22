@@ -40,10 +40,12 @@ export default function SignupScreen() {
 
   const handleSignup = async () => {
     if (!email || !/^\S+@\S+\.\S+$/.test(email)) {
+      console.log('Validation failed: invalid email');
       Alert.alert("Invalid Email", "Please enter a valid email address.");
       return;
     }
     if (!password || password.length < 6) {
+      console.log('Validation failed: weak password');
       Alert.alert(
         "Invalid Password",
         "Password must be at least 6 characters long.",
@@ -51,22 +53,27 @@ export default function SignupScreen() {
       return;
     }
     if (!username.trim()) {
+      console.log('Validation failed: username required');
       Alert.alert("Missing Info", "Username is required.");
       return;
     }
     if (!preferredName.trim()) {
+      console.log('Validation failed: preferred name required');
       Alert.alert("Missing Info", "Preferred name is required.");
       return;
     }
     if (!pronouns.trim()) {
+      console.log('Validation failed: pronouns required');
       Alert.alert("Missing Info", "Pronouns are required.");
       return;
     }
     if (!avatarURL.trim()) {
+      console.log('Validation failed: avatar URL required');
       Alert.alert("Missing Info", "Avatar URL is required.");
       return;
     }
     if (!religion) {
+      console.log('Validation failed: religion not selected');
       setReligionError("Please select a spiritual lens.");
       return;
     } else {
@@ -140,9 +147,16 @@ export default function SignupScreen() {
       }
       navigation.reset({ index: 0, routes: [{ name: SCREENS.MAIN.HOME }] });
     } catch (err: any) {
-      console.warn("🚫 Signup Failed:", err?.response?.data?.error?.message || err);
-      const code = err.code || err?.response?.data?.error?.message;
-      let friendly = err.message;
+      console.warn(
+        "🚫 Signup Failed:",
+        err?.response?.data?.error?.message || err,
+      );
+      console.error("Signup Process Error:", err);
+      const data = err?.response?.data;
+      let errMsg = err.message;
+      errMsg = data?.error?.message || errMsg;
+      const code = err.code || data?.error?.status || data?.error?.message;
+      let friendly = errMsg;
       switch (code) {
         case "EMAIL_EXISTS":
           friendly = "Email already in use.";
@@ -167,7 +181,7 @@ export default function SignupScreen() {
           friendly = "Server error. Please try again.";
           break;
         default:
-          if (code) friendly = err.message;
+          if (code) friendly = errMsg;
       }
       setErrorMsg(friendly);
       Alert.alert("Signup Failed", friendly);
