@@ -13,6 +13,7 @@ import { useUserProfileStore } from '@/state/userProfile';
 import { initAuthState } from '@/services/authService';
 import { loadUserProfile } from '@/utils/userProfile';
 import { refreshLastActive } from '@/services/userService';
+import { SCREENS } from './screens';
 
 // Auth Screens
 import LoginScreen from '@/screens/auth/LoginScreen';
@@ -108,8 +109,16 @@ export default function AuthGate() {
         return;
       }
 
-      console.log('➡️ route -> HomeScreen');
-      setInitialRoute('HomeScreen');
+      if (
+        profile &&
+        (profile.onboardingComplete === false || profile.onboardingComplete === undefined)
+      ) {
+        console.log('➡️ route -> ProfileCompletion');
+        setInitialRoute(SCREENS.AUTH.PROFILE_COMPLETION as keyof RootStackParamList);
+      } else {
+        console.log('➡️ route -> HomeScreen');
+        setInitialRoute(SCREENS.MAIN.HOME as keyof RootStackParamList);
+      }
       setChecking(false);
     }
     verify();
