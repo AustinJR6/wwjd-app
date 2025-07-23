@@ -77,12 +77,10 @@ service cloud.firestore {
     // Allow authenticated users to read regions and religions
     match /regions/{regionId} {
       allow read: if isSignedIn();
-      allow update: if isSignedIn();
     }
 
     match /religions/{religionId} {
       allow read: if isSignedIn();
-      allow update: if isSignedIn();
     }
   }
 }
