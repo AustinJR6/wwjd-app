@@ -6,7 +6,8 @@ import TextField from '@/components/TextField';
 import Button from '@/components/common/Button';
 import { Picker } from '@react-native-picker/picker';
 import { useLookupLists } from '@/hooks/useLookupLists';
-import { updateUserProfile } from '@/utils/userProfile';
+import { firestore } from '@/config/firebaseClient';
+import { doc, runTransaction } from 'firebase/firestore';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/navigation/RootStackParamList';
@@ -49,10 +50,27 @@ export default function ProfileCompletionScreen() {
       if (preferredName.trim()) payload.preferredName = preferredName.trim();
       if (pronouns.trim()) payload.pronouns = pronouns.trim();
       if (avatarURL.trim()) payload.avatarURL = avatarURL.trim();
-      await updateUserProfile(payload, uid);
+
+      await runTransaction(firestore, async (transaction) => {
+        const regionRef = doc(firestore, 'regions', region);
+        const religionRef = doc(firestore, 'religions', religion);
+        const userRef = doc(firestore, 'users', uid);
+
+        const regionDoc = await transaction.get(regionRef);
+        const religionDoc = await transaction.get(religionRef);
+
+        const regionCount = regionDoc.exists() ? (regionDoc.data().userCount ?? 0) : 0;
+        const religionCount = religionDoc.exists() ? (religionDoc.data().userCount ?? 0) : 0;
+
+        transaction.set(regionRef, { userCount: regionCount + 1 }, { merge: true });
+        transaction.set(religionRef, { userCount: religionCount + 1 }, { merge: true });
+        transaction.set(userRef, payload, { merge: true });
+      });
+
       navigation.reset({ index: 0, routes: [{ name: SCREENS.MAIN.HOME }] });
     } catch (err: any) {
-      Alert.alert('Error', err.message || 'Could not save profile');
+      Alert.alert('Error', err.message || 'Could not save profile or update counts');
+      console.error('Transaction failed:', err);
     } finally {
       setSaving(false);
     }
