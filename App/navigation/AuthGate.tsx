@@ -17,6 +17,7 @@ import { refreshLastActive } from '@/services/userService';
 // Auth Screens
 import LoginScreen from '@/screens/auth/LoginScreen';
 import SignupScreen from '@/screens/auth/SignupScreen';
+import ProfileCompletionScreen from '@/screens/auth/ProfileCompletionScreen';
 import WelcomeScreen from '@/screens/auth/WelcomeScreen';
 import ForgotPasswordScreen from '@/screens/auth/ForgotPasswordScreen';
 import ForgotUsernameScreen from '@/screens/auth/ForgotUsernameScreen';
@@ -168,6 +169,7 @@ export default function AuthGate() {
             <Stack.Screen name="SubmitProof" component={SubmitProofScreen} options={{ title: 'Submit Proof' }} />
             <Stack.Screen name="OrganizationManagement" component={OrganizationManagementScreen} options={{ title: 'Manage Organization' }} />
             <Stack.Screen name="JoinOrganization" component={JoinOrganizationScreen} options={{ title: 'Join Organization' }} />
+            <Stack.Screen name="ProfileCompletion" component={ProfileCompletionScreen} options={{ title: 'Complete Profile' }} />
           </>
         )}
       </Stack.Navigator>
