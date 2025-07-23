@@ -79,7 +79,7 @@ service cloud.firestore {
       allow read: if isSignedIn();
     }
 
-    match /religions/{religionId} {
+    match /religion/{religionId} {
       allow read: if isSignedIn();
     }
   }
