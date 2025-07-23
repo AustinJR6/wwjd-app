@@ -157,6 +157,7 @@ export default function AuthGate() {
             <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} options={{ title: 'Reset Password' }} />
             <Stack.Screen name="ForgotUsername" component={ForgotUsernameScreen} options={{ title: 'Find Email' }} />
             <Stack.Screen name="OrganizationSignup" component={OrganizationSignupScreen} options={{ title: 'Create Organization' }} />
+            <Stack.Screen name="ProfileCompletion" component={ProfileCompletionScreen} options={{ title: 'Complete Profile' }} />
           </>
         ) : (
           <>
