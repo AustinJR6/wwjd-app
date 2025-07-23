@@ -74,12 +74,13 @@ service cloud.firestore {
     }
 
     // 🌍 Static lookup collections
-    // Allow authenticated users to read regions and religions
-    match /regions/{regionId} {
+    // Allow authenticated users to read regions and religions, including any
+    // nested subcollections or documents.
+    match /regions/{path=**} {
       allow read: if isSignedIn();
     }
 
-    match /religion/{religionId} {
+    match /religion/{path=**} {
       allow read: if isSignedIn();
     }
   }
