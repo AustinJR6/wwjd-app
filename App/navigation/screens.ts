@@ -2,7 +2,8 @@ export const SCREENS = {
   AUTH: {
     LOGIN: 'Login',
     SIGNUP: 'Signup',
-    ORGANIZATION_SIGNUP: 'OrganizationSignup'
+    ORGANIZATION_SIGNUP: 'OrganizationSignup',
+    PROFILE_COMPLETION: 'ProfileCompletion'
     // FORGOT_PASSWORD: 'ForgotPassword' // Optional: add if needed
   },
 

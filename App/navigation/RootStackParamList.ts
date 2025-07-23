@@ -18,6 +18,7 @@ export type RootStackParamList = {
   ForgotPassword: undefined;
   ForgotUsername: undefined;
   OrganizationSignup: undefined;
+  ProfileCompletion: undefined;
 
   // Main app screens
   HomeScreen: undefined;
