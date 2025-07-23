@@ -53,7 +53,7 @@ export default function ProfileCompletionScreen() {
 
       await runTransaction(firestore, async (transaction) => {
         const regionRef = doc(firestore, 'regions', region);
-        const religionRef = doc(firestore, 'religions', religion);
+        const religionRef = doc(firestore, 'religion', religion);
         const userRef = doc(firestore, 'users', uid);
 
         const regionDoc = await transaction.get(regionRef);

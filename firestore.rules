@@ -76,14 +76,20 @@ service cloud.firestore {
     // 🌍 Static lookup collections
     // Allow authenticated users to read regions and religions, including any
     // nested subcollections or documents.
-    match /regions/{path=**} {
+    match /regions/{regionId} {
       allow read: if isSignedIn();
+      allow update: if isSignedIn();
+      // Subcollections remain read-only
+      match /{subPath=**} {
+        allow read: if isSignedIn();
+      }
     }
 
     // 📖 Religion lookup collection uses capitalized document IDs
     // Match the top-level document and any nested paths
     match /religion/{religionId} {
       allow read: if isSignedIn();
+      allow update: if isSignedIn();
       match /{subPath=**} {
         allow read: if isSignedIn();
       }
