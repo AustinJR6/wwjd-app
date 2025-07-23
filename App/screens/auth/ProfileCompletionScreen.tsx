@@ -8,6 +8,7 @@ import { Picker } from '@react-native-picker/picker';
 import { useLookupLists } from '@/hooks/useLookupLists';
 import { firestore } from '@/config/firebaseClient';
 import { doc, runTransaction } from 'firebase/firestore';
+import { getRegionDocRef } from '@/utils/regionUtils';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/navigation/RootStackParamList';
@@ -52,7 +53,7 @@ export default function ProfileCompletionScreen() {
       if (avatarURL.trim()) payload.avatarURL = avatarURL.trim();
 
       await runTransaction(firestore, async (transaction) => {
-        const regionRef = doc(firestore, 'regions', region);
+        const regionRef = getRegionDocRef(firestore, region);
         const religionRef = doc(firestore, 'religion', religion);
         const userRef = doc(firestore, 'users', uid);
 
