@@ -80,8 +80,13 @@ service cloud.firestore {
       allow read: if isSignedIn();
     }
 
-    match /religion/{path=**} {
+    // 📖 Religion lookup collection uses capitalized document IDs
+    // Match the top-level document and any nested paths
+    match /religion/{religionId} {
       allow read: if isSignedIn();
+      match /{subPath=**} {
+        allow read: if isSignedIn();
+      }
     }
   }
 }
