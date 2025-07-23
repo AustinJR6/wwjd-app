@@ -17,8 +17,9 @@ export async function seedRegions() {
 
   const batch = db.batch();
   regions.forEach((r) => {
-    const ref = db.collection('regions').doc(r.code);
-    batch.set(ref, r, { merge: true });
+    const id = r.name.toLowerCase();
+    const ref = db.collection('regions').doc(id);
+    batch.set(ref, { ...r, id }, { merge: true });
   });
   await batch.commit();
   console.log(`Seeded ${regions.length} regions`);

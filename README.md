@@ -173,7 +173,9 @@ The export command creates `PromptLibrary.md` with prompts grouped by category.
 ### Region Seeding
 
 Run `npx ts-node seedRegions.ts` from the `functions` directory to populate the
-`regions` collection with default entries used by the app.
+`regions` collection with default entries used by the app. Each region
+document ID is the lowercase name (e.g., `southwest`) and includes an `id`
+field matching the document ID.
 
 The mobile app pulls these documents via the Firestore REST API to populate the
 region picker on the onboarding and profile screens. The selected region value
