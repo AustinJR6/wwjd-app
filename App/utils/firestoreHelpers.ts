@@ -52,10 +52,17 @@ export async function updateUserProfile(
     console.warn("\u274C No UID available for user update.");
     return;
   }
+  if (!Object.keys(fields).length) {
+    console.warn('⚠️ updateUserProfile called with no fields');
+    return;
+  }
 
   try {
     const headers = await getAuthHeaders();
-    const url = `${FIRESTORE_BASE}/users/${uid}`;
+    const mask = Object.keys(fields)
+      .map((f) => `updateMask.fieldPaths=${encodeURIComponent(f)}`)
+      .join('&');
+    const url = `${FIRESTORE_BASE}/users/${uid}?${mask}`;
     console.log('➡️ PATCH', url, { payload: fields, headers });
     await apiClient.patch(url, { fields: toFirestoreFields(fields) }, { headers });
     console.log('✅ Profile updated:', fields);
