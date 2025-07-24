@@ -158,6 +158,13 @@ export function generateDefaultUserData({
   religionSlug: string;
   lastActive: string;
   profileSchemaVersion: number;
+  organizationId: string | null;
+  religionPrefix: string;
+  challengeStreak: { count: number; lastCompletedDate: string | null };
+  dailyChallengeCount: number;
+  dailySkipCount: number;
+  lastChallengeLoadDate: string | null;
+  lastSkipDate: string | null;
 } {
   const slugify = (str: string) =>
     str
@@ -191,7 +198,14 @@ export function generateDefaultUserData({
     lastFreeSkip: now,
     isSubscribed: false,
     onboardingComplete: false,
-  nightModeEnabled: false,
+    nightModeEnabled: false,
+    organizationId: null,
+    religionPrefix: '',
+    challengeStreak: { count: 0, lastCompletedDate: null },
+    dailyChallengeCount: 0,
+    dailySkipCount: 0,
+    lastChallengeLoadDate: null,
+    lastSkipDate: null,
   };
 }
 
@@ -211,8 +225,9 @@ export async function createUserDocument(
     await axios.patch(url, body, { headers });
   } catch (err: any) {
     if (err?.response?.status === 404) {
-      console.log("➡️ PUT", url);
-      await axios.put(url, body, { headers });
+      const createUrl = `${url}?currentDocument.exists=false`;
+      console.log("➡️ PUT", createUrl);
+      await axios.put(createUrl, body, { headers });
     } else {
       logFirestoreError("GET", path, err);
       throw err;
