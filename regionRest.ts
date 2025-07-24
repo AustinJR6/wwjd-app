@@ -1,6 +1,5 @@
-import apiClient from '@/utils/apiClient';
-import { FIRESTORE_BASE } from './firebaseRest';
-import { getIdToken } from './authRest';
+import { firestore } from '@/config/firebaseClient';
+import { doc, getDoc } from 'firebase/firestore';
 import { logFirestoreError } from './App/lib/logging';
 
 export interface RegionItem {
@@ -10,26 +9,28 @@ export interface RegionItem {
 
 let regionCache: RegionItem[] | null = null;
 
+const REGION_IDS = [
+  'midwest',
+  'northeast',
+  'northwest',
+  'southeast',
+  'southwest',
+];
+
 export async function fetchRegionList(): Promise<RegionItem[]> {
   if (regionCache) {
     console.log('📦 Regions served from cache');
     return regionCache;
   }
 
-  const idToken = await getIdToken();
-  const url = `${FIRESTORE_BASE}/regions`;
   try {
-    const res = await apiClient.get(url, {
-      headers: { Authorization: `Bearer ${idToken}` },
-    });
-    const docs = (res.data as any).documents || [];
-    regionCache = docs.map((doc: any) => {
-      const id = doc.name.split('/').pop() || '';
-      const fields = doc.fields || {};
-      const name = fields.name?.stringValue || 'Unnamed';
-      return { id, name };
-    });
-    return regionCache ?? [];
+    const snaps = await Promise.all(
+      REGION_IDS.map((id) => getDoc(doc(firestore, 'regions', id))),
+    );
+    regionCache = snaps
+      .filter((s) => s.exists())
+      .map((s) => ({ id: s.id, name: s.data()?.name || 'Unnamed' }));
+    return regionCache;
   } catch (err: any) {
     logFirestoreError('GET', 'regions', err);
     throw new Error('Unable to fetch regions');

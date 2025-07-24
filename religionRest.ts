@@ -1,6 +1,5 @@
-import apiClient from '@/utils/apiClient';
-import { FIRESTORE_BASE } from './firebaseRest';
-import { getIdToken } from './authRest';
+import { firestore } from '@/config/firebaseClient';
+import { doc, getDoc } from 'firebase/firestore';
 import { logFirestoreError } from './App/lib/logging';
 
 export interface ReligionItem {
@@ -43,36 +42,29 @@ export async function getReligionProfile(
   if (religionCache[id]) {
     return religionCache[id];
   }
-  const idToken = await getIdToken();
-  const url = `${FIRESTORE_BASE}/religion/${id}`;
-  console.log('➡️ Sending Firestore request to:', url);
   try {
-    const res = await apiClient.get(url, {
-      headers: { Authorization: `Bearer ${idToken}` },
-    });
-    const fields = (res.data as any).fields || {};
-    const profile: ReligionProfile = {
-      id,
-      name: fields.name?.stringValue || id,
-      prompt:
-        fields.prompt?.stringValue ||
-        'Respond with empathy, logic, and gentle spirituality.',
-      aiVoice: fields.aiVoice?.stringValue,
-    };
-    religionCache[id] = profile;
-    console.log('✅ Firestore response:', res.status);
-    return profile;
-  } catch (err: any) {
-    logFirestoreError('GET', `religion/${id}`, err);
-    if (err.response?.status === 404) {
+    const snap = await getDoc(doc(firestore, 'religion', id));
+    if (!snap.exists()) {
       console.warn(`⚠️ Religion document missing: ${id}`);
-      const fallback: ReligionProfile = {
+      return {
         id,
         name: id,
         prompt: 'Respond with empathy, logic, and gentle spirituality.',
       };
-      return fallback;
     }
+    const data = snap.data() || {};
+    const profile: ReligionProfile = {
+      id: snap.id,
+      name: data.name || id,
+      prompt:
+        data.prompt ||
+        'Respond with empathy, logic, and gentle spirituality.',
+      aiVoice: data.aiVoice,
+    };
+    religionCache[id] = profile;
+    return profile;
+  } catch (err: any) {
+    logFirestoreError('GET', `religion/${id}`, err);
     return null;
   }
 }
@@ -83,29 +75,32 @@ export async function fetchReligionPrompt(id: string): Promise<{ prompt: string;
   return { prompt: profile.prompt || '', aiVoice: profile.aiVoice };
 }
 
+const RELIGION_IDS = [
+  'SpiritGuide',
+  'Christianity',
+  'Islam',
+  'Judaism',
+  'Hinduism',
+  'Buddhism',
+  'Atheist',
+  'Agnostic',
+  'Pagan',
+];
+
 async function fetchReligionList(): Promise<ReligionItem[]> {
-  const idToken = await getIdToken();
-  const url = `${FIRESTORE_BASE}/religion`;
-
-  console.log('➡️ Fetching religions from', url);
-
   try {
-    const response = await apiClient.get(url, {
-      headers: {
-        Authorization: `Bearer ${idToken}`,
-      },
-    });
+    const snaps = await Promise.all(
+      RELIGION_IDS.map((id) => getDoc(doc(firestore, 'religion', id))),
+    );
+    const religions: ReligionItem[] = snaps
+      .filter((s) => s.exists())
+      .map((s) => {
+        const data = s.data() || {};
+        const name = data.name || s.id;
+        return { id: s.id, name };
+      });
 
-    const docs = (response.data as any).documents || [];
-    console.log('✅ Religions fetched', docs.map((d: any) => d.name.split('/').pop()));
-
-    const religions: ReligionItem[] = docs.map((doc: any) => {
-      const id = doc.name.split('/').pop() || '';
-      const fields = doc.fields || {};
-      const name = fields.name?.stringValue || id;
-      return { id, name };
-    });
-
+    console.log('✅ Religions fetched', religions.map((r) => r.id));
     return religions;
   } catch (err: any) {
     logFirestoreError('GET', 'religion', err);
