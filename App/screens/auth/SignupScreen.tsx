@@ -68,6 +68,7 @@ export default function SignupScreen() {
       switch (code) {
         case "EMAIL_EXISTS":
           friendly = "Email already in use.";
+          navigation.navigate('Login');
           break;
         case "INVALID_EMAIL":
           friendly = "Invalid email address.";

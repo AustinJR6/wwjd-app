@@ -7,6 +7,8 @@ import Button from '@/components/common/Button';
 import { Picker } from '@react-native-picker/picker';
 import { useLookupLists } from '@/hooks/useLookupLists';
 import { getDocument, setDocument } from '@/services/firestoreService';
+import { updateUserProfile, loadUserProfile } from '@/utils/userProfile';
+import { useUserProfileStore } from '@/state/userProfile';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/navigation/RootStackParamList';
@@ -26,6 +28,16 @@ export default function ProfileCompletionScreen() {
   const [pronouns, setPronouns] = useState('');
   const [avatarURL, setAvatarURL] = useState('');
   const [saving, setSaving] = useState(false);
+  const profileStore = useUserProfileStore();
+
+  useEffect(() => {
+    async function loadProfile() {
+      if (!uid) return;
+      const prof = await loadUserProfile(uid);
+      if (prof) profileStore.setUserProfile(prof as any);
+    }
+    loadProfile();
+  }, [uid]);
 
   useEffect(() => {
     if (!region && regions.length) setRegion(regions[0].name);
@@ -34,8 +46,15 @@ export default function ProfileCompletionScreen() {
 
   const handleComplete = async () => {
     if (!uid) return;
+    const existing = profileStore.profile;
+    const hasDisplay = existing?.displayName && existing.displayName.trim();
+    const hasUsername = existing?.username && existing.username.trim();
     if (!region || !religion) {
       Alert.alert('Missing Info', 'Please select a region and religion.');
+      return;
+    }
+    if (!hasDisplay || !hasUsername || !preferredName.trim() || !pronouns.trim()) {
+      Alert.alert('Missing Info', 'All fields are required.');
       return;
     }
     setSaving(true);
@@ -43,16 +62,15 @@ export default function ProfileCompletionScreen() {
       const payload: Record<string, any> = {
         region,
         religion,
+        preferredName: preferredName.trim(),
+        pronouns: pronouns.trim(),
         onboardingComplete: true,
         profileComplete: true,
       };
-      if (preferredName.trim()) payload.preferredName = preferredName.trim();
-      if (pronouns.trim()) payload.pronouns = pronouns.trim();
       if (avatarURL.trim()) payload.avatarURL = avatarURL.trim();
 
       const regionPath = `regions/${region.toLowerCase()}`;
       const religionPath = `religion/${religion}`;
-      const userPath = `users/${uid}`;
 
       const [regionDoc, religionDoc] = await Promise.all([
         getDocument(regionPath),
@@ -65,8 +83,9 @@ export default function ProfileCompletionScreen() {
       await Promise.all([
         setDocument(regionPath, { userCount: regionCount + 1 }),
         setDocument(religionPath, { userCount: religionCount + 1 }),
-        setDocument(userPath, payload),
+        updateUserProfile(payload, uid),
       ]);
+      await profileStore.refreshUserProfile();
 
       navigation.reset({ index: 0, routes: [{ name: 'MainTabs' }] });
     } catch (err: any) {
@@ -117,16 +136,14 @@ export default function ProfileCompletionScreen() {
       <ScrollView contentContainerStyle={{ paddingBottom: theme.spacing.lg }}>
         <CustomText style={styles.title}>Complete Your Profile</CustomText>
         <TextField
-          label="Preferred Name"
+          label="Preferred Name *"
           value={preferredName}
           onChangeText={setPreferredName}
-          placeholder="Optional"
         />
         <TextField
-          label="Pronouns"
+          label="Pronouns *"
           value={pronouns}
           onChangeText={setPronouns}
-          placeholder="Optional"
         />
         <TextField
           label="Avatar URL"
