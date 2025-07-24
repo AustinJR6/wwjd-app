@@ -1,5 +1,10 @@
 import { getItem, setItem, deleteItem } from '@/utils/secureStore';
-import { signUpWithEmailAndPassword, signInWithEmailAndPassword } from '../../firebaseRest';
+import {
+  signUpWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  generateDefaultUserData,
+  createUserDocument,
+} from '../../firebaseRest';
 import axios from 'axios';
 import Constants from 'expo-constants';
 
@@ -71,6 +76,11 @@ export async function signup(email: string, password: string) {
     await setItem(TOKEN_KEY, res.idToken);
     await setItem(REFRESH_KEY, res.refreshToken);
     await setItem(UID_KEY, res.localId);
+    const userData = generateDefaultUserData({
+      uid: res.localId,
+      email: res.email ?? '',
+    });
+    await createUserDocument(res.localId, userData, res.idToken);
     console.log('🎉 Signup successful');
     return { uid: res.localId, email: res.email };
   } catch (error: any) {

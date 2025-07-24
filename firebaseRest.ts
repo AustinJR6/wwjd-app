@@ -191,8 +191,33 @@ export function generateDefaultUserData({
     lastFreeSkip: now,
     isSubscribed: false,
     onboardingComplete: false,
-    nightModeEnabled: false,
+  nightModeEnabled: false,
   };
+}
+
+export async function createUserDocument(
+  uid: string,
+  data: Record<string, any>,
+  idToken: string,
+) {
+  const path = `users/${uid}`;
+  const url = `${FIRESTORE_BASE}/${path}`;
+  const headers = { Authorization: `Bearer ${idToken}` };
+  const body = { fields: toFirestoreFields(data) };
+
+  try {
+    await axios.get(url, { headers });
+    console.log("➡️ PATCH", url);
+    await axios.patch(url, body, { headers });
+  } catch (err: any) {
+    if (err?.response?.status === 404) {
+      console.log("➡️ PUT", url);
+      await axios.put(url, body, { headers });
+    } else {
+      logFirestoreError("GET", path, err);
+      throw err;
+    }
+  }
 }
 
 
