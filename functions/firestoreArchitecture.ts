@@ -46,26 +46,38 @@ export const onActiveChallengeDelete = functions.firestore
 
 // Trigger: update points and leaderboards when challenge completed
 export const onCompletedChallengeCreate = functions.firestore
-  .document('completedChallenges/{uid}/{challengeId}')
-  .onCreate(async (snap, context) => {
-    const uid = context.params.uid;
+  .document('completedChallenges/{challengeId}')
+  .onCreate(async (snap) => {
     const data = snap.data() || {};
+    const uid = data.uid as string | undefined;
+    if (!uid) {
+      functions.logger.error('onCompletedChallengeCreate: missing uid');
+      return;
+    }
     const points = typeof data.points === 'number' ? data.points : 10;
     try {
       const userRef = db.doc(`users/${uid}`);
       const userSnap = await userRef.get();
       const userData = userSnap.data() || {};
-      const updates: any = { individualPoints: admin.firestore.FieldValue.increment(points) };
-      await userRef.set(updates, { merge: true });
+      const inc = admin.firestore.FieldValue.increment(points);
+      const tasks: Promise<any>[] = [
+        userRef.set({ individualPoints: inc }, { merge: true }),
+      ];
 
       const org = userData.organization as string | undefined;
       const region = userData.region as string | undefined;
       const religion = userData.religion as string | undefined;
-      if (org) await db.doc(`organizations/${org}`).set({ orgPoints: admin.firestore.FieldValue.increment(points) }, { merge: true });
-      if (region) await db.doc(`regions/${region}`).set({ regionPoints: admin.firestore.FieldValue.increment(points) }, { merge: true });
-      if (religion) await db.doc(`religion/${religion}`).set({ religionPoints: admin.firestore.FieldValue.increment(points) }, { merge: true });
+      if (org) tasks.push(db.doc(`organizations/${org}`).set({ orgPoints: inc }, { merge: true }));
+      if (region) tasks.push(db.doc(`regions/${region}`).set({ regionPoints: inc }, { merge: true }));
+      if (religion) tasks.push(db.doc(`religion/${religion}`).set({ religionPoints: inc }, { merge: true }));
 
-      await db.doc('leaderboards/global').set({ updated: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });
+      tasks.push(
+        db
+          .doc('leaderboards/global')
+          .set({ updatedAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true })
+      );
+
+      await Promise.all(tasks);
     } catch (err) {
       functions.logger.error('onCompletedChallengeCreate', err);
     }

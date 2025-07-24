@@ -1790,4 +1790,4 @@ export const completeSignupAndProfile = functions
     }
   });
 
-export * from './firestoreArchitecture';
+export { onCompletedChallengeCreate } from './firestoreArchitecture';
