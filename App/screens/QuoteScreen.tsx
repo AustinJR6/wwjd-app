@@ -91,7 +91,7 @@ export default function QuoteScreen({ navigation }: Props) {
         <CustomText style={styles.quote}>“{quote.text}”</CustomText>
         <CustomText style={styles.reference}>— {quote.reference}</CustomText>
         <View style={styles.buttonWrap}>
-          <Button title="Continue" onPress={() => navigation.replace('HomeScreen')} />
+          <Button title="Continue" onPress={() => navigation.replace('MainTabs')} />
         </View>
       </View>
     </ScreenContainer>

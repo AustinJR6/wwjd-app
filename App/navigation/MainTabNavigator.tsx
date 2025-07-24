@@ -20,6 +20,7 @@ export default function MainTabNavigator() {
   const theme = useTheme();
   return (
     <Tab.Navigator
+      initialRouteName="HomeScreen"
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarActiveTintColor: theme.colors.primary,

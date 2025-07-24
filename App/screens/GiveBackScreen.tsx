@@ -81,7 +81,7 @@ export default function GiveBackScreen({ navigation }: Props) {
         </CustomText>
 
         <View style={styles.backWrap}>
-          <Button title="Back to Home" onPress={() => navigation.navigate('HomeScreen')} />
+          <Button title="Back to Home" onPress={() => navigation.navigate('MainTabs', { screen: 'HomeScreen' })} />
         </View>
       </View>
     </ScreenContainer>
