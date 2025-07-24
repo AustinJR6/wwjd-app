@@ -46,9 +46,11 @@ const STRIPE_100_TOKEN_PRICE_ID = process.env.STRIPE_100_TOKEN_PRICE_ID || "";
 const CURRENT_PROFILE_SCHEMA = 1;
 
 function validateSignupProfile(profile: any): Required<Pick<any,
-  'email' | 'displayName' | 'username' | 'religion' | 'preferredName' | 'pronouns' | 'avatarURL'>> & {
+  'email' | 'displayName' | 'username' | 'religion' | 'preferredName'>> & {
   region?: string;
   organization?: string | null;
+  pronouns?: string;
+  avatarURL?: string;
 } {
   if (!profile || typeof profile !== 'object') {
     throw new functions.https.HttpsError('invalid-argument', 'profile must be an object');
@@ -60,8 +62,6 @@ function validateSignupProfile(profile: any): Required<Pick<any,
     'username',
     'religion',
     'preferredName',
-    'pronouns',
-    'avatarURL',
   ];
 
   const sanitized: any = {};
@@ -83,11 +83,17 @@ function validateSignupProfile(profile: any): Required<Pick<any,
     throw new functions.https.HttpsError('invalid-argument', 'Invalid username');
   }
 
-  try {
-    // throws if url is invalid
-    new URL(sanitized.avatarURL);
-  } catch {
-    throw new functions.https.HttpsError('invalid-argument', 'Invalid avatarURL');
+  if (typeof profile.avatarURL === 'string' && profile.avatarURL.trim()) {
+    try {
+      new URL(profile.avatarURL);
+    } catch {
+      throw new functions.https.HttpsError('invalid-argument', 'Invalid avatarURL');
+    }
+    sanitized.avatarURL = profile.avatarURL.trim();
+  }
+
+  if ('pronouns' in profile && typeof profile.pronouns === 'string') {
+    sanitized.pronouns = profile.pronouns.trim();
   }
 
   if ('region' in profile) {

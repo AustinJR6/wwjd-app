@@ -6,7 +6,7 @@ import TextField from '@/components/TextField';
 import Button from '@/components/common/Button';
 import { Picker } from '@react-native-picker/picker';
 import { useLookupLists } from '@/hooks/useLookupLists';
-import { getDocument, setDocument } from '@/services/firestoreService';
+import { getDocument, updateDocument } from '@/services/firestoreService';
 import { updateUserProfile, loadUserProfile } from '@/utils/userProfile';
 import { useUserProfileStore } from '@/state/userProfile';
 import { useNavigation } from '@react-navigation/native';
@@ -53,8 +53,8 @@ export default function ProfileCompletionScreen() {
       Alert.alert('Missing Info', 'Please select a region and religion.');
       return;
     }
-    if (!hasDisplay || !hasUsername || !preferredName.trim() || !pronouns.trim()) {
-      Alert.alert('Missing Info', 'All fields are required.');
+    if (!hasDisplay || !hasUsername || !preferredName.trim()) {
+      Alert.alert('Missing Info', 'Preferred name is required.');
       return;
     }
     setSaving(true);
@@ -63,10 +63,10 @@ export default function ProfileCompletionScreen() {
         region,
         religion,
         preferredName: preferredName.trim(),
-        pronouns: pronouns.trim(),
         onboardingComplete: true,
         profileComplete: true,
       };
+      if (pronouns.trim()) payload.pronouns = pronouns.trim();
       if (avatarURL.trim()) payload.avatarURL = avatarURL.trim();
 
       const regionPath = `regions/${region.toLowerCase()}`;
@@ -81,8 +81,8 @@ export default function ProfileCompletionScreen() {
       const religionCount = religionDoc?.userCount ?? 0;
 
       await Promise.all([
-        setDocument(regionPath, { userCount: regionCount + 1 }),
-        setDocument(religionPath, { userCount: religionCount + 1 }),
+        updateDocument(regionPath, { userCount: regionCount + 1 }),
+        updateDocument(religionPath, { userCount: religionCount + 1 }),
         updateUserProfile(payload, uid),
       ]);
       await profileStore.refreshUserProfile();
@@ -141,9 +141,10 @@ export default function ProfileCompletionScreen() {
           onChangeText={setPreferredName}
         />
         <TextField
-          label="Pronouns *"
+          label="Pronouns"
           value={pronouns}
           onChangeText={setPronouns}
+          placeholder="Optional"
         />
         <TextField
           label="Avatar URL"
