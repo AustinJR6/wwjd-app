@@ -216,20 +216,22 @@ export async function createUserDocument(
 ) {
   const path = `users/${uid}`;
   const url = `${FIRESTORE_BASE}/${path}`;
-  const headers = { Authorization: `Bearer ${idToken}` };
+  const headers = {
+    Authorization: `Bearer ${idToken}`,
+    "Content-Type": "application/json",
+  };
   const body = { fields: toFirestoreFields(data) };
 
   try {
-    await axios.get(url, { headers });
-    console.log("➡️ PATCH", url);
-    await axios.patch(url, body, { headers });
+    console.log("➡️ PUT", url);
+    const res = await axios.put(url, body, { headers });
+    console.log("✅ Firestore user created:", res.data);
   } catch (err: any) {
-    if (err?.response?.status === 404) {
-      const createUrl = `${url}?currentDocument.exists=false`;
-      console.log("➡️ PUT", createUrl);
-      await axios.put(createUrl, body, { headers });
+    logFirestoreError("PUT", path, err);
+    const status = err?.response?.status;
+    if (status === 404 || status === 403) {
+      console.error("🚫 Firestore PUT failed:", err?.response?.data || err);
     } else {
-      logFirestoreError("GET", path, err);
       throw err;
     }
   }
