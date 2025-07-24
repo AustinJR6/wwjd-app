@@ -122,14 +122,21 @@ export async function getDocument(path: string): Promise<any | null> {
   }
 }
 
-export async function setDocument(path: string, data: any): Promise<void> {
+export async function setDocument(
+  path: string,
+  data: any,
+  options?: { requireExists?: boolean },
+): Promise<void> {
   warnIfInvalidPath(path, true);
   try {
     const body = { fields: toFirestoreFields(data) };
     const maskParams = Object.keys(data)
       .map((f) => `updateMask.fieldPaths=${encodeURIComponent(f)}`)
       .join('&');
-    const url = maskParams ? `${BASE}/${path}?${maskParams}` : `${BASE}/${path}`;
+    let url = maskParams ? `${BASE}/${path}?${maskParams}` : `${BASE}/${path}`;
+    if (options?.requireExists) {
+      url += maskParams ? '&currentDocument.exists=true' : '?currentDocument.exists=true';
+    }
     console.log('➡️ Firestore SET', path, data);
     await apiClient.patch(url, body, { headers: await authHeaders() });
   } catch (err: any) {
@@ -144,7 +151,7 @@ export async function setDocument(path: string, data: any): Promise<void> {
 }
 
 export async function updateDocument(path: string, data: any): Promise<void> {
-  await setDocument(path, data);
+  await setDocument(path, data, { requireExists: true });
 }
 
 export async function addDocument(collectionPath: string, data: any): Promise<string> {
