@@ -72,8 +72,8 @@ export const onCompletedChallengeCreate = functions.firestore
   });
 
 // Trigger: prevent confessional history persistence for unsubscribed/opt-out users
-export const onConfessionalWrite = functions.firestore
-  .document('{collectionId=confessionalChats|confessionalSessions}/{uid}/messages/{msgId}')
+export const onConfessionalWriteChats = functions.firestore
+  .document('confessionalChats/{uid}/messages/{msgId}')
   .onWrite(async (change, context) => {
     const uid = context.params.uid;
     try {
@@ -85,7 +85,24 @@ export const onConfessionalWrite = functions.firestore
         if (change.after.exists) await change.after.ref.delete();
       }
     } catch (err) {
-      functions.logger.error('onConfessionalWrite', err);
+      functions.logger.error('onConfessionalWriteChats', err);
+    }
+  });
+
+export const onConfessionalWriteSessions = functions.firestore
+  .document('confessionalSessions/{uid}/messages/{msgId}')
+  .onWrite(async (change, context) => {
+    const uid = context.params.uid;
+    try {
+      const user = await db.doc(`users/${uid}`).get();
+      const data = user.data() || {};
+      const subscribed = !!data.isSubscribed;
+      const optedIn = !!data.confessionalOptIn;
+      if (!subscribed || !optedIn) {
+        if (change.after.exists) await change.after.ref.delete();
+      }
+    } catch (err) {
+      functions.logger.error('onConfessionalWriteSessions', err);
     }
   });
 
