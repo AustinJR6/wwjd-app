@@ -3,10 +3,10 @@ import { auth, db } from "./firebase";
 import * as admin from "firebase-admin";
 import { Request, Response } from "express";
 import { RawBodyRequest } from "./types";
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import Stripe from "stripe";
 import * as dotenv from "dotenv";
 import * as logger from "firebase-functions/logger";
+import { createGeminiModel, fetchReligionContext } from './geminiUtils';
 import {
   withCors,
   verifyIdToken,
@@ -131,36 +131,6 @@ if (!STRIPE_WEBHOOK_SECRET) {
 const stripe = new Stripe(STRIPE_SECRET_KEY, {
   apiVersion: "2023-10-16",
 } as any);
-
-function createGeminiModel() {
-  if (!GEMINI_API_KEY) {
-    throw new Error("GEMINI_API_KEY is not configured");
-  }
-  try {
-    const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-    return genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
-  } catch (err) {
-    logger.error("Failed to initialize GoogleGenerativeAI", err);
-    throw err;
-  }
-}
-
-async function fetchReligionContext(religionId?: string) {
-  const fallback = { name: "Spiritual Guide", aiVoice: "Reflective Mentor" };
-  if (!religionId) return fallback;
-  try {
-    const doc = await db.collection("religion").doc(religionId).get();
-    if (!doc.exists) return fallback;
-    const data = doc.data() || {};
-    return {
-      name: data.name || fallback.name,
-      aiVoice: data.aiVoice || fallback.aiVoice,
-    };
-  } catch (err) {
-    logger.warn("Failed to fetch religion context", err);
-    return fallback;
-  }
-}
 
 async function addTokens(uid: string, amount: number): Promise<void> {
   const userRef = db.collection("users").doc(uid);
@@ -1819,3 +1789,5 @@ export const completeSignupAndProfile = functions
       );
     }
   });
+
+export * from './firestoreArchitecture';
