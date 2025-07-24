@@ -16,6 +16,14 @@ const REGION_IDS = [
   'southwest',
 ];
 
+const FALLBACK_REGIONS: RegionItem[] = [
+  { id: 'midwest', name: 'Midwest' },
+  { id: 'northeast', name: 'Northeast' },
+  { id: 'northwest', name: 'Northwest' },
+  { id: 'southeast', name: 'Southeast' },
+  { id: 'southwest', name: 'Southwest' },
+];
+
 export async function fetchRegionList(): Promise<RegionItem[]> {
   if (regionCache) {
     console.log('📦 Regions served from cache');
@@ -29,9 +37,15 @@ export async function fetchRegionList(): Promise<RegionItem[]> {
     regionCache = snaps
       .map((data, idx) => ({ id: REGION_IDS[idx], name: data?.name || 'Unnamed' }))
       .filter((r) => r.name);
+    if (!regionCache.length) {
+      console.warn('⚠️ Empty region list from Firestore, using fallback');
+      regionCache = FALLBACK_REGIONS;
+    }
     return regionCache;
   } catch (err: any) {
     logFirestoreError('GET', 'regions', err);
-    throw new Error('Unable to fetch regions');
+    console.warn('Failed to fetch regions, using fallback', err.response?.data || err.message);
+    regionCache = FALLBACK_REGIONS;
+    return regionCache;
   }
 }

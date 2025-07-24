@@ -46,11 +46,11 @@ export async function signUpWithEmailAndPassword(
     return res.data as AuthResponse;
   } catch (err: any) {
     if (err.response) {
-      console.error("❌ signup error response", err.response.data);
+      console.error('❌ signup error response', err.response.data);
     } else {
-      console.error("❌ signup error", err.message);
+      console.error('❌ signup error', err.message);
     }
-    console.warn("🚫 Signup Failed:", err.response?.data?.error?.message);
+    console.warn('🚫 Signup Failed:', err.response?.data?.error?.message);
     throw err;
   }
 }
@@ -60,12 +60,22 @@ export async function signInWithEmailAndPassword(
   password: string,
 ): Promise<AuthResponse> {
   const url = `${ID_BASE}/accounts:signInWithPassword?key=${API_KEY}`;
-  const res = await axios.post(url, {
-    email,
-    password,
-    returnSecureToken: true,
-  });
-  return res.data as AuthResponse;
+  const payload = { email, password, returnSecureToken: true };
+  console.log('➡️ login request', { url, payload });
+  try {
+    const res = await axios.post(url, payload, {
+      headers: { 'Content-Type': 'application/json' },
+    });
+    console.log('✅ login response', res.data);
+    return res.data as AuthResponse;
+  } catch (err: any) {
+    if (err.response) {
+      console.error('❌ login error response', err.response.data);
+    } else {
+      console.error('❌ login error', err.message);
+    }
+    throw err;
+  }
 }
 
 export async function getUserData(uid: string, idToken: string) {

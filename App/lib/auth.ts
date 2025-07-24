@@ -90,14 +90,19 @@ export async function signup(email: string, password: string) {
 }
 
 export async function login(email: string, password: string) {
-  const res = await signInWithEmailAndPassword(email, password);
-  currentToken = res.idToken;
-  currentRefresh = res.refreshToken;
-  currentUid = res.localId;
-  await setItem(TOKEN_KEY, res.idToken);
-  await setItem(REFRESH_KEY, res.refreshToken);
-  await setItem(UID_KEY, res.localId);
-  return { uid: res.localId, email: res.email };
+  try {
+    const res = await signInWithEmailAndPassword(email, password);
+    currentToken = res.idToken;
+    currentRefresh = res.refreshToken;
+    currentUid = res.localId;
+    await setItem(TOKEN_KEY, res.idToken);
+    await setItem(REFRESH_KEY, res.refreshToken);
+    await setItem(UID_KEY, res.localId);
+    return { uid: res.localId, email: res.email };
+  } catch (error: any) {
+    console.warn('🚫 Login Failed:', error.response?.data?.error?.message);
+    throw error;
+  }
 }
 
 export async function logout() {
