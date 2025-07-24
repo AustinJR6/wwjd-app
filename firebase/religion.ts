@@ -1,4 +1,6 @@
 import axios from 'axios';
+import { firestore } from '@/config/firebaseClient';
+import { doc, getDoc } from 'firebase/firestore';
 import { getIdToken } from '../authRest';
 
 export interface ReligionItem {
@@ -15,29 +17,42 @@ let religionsCache: ReligionItem[] = [];
 export async function getReligions(forceRefresh = false): Promise<ReligionItem[]> {
   if (!forceRefresh && religionsCache.length) return religionsCache;
 
-  const token = await getIdToken();
-  const url = `https://firestore.googleapis.com/v1/projects/wwjd-app/databases/(default)/documents/religion`;
+  const RELIGION_IDS = [
+    'SpiritGuide',
+    'Christianity',
+    'Islam',
+    'Judaism',
+    'Hinduism',
+    'Buddhism',
+    'Atheist',
+    'Agnostic',
+    'Pagan',
+  ];
 
   try {
-    const res = await axios.get(url, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    const docs = (res.data as any).documents || [];
-
-    religionsCache = docs.map((doc: any) => ({
-      id: doc.name.split('/').pop(),
-      name: doc.fields.name?.stringValue ?? '',
-      aiVoice: doc.fields.aiVoice?.stringValue ?? '',
-      defaultChallenges:
-        doc.fields.defaultChallenges?.arrayValue?.values?.map((v: any) => v.stringValue) ?? [],
-      totalPoints: Number(doc.fields.totalPoints?.integerValue ?? 0),
-      language: doc.fields.language?.stringValue ?? '',
-    }));
+    const snaps = await Promise.all(
+      RELIGION_IDS.map((id) => getDoc(doc(firestore, 'religion', id))),
+    );
+    religionsCache = snaps
+      .filter((s) => s.exists())
+      .map((s) => {
+        const data = s.data() || {};
+        return {
+          id: s.id,
+          name: data.name ?? s.id,
+          aiVoice: data.aiVoice ?? '',
+          defaultChallenges: Array.isArray(data.defaultChallenges)
+            ? data.defaultChallenges
+            : [],
+          totalPoints: Number(data.totalPoints ?? 0),
+          language: data.language ?? '',
+        } as ReligionItem;
+      });
 
     console.log('📖 Religions fetched:', religionsCache.map((r) => r.name));
     return religionsCache;
   } catch (err: any) {
-    console.error('🔥 Failed to fetch religions:', err.response?.data || err);
+    console.error('🔥 Failed to fetch religions:', err);
     return [];
   }
 }
