@@ -72,13 +72,18 @@ service cloud.firestore {
 
     // 🌍 Static lookup: Regions (lowercase IDs)
     match /regions/{regionId} {
-      allow get, list: if isSignedIn(); // ⚠️ Removed 'read' to fix batchGet quirk
+      allow get, list: if isSignedIn();
+      // Allow incrementing userCount
+      allow update: if isSignedIn() && request.resource.data.keys().hasOnly(['userCount']) && request.resource.data.userCount is number;
     }
 
     // 📖 Static lookup: Religion (capitalized IDs)
     match /religion/{religionId} {
-      allow get, list: if isSignedIn(); // ⚠️ Same here for batchGet compatibility
+      allow get, list: if isSignedIn();
+      // Allow incrementing userCount
+      allow update: if isSignedIn() && request.resource.data.keys().hasOnly(['userCount']) && request.resource.data.userCount is number;
     }
 
   }
 }
+
