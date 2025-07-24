@@ -68,7 +68,7 @@ export default function ProfileCompletionScreen() {
         setDocument(userPath, payload),
       ]);
 
-      navigation.reset({ index: 0, routes: [{ name: SCREENS.MAIN.HOME }] });
+      navigation.reset({ index: 0, routes: [{ name: 'MainTabs' }] });
     } catch (err: any) {
       Alert.alert('Error', err.message || 'Could not save profile or update counts');
       console.error('Transaction failed:', err);

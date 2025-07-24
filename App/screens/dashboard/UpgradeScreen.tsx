@@ -107,7 +107,7 @@ export default function UpgradeScreen({ navigation }: Props) {
         </View>
 
         <View style={styles.buttonWrap}>
-          <Button title="Back to Home" onPress={() => navigation.navigate('HomeScreen')} />
+          <Button title="Back to Home" onPress={() => navigation.navigate('MainTabs', { screen: 'HomeScreen' })} />
         </View>
       </View>
     </ScreenContainer>

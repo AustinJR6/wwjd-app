@@ -11,6 +11,10 @@ declare global {
 }
 
 export type RootStackParamList = {
+  // Root navigators
+  Auth: undefined;
+  MainTabs: undefined;
+
   // Auth stack screens
   Welcome: undefined;
   Login: undefined;
