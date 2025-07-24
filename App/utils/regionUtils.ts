@@ -1,13 +1,7 @@
-import { Firestore, DocumentReference, doc } from 'firebase/firestore';
-
 /**
- * Helper to build a reference to a region document.
- * Region IDs in Firestore are stored lowercase so we always
- * normalize the provided ID before creating the reference.
+ * Build the Firestore document path for a region ID.
+ * Region IDs are stored lowercase in Firestore.
  */
-export function getRegionDocRef(
-  firestore: Firestore,
-  regionId: string,
-): DocumentReference {
-  return doc(firestore, 'regions', regionId.toLowerCase());
+export function getRegionDocPath(regionId: string): string {
+  return `regions/${regionId.toLowerCase()}`;
 }

@@ -1,6 +1,5 @@
 import axios from 'axios';
-import { firestore } from '@/config/firebaseClient';
-import { doc, getDoc } from 'firebase/firestore';
+import { getDocument } from '@/services/firestoreService';
 import { getIdToken } from '../authRest';
 
 export interface ReligionItem {
@@ -31,23 +30,18 @@ export async function getReligions(forceRefresh = false): Promise<ReligionItem[]
 
   try {
     const snaps = await Promise.all(
-      RELIGION_IDS.map((id) => getDoc(doc(firestore, 'religion', id))),
+      RELIGION_IDS.map((id) => getDocument(`religion/${id}`)),
     );
-    religionsCache = snaps
-      .filter((s) => s.exists())
-      .map((s) => {
-        const data = s.data() || {};
-        return {
-          id: s.id,
-          name: data.name ?? s.id,
-          aiVoice: data.aiVoice ?? '',
-          defaultChallenges: Array.isArray(data.defaultChallenges)
-            ? data.defaultChallenges
-            : [],
-          totalPoints: Number(data.totalPoints ?? 0),
-          language: data.language ?? '',
-        } as ReligionItem;
-      });
+    religionsCache = snaps.map((data, idx) => ({
+      id: RELIGION_IDS[idx],
+      name: data?.name ?? RELIGION_IDS[idx],
+      aiVoice: data?.aiVoice ?? '',
+      defaultChallenges: Array.isArray(data?.defaultChallenges)
+        ? data.defaultChallenges
+        : [],
+      totalPoints: Number(data?.totalPoints ?? 0),
+      language: data?.language ?? '',
+    } as ReligionItem));
 
     console.log('📖 Religions fetched:', religionsCache.map((r) => r.name));
     return religionsCache;
