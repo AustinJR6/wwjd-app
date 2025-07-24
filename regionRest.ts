@@ -1,5 +1,4 @@
-import { firestore } from '@/config/firebaseClient';
-import { doc, getDoc } from 'firebase/firestore';
+import { getDocument } from '@/services/firestoreService';
 import { logFirestoreError } from './App/lib/logging';
 
 export interface RegionItem {
@@ -25,11 +24,11 @@ export async function fetchRegionList(): Promise<RegionItem[]> {
 
   try {
     const snaps = await Promise.all(
-      REGION_IDS.map((id) => getDoc(doc(firestore, 'regions', id))),
+      REGION_IDS.map((id) => getDocument(`regions/${id}`)),
     );
     regionCache = snaps
-      .filter((s) => s.exists())
-      .map((s) => ({ id: s.id, name: s.data()?.name || 'Unnamed' }));
+      .map((data, idx) => ({ id: REGION_IDS[idx], name: data?.name || 'Unnamed' }))
+      .filter((r) => r.name);
     return regionCache;
   } catch (err: any) {
     logFirestoreError('GET', 'regions', err);

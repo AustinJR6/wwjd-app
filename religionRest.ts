@@ -1,5 +1,4 @@
-import { firestore } from '@/config/firebaseClient';
-import { doc, getDoc } from 'firebase/firestore';
+import { getDocument } from '@/services/firestoreService';
 import { logFirestoreError } from './App/lib/logging';
 
 export interface ReligionItem {
@@ -43,8 +42,8 @@ export async function getReligionProfile(
     return religionCache[id];
   }
   try {
-    const snap = await getDoc(doc(firestore, 'religion', id));
-    if (!snap.exists()) {
+    const data = await getDocument(`religion/${id}`);
+    if (!data) {
       console.warn(`⚠️ Religion document missing: ${id}`);
       return {
         id,
@@ -52,9 +51,8 @@ export async function getReligionProfile(
         prompt: 'Respond with empathy, logic, and gentle spirituality.',
       };
     }
-    const data = snap.data() || {};
     const profile: ReligionProfile = {
-      id: snap.id,
+      id,
       name: data.name || id,
       prompt:
         data.prompt ||
@@ -90,15 +88,12 @@ const RELIGION_IDS = [
 async function fetchReligionList(): Promise<ReligionItem[]> {
   try {
     const snaps = await Promise.all(
-      RELIGION_IDS.map((id) => getDoc(doc(firestore, 'religion', id))),
+      RELIGION_IDS.map((id) => getDocument(`religion/${id}`)),
     );
-    const religions: ReligionItem[] = snaps
-      .filter((s) => s.exists())
-      .map((s) => {
-        const data = s.data() || {};
-        const name = data.name || s.id;
-        return { id: s.id, name };
-      });
+    const religions: ReligionItem[] = snaps.map((data, idx) => ({
+      id: RELIGION_IDS[idx],
+      name: data?.name || RELIGION_IDS[idx],
+    }));
 
     console.log('✅ Religions fetched', religions.map((r) => r.id));
     return religions;

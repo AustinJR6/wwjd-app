@@ -6,9 +6,7 @@ import TextField from '@/components/TextField';
 import Button from '@/components/common/Button';
 import { Picker } from '@react-native-picker/picker';
 import { useLookupLists } from '@/hooks/useLookupLists';
-import { firestore } from '@/config/firebaseClient';
-import { doc, runTransaction } from 'firebase/firestore';
-import { getRegionDocRef } from '@/utils/regionUtils';
+import { getDocument, setDocument } from '@/services/firestoreService';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/navigation/RootStackParamList';
@@ -52,21 +50,23 @@ export default function ProfileCompletionScreen() {
       if (pronouns.trim()) payload.pronouns = pronouns.trim();
       if (avatarURL.trim()) payload.avatarURL = avatarURL.trim();
 
-      await runTransaction(firestore, async (transaction) => {
-        const regionRef = getRegionDocRef(firestore, region);
-        const religionRef = doc(firestore, 'religion', religion);
-        const userRef = doc(firestore, 'users', uid);
+      const regionPath = `regions/${region.toLowerCase()}`;
+      const religionPath = `religion/${religion}`;
+      const userPath = `users/${uid}`;
 
-        const regionDoc = await transaction.get(regionRef);
-        const religionDoc = await transaction.get(religionRef);
+      const [regionDoc, religionDoc] = await Promise.all([
+        getDocument(regionPath),
+        getDocument(religionPath),
+      ]);
 
-        const regionCount = regionDoc.exists() ? (regionDoc.data().userCount ?? 0) : 0;
-        const religionCount = religionDoc.exists() ? (religionDoc.data().userCount ?? 0) : 0;
+      const regionCount = regionDoc?.userCount ?? 0;
+      const religionCount = religionDoc?.userCount ?? 0;
 
-        transaction.set(regionRef, { userCount: regionCount + 1 }, { merge: true });
-        transaction.set(religionRef, { userCount: religionCount + 1 }, { merge: true });
-        transaction.set(userRef, payload, { merge: true });
-      });
+      await Promise.all([
+        setDocument(regionPath, { userCount: regionCount + 1 }),
+        setDocument(religionPath, { userCount: religionCount + 1 }),
+        setDocument(userPath, payload),
+      ]);
 
       navigation.reset({ index: 0, routes: [{ name: SCREENS.MAIN.HOME }] });
     } catch (err: any) {
