@@ -79,5 +79,10 @@ service cloud.firestore {
     match /religion/{religionId} {
       allow get, list: if isSignedIn(); // ⚠️ Same here for batchGet compatibility
     }
+
+    // 🚨 TEMPORARY DEBUGGING: fallback get matcher
+    match /{document=**} {
+      allow get: if isSignedIn();
+    }
   }
 }
