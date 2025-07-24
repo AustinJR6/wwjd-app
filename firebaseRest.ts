@@ -215,7 +215,12 @@ export async function createUserDocument(
   idToken: string,
 ) {
   const path = `users/${uid}`;
-  const url = `${FIRESTORE_BASE}/${path}`;
+  const maskParams = Object.keys(data)
+    .map((f) => `updateMask.fieldPaths=${encodeURIComponent(f)}`)
+    .join('&');
+  const url = `${FIRESTORE_BASE}/${path}?currentDocument.exists=false${
+    maskParams ? `&${maskParams}` : ''
+  }`;
   const headers = {
     Authorization: `Bearer ${idToken}`,
     "Content-Type": "application/json",
@@ -223,8 +228,8 @@ export async function createUserDocument(
   const body = { fields: toFirestoreFields(data) };
 
   try {
-    console.log("➡️ PUT", url);
-    const res = await axios.put(url, body, { headers });
+    console.log("➡️ PATCH", url);
+    const res = await axios.patch(url, body, { headers });
     console.log("✅ Firestore user created:", res.data);
   } catch (err: any) {
     logFirestoreError("PUT", path, err);

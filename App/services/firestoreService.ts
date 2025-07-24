@@ -126,8 +126,12 @@ export async function setDocument(path: string, data: any): Promise<void> {
   warnIfInvalidPath(path, true);
   try {
     const body = { fields: toFirestoreFields(data) };
+    const maskParams = Object.keys(data)
+      .map((f) => `updateMask.fieldPaths=${encodeURIComponent(f)}`)
+      .join('&');
+    const url = maskParams ? `${BASE}/${path}?${maskParams}` : `${BASE}/${path}`;
     console.log('➡️ Firestore SET', path, data);
-    await apiClient.patch(`${BASE}/${path}`, body, { headers: await authHeaders() });
+    await apiClient.patch(url, body, { headers: await authHeaders() });
   } catch (err: any) {
     logFirestoreError('SET', path, err);
     if (err.response?.status === 403) {
@@ -271,13 +275,13 @@ export async function querySubcollection(
   orderByField?: string,
   direction: 'ASCENDING' | 'DESCENDING' = 'ASCENDING',
 ): Promise<any[]> {
-  const fullPath = `${parentPath}/${collectionName}`;
-  console.warn('📄 Structured subquery path:', fullPath);
+  const collectionPath = `${parentPath}/${collectionName}`;
+  console.warn('📄 Structured subquery path:', collectionPath);
   if (!orderByField) {
-    return queryCollection(fullPath);
+    return queryCollection(collectionPath);
   }
   const query = {
-    parent: `projects/${PROJECT_ID}/databases/(default)/documents/${fullPath}`,
+    parent: `projects/${PROJECT_ID}/databases/(default)/documents/${parentPath}`,
     from: [{ collectionId: collectionName }],
     orderBy: [{ field: { fieldPath: orderByField }, direction }],
   };
