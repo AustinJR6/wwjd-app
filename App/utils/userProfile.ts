@@ -1,7 +1,7 @@
 import apiClient from '@/utils/apiClient';
 import { FIRESTORE_BASE } from '../../firebaseRest';
 import { getAuthHeaders, getCurrentUserId } from '@/utils/authUtils';
-import { API_URL } from '@/config/firebaseApp';
+// API_URL no longer needed for direct Firestore PATCH
 import { logFirestoreError } from '@/lib/logging';
 import type { CachedProfile, ReligionDocument, UserProfile } from '../../types/profile';
 import { getReligionProfile } from '../../religionRest';
@@ -142,16 +142,12 @@ export async function updateUserProfile(
   }
   try {
     const headers = await getAuthHeaders();
-    const url = `${API_URL}/updateUserProfileCallable`;
-    const res = await fetch(url, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({ data: { uid: userId, fields: sanitized } }),
-    });
-    if (!res.ok) {
-      const text = await res.text();
-      throw { response: { status: res.status, data: text } };
-    }
+    const mask = Object.keys(sanitized)
+      .map((f) => `updateMask.fieldPaths=${encodeURIComponent(f)}`)
+      .join('&');
+    const url = `${FIRESTORE_BASE}/users/${userId}?${mask}`;
+    const body = { fields: toFirestoreFields(sanitized) };
+    await apiClient.patch(url, body, { headers });
     if (cachedProfile && cachedProfile.uid === userId) {
       if ('religion' in sanitized) {
         const religionData = await getReligionProfile(sanitized.religion);
@@ -185,8 +181,9 @@ export async function incrementUserPoints(points: number, uid?: string): Promise
     const current = Number((res.data as any)?.fields?.individualPoints?.integerValue ?? 0);
     const newTotal = current + points;
     const body = { fields: toFirestoreFields({ individualPoints: newTotal }) };
-    console.log('➡️ Sending Firestore request to:', url, body);
-    await apiClient.patch(url, body, { headers });
+    const patchUrl = `${url}?updateMask.fieldPaths=individualPoints`;
+    console.log('➡️ Sending Firestore request to:', patchUrl, body);
+    await apiClient.patch(patchUrl, body, { headers });
     if (cachedProfile && cachedProfile.uid === userId) {
       cachedProfile = { ...cachedProfile, individualPoints: newTotal } as CachedProfile;
     }
