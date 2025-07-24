@@ -40,6 +40,18 @@ export async function ensureUserProfile(
     }
   };
 
+  const ensureChallengeStreak = (key: keyof UserProfile) => {
+    const val = (profile as any)[key];
+    if (
+      !val ||
+      typeof val !== 'object' ||
+      typeof val.count !== 'number' ||
+      (val.lastCompletedDate !== null && typeof val.lastCompletedDate !== 'string')
+    ) {
+      fixes[key] = { count: 0, lastCompletedDate: null } as any;
+    }
+  };
+
   ensureString('email', '');
   ensureBoolean('emailVerified', false);
   ensureString('displayName', 'New User');
@@ -57,6 +69,15 @@ export async function ensureUserProfile(
   ensureString('preferredName', '');
   ensureString('pronouns', '');
   ensureString('avatarURL', '');
+  ensureChallengeStreak('challengeStreak');
+  ensureNumber('dailyChallengeCount', 0);
+  ensureNumber('dailySkipCount', 0);
+  ensureNullableString('lastChallengeLoadDate', null);
+  ensureNullableString('lastSkipDate', null);
+  ensureNullableString('organizationId', null);
+  ensureString('religionPrefix', '');
+  ensureString('username', '');
+  ensureString('region', '');
   ensureTimestamp('lastActive', now);
   if ((profile as any).profileSchemaVersion === undefined) {
     fixes.profileSchemaVersion = 1 as any;
