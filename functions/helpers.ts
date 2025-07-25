@@ -1,5 +1,5 @@
 import * as admin from 'firebase-admin';
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 import { SecretManagerServiceClient } from '@google-cloud/secret-manager';
 import cors from 'cors';
 import { Request, Response } from 'express';
