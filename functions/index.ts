@@ -600,11 +600,18 @@ export const confessionalAI = functions
 
 export const askGeminiV2 = functions
   .https.onRequest(async (req: Request, res: Response) => {
-    const prompt = req.body?.prompt;
-    if (typeof prompt !== "string" || !prompt.trim()) {
+    const userInput = req.body?.prompt;
+    if (typeof userInput !== "string" || !userInput.trim()) {
       res.status(400).json({ error: "Invalid prompt" });
       return;
     }
+
+    const idToken = req.headers.authorization?.split("Bearer ")[1];
+    if (!idToken) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
     const apiKey = functions.config().gemini.key;
     if (!apiKey) {
       functions.logger.warn(
@@ -614,21 +621,42 @@ export const askGeminiV2 = functions
       return;
     }
 
-    const endpoint =
-      `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-pro:generateContent?key=${apiKey}`;
-    const payload = {
-      contents: [
-        {
-          parts: [
-            {
-              text: prompt,
-            },
-          ],
-        },
-      ],
-    };
-
     try {
+      const decoded = await auth.verifyIdToken(idToken);
+      const uid = decoded.uid;
+      const userSnap = await db.collection("users").doc(uid).get();
+      const userData = userSnap.data() || {};
+
+      const userReligion: string | undefined = userData.religion;
+      let religionPrompt = "";
+      let religionName = userReligion || "unknown";
+      if (userReligion) {
+        const relSnap = await db.collection("religion").doc(userReligion).get();
+        if (relSnap.exists) {
+          const data = relSnap.data() || {};
+          religionPrompt = (data as any).prompt || "";
+          religionName = (data as any).name || userReligion;
+        }
+      }
+
+      const finalPrompt = `${religionPrompt}\n${userInput}`;
+      functions.logger.info(`askGeminiV2 religion: ${religionName}`);
+      functions.logger.info(`askGeminiV2 full prompt: ${finalPrompt}`);
+
+      const endpoint =
+        `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-pro:generateContent?key=${apiKey}`;
+      const payload = {
+        contents: [
+          {
+            parts: [
+              {
+                text: finalPrompt,
+              },
+            ],
+          },
+        ],
+      };
+
       const response = await axios.post(endpoint, payload, {
         headers: {
           "Content-Type": "application/json",
