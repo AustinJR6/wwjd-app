@@ -9,10 +9,11 @@ import { PRICE_IDS } from '@/config/stripeConfig';
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { useTheme } from "@/components/theme/theme";
 import AuthGate from '@/components/AuthGate';
-import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from "@/navigation/RootStackParamList";
 
-type Props = NativeStackScreenProps<RootStackParamList, 'BuyTokens'>;
+// We only care about navigation back to the MainTabs stack here, so type it accordingly
+type Props = { navigation: NativeStackNavigationProp<RootStackParamList, 'MainTabs'> };
 
 export default function BuyTokensScreen({ navigation }: Props) {
   const theme = useTheme();
