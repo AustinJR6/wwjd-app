@@ -11,7 +11,7 @@ export function createGeminiModel(apiKey: string = GEMINI_API_KEY) {
   }
   try {
     const genAI = new GoogleGenerativeAI(apiKey);
-    return genAI.getGenerativeModel({ model: 'gemini-1.5-pro' });
+    return genAI.getGenerativeModel({ model: 'models/gemini-2.5-pro' });
   } catch (err) {
     logger.error('Failed to initialize GoogleGenerativeAI', err);
     throw err;
