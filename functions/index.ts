@@ -4,6 +4,7 @@ import { auth, db } from "./firebase";
 import * as admin from "firebase-admin";
 import { RawBodyRequest } from "./types";
 import Stripe from "stripe";
+import axios from "axios";
 import * as dotenv from "dotenv";
 import * as logger from "firebase-functions/logger";
 import { createGeminiModel, fetchReligionContext } from './geminiUtils';
@@ -14,7 +15,6 @@ import {
   logError,
   verifyAuth,
   extractAuthToken,
-  getSecret,
 } from "./helpers";
 
 
@@ -596,65 +596,37 @@ export const confessionalAI = functions
   }
 });
 
-export const askGeminiV2 = functions.https.onCall(
-  async (data: any, context: functions.https.CallableContext) => {
-  const geminiKey = await getSecret('GEMINI_API_KEY');
-  functions.logger.info('✅ GEMINI_API_KEY loaded');
-
-  const uid = context.auth?.uid;
-  if (!uid) {
-    throw new functions.https.HttpsError('unauthenticated', 'No auth context');
-  }
-
-  const { prompt = "", history = [], religion: religionId } = data || {};
-  functions.logger.info(`📩 askGeminiV2 prompt length: ${prompt.length}`);
-  functions.logger.info(`📜 askGeminiV2 history length: ${(history as any[]).length}`);
-
-  let text = "";
-  try {
-    const model = createGeminiModel(geminiKey);
-    const chat = await model.startChat({
-      history: (history as any[]).map((msg) => ({
-        role: msg.role,
-        parts: [{ text: msg.text }],
-      })),
-    });
-
-    const userSnap = await db.collection('users').doc(uid).get();
-    const userData = userSnap.data() || {};
-    let promptPrefix = '';
-    if (userData.religionRef) {
-      try {
-        const relSnap = await userData.religionRef.get();
-        promptPrefix = relSnap.data()?.prompt || '';
-      } catch {}
+export const askGeminiV2 = functions
+  .runWith({ secrets: ["GEMINI_API_KEY"] })
+  .https.onRequest(async (req: Request, res: Response) => {
+    const prompt = req.body?.prompt;
+    if (typeof prompt !== "string" || !prompt.trim()) {
+      res.status(400).json({ error: "Invalid prompt" });
+      return;
     }
 
-    const { name, aiVoice } = await fetchReligionContext(religionId);
-    const system = promptPrefix || `As a ${aiVoice} within the ${name} tradition,`;
-    const fullPrompt = `${system} respond to the following:\n"${prompt}"`;
-    const result = await chat.sendMessage(fullPrompt);
-    text = result?.response?.text?.() ?? 'No response text returned.';
-    functions.logger.info('💬 Gemini response:', text);
-  } catch (gemErr) {
-    functions.logger.error('Gemini V2 request failed', gemErr);
-    throw new functions.https.HttpsError('internal', 'Gemini request failed');
-  }
+    const url =
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${process.env.GEMINI_API_KEY}`;
+    const payload = {
+      contents: [
+        {
+          parts: [
+            {
+              text: prompt,
+            },
+          ],
+        },
+      ],
+    };
 
-  try {
-    const subSnap = await db.collection('subscriptions').doc(uid).get();
-    const subscribed = subSnap.exists && subSnap.data()?.active;
-    const base = subscribed ? 'religionChats' : 'tempReligionChat';
-    const col = db.collection(base).doc(uid).collection('messages');
-    await col.add({ role: 'user', text: prompt, timestamp: admin.firestore.FieldValue.serverTimestamp() });
-    await col.add({ role: 'assistant', text, timestamp: admin.firestore.FieldValue.serverTimestamp() });
-    functions.logger.info(`💾 Saved chat messages to ${base}`);
-  } catch (saveErr) {
-    functions.logger.error('Failed to save assistant message', saveErr);
-  }
-
-  return { response: text };
-});
+    try {
+      const response = await axios.post(url, payload);
+      res.status(200).json(response.data);
+    } catch (err) {
+      functions.logger.error("askGeminiV2 request failed", err);
+      res.status(500).json({ error: "Gemini request failed" });
+    }
+  });
 
 export const generateChallenge = functions
   .https.onRequest(async (req: Request, res: Response) => {
