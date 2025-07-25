@@ -647,16 +647,17 @@ export const askGeminiV2 = functions
       functions.logger.info(`askGeminiV2 full prompt: ${finalPrompt}`);
 
       const genAI = new GoogleGenerativeAI(apiKey);
-      const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+      const model = genAI.getGenerativeModel({ model: 'models/gemini-2.5-pro' });
       const chat = await model.startChat({
         history: history.map((msg: any) => ({
           role: msg.role,
           parts: msg.parts || [{ text: msg.text }],
         })),
       });
+      console.log('📖 Chat history', JSON.stringify(history));
       const result = await chat.sendMessage(finalPrompt);
-      console.log("📨 Gemini full response", JSON.stringify(result, null, 2));
-      const reply = result?.response?.text?.() || "";
+      console.log('📨 Gemini full response', JSON.stringify(result, null, 2));
+      const reply = result?.response?.text?.() || '';
 
       if (!reply) {
         console.error("Gemini returned empty reply");
