@@ -15,6 +15,7 @@ import { useUserProfileStore } from "@/state/userProfile";
 import { useUser } from '@/hooks/useUser';
 import { useTheme } from "@/components/theme/theme";
 import { scheduleReflectionReminder, cancelReflectionReminder } from '@/utils/reminderNotification';
+import AuthGate from '@/components/AuthGate';
 
 export default function SettingsScreen() {
   const theme = useTheme();
@@ -81,6 +82,7 @@ export default function SettingsScreen() {
   };
 
   return (
+    <AuthGate>
     <ScreenContainer>
       <View style={styles.center}>
         <View style={styles.row}>
@@ -148,6 +150,7 @@ export default function SettingsScreen() {
         <CustomText style={styles.version}>v{Constants.expoConfig?.version}</CustomText>
       </View>
     </ScreenContainer>
+    </AuthGate>
   );
 }
 
