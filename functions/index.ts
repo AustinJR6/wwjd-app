@@ -1,4 +1,5 @@
 import * as functions from "firebase-functions/v1";
+import { onCall } from "firebase-functions/v2/https";
 import { auth, db } from "./firebase";
 import * as admin from "firebase-admin";
 import { Request, Response } from "express";
@@ -602,78 +603,64 @@ export const confessionalAI = functions
   }
 });
 
-export const askGeminiV2 = functions
-  .region("us-central1")
-  .https.onRequest(async (req: Request, res: Response) => {
-  console.log("🔍 Headers received:", req.headers);
-  const idToken = req.headers.authorization?.split("Bearer ")[1];
-  logger.debug(`Token prefix: ${idToken ? idToken.slice(0, 10) : "none"}`);
-  if (!idToken) {
-    logger.error("No ID token provided");
-    res.status(401).json({ error: "Unauthorized – No ID token provided" });
-    return;
+export const askGeminiV2 = onCall({ secrets: ["GEMINI_API_KEY"] }, async (req) => {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) throw new Error('GEMINI_API_KEY is not configured');
+  functions.logger.info('✅ GEMINI_API_KEY loaded');
+
+  const uid = req.auth?.uid;
+  if (!uid) {
+    throw new functions.https.HttpsError('unauthenticated', 'No auth context');
   }
 
-  const { prompt = "", history = [], religion: religionId } = req.body || {};
-  logger.info(`📩 askGeminiV2 prompt length: ${prompt.length}`);
-  logger.info(`📜 askGeminiV2 history length: ${(history as any[]).length}`);
+  const { prompt = "", history = [], religion: religionId } = req.data || {};
+  functions.logger.info(`📩 askGeminiV2 prompt length: ${prompt.length}`);
+  functions.logger.info(`📜 askGeminiV2 history length: ${(history as any[]).length}`);
+
+  let text = "";
+  try {
+    const model = createGeminiModel();
+    const chat = await model.startChat({
+      history: (history as any[]).map((msg) => ({
+        role: msg.role,
+        parts: [{ text: msg.text }],
+      })),
+    });
+
+    const userSnap = await db.collection('users').doc(uid).get();
+    const userData = userSnap.data() || {};
+    let promptPrefix = '';
+    if (userData.religionRef) {
+      try {
+        const relSnap = await userData.religionRef.get();
+        promptPrefix = relSnap.data()?.prompt || '';
+      } catch {}
+    }
+
+    const { name, aiVoice } = await fetchReligionContext(religionId);
+    const system = promptPrefix || `As a ${aiVoice} within the ${name} tradition,`;
+    const fullPrompt = `${system} respond to the following:\n"${prompt}"`;
+    const result = await chat.sendMessage(fullPrompt);
+    text = result?.response?.text?.() ?? 'No response text returned.';
+    functions.logger.info('💬 Gemini response:', text);
+  } catch (gemErr) {
+    functions.logger.error('Gemini V2 request failed', gemErr);
+    throw new functions.https.HttpsError('internal', 'Gemini request failed');
+  }
 
   try {
-    const decoded = await auth.verifyIdToken(idToken);
-    logger.info(`✅ askGeminiV2 user: ${decoded.uid}`);
-    console.log("📛 Decoded userId from token:", decoded.uid);
-    logger.debug(`Decoded UID: ${decoded.uid}`);
-
-    let text = "";
-    try {
-      const model = createGeminiModel();
-      const chat = await model.startChat({
-        history: (history as any[]).map((msg) => ({
-          role: msg.role,
-          parts: [{ text: msg.text }],
-        })),
-      });
-
-      const userSnap = await db.collection("users").doc(decoded.uid).get();
-      const userData = userSnap.data() || {};
-      let promptPrefix = "";
-      if (userData.religionRef) {
-        try {
-          const relSnap = await userData.religionRef.get();
-          promptPrefix = relSnap.data()?.prompt || "";
-        } catch {}
-      }
-
-      const { name, aiVoice } = await fetchReligionContext(religionId);
-      const system = promptPrefix || `As a ${aiVoice} within the ${name} tradition,`;
-      const fullPrompt = `${system} respond to the following:\n"${prompt}"`;
-      const result = await chat.sendMessage(fullPrompt);
-      text = result?.response?.text?.() ?? "No response text returned.";
-      logger.info("💬 Gemini response:", text);
-    } catch (gemErr) {
-      logger.error("Gemini V2 request failed", gemErr);
-      res.status(500).json({ error: "Gemini request failed" });
-      return;
-    }
-
-    try {
-      const subSnap = await db.collection("subscriptions").doc(decoded.uid).get();
-      const subscribed = subSnap.exists && subSnap.data()?.active;
-      const base = subscribed ? "religionChats" : "tempReligionChat";
-      const col = db.collection(base).doc(decoded.uid).collection("messages");
-      console.log("🧠 Writing to Firestore path:", `${base}/${decoded.uid}/messages`);
-      await col.add({ role: "user", text: prompt, timestamp: admin.firestore.FieldValue.serverTimestamp() });
-      await col.add({ role: "assistant", text, timestamp: admin.firestore.FieldValue.serverTimestamp() });
-      logger.info(`💾 Saved chat messages to ${base}`);
-    } catch (saveErr) {
-      logger.error("Failed to save assistant message", saveErr);
-    }
-
-    res.status(200).json({ response: text });
-  } catch (err: any) {
-    logTokenVerificationError('askGeminiV2', idToken, err);
-    res.status(401).json({ error: "Unauthorized – Invalid ID token" });
+    const subSnap = await db.collection('subscriptions').doc(uid).get();
+    const subscribed = subSnap.exists && subSnap.data()?.active;
+    const base = subscribed ? 'religionChats' : 'tempReligionChat';
+    const col = db.collection(base).doc(uid).collection('messages');
+    await col.add({ role: 'user', text: prompt, timestamp: admin.firestore.FieldValue.serverTimestamp() });
+    await col.add({ role: 'assistant', text, timestamp: admin.firestore.FieldValue.serverTimestamp() });
+    functions.logger.info(`💾 Saved chat messages to ${base}`);
+  } catch (saveErr) {
+    functions.logger.error('Failed to save assistant message', saveErr);
   }
+
+  return { response: text };
 });
 
 export const generateChallenge = functions
