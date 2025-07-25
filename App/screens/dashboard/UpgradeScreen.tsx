@@ -11,7 +11,6 @@ import { startSubscriptionCheckout } from '@/services/apiService';
 import { ONEVINE_PLUS_PRICE_ID } from '@/config/stripeConfig';
 import { getAuthHeaders, getCurrentUserId } from '@/utils/TokenManager';
 
-// NavigationProp typed for MainTabs allows navigating to tab screens
 type Props = { navigation: NativeStackNavigationProp<RootStackParamList, 'MainTabs'> };
 
 export default function UpgradeScreen({ navigation }: Props) {
@@ -46,6 +45,7 @@ export default function UpgradeScreen({ navigation }: Props) {
       }),
     [theme],
   );
+
   const [loading, setLoading] = useState(false);
   const { user } = useUser();
 
@@ -89,7 +89,7 @@ export default function UpgradeScreen({ navigation }: Props) {
   };
 
   return (
-    <ScreenContainer>
+    <ScreenContainer children={undefined}>
       <View style={styles.content}>
         <CustomText style={styles.title}>OneVine+ Membership</CustomText>
         <CustomText style={styles.subtitle}>Experience the full blessing</CustomText>
@@ -114,5 +114,3 @@ export default function UpgradeScreen({ navigation }: Props) {
     </ScreenContainer>
   );
 }
-
-
