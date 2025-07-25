@@ -1,5 +1,5 @@
-import * as functions from 'firebase-functions';
+import { Request } from 'express';
 
-export interface RawBodyRequest extends functions.https.Request {
+export interface RawBodyRequest extends Request {
   rawBody: Buffer;
 }
