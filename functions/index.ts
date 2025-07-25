@@ -1,7 +1,6 @@
 import * as functions from "firebase-functions";
 import { auth, db } from "./firebase";
 import * as admin from "firebase-admin";
-import { Request, Response } from "express";
 import { RawBodyRequest } from "./types";
 import Stripe from "stripe";
 import * as dotenv from "dotenv";
@@ -223,9 +222,8 @@ async function updateStreakAndXPInternal(uid: string, type: string) {
 }
 
 export const incrementReligionPoints = functions
-  .region("us-central1")
   .https.onRequest(
-    withCors(async (req: Request, res: Response) => {
+    withCors(async (req: functions.Request, res: functions.Response) => {
       try {
         const { uid } = await verifyIdToken(req);
         const { religion, points } = req.body;
@@ -259,9 +257,8 @@ export const incrementReligionPoints = functions
   );
 
 export const awardPointsToUser = functions
-  .region("us-central1")
   .https.onRequest(
-    withCors(async (req: Request, res: Response) => {
+    withCors(async (req: functions.Request, res: functions.Response) => {
       try {
         const { uid } = await verifyIdToken(req);
         const { points } = req.body;
@@ -309,8 +306,7 @@ export const awardPointsToUser = functions
   );
 
 export const completeChallenge = functions
-  .region("us-central1")
-  .https.onRequest(async (req: Request, res: Response) => {
+  .https.onRequest(async (req: functions.Request, res: functions.Response) => {
   const authHeader = req.headers.authorization;
   const token = authHeader?.split('Bearer ')[1];
   if (!token) {
@@ -333,8 +329,7 @@ export const completeChallenge = functions
 });
 
 export const createMultiDayChallenge = functions
-  .region("us-central1")
-  .https.onRequest(async (req: Request, res: Response) => {
+  .https.onRequest(async (req: functions.Request, res: functions.Response) => {
   const authHeader = req.headers.authorization;
   const token = authHeader?.split('Bearer ')[1];
   if (!token) {
@@ -409,8 +404,7 @@ export const createMultiDayChallenge = functions
 });
 
 export const completeChallengeDay = functions
-  .region("us-central1")
-  .https.onRequest(async (req: Request, res: Response) => {
+  .https.onRequest(async (req: functions.Request, res: functions.Response) => {
   const authHeader = req.headers.authorization;
   const token = authHeader?.split('Bearer ')[1];
   if (!token) {
@@ -511,8 +505,7 @@ export const completeChallengeDay = functions
 });
 
 export const askGeminiSimple = functions
-  .region("us-central1")
-  .https.onRequest(async (req: Request, res: Response) => {
+  .https.onRequest(async (req: functions.Request, res: functions.Response) => {
   const idToken = req.headers.authorization?.split("Bearer ")[1];
   if (!idToken) {
     console.error("❌ Gus Bug Alert: Missing ID token in header. 🐞");
@@ -571,8 +564,7 @@ export const askGeminiSimple = functions
 });
 
 export const confessionalAI = functions
-  .region("us-central1")
-  .https.onRequest(async (req: Request, res: Response) => {
+  .https.onRequest(async (req: functions.Request, res: functions.Response) => {
   const idToken = req.headers.authorization?.split("Bearer ")[1];
   if (!idToken) {
     res.status(401).json({ error: "Unauthorized" });
@@ -603,9 +595,8 @@ export const confessionalAI = functions
   }
 });
 
-export const askGeminiV2 = functions
-  .region('us-central1')
-  .https.onCall(async (data, context) => {
+export const askGeminiV2 = functions.https.onCall(
+  async (data: any, context: functions.https.CallableContext) => {
   const geminiKey = await getSecret('GEMINI_API_KEY');
   functions.logger.info('✅ GEMINI_API_KEY loaded');
 
@@ -665,8 +656,7 @@ export const askGeminiV2 = functions
 });
 
 export const generateChallenge = functions
-  .region("us-central1")
-  .https.onRequest(async (req: Request, res: Response) => {
+  .https.onRequest(async (req: functions.Request, res: functions.Response) => {
   const idToken = req.headers.authorization?.split("Bearer ")[1];
   if (!idToken) {
     console.error("❌ Gus Bug Alert: Missing ID token in header. 🐞");
@@ -743,8 +733,7 @@ export const generateChallenge = functions
 });
 
 export const generateDailyChallenge = functions
-  .region("us-central1")
-  .https.onRequest(async (req: Request, res: Response) => {
+  .https.onRequest(async (req: functions.Request, res: functions.Response) => {
   const idToken = req.headers.authorization?.split("Bearer ")[1];
   if (!idToken) {
     console.error("❌ Gus Bug Alert: Missing ID token in header. 🐞");
@@ -846,8 +835,7 @@ export const generateDailyChallenge = functions
 });
 
 export const skipDailyChallenge = functions
-  .region("us-central1")
-  .https.onRequest(async (req: Request, res: Response) => {
+  .https.onRequest(async (req: functions.Request, res: functions.Response) => {
   const idToken = req.headers.authorization?.split("Bearer ")[1];
   if (!idToken) {
     res.status(401).json({ error: "Unauthorized" });
@@ -970,8 +958,7 @@ export const skipDailyChallenge = functions
 // TODO: startSubscriptionCheckout is unused in the current frontend. Consider
 // removing or wiring it up in a future release.
 export const startSubscriptionCheckout = functions
-  .region("us-central1")
-  .https.onRequest(withCors(async (req: Request, res: Response) => {
+  .https.onRequest(withCors(async (req: functions.Request, res: functions.Response) => {
   logger.info("📦 startSubscriptionCheckout payload", req.body);
   logger.info(
     "🔐 Stripe Secret:",
@@ -1025,8 +1012,7 @@ export const startSubscriptionCheckout = functions
 // TODO: startOneTimeTokenCheckout is unused in the current frontend. Consider
 // removing or wiring it up in a future release.
 export const startOneTimeTokenCheckout = functions
-  .region("us-central1")
-  .https.onRequest(withCors(async (req: Request, res: Response) => {
+  .https.onRequest(withCors(async (req: functions.Request, res: functions.Response) => {
   logger.info("📦 startOneTimeTokenCheckout payload", req.body);
   logger.info(
     "🔐 Stripe Secret:",
@@ -1082,8 +1068,7 @@ export const startOneTimeTokenCheckout = functions
 }));
 
 export const startTokenCheckout = functions
-  .region("us-central1")
-  .https.onRequest(withCors(async (req: Request, res: Response) => {
+  .https.onRequest(withCors(async (req: functions.Request, res: functions.Response) => {
   logger.info("🪙 startTokenCheckout payload", req.body);
   const { uid, priceId } = req.body || {};
   if (!uid || !priceId) {
@@ -1130,8 +1115,7 @@ export const startTokenCheckout = functions
 }));
 
 export const startDonationCheckout = functions
-  .region("us-central1")
-  .https.onRequest(withCors(async (req: Request, res: Response) => {
+  .https.onRequest(withCors(async (req: functions.Request, res: functions.Response) => {
   logger.info("💖 startDonationCheckout payload", req.body);
   const { userId, amount } = req.body || {};
   if (!userId || typeof amount !== "number" || amount <= 0) {
@@ -1188,8 +1172,7 @@ export const startDonationCheckout = functions
 }));
 
 export const startCheckoutSession = functions
-  .region("us-central1")
-  .https.onRequest(withCors(async (req: Request, res: Response) => {
+  .https.onRequest(withCors(async (req: functions.Request, res: functions.Response) => {
   logger.info("📦 startCheckoutSession payload", req.body);
   logger.debug("startCheckoutSession headers", req.headers);
   logger.info(
@@ -1246,8 +1229,7 @@ export const startCheckoutSession = functions
 }));
 
 export const createStripeCheckout = functions
-  .region("us-central1")
-  .https.onRequest(withCors(async (req: Request, res: Response) => {
+  .https.onRequest(withCors(async (req: functions.Request, res: functions.Response) => {
   logger.info("🛒 createStripeCheckout payload", req.body);
   const { uid, email, priceId, type, quantity, returnUrl } = req.body || {};
 
@@ -1326,8 +1308,7 @@ export const createStripeCheckout = functions
 }));
 
 export const handleStripeWebhookV2 = functions
-  .region("us-central1")
-  .https.onRequest(async (req: RawBodyRequest, res: Response) => {
+  .https.onRequest(async (req: RawBodyRequest, res: functions.Response) => {
   console.log('💰 Gus Bug Webhook triggered. No auth needed!');
   const sig = req.headers['stripe-signature'] as string | undefined;
   if (!sig) {
@@ -1381,9 +1362,8 @@ export const handleStripeWebhookV2 = functions
 });
 
 export const updateStreakAndXP = functions
-  .region("us-central1")
   .https.onRequest(
-    withCors(async (req: Request, res: Response) => {
+    withCors(async (req: functions.Request, res: functions.Response) => {
       let authData: { uid: string; token: string };
       try {
         authData = await verifyAuth(req);
@@ -1405,9 +1385,8 @@ export const updateStreakAndXP = functions
   );
 
 export const getUserProfile = functions
-  .region("us-central1")
   .https.onRequest(
-    withCors(async (req: Request, res: Response) => {
+    withCors(async (req: functions.Request, res: functions.Response) => {
       let authData: { uid: string; token: string };
       try {
         authData = await verifyAuth(req);
@@ -1455,8 +1434,7 @@ async function ensureDocument(
 }
 
 export const seedFirestore = functions
-  .region("us-central1")
-  .https.onRequest(async (_req, res) => {
+  .https.onRequest(async (_req: functions.Request, res: functions.Response) => {
   try {
     await Promise.all([
       ensureDocument('users/seed-user', { initialized: true }),
@@ -1586,9 +1564,8 @@ export const onUserCreate = functions
     }
   });
 
-export const backfillUserProfiles = functions
-  .region("us-central1")
-  .https.onCall(async (_data, context) => {
+export const backfillUserProfiles = functions.https.onCall(
+  async (data: any, context: functions.https.CallableContext) => {
     if (!context.auth) {
       throw new functions.https.HttpsError(
         "unauthenticated",
@@ -1673,9 +1650,8 @@ export const backfillUserProfiles = functions
     return { processed, updated };
   });
 
-export const updateUserProfileCallable = functions
-  .region("us-central1")
-  .https.onCall(async (data, context) => {
+export const updateUserProfileCallable = functions.https.onCall(
+  async (data: any, context: functions.https.CallableContext) => {
     if (!context.auth) {
       throw new functions.https.HttpsError(
         "unauthenticated",
@@ -1710,9 +1686,8 @@ export const updateUserProfileCallable = functions
     }
   });
 
-export const completeSignupAndProfile = functions
-  .region("us-central1")
-  .https.onCall(async (data, context) => {
+export const completeSignupAndProfile = functions.https.onCall(
+  async (data: any, context: functions.https.CallableContext) => {
     if (!context.auth) {
       throw new functions.https.HttpsError(
         "unauthenticated",
