@@ -4,12 +4,12 @@ import { db } from './firebase';
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
 
-export function createGeminiModel() {
-  if (!GEMINI_API_KEY) {
+export function createGeminiModel(apiKey: string = GEMINI_API_KEY) {
+  if (!apiKey) {
     throw new Error('GEMINI_API_KEY is not configured');
   }
   try {
-    const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+    const genAI = new GoogleGenerativeAI(apiKey);
     return genAI.getGenerativeModel({ model: 'gemini-1.5-pro' });
   } catch (err) {
     logger.error('Failed to initialize GoogleGenerativeAI', err);
