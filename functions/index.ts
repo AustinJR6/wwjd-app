@@ -605,7 +605,7 @@ export const askGeminiV2 = functions
       res.status(400).json({ error: "Invalid prompt" });
       return;
     }
-    const apiKey = functions.config().gemini?.key;
+    const apiKey = functions.config().gemini.key;
     if (!apiKey) {
       functions.logger.warn(
         "Gemini API key not found in functions config"
@@ -614,8 +614,8 @@ export const askGeminiV2 = functions
       return;
     }
 
-    const url =
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-vision:generateContent`;
+    const endpoint =
+      `https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=${apiKey}`;
     const payload = {
       contents: [
         {
@@ -629,7 +629,7 @@ export const askGeminiV2 = functions
     };
 
     try {
-      const response = await axios.post(url, payload, {
+      const response = await axios.post(endpoint, payload, {
         headers: {
           "Content-Type": "application/json",
           "X-Goog-Api-Key": apiKey,
