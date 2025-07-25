@@ -29,9 +29,12 @@ function logTokenVerificationError(context: string, token: string | undefined, e
 dotenv.config();
 dotenv.config({ path: ".env.functions" });
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
+const GEMINI_API_KEY =
+  process.env.GEMINI_API_KEY || functions.config().gemini?.key || "";
 if (!GEMINI_API_KEY) {
-  logger.error("❌ GEMINI_API_KEY missing. Set this in your environment.");
+  logger.error(
+    "❌ GEMINI_API_KEY missing. Set this via Secret Manager or functions config."
+  );
 } else {
   logger.info("✅ GEMINI_API_KEY loaded");
 }
@@ -604,9 +607,16 @@ export const askGeminiV2 = functions
       res.status(400).json({ error: "Invalid prompt" });
       return;
     }
+    const apiKey =
+      process.env.GEMINI_API_KEY || functions.config().gemini?.key;
+    if (!apiKey) {
+      functions.logger.error("GEMINI_API_KEY undefined in askGeminiV2");
+      res.status(500).json({ error: "Gemini API key not configured" });
+      return;
+    }
 
     const url =
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${process.env.GEMINI_API_KEY}`;
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`;
     const payload = {
       contents: [
         {
