@@ -1,5 +1,4 @@
-import * as functions from "firebase-functions/v1";
-import { onCall } from "firebase-functions/v2/https";
+import * as functions from "firebase-functions";
 import { auth, db } from "./firebase";
 import * as admin from "firebase-admin";
 import { Request, Response } from "express";
@@ -15,6 +14,7 @@ import {
   logError,
   verifyAuth,
   extractAuthToken,
+  getSecret,
 } from "./helpers";
 
 
@@ -603,23 +603,24 @@ export const confessionalAI = functions
   }
 });
 
-export const askGeminiV2 = onCall({ secrets: ["GEMINI_API_KEY"] }, async (req) => {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) throw new Error('GEMINI_API_KEY is not configured');
+export const askGeminiV2 = functions
+  .region('us-central1')
+  .https.onCall(async (data, context) => {
+  const geminiKey = await getSecret('GEMINI_API_KEY');
   functions.logger.info('✅ GEMINI_API_KEY loaded');
 
-  const uid = req.auth?.uid;
+  const uid = context.auth?.uid;
   if (!uid) {
     throw new functions.https.HttpsError('unauthenticated', 'No auth context');
   }
 
-  const { prompt = "", history = [], religion: religionId } = req.data || {};
+  const { prompt = "", history = [], religion: religionId } = data || {};
   functions.logger.info(`📩 askGeminiV2 prompt length: ${prompt.length}`);
   functions.logger.info(`📜 askGeminiV2 history length: ${(history as any[]).length}`);
 
   let text = "";
   try {
-    const model = createGeminiModel();
+    const model = createGeminiModel(geminiKey);
     const chat = await model.startChat({
       history: (history as any[]).map((msg) => ({
         role: msg.role,

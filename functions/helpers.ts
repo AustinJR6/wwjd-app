@@ -1,5 +1,6 @@
 import * as admin from 'firebase-admin';
 import * as functions from 'firebase-functions';
+import { SecretManagerServiceClient } from '@google-cloud/secret-manager';
 import cors from 'cors';
 import { Request, Response } from 'express';
 import { auth, db } from './firebase';
@@ -37,4 +38,15 @@ export async function writeDoc(path: string, data: any): Promise<FirebaseFiresto
 
 export function logError(context: string, err: any) {
   functions.logger.error(context, err);
+}
+
+const secretClient = new SecretManagerServiceClient();
+
+export async function getSecret(secretName: string): Promise<string> {
+  const [version] = await secretClient.accessSecretVersion({
+    name: `projects/wwjd-app/secrets/${secretName}/versions/latest`,
+  });
+  const payload = version.payload?.data?.toString();
+  if (!payload) throw new Error(`Secret ${secretName} is empty or undefined`);
+  return payload;
 }
