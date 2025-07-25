@@ -4,7 +4,7 @@ import { auth, db } from "./firebase";
 import * as admin from "firebase-admin";
 import { RawBodyRequest } from "./types";
 import Stripe from "stripe";
-import axios from "axios";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import * as dotenv from "dotenv";
 import * as logger from "firebase-functions/logger";
 import { createGeminiModel, fetchReligionContext } from './geminiUtils';
@@ -601,6 +601,7 @@ export const confessionalAI = functions
 export const askGeminiV2 = functions
   .https.onRequest(async (req: Request, res: Response) => {
     const userInput = req.body?.prompt;
+    const history = Array.isArray(req.body?.history) ? req.body.history : [];
     if (typeof userInput !== "string" || !userInput.trim()) {
       res.status(400).json({ error: "Invalid prompt" });
       return;
@@ -620,6 +621,8 @@ export const askGeminiV2 = functions
       res.status(500).json({ error: "Gemini API key not configured" });
       return;
     }
+
+    console.log("🔍 Incoming prompt", userInput);
 
     try {
       const decoded = await auth.verifyIdToken(idToken);
@@ -643,29 +646,28 @@ export const askGeminiV2 = functions
       functions.logger.info(`askGeminiV2 religion: ${religionName}`);
       functions.logger.info(`askGeminiV2 full prompt: ${finalPrompt}`);
 
-      const endpoint =
-        `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-pro:generateContent?key=${apiKey}`;
-      const payload = {
-        contents: [
-          {
-            parts: [
-              {
-                text: finalPrompt,
-              },
-            ],
-          },
-        ],
-      };
-
-      const response = await axios.post(endpoint, payload, {
-        headers: {
-          "Content-Type": "application/json",
-          "X-Goog-Api-Key": apiKey,
-        },
+      const genAI = new GoogleGenerativeAI(apiKey);
+      const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+      const chat = await model.startChat({
+        history: history.map((msg: any) => ({
+          role: msg.role,
+          parts: msg.parts || [{ text: msg.text }],
+        })),
       });
-      res.status(200).json(response.data);
+      const result = await chat.sendMessage(finalPrompt);
+      console.log("📨 Gemini full response", JSON.stringify(result, null, 2));
+      const reply = result?.response?.text?.() || "";
+
+      if (!reply) {
+        console.error("Gemini returned empty reply");
+        res.status(500).json({ error: "Empty response from Gemini" });
+        return;
+      }
+
+      console.log("✅ Final reply sent to client", reply);
+      res.status(200).json({ response: reply });
     } catch (err) {
-      functions.logger.error("askGeminiV2 request failed", err);
+      console.error("askGeminiV2 request failed", err);
       res.status(500).json({ error: "Gemini request failed" });
     }
   });
