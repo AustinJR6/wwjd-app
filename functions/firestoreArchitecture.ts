@@ -1,5 +1,6 @@
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 import * as admin from 'firebase-admin';
+import { DocumentSnapshot } from 'firebase-functions/v1/firestore';
 import { db } from './firebase';
 import { createGeminiModel, fetchReligionContext } from './geminiUtils';
 
@@ -33,7 +34,7 @@ export async function generateDailyChallengeForUser(uid: string, religionId?: st
 // Trigger: generate new challenge when user completes or abandons current one
 export const onActiveChallengeDelete = functions.firestore
   .document('activeChallenges/{uid}')
-  .onDelete(async (_, context) => {
+  .onDelete(async (_: functions.firestore.DocumentSnapshot, context: functions.EventContext) => {
     const uid = context.params.uid;
     try {
       const userDoc = await db.doc(`users/${uid}`).get();
@@ -47,7 +48,7 @@ export const onActiveChallengeDelete = functions.firestore
 // Trigger: update points and leaderboards when challenge completed
 export const onCompletedChallengeCreate = functions.firestore
   .document('completedChallenges/{challengeId}')
-  .onCreate(async (snap) => {
+  .onCreate(async (snap: functions.firestore.DocumentSnapshot, context: functions.EventContext) => {
     const data = snap.data() || {};
     const uid = data.uid as string | undefined;
     if (!uid) {
@@ -96,7 +97,7 @@ export const onCompletedChallengeCreate = functions.firestore
 // Trigger: prevent confessional history persistence for unsubscribed/opt-out users
 export const onConfessionalWriteChats = functions.firestore
   .document('confessionalChats/{uid}/messages/{msgId}')
-  .onWrite(async (change, context) => {
+  .onWrite(async (change: functions.Change<functions.firestore.DocumentSnapshot>, context: functions.EventContext) => {
     const uid = context.params.uid;
     try {
       const user = await db.doc(`users/${uid}`).get();
@@ -113,7 +114,7 @@ export const onConfessionalWriteChats = functions.firestore
 
 export const onConfessionalWriteSessions = functions.firestore
   .document('confessionalSessions/{uid}/messages/{msgId}')
-  .onWrite(async (change, context) => {
+  .onWrite(async (change: functions.Change<functions.firestore.DocumentSnapshot>, context: functions.EventContext) => {
     const uid = context.params.uid;
     try {
       const user = await db.doc(`users/${uid}`).get();
