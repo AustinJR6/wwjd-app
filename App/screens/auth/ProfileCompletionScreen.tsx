@@ -6,11 +6,10 @@ import {
   ScrollView,
   Alert,
   ActivityIndicator,
-  Pressable,
-  Text,
 } from 'react-native';
 import ScreenContainer from '@/components/theme/ScreenContainer';
 import TextField from '@/components/TextField';
+import Button from '@/components/common/Button';
 import { Picker } from '@react-native-picker/picker';
 import { useLookupLists } from '@/hooks/useLookupLists';
 import { getDocument, updateDocument } from '@/services/firestoreService';
@@ -126,20 +125,7 @@ export default function ProfileCompletionScreen() {
           color: theme.colors.primary,
           textAlign: 'center',
         },
-        submitButton: {
-          backgroundColor: '#4B8DF8',
-          paddingVertical: 14,
-          paddingHorizontal: 24,
-          borderRadius: 10,
-          alignItems: 'center',
-          marginTop: 20,
-          width: '100%',
-        },
-        submitButtonText: {
-          color: 'white',
-          fontWeight: 'bold',
-          fontSize: 16,
-        },
+        buttonWrap: { marginTop: 20, width: '100%' },
       }),
     [theme]
   );
@@ -200,21 +186,14 @@ export default function ProfileCompletionScreen() {
           </Picker>
         </View>
 
-        <Pressable
-          onPress={handleSubmit}
-          disabled={isLoading}
-          style={({ pressed }) => [
-            styles.submitButton,
-            pressed && { opacity: 0.8 },
-            isLoading && { backgroundColor: '#aaa' },
-          ]}
-        >
-          {isLoading ? (
-            <ActivityIndicator color="white" />
-          ) : (
-            <Text style={styles.submitButtonText}>Complete</Text>
-          )}
-        </Pressable>
+        <View style={styles.buttonWrap}>
+          <Button
+            title="Complete Profile"
+            onPress={handleSubmit}
+            loading={isLoading}
+            disabled={isLoading}
+          />
+        </View>
       </ScrollView>
     </ScreenContainer>
   );
