@@ -1,4 +1,5 @@
 import * as functions from "firebase-functions";
+import { Request, Response } from "express";
 import { auth, db } from "./firebase";
 import * as admin from "firebase-admin";
 import { RawBodyRequest } from "./types";
@@ -223,7 +224,7 @@ async function updateStreakAndXPInternal(uid: string, type: string) {
 
 export const incrementReligionPoints = functions
   .https.onRequest(
-    withCors(async (req: functions.https.Request, res: functions.Response) => {
+    withCors(async (req: Request, res: Response) => {
       try {
         const { uid } = await verifyIdToken(req);
         const { religion, points } = req.body;
@@ -258,7 +259,7 @@ export const incrementReligionPoints = functions
 
 export const awardPointsToUser = functions
   .https.onRequest(
-    withCors(async (req: functions.https.Request, res: functions.Response) => {
+    withCors(async (req: Request, res: Response) => {
       try {
         const { uid } = await verifyIdToken(req);
         const { points } = req.body;
@@ -306,7 +307,7 @@ export const awardPointsToUser = functions
   );
 
 export const completeChallenge = functions
-  .https.onRequest(async (req: functions.https.Request, res: functions.Response) => {
+  .https.onRequest(async (req: Request, res: Response) => {
   const authHeader = req.headers.authorization;
   const token = authHeader?.split('Bearer ')[1];
   if (!token) {
@@ -329,7 +330,7 @@ export const completeChallenge = functions
 });
 
 export const createMultiDayChallenge = functions
-  .https.onRequest(async (req: functions.https.Request, res: functions.Response) => {
+  .https.onRequest(async (req: Request, res: Response) => {
   const authHeader = req.headers.authorization;
   const token = authHeader?.split('Bearer ')[1];
   if (!token) {
@@ -404,7 +405,7 @@ export const createMultiDayChallenge = functions
 });
 
 export const completeChallengeDay = functions
-  .https.onRequest(async (req: functions.https.Request, res: functions.Response) => {
+  .https.onRequest(async (req: Request, res: Response) => {
   const authHeader = req.headers.authorization;
   const token = authHeader?.split('Bearer ')[1];
   if (!token) {
@@ -505,7 +506,7 @@ export const completeChallengeDay = functions
 });
 
 export const askGeminiSimple = functions
-  .https.onRequest(async (req: functions.https.Request, res: functions.Response) => {
+  .https.onRequest(async (req: Request, res: Response) => {
   const idToken = req.headers.authorization?.split("Bearer ")[1];
   if (!idToken) {
     console.error("❌ Gus Bug Alert: Missing ID token in header. 🐞");
@@ -564,7 +565,7 @@ export const askGeminiSimple = functions
 });
 
 export const confessionalAI = functions
-  .https.onRequest(async (req: functions.https.Request, res: functions.Response) => {
+  .https.onRequest(async (req: Request, res: Response) => {
   const idToken = req.headers.authorization?.split("Bearer ")[1];
   if (!idToken) {
     res.status(401).json({ error: "Unauthorized" });
@@ -656,7 +657,7 @@ export const askGeminiV2 = functions.https.onCall(
 });
 
 export const generateChallenge = functions
-  .https.onRequest(async (req: functions.https.Request, res: functions.Response) => {
+  .https.onRequest(async (req: Request, res: Response) => {
   const idToken = req.headers.authorization?.split("Bearer ")[1];
   if (!idToken) {
     console.error("❌ Gus Bug Alert: Missing ID token in header. 🐞");
@@ -733,7 +734,7 @@ export const generateChallenge = functions
 });
 
 export const generateDailyChallenge = functions
-  .https.onRequest(async (req: functions.https.Request, res: functions.Response) => {
+  .https.onRequest(async (req: Request, res: Response) => {
   const idToken = req.headers.authorization?.split("Bearer ")[1];
   if (!idToken) {
     console.error("❌ Gus Bug Alert: Missing ID token in header. 🐞");
@@ -835,7 +836,7 @@ export const generateDailyChallenge = functions
 });
 
 export const skipDailyChallenge = functions
-  .https.onRequest(async (req: functions.https.Request, res: functions.Response) => {
+  .https.onRequest(async (req: Request, res: Response) => {
   const idToken = req.headers.authorization?.split("Bearer ")[1];
   if (!idToken) {
     res.status(401).json({ error: "Unauthorized" });
@@ -958,7 +959,7 @@ export const skipDailyChallenge = functions
 // TODO: startSubscriptionCheckout is unused in the current frontend. Consider
 // removing or wiring it up in a future release.
 export const startSubscriptionCheckout = functions
-  .https.onRequest(withCors(async (req: functions.https.Request, res: functions.Response) => {
+  .https.onRequest(withCors(async (req: Request, res: Response) => {
   logger.info("📦 startSubscriptionCheckout payload", req.body);
   logger.info(
     "🔐 Stripe Secret:",
@@ -1012,7 +1013,7 @@ export const startSubscriptionCheckout = functions
 // TODO: startOneTimeTokenCheckout is unused in the current frontend. Consider
 // removing or wiring it up in a future release.
 export const startOneTimeTokenCheckout = functions
-  .https.onRequest(withCors(async (req: functions.https.Request, res: functions.Response) => {
+  .https.onRequest(withCors(async (req: Request, res: Response) => {
   logger.info("📦 startOneTimeTokenCheckout payload", req.body);
   logger.info(
     "🔐 Stripe Secret:",
@@ -1068,7 +1069,7 @@ export const startOneTimeTokenCheckout = functions
 }));
 
 export const startTokenCheckout = functions
-  .https.onRequest(withCors(async (req: functions.https.Request, res: functions.Response) => {
+  .https.onRequest(withCors(async (req: Request, res: Response) => {
   logger.info("🪙 startTokenCheckout payload", req.body);
   const { uid, priceId } = req.body || {};
   if (!uid || !priceId) {
@@ -1115,7 +1116,7 @@ export const startTokenCheckout = functions
 }));
 
 export const startDonationCheckout = functions
-  .https.onRequest(withCors(async (req: functions.https.Request, res: functions.Response) => {
+  .https.onRequest(withCors(async (req: Request, res: Response) => {
   logger.info("💖 startDonationCheckout payload", req.body);
   const { userId, amount } = req.body || {};
   if (!userId || typeof amount !== "number" || amount <= 0) {
@@ -1172,7 +1173,7 @@ export const startDonationCheckout = functions
 }));
 
 export const startCheckoutSession = functions
-  .https.onRequest(withCors(async (req: functions.https.Request, res: functions.Response) => {
+  .https.onRequest(withCors(async (req: Request, res: Response) => {
   logger.info("📦 startCheckoutSession payload", req.body);
   logger.debug("startCheckoutSession headers", req.headers);
   logger.info(
@@ -1229,7 +1230,7 @@ export const startCheckoutSession = functions
 }));
 
 export const createStripeCheckout = functions
-  .https.onRequest(withCors(async (req: functions.https.Request, res: functions.Response) => {
+  .https.onRequest(withCors(async (req: Request, res: Response) => {
   logger.info("🛒 createStripeCheckout payload", req.body);
   const { uid, email, priceId, type, quantity, returnUrl } = req.body || {};
 
@@ -1308,7 +1309,7 @@ export const createStripeCheckout = functions
 }));
 
 export const handleStripeWebhookV2 = functions
-  .https.onRequest(async (req: RawBodyRequest, res: functions.Response) => {
+  .https.onRequest(async (req: RawBodyRequest, res: Response) => {
   console.log('💰 Gus Bug Webhook triggered. No auth needed!');
   const sig = req.headers['stripe-signature'] as string | undefined;
   if (!sig) {
@@ -1363,7 +1364,7 @@ export const handleStripeWebhookV2 = functions
 
 export const updateStreakAndXP = functions
   .https.onRequest(
-    withCors(async (req: functions.https.Request, res: functions.Response) => {
+    withCors(async (req: Request, res: Response) => {
       let authData: { uid: string; token: string };
       try {
         authData = await verifyAuth(req);
@@ -1386,7 +1387,7 @@ export const updateStreakAndXP = functions
 
 export const getUserProfile = functions
   .https.onRequest(
-    withCors(async (req: functions.https.Request, res: functions.Response) => {
+    withCors(async (req: Request, res: Response) => {
       let authData: { uid: string; token: string };
       try {
         authData = await verifyAuth(req);
@@ -1434,7 +1435,7 @@ async function ensureDocument(
 }
 
 export const seedFirestore = functions
-  .https.onRequest(async (_req: functions.https.Request, res: functions.Response) => {
+  .https.onRequest(async (_req: Request, res: Response) => {
   try {
     await Promise.all([
       ensureDocument('users/seed-user', { initialized: true }),

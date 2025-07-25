@@ -2,10 +2,7 @@ import * as admin from 'firebase-admin';
 import * as functions from 'firebase-functions';
 import { SecretManagerServiceClient } from '@google-cloud/secret-manager';
 import cors from 'cors';
-
-// Use Cloud Functions HTTP types instead of express directly
-type Request = functions.https.Request;
-type Response = functions.Response;
+import { Request, Response } from 'express';
 import { auth, db } from './firebase';
 
 const corsHandler = cors({ origin: true });
