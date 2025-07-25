@@ -29,14 +29,13 @@ function logTokenVerificationError(context: string, token: string | undefined, e
 dotenv.config();
 dotenv.config({ path: ".env.functions" });
 
-const GEMINI_API_KEY =
-  process.env.GEMINI_API_KEY || functions.config().gemini?.key || "";
+const GEMINI_API_KEY = functions.config().gemini?.key || "";
 if (!GEMINI_API_KEY) {
-  logger.error(
-    "❌ GEMINI_API_KEY missing. Set this via Secret Manager or functions config."
+  logger.warn(
+    "Gemini API key not found in functions config. Set with 'firebase functions:config:set gemini.key=YOUR_KEY'"
   );
 } else {
-  logger.info("✅ GEMINI_API_KEY loaded");
+  logger.info("✅ GEMINI_API_KEY loaded from functions config");
 }
 const LOGGING_MODE = process.env.LOGGING_MODE || "gusbug";
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || "";
@@ -600,23 +599,23 @@ export const confessionalAI = functions
 });
 
 export const askGeminiV2 = functions
-  .runWith({ secrets: ["GEMINI_API_KEY"] })
   .https.onRequest(async (req: Request, res: Response) => {
     const prompt = req.body?.prompt;
     if (typeof prompt !== "string" || !prompt.trim()) {
       res.status(400).json({ error: "Invalid prompt" });
       return;
     }
-    const apiKey =
-      process.env.GEMINI_API_KEY || functions.config().gemini?.key;
+    const apiKey = functions.config().gemini?.key;
     if (!apiKey) {
-      functions.logger.error("GEMINI_API_KEY undefined in askGeminiV2");
+      functions.logger.warn(
+        "Gemini API key not found in functions config"
+      );
       res.status(500).json({ error: "Gemini API key not configured" });
       return;
     }
 
     const url =
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`;
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-vision:generateContent`;
     const payload = {
       contents: [
         {
@@ -630,7 +629,12 @@ export const askGeminiV2 = functions
     };
 
     try {
-      const response = await axios.post(url, payload);
+      const response = await axios.post(url, payload, {
+        headers: {
+          "Content-Type": "application/json",
+          "X-Goog-Api-Key": apiKey,
+        },
+      });
       res.status(200).json(response.data);
     } catch (err) {
       functions.logger.error("askGeminiV2 request failed", err);
