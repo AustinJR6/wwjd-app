@@ -7,9 +7,11 @@ import { useTheme } from '@/components/theme/theme';
 import { RootStackParamList } from '@/navigation/RootStackParamList';
 import { logout } from '@/services/authService';
 import { resetToLogin } from '@/navigation/navigationRef';
+import { useUser } from '@/hooks/useUser';
 
 export default function Header() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { user } = useUser();
   const theme = useTheme();
   const styles = React.useMemo(
     () =>
@@ -53,11 +55,25 @@ export default function Header() {
     ]);
   };
 
+  const handleSettings = () => {
+    if (!user) {
+      console.error('🚫 Cannot navigate to Settings – user not authenticated');
+      return;
+    }
+    if (!navigation) {
+      console.error('🚫 Navigation object is undefined');
+      return;
+    }
+    navigation.navigate('Settings');
+  };
+
   return (
     <View style={styles.container}>
-      <Pressable onPress={() => navigation.navigate('Settings')} style={styles.iconWrap}>
-        <Ionicons name="settings-outline" size={24} color={theme.colors.text} />
-      </Pressable>
+      {user && (
+        <Pressable onPress={handleSettings} style={styles.iconWrap}>
+          <Ionicons name="settings-outline" size={24} color={theme.colors.text} />
+        </Pressable>
+      )}
       <Pressable onPress={handleLogout} style={styles.iconWrap}>
         <Ionicons name="log-out-outline" size={24} color={theme.colors.text} />
       </Pressable>
