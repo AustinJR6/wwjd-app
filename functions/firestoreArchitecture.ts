@@ -67,9 +67,18 @@ export const onCompletedChallengeCreate = functions.firestore
       const org = userData.organization as string | undefined;
       const region = userData.region as string | undefined;
       const religion = userData.religion as string | undefined;
-      if (org) tasks.push(db.doc(`organizations/${org}`).set({ orgPoints: inc }, { merge: true }));
-      if (region) tasks.push(db.doc(`regions/${region}`).set({ regionPoints: inc }, { merge: true }));
-      if (religion) tasks.push(db.doc(`religion/${religion}`).set({ religionPoints: inc }, { merge: true }));
+      if (org) {
+        functions.logger.info('🛠 Updating organization doc with merge', { org });
+        tasks.push(db.doc(`organizations/${org}`).set({ orgPoints: inc }, { merge: true }));
+      }
+      if (region) {
+        functions.logger.info('🛠 Updating region doc with merge', { region });
+        tasks.push(db.doc(`regions/${region}`).set({ regionPoints: inc }, { merge: true }));
+      }
+      if (religion) {
+        functions.logger.info('🛠 Updating religion doc with merge', { religion });
+        tasks.push(db.doc(`religion/${religion}`).set({ religionPoints: inc }, { merge: true }));
+      }
 
       tasks.push(
         db
@@ -78,6 +87,7 @@ export const onCompletedChallengeCreate = functions.firestore
       );
 
       await Promise.all(tasks);
+      functions.logger.info('✅ Points updated for completion', { uid, points });
     } catch (err) {
       functions.logger.error('onCompletedChallengeCreate', err);
     }

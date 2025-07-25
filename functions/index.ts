@@ -240,11 +240,13 @@ export const incrementReligionPoints = functions
         }
 
         const ref = db.collection("religion").doc(religion);
+        logger.info("🛠 Updating religion doc with merge", { religion });
         await db.runTransaction(async (t: FirebaseFirestore.Transaction) => {
           const snap = await t.get(ref);
           const current = snap.exists ? (snap.data()?.totalPoints ?? 0) : 0;
           t.set(ref, { totalPoints: current + points }, { merge: true });
         });
+        logger.info("✅ Religion updated", { religion });
 
         res.status(200).send({ message: "Points updated" });
       } catch (err: any) {
@@ -280,15 +282,19 @@ export const awardPointsToUser = functions
         await db.runTransaction(async (t) => {
           if (religionId) {
             const ref = db.doc(`religion/${religionId}`);
+            logger.info("🛠 Updating religion doc with merge", { religionId });
             const snap = await t.get(ref);
             const current = snap.exists ? (snap.data()?.totalPoints ?? 0) : 0;
             t.set(ref, { name: religionId, totalPoints: current + points }, { merge: true });
+            logger.info("✅ Religion updated", { religionId });
           }
           if (organizationId) {
             const ref = db.doc(`organizations/${organizationId}`);
+            logger.info("🛠 Updating organization doc with merge", { organizationId });
             const snap = await t.get(ref);
             const current = snap.exists ? (snap.data()?.totalPoints ?? 0) : 0;
             t.set(ref, { name: organizationId, totalPoints: current + points }, { merge: true });
+            logger.info("✅ Organization updated", { organizationId });
           }
         });
 
@@ -488,7 +494,9 @@ export const completeChallengeDay = functions
       if (relRef) {
         const rs = await t.get(relRef);
         const current = rs.exists ? (rs.data()?.totalPoints ?? 0) : 0;
+        logger.info("🛠 Updating religion doc with merge", { ref: relRef.path });
         t.set(relRef, { totalPoints: current + points }, { merge: true });
+        logger.info("✅ Religion updated", { ref: relRef.path });
       }
     });
 
@@ -1452,7 +1460,9 @@ async function ensureDocument(
   const ref = db.doc(path);
   const snap = await ref.get();
   if (!snap.exists) {
-    await ref.set(data);
+    logger.info("🛠 Creating doc with merge", { path });
+    await ref.set(data, { merge: true });
+    logger.info("✅ Doc ensured", { path });
   }
 }
 
