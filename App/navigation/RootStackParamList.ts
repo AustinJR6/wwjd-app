@@ -10,10 +10,14 @@ declare global {
   }
 }
 
+import type { NavigatorScreenParams } from '@react-navigation/native';
+import type { MainTabsParamList } from './MainTabsParamList';
+
 export type RootStackParamList = {
   // Root navigators
   Auth: undefined;
-  MainTabs: undefined;
+  // MainTabs accepts nested navigation params for the bottom tab navigator
+  MainTabs: NavigatorScreenParams<MainTabsParamList> | undefined;
 
   // Auth stack screens
   Welcome: undefined;

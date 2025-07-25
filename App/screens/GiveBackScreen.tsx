@@ -5,10 +5,11 @@ import Button from '@/components/common/Button';
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { useTheme } from "@/components/theme/theme";
 import AuthGate from '@/components/AuthGate';
-import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from "@/navigation/RootStackParamList";
 
-type Props = NativeStackScreenProps<RootStackParamList, 'GiveBack'>;
+// The Give Back screen only needs navigation to MainTabs when closing
+type Props = { navigation: NativeStackNavigationProp<RootStackParamList, 'MainTabs'> };
 
 export default function GiveBackScreen({ navigation }: Props) {
   const theme = useTheme();

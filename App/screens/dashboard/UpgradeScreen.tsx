@@ -4,14 +4,15 @@ import { View, StyleSheet, Alert, Linking } from 'react-native';
 import Button from '@/components/common/Button';
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { useTheme } from "@/components/theme/theme";
-import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from "@/navigation/RootStackParamList";
 import { useUser } from '@/hooks/useUser';
 import { startSubscriptionCheckout } from '@/services/apiService';
 import { ONEVINE_PLUS_PRICE_ID } from '@/config/stripeConfig';
 import { getAuthHeaders, getCurrentUserId } from '@/utils/TokenManager';
 
-type Props = NativeStackScreenProps<RootStackParamList, 'Upgrade'>;
+// NavigationProp typed for MainTabs allows navigating to tab screens
+type Props = { navigation: NativeStackNavigationProp<RootStackParamList, 'MainTabs'> };
 
 export default function UpgradeScreen({ navigation }: Props) {
   const theme = useTheme();
