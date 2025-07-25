@@ -1,9 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import CustomText from '@/components/CustomText';
-import { View, StyleSheet, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import {
+  View,
+  StyleSheet,
+  ScrollView,
+  Alert,
+  ActivityIndicator,
+  Pressable,
+  Text,
+} from 'react-native';
 import ScreenContainer from '@/components/theme/ScreenContainer';
 import TextField from '@/components/TextField';
-import Button from '@/components/common/Button';
 import { Picker } from '@react-native-picker/picker';
 import { useLookupLists } from '@/hooks/useLookupLists';
 import { getDocument, updateDocument } from '@/services/firestoreService';
@@ -13,7 +20,6 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/navigation/RootStackParamList';
 import { useTheme } from '@/components/theme/theme';
-import { SCREENS } from '@/navigation/screens';
 import { useAuth } from '@/hooks/useAuth';
 
 export default function ProfileCompletionScreen() {
@@ -27,7 +33,7 @@ export default function ProfileCompletionScreen() {
   const [preferredName, setPreferredName] = useState('');
   const [pronouns, setPronouns] = useState('');
   const [avatarURL, setAvatarURL] = useState('');
-  const [saving, setSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const profileStore = useUserProfileStore();
 
   useEffect(() => {
@@ -44,7 +50,8 @@ export default function ProfileCompletionScreen() {
     if (!religion && religions.length) setReligion(religions[0].id);
   }, [regions, religions]);
 
-  const handleComplete = async () => {
+  const handleSubmit = async () => {
+    if (isLoading) return;
     if (!uid) return;
     const existing = profileStore.profile;
     const hasDisplay = existing?.displayName && existing.displayName.trim();
@@ -57,7 +64,7 @@ export default function ProfileCompletionScreen() {
       Alert.alert('Missing Info', 'Preferred name is required.');
       return;
     }
-    setSaving(true);
+    setIsLoading(true);
     try {
       const payload: Record<string, any> = {
         region,
@@ -90,9 +97,9 @@ export default function ProfileCompletionScreen() {
       navigation.reset({ index: 0, routes: [{ name: 'MainTabs' }] });
     } catch (err: any) {
       Alert.alert('Error', err.message || 'Could not save profile or update counts');
-      console.error('Transaction failed:', err);
+      console.error('❌ Failed to complete profile:', err);
     } finally {
-      setSaving(false);
+      setIsLoading(false);
     }
   };
 
@@ -118,6 +125,20 @@ export default function ProfileCompletionScreen() {
           marginTop: 20,
           color: theme.colors.primary,
           textAlign: 'center',
+        },
+        submitButton: {
+          backgroundColor: '#4B8DF8',
+          paddingVertical: 14,
+          paddingHorizontal: 24,
+          borderRadius: 10,
+          alignItems: 'center',
+          marginTop: 20,
+          width: '100%',
+        },
+        submitButtonText: {
+          color: 'white',
+          fontWeight: 'bold',
+          fontSize: 16,
         },
       }),
     [theme]
@@ -179,7 +200,21 @@ export default function ProfileCompletionScreen() {
           </Picker>
         </View>
 
-        <Button title="Complete Profile" onPress={handleComplete} loading={saving} />
+        <Pressable
+          onPress={handleSubmit}
+          disabled={isLoading}
+          style={({ pressed }) => [
+            styles.submitButton,
+            pressed && { opacity: 0.8 },
+            isLoading && { backgroundColor: '#aaa' },
+          ]}
+        >
+          {isLoading ? (
+            <ActivityIndicator color="white" />
+          ) : (
+            <Text style={styles.submitButtonText}>Complete</Text>
+          )}
+        </Pressable>
       </ScrollView>
     </ScreenContainer>
   );
