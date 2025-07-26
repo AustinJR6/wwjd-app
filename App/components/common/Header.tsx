@@ -64,7 +64,7 @@ export default function Header() {
       console.error('🚫 Navigation object is undefined');
       return;
     }
-    navigation.navigate('Settings');
+    navigation.navigate('MainTabs', { screen: 'Settings' });
   };
 
   return (
