@@ -30,6 +30,7 @@ import UpgradeScreen from '@/screens/dashboard/UpgradeScreen';
 import LeaderboardScreen from '@/screens/dashboard/LeaderboardScreen';
 import TriviaScreen from '@/screens/dashboard/TriviaScreen';
 import SubmitProofScreen from '@/screens/dashboard/SubmitProofScreen';
+import StripeSuccessScreen from '@/screens/dashboard/StripeSuccessScreen';
 
 // Profile Screens
 import ProfileScreen from '@/screens/profile/ProfileScreen';
@@ -158,6 +159,7 @@ export default function AuthGate() {
         <Stack.Screen name="Quote" component={QuoteScreen} options={{ headerShown: false }} />
         <Stack.Screen name="BuyTokens" component={BuyTokensScreen} options={{ title: 'Buy Tokens' }} />
         <Stack.Screen name="Upgrade" component={UpgradeScreen} options={{ title: 'Upgrade to OneVine+' }} />
+        <Stack.Screen name="StripeSuccess" component={StripeSuccessScreen} options={{ title: 'Subscription Success' }} />
         <Stack.Screen name="GiveBack" component={GiveBackScreen} options={{ title: 'Give Back' }} />
         <Stack.Screen name="Profile" component={ProfileScreen} />
         <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} options={{ title: 'Change Password' }} />

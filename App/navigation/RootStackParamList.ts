@@ -47,6 +47,9 @@ export type RootStackParamList = {
   Settings: undefined;
   AppInfo: undefined;
 
+  // Stripe flow
+  StripeSuccess: { success?: string } | undefined;
+
   // Shared flow screens
   Quote: undefined;
   SelectReligion: undefined;
