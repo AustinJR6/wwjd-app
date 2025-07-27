@@ -24,24 +24,12 @@ import AuthGate from '@/components/AuthGate';
 export default function SettingsScreen() {
   const theme = useTheme();
   const { user } = useUser();
-  const {
-    nightMode,
-    reminderEnabled,
-    reminderTime,
-    setReminderEnabled,
-    setReminderTime,
-    toggleNightMode,
-  } = useSettingsStore(
-    (s) => ({
-      nightMode: s.nightMode,
-      reminderEnabled: s.reminderEnabled,
-      reminderTime: s.reminderTime,
-      setReminderEnabled: s.setReminderEnabled,
-      setReminderTime: s.setReminderTime,
-      toggleNightMode: s.toggleNightMode,
-    }),
-    shallow,
-  );
+  const nightMode = useSettingsStore((s) => s.nightMode);
+  const reminderEnabled = useSettingsStore((s) => s.reminderEnabled);
+  const reminderTime = useSettingsStore((s) => s.reminderTime);
+  const setReminderEnabled = useSettingsStore((s) => s.setReminderEnabled);
+  const setReminderTime = useSettingsStore((s) => s.setReminderTime);
+  const toggleNightMode = useSettingsStore((s) => s.toggleNightMode);
   const toggleNight = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     toggleNightMode();

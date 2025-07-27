@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 
-interface SettingsState {
+export interface SettingsState {
   nightMode: boolean
   toggleNightMode: () => void
   setNightMode: (value: boolean) => void
@@ -10,7 +10,7 @@ interface SettingsState {
   setReminderTime: (time: string) => void
 }
 
-export const useSettingsStore = create<SettingsState>((set: any) => ({
+export const useSettingsStore = create<SettingsState>((set) => ({
   nightMode: false,
   toggleNightMode: () => set((s: SettingsState) => ({ nightMode: !s.nightMode })),
   setNightMode: (value: boolean) => set({ nightMode: value }),
