@@ -22,6 +22,7 @@ export const SCREENS = {
     SUBMIT_PROOF: 'SubmitProof',
     JOIN_ORGANIZATION: 'JoinOrganization',
     MANAGE_ORGANIZATION: 'OrganizationManagement',
-    SELECT_RELIGION: 'SelectReligion'
+    SELECT_RELIGION: 'SelectReligion',
+    STRIPE_SUCCESS: 'StripeSuccess'
   }
 } as const;
