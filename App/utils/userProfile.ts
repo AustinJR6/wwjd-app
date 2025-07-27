@@ -83,7 +83,26 @@ export async function loadUserProfile(uid?: string): Promise<UserProfile | null>
     if (user.religion) {
       religionData = await getReligionProfile(user.religion);
     }
-    cachedProfile = { uid: userId, ...user, religionData } as CachedProfile;
+
+    // Fetch subscription status separately. Missing docs should not throw.
+    let isSubscribed = false;
+    try {
+      const subUrl = `${FIRESTORE_BASE}/subscriptions/${userId}`;
+      const subRes = await apiClient.get(subUrl, { headers });
+      const subDoc = fromFirestore(subRes.data);
+      isSubscribed = subDoc?.active === true;
+    } catch (subErr: any) {
+      if (subErr?.response?.status !== 404) {
+        logFirestoreError('GET', `subscriptions/${userId}`, subErr);
+      }
+    }
+
+    cachedProfile = {
+      uid: userId,
+      ...user,
+      religionData,
+      isSubscribed,
+    } as CachedProfile;
     if (user.profileSchemaVersion && user.profileSchemaVersion !== CURRENT_PROFILE_SCHEMA) {
       console.warn(
         `\u26A0\uFE0F profileSchemaVersion mismatch: expected ${CURRENT_PROFILE_SCHEMA}, got ${user.profileSchemaVersion}`,
