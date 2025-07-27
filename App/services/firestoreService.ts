@@ -22,9 +22,8 @@ function warnIfInvalidPath(path: string, expectEven: boolean) {
 function toFirestoreFields(obj: any): any {
   const fields: any = {};
   for (const [k, v] of Object.entries(obj)) {
-    if (v === null) {
-      fields[k] = { nullValue: null };
-    } else if (v instanceof Date) {
+    if (v === undefined || v === null) continue;
+    if (v instanceof Date) {
       fields[k] = { timestampValue: v.toISOString() };
     } else if (typeof v === 'number') {
       fields[k] = { integerValue: v.toString() };
@@ -313,11 +312,16 @@ export async function getOrCreateActiveChallenge(
   let doc = await getDocument(path);
   if (!doc) {
     doc = {
-      day: 1,
-      completed: false,
-      startTimestamp: new Date().toISOString(),
-      isMultiDay: false,
+      challengeText: '',
       totalDays: 1,
+      currentDay: 1,
+      startDate: new Date().toISOString(),
+      lastCompleted: null,
+      completedDays: [],
+      isComplete: false,
+      isMultiDay: false,
+      basePoints: 1,
+      doubleBonusEligible: false,
     };
     await setDocument(path, doc);
   }
@@ -331,7 +335,7 @@ export async function updateActiveChallenge(
   const path = `users/${uid}/activeChallenge/current`;
   const clean: Record<string, any> = {};
   for (const [k, v] of Object.entries(data)) {
-    if (v !== undefined) clean[k] = v;
+    if (v !== undefined && v !== null) clean[k] = v;
   }
   if (Object.keys(clean).length === 0) return;
   await setDocument(path, clean, { requireExists: true });

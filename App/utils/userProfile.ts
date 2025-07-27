@@ -158,7 +158,7 @@ export async function updateUserProfile(
   }
   const sanitized: Record<string, any> = {};
   for (const [key, value] of Object.entries(fields)) {
-    if (value !== undefined) sanitized[key] = value;
+    if (value !== undefined && value !== null) sanitized[key] = value;
   }
   if (Object.keys(sanitized).length === 0) {
     return;
