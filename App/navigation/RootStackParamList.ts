@@ -45,6 +45,7 @@ export type RootStackParamList = {
   Profile: undefined;
   ChangePassword: undefined;
   Settings: undefined;
+  AppInfo: undefined;
 
   // Shared flow screens
   Quote: undefined;
