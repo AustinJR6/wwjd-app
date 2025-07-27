@@ -183,6 +183,16 @@ export default function ChallengeScreen() {
       } else {
         console.log('🌟 New Challenge:', newChallenge);
         setChallenge(newChallenge);
+        await updateActiveChallenge(uid, {
+          challengeText: newChallenge,
+          totalDays: 1,
+          currentDay: 1,
+          isComplete: false,
+          isMultiDay: false,
+          startDate: new Date().toISOString(),
+          lastCompleted: null,
+          completedDays: [],
+        });
       }
 
       await updateUserProfile({
@@ -236,11 +246,8 @@ export default function ChallengeScreen() {
         uid,
       );
       await updateActiveChallenge(uid, {
-        day: (active?.day || 0) + 1,
-        startTimestamp: new Date().toISOString(),
-        completed: false,
-        isMultiDay: false,
-        totalDays: 1,
+        isComplete: true,
+        lastCompleted: new Date().toISOString(),
       });
       setCanSkip(true);
       fetchChallenge(true);
@@ -363,14 +370,8 @@ export default function ChallengeScreen() {
       Alert.alert('Great job!', 'Challenge completed.');
     }
     await updateActiveChallenge(uid, {
-      completed: true,
-    });
-    await updateActiveChallenge(uid, {
-      day: (active?.day || 0) + 1,
-      startTimestamp: new Date().toISOString(),
-      completed: false,
-      isMultiDay: false,
-      totalDays: 1,
+      isComplete: true,
+      lastCompleted: new Date().toISOString(),
     });
     const shouldGenerateNew = useToken || history.completed < limit;
     fetchChallenge(shouldGenerateNew);
