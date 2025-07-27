@@ -23,6 +23,7 @@ export default function MainTabNavigator() {
       initialRouteName="HomeScreen"
       screenOptions={({ route }) => ({
         headerShown: false,
+        unmountOnBlur: false,
         tabBarActiveTintColor: theme.colors.primary,
         tabBarInactiveTintColor: theme.colors.gray,
         tabBarStyle: {
