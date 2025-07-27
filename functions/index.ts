@@ -1358,7 +1358,9 @@ export const handleStripeWebhookV2 = functions
     console.log('✅ Stripe webhook validated:', event.type);
   } catch (err: any) {
     console.error('❌ Stripe signature validation failed:', err.message);
-    return res.status(400).send(`Webhook Error: ${err.message}`);
+    res.status(400).send(`Webhook Error: ${err.message}`);
+    return;
+
   }
   if (event?.type === 'checkout.session.completed') {
     const session = event.data?.object as Stripe.Checkout.Session;

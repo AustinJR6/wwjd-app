@@ -89,7 +89,7 @@ export default function UpgradeScreen({ navigation }: Props) {
   };
 
   return (
-    <ScreenContainer children={undefined}>
+    <ScreenContainer>
       <View style={styles.content}>
         <CustomText style={styles.title}>OneVine+ Membership</CustomText>
         <CustomText style={styles.subtitle}>Experience the full blessing</CustomText>
