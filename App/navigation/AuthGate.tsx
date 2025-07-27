@@ -1,5 +1,8 @@
 import React, { useEffect, useState } from 'react';
 
+// Prevent multiple auth listeners on re-renders
+let authInitialized = false;
+
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { navigationRef } from './navigationRef';
@@ -7,7 +10,6 @@ import { RootStackParamList } from './RootStackParamList';
 import { useTheme } from '@/components/theme/theme';
 import LoadingScreen from '@/components/common/LoadingScreen';
 import { useAuth } from '@/hooks/useAuth';
-import { useUser } from '@/hooks/useUser';
 import { useUserStore } from '@/state/userStore';
 import { useUserProfileStore } from '@/state/userProfile';
 import { initAuthState } from '@/services/authService';
@@ -47,12 +49,14 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 export default function AuthGate() {
   const theme = useTheme();
   const { uid, idToken, authReady } = useAuth();
-  const { user } = useUser();
   const [initialRoute, setInitialRoute] = useState<keyof RootStackParamList>('Auth');
   const [checking, setChecking] = useState(true);
 
   useEffect(() => {
-    initAuthState();
+    if (!authInitialized) {
+      initAuthState();
+      authInitialized = true;
+    }
   }, []);
 
   useEffect(() => {
