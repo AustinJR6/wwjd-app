@@ -1365,31 +1365,41 @@ export const handleStripeWebhookV2 = functions
   if (event?.type === 'checkout.session.completed') {
     const session = event.data?.object as Stripe.Checkout.Session;
     const uid = session.client_reference_id as string | undefined;
+    console.log('📦 Session:', JSON.stringify(session, null, 2));
+    console.log('🔍 UID:', uid);
+    console.log('🔍 Mode:', session.mode);
+    console.log('🔢 Tokens to add:', session.metadata?.tokens);
     if (!uid) {
       console.warn('⚠️ Missing uid in Stripe webhook payload');
     } else {
       console.log('✅ Stripe checkout completed for', uid);
       if (session.mode === 'subscription') {
         try {
+          console.log('⬆️ Updating subscription docs for', uid);
           await db.doc(`subscriptions/${uid}`).set({ active: true }, { merge: true });
+          console.log('✅ subscriptions doc updated');
           await db.doc(`users/${uid}`).set({ isSubscribed: true }, { merge: true });
+          console.log('✅ users doc updated');
         } catch (err) {
-          logger.error('Subscription Firestore update failed', err);
+          console.error('❌ Subscription Firestore update failed', err);
         }
       } else {
         const amount = parseInt((session.metadata?.tokens as string) || '0', 10);
+        console.log('🔢 Tokens to add parsed:', amount);
         if (amount > 0) {
           try {
+            console.log(`⬆️ Adding ${amount} tokens to ${uid}`);
             await addTokens(uid, amount);
-            logger.info(`💰 Added ${amount} tokens to ${uid}`);
+            console.log(`✅ Added ${amount} tokens to ${uid}`);
           } catch (err) {
-            logger.error('Token purchase handling failed', err);
+            console.error('❌ Token purchase handling failed', err);
           }
         } else {
-          logger.warn('⚠️ No token amount in metadata', { sessionId: session.id });
+          console.warn('⚠️ No token amount in metadata', { sessionId: session.id });
         }
       }
       try {
+        console.log('📝 Logging payment session');
         await db.doc(`users/${uid}/payments/${session.id}`).set(
           {
             type: session.metadata?.type,
@@ -1400,8 +1410,9 @@ export const handleStripeWebhookV2 = functions
           },
           { merge: true },
         );
+        console.log('✅ Payment session logged');
       } catch (err) {
-        logger.error('Failed to log Stripe session', err);
+        console.error('❌ Failed to log Stripe session', err);
       }
     }
   }
