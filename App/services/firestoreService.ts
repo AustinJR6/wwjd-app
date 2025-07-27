@@ -316,8 +316,23 @@ export async function getOrCreateActiveChallenge(
       day: 1,
       completed: false,
       startTimestamp: new Date().toISOString(),
+      isMultiDay: false,
+      totalDays: 1,
     };
     await setDocument(path, doc);
   }
   return doc;
+}
+
+export async function updateActiveChallenge(
+  uid: string,
+  data: any,
+): Promise<void> {
+  const path = `users/${uid}/activeChallenge/current`;
+  const clean: Record<string, any> = {};
+  for (const [k, v] of Object.entries(data)) {
+    if (v !== undefined) clean[k] = v;
+  }
+  if (Object.keys(clean).length === 0) return;
+  await setDocument(path, clean, { requireExists: true });
 }

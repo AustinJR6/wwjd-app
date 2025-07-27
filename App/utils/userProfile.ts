@@ -156,7 +156,13 @@ export async function updateUserProfile(
     console.warn('updateUserProfile called with no uid');
     return;
   }
-  const sanitized: Record<string, any> = { ...fields };
+  const sanitized: Record<string, any> = {};
+  for (const [key, value] of Object.entries(fields)) {
+    if (value !== undefined) sanitized[key] = value;
+  }
+  if (Object.keys(sanitized).length === 0) {
+    return;
+  }
   if (typeof sanitized.username === 'string') {
     sanitized.username = sanitized.username.trim();
   }
