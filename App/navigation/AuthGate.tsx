@@ -43,6 +43,7 @@ import QuoteScreen from '@/screens/QuoteScreen';
 
 import BuyTokensScreen from '@/screens/BuyTokensScreen';
 import GiveBackScreen from '@/screens/GiveBackScreen';
+import AppInfoScreen from '@/screens/AppInfoScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -161,6 +162,7 @@ export default function AuthGate() {
         <Stack.Screen name="Profile" component={ProfileScreen} />
         <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} options={{ title: 'Change Password' }} />
         <Stack.Screen name="Settings" component={SettingsScreen} />
+        <Stack.Screen name="AppInfo" component={AppInfoScreen} options={{ title: 'App Info' }} />
         <Stack.Screen name="Trivia" component={TriviaScreen} options={{ title: 'Trivia Challenge' }} />
         <Stack.Screen name="Leaderboards" component={LeaderboardScreen} options={{ title: 'Leaderboards' }} />
         <Stack.Screen name="SubmitProof" component={SubmitProofScreen} options={{ title: 'Submit Proof' }} />

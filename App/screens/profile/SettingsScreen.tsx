@@ -15,15 +15,12 @@ import type { MainTabsParamList } from '@/navigation/MainTabsParamList';
 import { RootStackParamList } from '@/navigation/RootStackParamList';
 import { useSettingsStore } from "@/state/settingsStore";
 import { useUserProfileStore } from "@/state/userProfile";
-import { shallow } from 'zustand/shallow';
-import { useUser } from '@/hooks/useUser';
 import { useTheme } from "@/components/theme/theme";
 import { scheduleReflectionReminder, cancelReflectionReminder } from '@/utils/reminderNotification';
 import AuthGate from '@/components/AuthGate';
 
 export default function SettingsScreen() {
   const theme = useTheme();
-  const { user } = useUser();
   const nightMode = useSettingsStore((s) => s.nightMode);
   const reminderEnabled = useSettingsStore((s) => s.reminderEnabled);
   const reminderTime = useSettingsStore((s) => s.reminderTime);
@@ -132,31 +129,16 @@ export default function SettingsScreen() {
             />
           </View>
         )}
-        {user ? (
-          <>
-            <Button title="Profile" onPress={() => navigation.navigate('Profile')} />
-            <Button title="Buy Tokens" onPress={() => navigation.navigate('BuyTokens')} />
-            <Button title="Upgrade" onPress={() => navigation.navigate('Upgrade')} />
-            <Button title="Join Organization" onPress={() => navigation.navigate('JoinOrganization')} />
-            <Button title="Give Back" onPress={() => navigation.navigate('GiveBack')} />
-            <Button title="Change Password" onPress={handleChangePassword} loading={changing} />
-            <Button title="Sign Out" onPress={handleLogout} />
-          </>
-        ) : (
-          <>
-            <Button title="Log In" onPress={resetToLogin} />
-            <Button title="Sign Up" onPress={() => navigation.navigate('Signup')} />
-            <Button
-              title="App Info"
-              onPress={() =>
-                Alert.alert(
-                  'OneVine',
-                  `Version ${Constants.expoConfig?.version}`,
-                )
-              }
-            />
-          </>
-        )}
+        <>
+          <Button title="Profile" onPress={() => navigation.navigate('Profile')} />
+          <Button title="Upgrade" onPress={() => navigation.navigate('Upgrade')} />
+          <Button title="Buy Tokens" onPress={() => navigation.navigate('BuyTokens')} />
+          <Button title="Give Back" onPress={() => navigation.navigate('GiveBack')} />
+          <Button title="Join Organization" onPress={() => navigation.navigate('JoinOrganization')} />
+          <Button title="App Info" onPress={() => navigation.navigate('AppInfo')} />
+          <Button title="Change Password" onPress={handleChangePassword} loading={changing} />
+          <Button title="Sign Out" onPress={handleLogout} />
+        </>
         <CustomText style={styles.version}>v{Constants.expoConfig?.version}</CustomText>
       </View>
     </ScreenContainer>
