@@ -8,7 +8,10 @@ import Button from "@/components/common/Button";
 import { logout, changePassword } from "@/services/authService";
 import { resetToLogin } from "@/navigation/navigationRef";
 import { useNavigation } from '@react-navigation/native';
+import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import type { CompositeNavigationProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { MainTabsParamList } from '@/navigation/MainTabsParamList';
 import { RootStackParamList } from '@/navigation/RootStackParamList';
 import { useSettingsStore } from "@/state/settingsStore";
 import { useUserProfileStore } from "@/state/userProfile";
@@ -32,7 +35,12 @@ export default function SettingsScreen() {
   };
   const [changing, setChanging] = useState(false);
   const clearUser = useUserProfileStore((s) => s.setUserProfile.bind(null, null as any));
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const navigation = useNavigation<
+    CompositeNavigationProp<
+      BottomTabNavigationProp<MainTabsParamList, 'Settings'>,
+      NativeStackNavigationProp<RootStackParamList>
+    >
+  >();
 
   const styles = React.useMemo(
     () =>
