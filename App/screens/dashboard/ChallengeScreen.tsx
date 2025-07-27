@@ -177,28 +177,34 @@ export default function ChallengeScreen() {
         token: debugToken || undefined,
         religion,
       });
+      const safeChallenge =
+        typeof newChallenge === 'string' && newChallenge.trim()
+          ? newChallenge
+          : 'Take a mindful breath and pause for one minute.';
       if (!newChallenge) {
         showGracefulError('AI failed to provide a challenge.');
-        setChallenge('Reflect in silence for five minutes today.');
       } else {
         console.log('🌟 New Challenge:', newChallenge);
-        setChallenge(newChallenge);
-        await updateActiveChallenge(uid, {
-          challengeText: newChallenge,
-          totalDays: 1,
-          currentDay: 1,
-          isComplete: false,
-          isMultiDay: false,
-          startDate: new Date().toISOString(),
-          lastCompleted: null,
-          completedDays: [],
-        });
       }
+      setChallenge(safeChallenge);
+      await updateActiveChallenge(uid, {
+        challengeText: safeChallenge,
+        totalDays: 1,
+        currentDay: 1,
+        isComplete: false,
+        isMultiDay: false,
+        startDate: new Date().toISOString(),
+        lastCompleted: null,
+        completedDays: [],
+      });
 
-      await updateUserProfile({
-        lastChallenge: new Date().toISOString(),
-        lastChallengeText: newChallenge || '',
-      }, uid);
+      await updateUserProfile(
+        {
+          lastChallenge: new Date().toISOString(),
+          lastChallengeText: safeChallenge,
+        },
+        uid,
+      );
     } catch (err: any) {
       console.error('🔥 API Error:', err?.response?.data || err.message);
       showGracefulError('Unable to load challenge data — please try again later');
@@ -215,8 +221,14 @@ export default function ChallengeScreen() {
     const userData: UserProfile | null = await loadUserProfile(uid);
     const profile = userData ?? ({} as UserProfile);
     const today = new Date().toISOString().split('T')[0];
-    let history = profile.dailyChallengeHistory || { date: today, completed: 0, skipped: 0 };
-    if (history.date !== today) history = { date: today, completed: 0, skipped: 0 };
+    const historyArr = Array.isArray(profile.dailyChallengeHistory)
+      ? [...profile.dailyChallengeHistory]
+      : [];
+    let todayEntry = historyArr.find((h) => h.date === today);
+    if (!todayEntry) {
+      todayEntry = { date: today, completed: 0, skipped: 0 };
+      historyArr.push(todayEntry);
+    }
 
     const tokens = profile?.tokens ?? 0;
     let dailySkipCount = profile?.dailySkipCount ?? 0;
@@ -235,19 +247,21 @@ export default function ChallengeScreen() {
     }
 
     try {
+      todayEntry.skipped += 1;
       await updateUserProfile(
         {
           tokens: tokens - skipCost,
           dailySkipCount: dailySkipCount + 1,
           lastSkipDate: new Date().toISOString(),
           skipTokensUsed: (profile.skipTokensUsed || 0) + skipCost,
-          dailyChallengeHistory: { ...history, skipped: history.skipped + 1 },
+          dailyChallengeHistory: historyArr,
         },
         uid,
       );
       await updateActiveChallenge(uid, {
         isComplete: true,
         lastCompleted: new Date().toISOString(),
+        completedDays: [...(active.completedDays || []), active.currentDay],
       });
       setCanSkip(true);
       fetchChallenge(true);
@@ -297,9 +311,13 @@ export default function ChallengeScreen() {
     const profile = userData ?? ({} as UserProfile);
 
     const today = new Date().toISOString().slice(0, 10);
-    let history = profile.dailyChallengeHistory || { date: today, completed: 0, skipped: 0 };
-    if (history.date !== today) {
-      history = { date: today, completed: 0, skipped: 0 };
+    const historyArr = Array.isArray(profile.dailyChallengeHistory)
+      ? [...profile.dailyChallengeHistory]
+      : [];
+    let todayEntry = historyArr.find((h) => h.date === today);
+    if (!todayEntry) {
+      todayEntry = { date: today, completed: 0, skipped: 0 };
+      historyArr.push(todayEntry);
     }
 
     const limit = (profile?.isSubscribed ?? false) ? 3 : 1;
@@ -325,8 +343,8 @@ export default function ChallengeScreen() {
       useToken = true;
     }
 
-    history.completed += 1;
-    await updateUserProfile({ dailyChallengeHistory: history }, uid);
+    todayEntry.completed += 1;
+    await updateUserProfile({ dailyChallengeHistory: historyArr }, uid);
     try {
       console.log('Current user:', await getCurrentUserId());
       const cfToken = await getToken(true);
@@ -372,8 +390,9 @@ export default function ChallengeScreen() {
     await updateActiveChallenge(uid, {
       isComplete: true,
       lastCompleted: new Date().toISOString(),
+      completedDays: [...(active.completedDays || []), active.currentDay],
     });
-    const shouldGenerateNew = useToken || history.completed < limit;
+    const shouldGenerateNew = useToken || todayEntry.completed < limit;
     fetchChallenge(shouldGenerateNew);
   };
 

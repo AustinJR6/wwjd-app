@@ -74,6 +74,11 @@ export async function ensureUserProfile(
   ensureNumber('dailySkipCount', 0);
   ensureNullableString('lastChallengeLoadDate', null);
   ensureNullableString('lastSkipDate', null);
+  const ensureChallengeHistoryArray = (key: keyof UserProfile) => {
+    const val = (profile as any)[key];
+    if (!Array.isArray(val)) fixes[key] = [] as any;
+  };
+  ensureChallengeHistoryArray('dailyChallengeHistory');
   ensureNullableString('organizationId', null);
   ensureString('religionPrefix', '');
   ensureString('username', '');

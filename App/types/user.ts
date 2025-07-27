@@ -36,7 +36,7 @@ export interface ChallengeHistoryEntry {
 
 // 🧠 This is what's loaded from Firestore or held in app state
 export interface UserProfile extends DefaultUserData {
-  dailyChallengeHistory?: ChallengeHistoryEntry;
+  dailyChallengeHistory?: ChallengeHistoryEntry[];
   lastChallenge?: Date;
   lastChallengeText?: string;
   dailySkipCount?: number;
