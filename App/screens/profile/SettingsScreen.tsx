@@ -15,6 +15,7 @@ import type { MainTabsParamList } from '@/navigation/MainTabsParamList';
 import { RootStackParamList } from '@/navigation/RootStackParamList';
 import { useSettingsStore } from "@/state/settingsStore";
 import { useUserProfileStore } from "@/state/userProfile";
+import { shallow } from 'zustand/shallow';
 import { useUser } from '@/hooks/useUser';
 import { useTheme } from "@/components/theme/theme";
 import { scheduleReflectionReminder, cancelReflectionReminder } from '@/utils/reminderNotification';
@@ -23,18 +24,31 @@ import AuthGate from '@/components/AuthGate';
 export default function SettingsScreen() {
   const theme = useTheme();
   const { user } = useUser();
-  const nightMode = useSettingsStore((s) => s.nightMode);
-  const reminderEnabled = useSettingsStore((s) => s.reminderEnabled);
-  const reminderTime = useSettingsStore((s) => s.reminderTime);
-  const setReminderEnabled = useSettingsStore((s) => s.setReminderEnabled);
-  const setReminderTime = useSettingsStore((s) => s.setReminderTime);
-  const toggleNightStore = useSettingsStore((s) => s.toggleNightMode);
+  const {
+    nightMode,
+    reminderEnabled,
+    reminderTime,
+    setReminderEnabled,
+    setReminderTime,
+    toggleNightMode,
+  } = useSettingsStore(
+    (s) => ({
+      nightMode: s.nightMode,
+      reminderEnabled: s.reminderEnabled,
+      reminderTime: s.reminderTime,
+      setReminderEnabled: s.setReminderEnabled,
+      setReminderTime: s.setReminderTime,
+      toggleNightMode: s.toggleNightMode,
+    }),
+    shallow,
+  );
   const toggleNight = () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    toggleNightStore();
+    toggleNightMode();
   };
   const [changing, setChanging] = useState(false);
-  const clearUser = useUserProfileStore((s) => s.setUserProfile.bind(null, null as any));
+  const setUserProfile = useUserProfileStore((s) => s.setUserProfile);
+  const clearUser = React.useCallback(() => setUserProfile(null as any), [setUserProfile]);
   const navigation = useNavigation<
     CompositeNavigationProp<
       BottomTabNavigationProp<MainTabsParamList, 'Settings'>,
