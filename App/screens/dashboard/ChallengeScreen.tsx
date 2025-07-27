@@ -12,7 +12,10 @@ import { useTheme } from "@/components/theme/theme";
 import { getTokenCount, setTokenCount } from "@/utils/TokenManager";
 import { showGracefulError } from '@/utils/gracefulError';
 import { ASK_GEMINI_SIMPLE, GENERATE_CHALLENGE_URL } from "@/utils/constants";
-import { getOrCreateActiveChallenge } from '@/services/firestoreService';
+import {
+  getOrCreateActiveChallenge,
+  updateActiveChallenge,
+} from '@/services/firestoreService';
 import { loadUserProfile, updateUserProfile, getUserAIPrompt, incrementUserPoints } from '@/utils/userProfile';
 import { canLoadNewChallenge } from '@/services/challengeLimitService';
 import { completeChallengeWithStreakCheck } from '@/services/challengeStreakService';
@@ -197,7 +200,7 @@ export default function ChallengeScreen() {
   const handleSkipChallenge = async () => {
     const uid = await ensureAuth(await getCurrentUserId());
 
-    await getOrCreateActiveChallenge(uid);
+    const active = await getOrCreateActiveChallenge(uid);
 
     const userData: UserProfile | null = await loadUserProfile(uid);
     const profile = userData ?? ({} as UserProfile);
@@ -222,12 +225,23 @@ export default function ChallengeScreen() {
     }
 
     try {
-      await updateUserProfile({
-        tokens: tokens - skipCost,
-        dailySkipCount: dailySkipCount + 1,
-        lastSkipDate: new Date().toISOString(),
-        dailyChallengeHistory: { ...history, skipped: history.skipped + 1 },
-      }, uid);
+      await updateUserProfile(
+        {
+          tokens: tokens - skipCost,
+          dailySkipCount: dailySkipCount + 1,
+          lastSkipDate: new Date().toISOString(),
+          skipTokensUsed: (profile.skipTokensUsed || 0) + skipCost,
+          dailyChallengeHistory: { ...history, skipped: history.skipped + 1 },
+        },
+        uid,
+      );
+      await updateActiveChallenge(uid, {
+        day: (active?.day || 0) + 1,
+        startTimestamp: new Date().toISOString(),
+        completed: false,
+        isMultiDay: false,
+        totalDays: 1,
+      });
       setCanSkip(true);
       fetchChallenge(true);
     } catch (error: any) {
@@ -258,7 +272,7 @@ export default function ChallengeScreen() {
   const handleComplete = async () => {
     const uid = await ensureAuth(await getCurrentUserId());
 
-    await getOrCreateActiveChallenge(uid);
+    const active = await getOrCreateActiveChallenge(uid);
 
     if (activeMulti) {
       try {
@@ -332,10 +346,10 @@ export default function ChallengeScreen() {
     const currentTokens = await getTokenCount();
     await setTokenCount(currentTokens + 1);
 
-    await incrementUserPoints(2, uid);
+    await incrementUserPoints(1, uid);
 
     try {
-      await awardPointsToUser(2);
+      await awardPointsToUser(1);
     } catch (err: any) {
       console.error('🔥 Backend error:', err.response?.data || err.message);
     }
@@ -348,6 +362,16 @@ export default function ChallengeScreen() {
     } else {
       Alert.alert('Great job!', 'Challenge completed.');
     }
+    await updateActiveChallenge(uid, {
+      completed: true,
+    });
+    await updateActiveChallenge(uid, {
+      day: (active?.day || 0) + 1,
+      startTimestamp: new Date().toISOString(),
+      completed: false,
+      isMultiDay: false,
+      totalDays: 1,
+    });
     const shouldGenerateNew = useToken || history.completed < limit;
     fetchChallenge(shouldGenerateNew);
   };
