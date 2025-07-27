@@ -37,7 +37,7 @@ export interface UserProfile {
     date: string;
     completed: number;
     skipped: number;
-  };
+  }[];
   streakMilestones?: Record<string, boolean>;
   createdAt?: number;
   /** Tokens spent on skipping challenges */
