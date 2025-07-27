@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import CustomText from '@/components/CustomText';
 import { View, StyleSheet, Switch, Alert, LayoutAnimation } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -16,6 +16,7 @@ import { useUser } from '@/hooks/useUser';
 import { useTheme } from "@/components/theme/theme";
 import { scheduleReflectionReminder, cancelReflectionReminder } from '@/utils/reminderNotification';
 import AuthGate from '@/components/AuthGate';
+import { getDocument } from '@/services/firestoreService';
 
 export default function SettingsScreen() {
   const theme = useTheme();
@@ -31,6 +32,7 @@ export default function SettingsScreen() {
     toggleNightStore();
   };
   const [changing, setChanging] = useState(false);
+  const [isSubscribed, setIsSubscribed] = useState(false);
   const clearUser = useUserProfileStore((s) => s.setUserProfile.bind(null, null as any));
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
@@ -49,6 +51,26 @@ export default function SettingsScreen() {
       }),
     [theme],
   );
+
+  useEffect(() => {
+    let cancelled = false;
+    async function fetchSub() {
+      if (!user?.uid) return;
+      try {
+        const doc = await getDocument(`subscriptions/${user.uid}`);
+        const active = !!doc && doc.active === true;
+        if (!cancelled) {
+          setIsSubscribed((prev) => (prev !== active ? active : prev));
+        }
+      } catch (err) {
+        console.warn('Subscription fetch failed', err);
+      }
+    }
+    fetchSub();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.uid]);
 
   const handleChangePassword = async () => {
     Alert.prompt(
