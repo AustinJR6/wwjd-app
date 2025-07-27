@@ -53,20 +53,25 @@ export default function SettingsScreen() {
   );
 
   useEffect(() => {
+    if (!user?.uid) return;
+
     let cancelled = false;
-    async function fetchSub() {
-      if (!user?.uid) return;
+
+    const fetchSub = async () => {
       try {
         const doc = await getDocument(`subscriptions/${user.uid}`);
         const active = !!doc && doc.active === true;
-        if (!cancelled) {
-          setIsSubscribed((prev) => (prev !== active ? active : prev));
+        if (!cancelled && active !== isSubscribed) {
+          setIsSubscribed(active);
+          console.log('✅ isSubscribed updated:', active);
         }
       } catch (err) {
         console.warn('Subscription fetch failed', err);
       }
-    }
+    };
+
     fetchSub();
+
     return () => {
       cancelled = true;
     };
