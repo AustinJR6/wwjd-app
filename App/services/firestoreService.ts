@@ -318,7 +318,7 @@ export async function getOrCreateActiveChallenge(
       startDate: new Date().toISOString(),
       lastCompleted: null,
       completedDays: [],
-      isComplete: false,
+      isComplete: true,
       isMultiDay: false,
       basePoints: 1,
       doubleBonusEligible: false,

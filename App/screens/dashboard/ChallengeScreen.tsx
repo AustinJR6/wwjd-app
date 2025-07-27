@@ -60,6 +60,7 @@ export default function ChallengeScreen() {
   );
   const [challenge, setChallenge] = useState('');
   const [activeMulti, setActiveMulti] = useState<any | null>(null);
+  const [challengeAccepted, setChallengeAccepted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [canSkip, setCanSkip] = useState(true);
   const [streakCount, setStreakCount] = useState(0);
@@ -125,12 +126,25 @@ export default function ChallengeScreen() {
 
       let active = await getOrCreateActiveChallenge(uid);
       if (active && !active.isComplete) {
-        setActiveMulti(active);
-        setLoading(false);
-        return;
+        if (active.isMultiDay === true) {
+          setActiveMulti(active);
+          setChallenge('');
+          setChallengeAccepted(true);
+          setLoading(false);
+          return;
+        }
+        if (active.challengeText && active.challengeText.trim()) {
+          setChallenge(active.challengeText);
+          setChallengeAccepted(true);
+          setActiveMulti(null);
+          setLoading(false);
+          return;
+        }
       } else {
         setActiveMulti(null);
       }
+
+      setChallengeAccepted(false);
 
       setLoading(true);
 
@@ -170,41 +184,20 @@ export default function ChallengeScreen() {
       console.log('ID Token:', debugToken);
 
       const prefix = getUserAIPrompt();
-      const newChallenge = await sendGeminiPrompt({
+      let newChallenge = await sendGeminiPrompt({
         url: GENERATE_CHALLENGE_URL,
         prompt: `${prefix} ${prompt}`.trim(),
         history: [],
         token: debugToken || undefined,
         religion,
       });
-      const safeChallenge =
-        typeof newChallenge === 'string' && newChallenge.trim()
-          ? newChallenge
-          : 'Take a mindful breath and pause for one minute.';
-      if (!newChallenge) {
-        showGracefulError('AI failed to provide a challenge.');
+      if (!newChallenge || typeof newChallenge !== 'string' || newChallenge.trim().length === 0) {
+        newChallenge = 'Take a mindful breath and pause for one minute.';
       } else {
         console.log('🌟 New Challenge:', newChallenge);
       }
-      setChallenge(safeChallenge);
-      await updateActiveChallenge(uid, {
-        challengeText: safeChallenge,
-        totalDays: 1,
-        currentDay: 1,
-        isComplete: false,
-        isMultiDay: false,
-        startDate: new Date().toISOString(),
-        lastCompleted: null,
-        completedDays: [],
-      });
-
-      await updateUserProfile(
-        {
-          lastChallenge: new Date().toISOString(),
-          lastChallengeText: safeChallenge,
-        },
-        uid,
-      );
+      setChallenge(newChallenge.trim());
+      setChallengeAccepted(false);
     } catch (err: any) {
       console.error('🔥 API Error:', err?.response?.data || err.message);
       showGracefulError('Unable to load challenge data — please try again later');
@@ -290,12 +283,43 @@ export default function ChallengeScreen() {
     }
   };
 
+  const handleAcceptChallenge = async () => {
+    const uid = await ensureAuth(await getCurrentUserId());
+    if (!challenge || !challenge.trim()) {
+      Alert.alert('Invalid challenge', 'No challenge text available to accept.');
+      return;
+    }
+    try {
+      await updateActiveChallenge(uid, {
+        challengeText: challenge.trim(),
+        totalDays: 1,
+        currentDay: 1,
+        isComplete: false,
+        isMultiDay: false,
+        startDate: new Date().toISOString(),
+        lastCompleted: null,
+        completedDays: [],
+      });
+      await updateUserProfile(
+        {
+          lastChallenge: new Date().toISOString(),
+          lastChallengeText: challenge.trim(),
+        },
+        uid,
+      );
+      setChallengeAccepted(true);
+    } catch (err) {
+      console.error('Accept challenge error:', err);
+      showGracefulError();
+    }
+  };
+
   const handleComplete = async () => {
     const uid = await ensureAuth(await getCurrentUserId());
 
     const active = await getOrCreateActiveChallenge(uid);
 
-    if (activeMulti) {
+    if (activeMulti && activeMulti.isMultiDay === true) {
       try {
         await completeChallengeDay();
         Alert.alert('Nice!', `Day ${activeMulti.currentDay} completed.`);
@@ -423,15 +447,17 @@ export default function ChallengeScreen() {
           </CustomText>
         )}
         <View style={styles.buttonWrap}>
-          {!activeMulti && canSkip && (
+          {!activeMulti && challengeAccepted && canSkip && (
             <Button title="Skip Challenge" onPress={handleSkipChallenge} />
           )}
           {activeMulti ? (
             <Button title="Complete Day" onPress={handleComplete} />
-          ) : (
+          ) : challengeAccepted ? (
             <Button title="Mark Completed" onPress={handleComplete} />
+          ) : (
+            <Button title="Accept Challenge" onPress={handleAcceptChallenge} />
           )}
-          {!activeMulti && (
+          {!activeMulti && challengeAccepted && (
             <Button title="Start 3-Day Challenge" onPress={handleStartMultiDay} />
           )}
         </View>
