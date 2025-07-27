@@ -40,7 +40,13 @@ if (!GEMINI_API_KEY) {
 const LOGGING_MODE = process.env.LOGGING_MODE || "gusbug";
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || "";
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || "";
-const STRIPE_SUCCESS_URL = process.env.STRIPE_SUCCESS_URL || "https://example.com/success";
+const APP_BASE_URL =
+  process.env.APP_BASE_URL ||
+  process.env.FRONTEND_URL ||
+  "https://onevine.app";
+const STRIPE_SUCCESS_URL =
+  process.env.STRIPE_SUCCESS_URL ||
+  `${APP_BASE_URL}/stripe-success?session_id={CHECKOUT_SESSION_ID}`;
 const STRIPE_CANCEL_URL = process.env.STRIPE_CANCEL_URL || "https://example.com/cancel";
 const STRIPE_20_TOKEN_PRICE_ID = process.env.STRIPE_20_TOKEN_PRICE_ID || "";
 const STRIPE_50_TOKEN_PRICE_ID = process.env.STRIPE_50_TOKEN_PRICE_ID || "";
