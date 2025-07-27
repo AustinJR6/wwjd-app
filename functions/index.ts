@@ -46,6 +46,13 @@ const STRIPE_20_TOKEN_PRICE_ID = process.env.STRIPE_20_TOKEN_PRICE_ID || "";
 const STRIPE_50_TOKEN_PRICE_ID = process.env.STRIPE_50_TOKEN_PRICE_ID || "";
 const STRIPE_100_TOKEN_PRICE_ID = process.env.STRIPE_100_TOKEN_PRICE_ID || "";
 
+function getTokensFromPriceId(priceId: string): number | null {
+  if (priceId === STRIPE_20_TOKEN_PRICE_ID) return 20;
+  if (priceId === STRIPE_50_TOKEN_PRICE_ID) return 50;
+  if (priceId === STRIPE_100_TOKEN_PRICE_ID) return 100;
+  return null;
+}
+
 const CURRENT_PROFILE_SCHEMA = 1;
 
 function validateSignupProfile(profile: any): Required<Pick<any,
@@ -1067,13 +1074,16 @@ export const startOneTimeTokenCheckout = functions
     if (authData.uid !== userId) {
       logger.warn("⚠️ UID mismatch between token and payload");
     }
+    const tokens = getTokensFromPriceId(priceId);
+    const metadata: Record<string, string> = { uid: userId, type: "tokens" };
+    if (tokens) metadata.tokens = String(tokens);
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       line_items: [{ price: priceId, quantity: 1 }],
       success_url,
       cancel_url,
       client_reference_id: userId,
-      metadata: { uid: userId },
+      metadata,
     });
     logger.info(`✅ Stripe session created ${session.id}`);
     res.status(200).json({ url: session.url });
@@ -1114,13 +1124,16 @@ export const startTokenCheckout = functions
     if (authData.uid !== uid) {
       logger.warn("⚠️ UID mismatch between token and payload");
     }
+    const tokens = getTokensFromPriceId(priceId);
+    const metadata: Record<string, string> = { uid, type: "tokens" };
+    if (tokens) metadata.tokens = String(tokens);
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       line_items: [{ price: priceId, quantity: 1 }],
       success_url: STRIPE_SUCCESS_URL,
       cancel_url: STRIPE_CANCEL_URL,
       client_reference_id: uid,
-      metadata: { uid, type: "tokens" },
+      metadata,
     });
     logger.info(`✅ Stripe session created ${session.id}`);
     res.status(200).json({ checkoutUrl: session.url });
@@ -1228,13 +1241,16 @@ export const startCheckoutSession = functions
     if (authData.uid !== userId) {
       logger.warn("⚠️ UID mismatch between token and payload");
     }
+    const tokens = getTokensFromPriceId(priceId);
+    const metadata: Record<string, string> = { uid: userId };
+    if (tokens) metadata.tokens = String(tokens);
     const session = await stripe.checkout.sessions.create({
       mode,
       line_items: [{ price: priceId, quantity: 1 }],
       success_url,
       cancel_url,
       client_reference_id: userId,
-      metadata: { uid: userId },
+      metadata,
     });
     logger.info(`✅ Stripe session created ${session.id}`);
     res.status(200).json({ url: session.url });
@@ -1305,8 +1321,10 @@ export const createStripeCheckout = functions
       logger.warn("⚠️ UID mismatch between token and payload");
     }
     const metadata: Record<string, string> = { uid, type };
-    if (quantity) {
-      metadata.quantity = String(quantity);
+    let tokenCount: number | null = null;
+    if (type === "tokens") {
+      tokenCount = quantity ?? getTokensFromPriceId(finalPriceId!);
+      if (tokenCount) metadata.tokens = String(tokenCount);
     }
     const session = await stripe.checkout.sessions.create({
       mode: type === "subscription" ? "subscription" : "payment",
@@ -1350,29 +1368,38 @@ export const handleStripeWebhookV2 = functions
     } else {
       console.log('✅ Stripe checkout completed for', uid);
       if (session.mode === 'subscription') {
-        await db.doc(`subscriptions/${uid}`).set({ active: true }, { merge: true });
-        await db.doc(`users/${uid}`).set({ isSubscribed: true }, { merge: true });
-      } else {
         try {
-          const retrieved = await stripe.checkout.sessions.retrieve(session.id, {
-            expand: ['line_items'] as any,
-          });
-          const items = (retrieved.line_items?.data || []) as any[];
-          let total = 0;
-          for (const item of items) {
-            const price = item.price?.id as string | undefined;
-            if (!price) continue;
-            if (price === STRIPE_20_TOKEN_PRICE_ID) total += 20;
-            else if (price === STRIPE_50_TOKEN_PRICE_ID) total += 50;
-            else if (price === STRIPE_100_TOKEN_PRICE_ID) total += 100;
-          }
-          if (total > 0) {
-            await addTokens(uid, total);
-            logger.info(`💰 Added ${total} tokens to ${uid}`);
-          }
+          await db.doc(`subscriptions/${uid}`).set({ active: true }, { merge: true });
+          await db.doc(`users/${uid}`).set({ isSubscribed: true }, { merge: true });
         } catch (err) {
-          logger.error('Token purchase handling failed', err);
+          logger.error('Subscription Firestore update failed', err);
         }
+      } else {
+        const amount = parseInt((session.metadata?.tokens as string) || '0', 10);
+        if (amount > 0) {
+          try {
+            await addTokens(uid, amount);
+            logger.info(`💰 Added ${amount} tokens to ${uid}`);
+          } catch (err) {
+            logger.error('Token purchase handling failed', err);
+          }
+        } else {
+          logger.warn('⚠️ No token amount in metadata', { sessionId: session.id });
+        }
+      }
+      try {
+        await db.doc(`users/${uid}/payments/${session.id}`).set(
+          {
+            type: session.metadata?.type,
+            mode: session.mode,
+            amount: session.mode === 'payment' ? parseInt((session.metadata?.tokens as string) || '0', 10) : undefined,
+            status: 'completed',
+            created: admin.firestore.FieldValue.serverTimestamp(),
+          },
+          { merge: true },
+        );
+      } catch (err) {
+        logger.error('Failed to log Stripe session', err);
       }
     }
   }
