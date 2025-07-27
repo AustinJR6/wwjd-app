@@ -92,7 +92,11 @@ export async function loadUserProfile(uid?: string): Promise<UserProfile | null>
       const subDoc = fromFirestore(subRes.data);
       isSubscribed = subDoc?.active === true;
     } catch (subErr: any) {
-      if (subErr?.response?.status !== 404) {
+      if (subErr?.response?.status === 404) {
+        console.warn(
+          `\u26A0\uFE0F Subscription document missing for uid: ${userId}, defaulting to isSubscribed: false`,
+        );
+      } else {
         logFirestoreError('GET', `subscriptions/${userId}`, subErr);
       }
     }
