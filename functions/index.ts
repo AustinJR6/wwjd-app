@@ -1366,6 +1366,9 @@ export const handleStripeWebhookV2 = functions
     const session = event.data?.object as Stripe.Checkout.Session;
     const uid = session.client_reference_id as string | undefined;
     console.log('📦 Session:', JSON.stringify(session, null, 2));
+    if (!session.amount_total) {
+      console.warn('⚠️ Missing amount_total in Stripe webhook payload', { sessionId: session.id });
+    }
     console.log('🔍 UID:', uid);
     console.log('🔍 Mode:', session.mode);
     console.log('🔢 Tokens to add:', session.metadata?.tokens);
@@ -1400,16 +1403,23 @@ export const handleStripeWebhookV2 = functions
       }
       try {
         console.log('📝 Logging payment session');
-        await db.doc(`users/${uid}/payments/${session.id}`).set(
-          {
-            type: session.metadata?.type,
-            mode: session.mode,
-            amount: session.mode === 'payment' ? parseInt((session.metadata?.tokens as string) || '0', 10) : undefined,
-            status: 'completed',
-            created: admin.firestore.FieldValue.serverTimestamp(),
-          },
-          { merge: true },
-        );
+        const paymentData: Record<string, any> = {
+          mode: session.mode,
+          status: 'completed',
+          created: admin.firestore.FieldValue.serverTimestamp(),
+        };
+        if (session.metadata?.type) {
+          paymentData.type = session.metadata.type;
+        } else {
+          console.warn('⚠️ Missing session metadata type', { sessionId: session.id });
+        }
+        const parsedAmount = session.mode === 'payment' ? parseInt((session.metadata?.tokens as string) || '0', 10) : undefined;
+        if (parsedAmount !== undefined) {
+          paymentData.amount = parsedAmount;
+        } else if (session.mode === 'payment') {
+          console.warn('⚠️ Missing token amount in metadata', { sessionId: session.id });
+        }
+        await db.doc(`users/${uid}/payments/${session.id}`).set(paymentData, { merge: true });
         console.log('✅ Payment session logged');
       } catch (err) {
         console.error('❌ Failed to log Stripe session', err);
