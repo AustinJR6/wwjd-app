@@ -1577,6 +1577,14 @@ export const onUserCreate = functions
       logger.info("onUserCreate profile", profile);
 
       await docRef.set(profile, { merge: false });
+      const subscriptionRef = admin.firestore().doc(`subscriptions/${uid}`);
+      await subscriptionRef.set({
+        isSubscribed: false,
+        plan: null,
+        startDate: null,
+        expiryDate: null,
+        createdAt: timestamp,
+      });
     } catch (err) {
       logger.error(`onUserCreate failed for ${uid}`, err);
     }
