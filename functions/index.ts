@@ -1851,23 +1851,27 @@ export const completeSignupAndProfile = functions.https.onCall(
     }
   });
 
-export const createStripeSetupIntent = functions.https.onCall(
-  async (data: any, context: functions.https.CallableContext) => {
-    logger.info('createStripeSetupIntent called', { data });
+export const createStripeSetupIntent = functions.https.onRequest(
+  withCors(async (req: Request, res: Response) => {
+    logger.info('createStripeSetupIntent called', { body: req.body });
 
-    if (!context.auth) {
-      throw new functions.https.HttpsError('unauthenticated', 'Authentication required');
+    let authData: { uid: string; token: string };
+    try {
+      authData = await verifyAuth(req);
+    } catch (err) {
+      logTokenVerificationError('createStripeSetupIntent', extractAuthToken(req), err);
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
     }
 
-    const uid: string = typeof data?.uid === 'string' ? data.uid : context.auth.uid;
-    if (uid !== context.auth.uid) {
-      throw new functions.https.HttpsError('permission-denied', 'UID mismatch');
-    }
+    const data = req.body || {};
+    const uid = authData.uid;
 
     const stripeSecret = functions.config().stripe?.secret;
     if (!stripeSecret) {
       logger.error('Stripe secret not configured');
-      throw new functions.https.HttpsError('failed-precondition', 'Stripe not configured');
+      res.status(500).json({ error: 'Stripe not configured' });
+      return;
     }
 
     const stripeClient = new Stripe(stripeSecret, { apiVersion: '2023-10-16' } as any);
@@ -1892,7 +1896,8 @@ export const createStripeSetupIntent = functions.https.onCall(
       }
     } catch (err) {
       logger.error('Failed to retrieve or create Stripe customer', err);
-      throw new functions.https.HttpsError('internal', 'Unable to create customer');
+      res.status(500).json({ error: 'Unable to create customer' });
+      return;
     }
 
     try {
@@ -1902,16 +1907,24 @@ export const createStripeSetupIntent = functions.https.onCall(
       );
 
       let intent: Stripe.SetupIntent | Stripe.PaymentIntent;
-      if (data?.mode === 'payment') {
-        const amount = Number(data?.amount);
-        const currency = typeof data?.currency === 'string' ? data.currency : 'usd';
+      const mode = data.mode;
+      const currency = typeof data.currency === 'string' ? data.currency : 'usd';
+
+      if (mode === 'payment' || mode === 'subscription' || mode === 'donation') {
+        const amount = Number(data.amount);
         if (!amount || isNaN(amount)) {
-          throw new functions.https.HttpsError('invalid-argument', 'amount required for payment');
+          res.status(400).json({ error: 'amount required for payment' });
+          return;
         }
         intent = await stripeClient.paymentIntents.create({
           amount,
           currency,
           customer: customerId,
+          metadata: {
+            uid,
+            mode,
+            ...(data.tokenAmount ? { tokenAmount: String(data.tokenAmount) } : {}),
+          },
           automatic_payment_methods: { enabled: true },
         });
       } else {
@@ -1921,18 +1934,99 @@ export const createStripeSetupIntent = functions.https.onCall(
         });
       }
 
-      logger.info('Stripe intent created', { uid, mode: data?.mode || 'setup' });
+      logger.info('Stripe intent created', { uid, mode: mode || 'setup' });
 
-      return {
+      res.status(200).json({
         paymentIntent: intent.client_secret,
         ephemeralKey: ephemeralKey.secret,
         customer: customerId,
-      };
+      });
     } catch (err: any) {
       logger.error('Failed to create Stripe intent', err);
-      throw new functions.https.HttpsError('internal', err?.message || 'Intent creation failed');
+      res.status(500).json({ error: err?.message || 'Intent creation failed' });
     }
-  }
+  })
+);
+
+export const finalizePaymentIntent = functions.https.onRequest(
+  withCors(async (req: Request, res: Response) => {
+    logger.info('finalizePaymentIntent called', { body: req.body });
+
+    let authData: { uid: string; token: string };
+    try {
+      authData = await verifyAuth(req);
+    } catch (err) {
+      logTokenVerificationError('finalizePaymentIntent', extractAuthToken(req), err);
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+
+    const { paymentIntentId, mode, tokenAmount } = req.body || {};
+
+    if (typeof paymentIntentId !== 'string' || !paymentIntentId.trim()) {
+      res.status(400).json({ error: 'paymentIntentId required' });
+      return;
+    }
+
+    if (!mode || !['payment', 'subscription', 'donation'].includes(mode)) {
+      res.status(400).json({ error: 'Invalid mode' });
+      return;
+    }
+
+    if (mode === 'payment' && (typeof tokenAmount !== 'number' || tokenAmount <= 0)) {
+      res.status(400).json({ error: 'tokenAmount required for payment mode' });
+      return;
+    }
+
+    const stripeSecret = functions.config().stripe?.secret;
+    if (!stripeSecret) {
+      logger.error('Stripe secret not configured');
+      res.status(500).json({ error: 'Stripe not configured' });
+      return;
+    }
+
+    const stripeClient = new Stripe(stripeSecret, { apiVersion: '2023-10-16' } as any);
+
+    try {
+      const intent = await stripeClient.paymentIntents.retrieve(paymentIntentId);
+      if (intent.status !== 'succeeded') {
+        res.status(400).json({ error: 'Payment not completed' });
+        return;
+      }
+
+      const uid = authData.uid;
+
+      if (mode === 'subscription') {
+        await db.doc(`users/${uid}`).set({ isSubscribed: true }, { merge: true });
+        console.log(`User ${uid} subscribed`);
+      } else if (mode === 'payment') {
+        await addTokens(uid, tokenAmount);
+        console.log(`Added ${tokenAmount} tokens to ${uid}`);
+      } else if (mode === 'donation') {
+        await db.doc(`users/${uid}/donations/${paymentIntentId}`).set({
+          amount: intent.amount,
+          currency: intent.currency,
+          created: admin.firestore.FieldValue.serverTimestamp(),
+        });
+        console.log(`Donation logged for ${uid}`);
+      }
+
+      await db.doc(`users/${uid}/payments/${paymentIntentId}`).set(
+        {
+          mode,
+          status: 'completed',
+          created: admin.firestore.FieldValue.serverTimestamp(),
+          amount: intent.amount,
+        },
+        { merge: true }
+      );
+
+      res.status(200).json({ success: true });
+    } catch (err: any) {
+      logger.error('finalizePaymentIntent failed', err);
+      res.status(500).json({ error: err?.message || 'Failed to finalize payment' });
+    }
+  })
 );
 
 export { onCompletedChallengeCreate } from './firestoreArchitecture';
