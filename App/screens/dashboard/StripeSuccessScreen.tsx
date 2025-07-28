@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, ActivityIndicator, StyleSheet, Text } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import ScreenContainer from '@/components/theme/ScreenContainer';
 import { useTheme } from '@/components/theme/theme';
@@ -20,7 +20,14 @@ export default function StripeSuccessScreen() {
   const theme = useTheme();
   const { user } = useUser();
   const setProfile = useUserProfileStore((s) => s.setUserProfile);
+  const refreshProfile = useUserProfileStore((s) => s.refreshUserProfile);
   const [loading, setLoading] = useState(true);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      refreshProfile();
+    }, [refreshProfile]),
+  );
 
   useEffect(() => {
     let mounted = true;

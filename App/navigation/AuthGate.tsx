@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 // Prevent multiple auth listeners on re-renders
 let authInitialized = false;
 
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, type LinkingOptions } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { navigationRef } from './navigationRef';
 import { RootStackParamList } from './RootStackParamList';
@@ -47,6 +47,15 @@ import GiveBackScreen from '@/screens/GiveBackScreen';
 import AppInfoScreen from '@/screens/AppInfoScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
+
+const linking: LinkingOptions<RootStackParamList> = {
+  prefixes: ['onevine://', 'https://onevine.app'],
+  config: {
+    screens: {
+      StripeSuccess: 'payment-success',
+    },
+  },
+};
 
 export default function AuthGate() {
   const theme = useTheme();
@@ -136,6 +145,7 @@ export default function AuthGate() {
 
   return (
     <NavigationContainer
+      linking={linking}
       ref={navigationRef}
       onStateChange={() => {
         if (uid) refreshLastActive(uid);
