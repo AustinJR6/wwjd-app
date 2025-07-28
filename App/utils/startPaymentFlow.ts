@@ -1,10 +1,10 @@
 import { Alert } from 'react-native';
 import { initializeApp, getApp, getApps } from 'firebase/app';
+import { getAuth } from 'firebase/auth';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { initPaymentSheet, presentPaymentSheet } from '@stripe/stripe-react-native';
 import Constants from 'expo-constants';
 import { useUserProfileStore } from '@/state/userProfile';
-import { getCurrentUserId } from '@/utils/TokenManager';
 import { logTransaction } from '@/utils/transactionLogger';
 
 // Initialize Firebase if needed using Expo constants
@@ -42,13 +42,26 @@ export async function startPaymentFlow({
   logType,
 }: PaymentFlowParams): Promise<boolean> {
   try {
-    const uid = await getCurrentUserId();
-    if (!uid) {
+    console.log('startPaymentFlow params', { amount, currency, mode });
+
+    if (mode === 'payment') {
+      if (typeof amount !== 'number' || isNaN(amount)) {
+        throw new Error('Invalid amount provided for payment');
+      }
+    }
+
+    const app = getFirebaseApp();
+    const auth = getAuth(app);
+    const user = auth.currentUser;
+    if (!user) {
       Alert.alert('Authentication Required', 'Please sign in again.');
       return false;
     }
 
-    const functions = getFunctions(getFirebaseApp());
+    const uid = user.uid;
+    await user.getIdToken(true);
+
+    const functions = getFunctions(app);
     const createIntent = httpsCallable(functions, 'createStripeSetupIntent');
 
     console.log('🚀 Requesting Stripe intent', { mode, amount, currency });
