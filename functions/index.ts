@@ -1851,4 +1851,88 @@ export const completeSignupAndProfile = functions.https.onCall(
     }
   });
 
+export const createStripeSetupIntent = functions.https.onCall(
+  async (data: any, context: functions.https.CallableContext) => {
+    logger.info('createStripeSetupIntent called', { data });
+
+    if (!context.auth) {
+      throw new functions.https.HttpsError('unauthenticated', 'Authentication required');
+    }
+
+    const uid: string = typeof data?.uid === 'string' ? data.uid : context.auth.uid;
+    if (uid !== context.auth.uid) {
+      throw new functions.https.HttpsError('permission-denied', 'UID mismatch');
+    }
+
+    const stripeSecret = functions.config().stripe?.secret;
+    if (!stripeSecret) {
+      logger.error('Stripe secret not configured');
+      throw new functions.https.HttpsError('failed-precondition', 'Stripe not configured');
+    }
+
+    const stripeClient = new Stripe(stripeSecret, { apiVersion: '2023-10-16' } as any);
+
+    let customerId: string;
+    try {
+      const userRef = db.collection('users').doc(uid);
+      const snap = await userRef.get();
+      customerId = (snap.data() as any)?.stripeCustomerId;
+
+      if (!customerId) {
+        const userRecord = await auth.getUser(uid);
+        const customer = await stripeClient.customers.create({
+          email: userRecord.email ?? undefined,
+          metadata: { uid },
+        });
+        customerId = customer.id;
+        await userRef.set({ stripeCustomerId: customerId }, { merge: true });
+        logger.info('Stripe customer created', { uid, customerId });
+      } else {
+        logger.info('Stripe customer reused', { uid, customerId });
+      }
+    } catch (err) {
+      logger.error('Failed to retrieve or create Stripe customer', err);
+      throw new functions.https.HttpsError('internal', 'Unable to create customer');
+    }
+
+    try {
+      const ephemeralKey = await stripeClient.ephemeralKeys.create(
+        { customer: customerId },
+        { apiVersion: '2023-10-16' }
+      );
+
+      let intent: Stripe.SetupIntent | Stripe.PaymentIntent;
+      if (data?.mode === 'payment') {
+        const amount = Number(data?.amount);
+        const currency = typeof data?.currency === 'string' ? data.currency : 'usd';
+        if (!amount || isNaN(amount)) {
+          throw new functions.https.HttpsError('invalid-argument', 'amount required for payment');
+        }
+        intent = await stripeClient.paymentIntents.create({
+          amount,
+          currency,
+          customer: customerId,
+          automatic_payment_methods: { enabled: true },
+        });
+      } else {
+        intent = await stripeClient.setupIntents.create({
+          customer: customerId,
+          automatic_payment_methods: { enabled: true },
+        });
+      }
+
+      logger.info('Stripe intent created', { uid, mode: data?.mode || 'setup' });
+
+      return {
+        paymentIntent: intent.client_secret,
+        ephemeralKey: ephemeralKey.secret,
+        customer: customerId,
+      };
+    } catch (err: any) {
+      logger.error('Failed to create Stripe intent', err);
+      throw new functions.https.HttpsError('internal', err?.message || 'Intent creation failed');
+    }
+  }
+);
+
 export { onCompletedChallengeCreate } from './firestoreArchitecture';
