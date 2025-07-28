@@ -4,6 +4,7 @@ export default ({ config }) => ({
   ...config,
   name: "OneVine",
   slug: "onevine-app",
+  scheme: "onevine",
   version: "1.0.0",
   // Use the shared logo for both platforms
   icon: "./assets/icon.png",
