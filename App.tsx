@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, ActivityIndicator } from 'react-native';
 import * as Sentry from '@sentry/react-native';
 import ErrorBoundary from './App/components/common/ErrorBoundary';
+import { StripeProvider } from '@stripe/stripe-react-native';
 import { useFonts, Poppins_600SemiBold } from '@expo-google-fonts/poppins';
 import { Merriweather_400Regular } from '@expo-google-fonts/merriweather';
 import AuthGate from './App/navigation/AuthGate';
@@ -45,9 +46,11 @@ export default function App() {
   }
 
   return (
-    <ErrorBoundary>
-      <AuthGate />
-      {showAnim && <StartupAnimation onDone={() => setShowAnim(false)} />}
-    </ErrorBoundary>
+    <StripeProvider publishableKey={Constants.expoConfig?.extra?.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY || ''}>
+      <ErrorBoundary>
+        <AuthGate />
+        {showAnim && <StartupAnimation onDone={() => setShowAnim(false)} />}
+      </ErrorBoundary>
+    </StripeProvider>
   );
 }

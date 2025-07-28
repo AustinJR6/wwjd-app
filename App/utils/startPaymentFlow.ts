@@ -5,6 +5,7 @@ import { initPaymentSheet, presentPaymentSheet } from '@stripe/stripe-react-nati
 import Constants from 'expo-constants';
 import { useUserProfileStore } from '@/state/userProfile';
 import { getCurrentUserId } from '@/utils/TokenManager';
+import { logTransaction } from '@/utils/transactionLogger';
 
 // Initialize Firebase if needed using Expo constants
 function getFirebaseApp() {
@@ -27,6 +28,7 @@ export type PaymentFlowParams = {
   mode: 'setup' | 'payment';
   amount?: number;
   currency?: string;
+  logType?: string;
 };
 
 /**
@@ -37,6 +39,7 @@ export async function startPaymentFlow({
   mode,
   amount,
   currency = 'usd',
+  logType,
 }: PaymentFlowParams): Promise<boolean> {
   try {
     const uid = await getCurrentUserId();
@@ -83,6 +86,14 @@ export async function startPaymentFlow({
       await useUserProfileStore.getState().refreshUserProfile();
     } catch (err) {
       console.warn('Failed to refresh user profile', err);
+    }
+
+    if (logType && typeof amount === 'number') {
+      try {
+        await logTransaction(logType, amount);
+      } catch (err) {
+        console.warn('Failed to log transaction', err);
+      }
     }
 
     return true;

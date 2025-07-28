@@ -9,13 +9,23 @@ export default ({ config }) => ({
   // Use the shared logo for both platforms
   icon: "./assets/icon.png",
   runtimeVersion: "1.0.0",
+  plugins: [
+    ["expo-build-properties", {
+      android: {
+        compileSdkVersion: 34,
+        targetSdkVersion: 34,
+        minSdkVersion: 24
+      }
+    }]
+  ],
   // Include bundled assets (e.g. icon)
   assetBundlePatterns: ["**/*"],
 
   // Limit platforms to avoid requiring react-native-web for expo export
   platforms: ["ios", "android"],
   android: {
-    package: "com.whippybuckle.onevineapp"
+    package: "com.whippybuckle.onevineapp",
+    permissions: ["INTERNET"]
   },
   extra: {
     eas: {
