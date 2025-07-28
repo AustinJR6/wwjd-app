@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import CustomText from '@/components/CustomText';
-import { View, StyleSheet, Alert, Linking } from 'react-native';
+import { View, StyleSheet, Alert } from 'react-native';
 import Button from '@/components/common/Button';
+import { startPaymentFlow } from '@/utils';
+import { logTransaction } from '@/utils/transactionLogger';
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { useTheme } from "@/components/theme/theme";
 import AuthGate from '@/components/AuthGate';
@@ -50,10 +52,19 @@ export default function GiveBackScreen({ navigation }: Props) {
       }),
     [theme],
   );
-  const [donating] = useState(false);
+  const [donating, setDonating] = useState<number | null>(null);
 
-  const handleDonation = async () => {
-    Alert.alert('Coming Soon', 'Donations are not available yet.');
+  const handleDonation = async (amount: number) => {
+    setDonating(amount);
+    try {
+      const success = await startPaymentFlow({ mode: 'payment', amount });
+      if (success) {
+        Alert.alert('Thank you', 'Thank you for your donation \uD83D\uDE4F');
+        await logTransaction('donation', amount);
+      }
+    } finally {
+      setDonating(null);
+    }
   };
 
   return (
@@ -68,10 +79,9 @@ export default function GiveBackScreen({ navigation }: Props) {
         <CustomText style={styles.section}>Make a One-Time Gift:</CustomText>
 
         <View style={styles.buttonGroup}>
-          <Button title="$5" onPress={handleDonation} disabled={donating} />
-          <Button title="$10" onPress={handleDonation} disabled={donating} />
-          <Button title="$25" onPress={handleDonation} disabled={donating} />
-          <Button title="$50" onPress={handleDonation} disabled={donating} />
+          <Button title="$5" onPress={() => handleDonation(500)} disabled={!!donating} loading={donating === 500} />
+          <Button title="$10" onPress={() => handleDonation(1000)} disabled={!!donating} loading={donating === 1000} />
+          <Button title="$20" onPress={() => handleDonation(2000)} disabled={!!donating} loading={donating === 2000} />
         </View>
 
         <CustomText style={styles.note}>
