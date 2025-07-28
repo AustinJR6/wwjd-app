@@ -1855,9 +1855,11 @@ export const createStripeSetupIntent = functions.https.onRequest(
   withCors(async (req: Request, res: Response) => {
     logger.info('createStripeSetupIntent called', { body: req.body });
 
+    logger.debug('Verifying auth token');
     let authData: { uid: string; token: string };
     try {
       authData = await verifyAuth(req);
+      logger.debug('Auth token verified', { uid: authData.uid });
     } catch (err) {
       logTokenVerificationError('createStripeSetupIntent', extractAuthToken(req), err);
       res.status(401).json({ error: 'Unauthorized' });
@@ -1867,6 +1869,7 @@ export const createStripeSetupIntent = functions.https.onRequest(
     const data = req.body || {};
     const uid = authData.uid;
 
+    logger.debug('Checking Stripe secret configuration');
     const stripeSecret = functions.config().stripe?.secret;
     if (!stripeSecret) {
       logger.error('Stripe secret not configured');
@@ -1876,6 +1879,7 @@ export const createStripeSetupIntent = functions.https.onRequest(
 
     const stripeClient = new Stripe(stripeSecret, { apiVersion: '2023-10-16' } as any);
 
+    logger.debug('Retrieving or creating Stripe customer');
     let customerId: string;
     try {
       const userRef = db.collection('users').doc(uid);
@@ -1900,16 +1904,25 @@ export const createStripeSetupIntent = functions.https.onRequest(
       return;
     }
 
+    logger.debug('Creating Stripe ephemeral key');
+    let ephemeralKey: Stripe.EphemeralKey;
     try {
-      const ephemeralKey = await stripeClient.ephemeralKeys.create(
+      ephemeralKey = await stripeClient.ephemeralKeys.create(
         { customer: customerId },
         { apiVersion: '2023-10-16' }
       );
+    } catch (err: any) {
+      logger.error('Stripe ephemeralKey creation failed', err);
+      res.status(500).json({ error: err?.message || 'Ephemeral key failed' });
+      return;
+    }
 
-      let intent: Stripe.SetupIntent | Stripe.PaymentIntent;
-      const mode = data.mode;
-      const currency = typeof data.currency === 'string' ? data.currency : 'usd';
+    let intent: Stripe.SetupIntent | Stripe.PaymentIntent;
+    const mode = data.mode || 'setup';
+    const currency = typeof data.currency === 'string' ? data.currency : 'usd';
 
+    logger.debug('Creating Stripe intent', { mode });
+    try {
       if (mode === 'payment' || mode === 'subscription' || mode === 'donation') {
         const amount = Number(data.amount);
         if (!amount || isNaN(amount)) {
@@ -1933,18 +1946,19 @@ export const createStripeSetupIntent = functions.https.onRequest(
           automatic_payment_methods: { enabled: true },
         });
       }
-
-      logger.info('Stripe intent created', { uid, mode: mode || 'setup' });
-
-      res.status(200).json({
-        paymentIntent: intent.client_secret,
-        ephemeralKey: ephemeralKey.secret,
-        customer: customerId,
-      });
     } catch (err: any) {
-      logger.error('Failed to create Stripe intent', err);
+      logger.error('Stripe intent creation failed', err);
       res.status(500).json({ error: err?.message || 'Intent creation failed' });
+      return;
     }
+
+    logger.info('Stripe intent created', { uid, mode, intentId: intent.id });
+
+    res.status(200).json({
+      client_secret: intent.client_secret,
+      ephemeralKey: ephemeralKey.secret,
+      customerId,
+    });
   })
 );
 
