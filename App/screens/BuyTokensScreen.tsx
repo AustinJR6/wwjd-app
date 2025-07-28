@@ -1,11 +1,9 @@
 import React from 'react';
 import CustomText from '@/components/CustomText';
-import { View, StyleSheet, Alert, Linking } from 'react-native';
+import { View, StyleSheet, Alert } from 'react-native';
 import Button from '@/components/common/Button';
-import { useUser } from '@/hooks/useUser';
-import { startTokenCheckout } from '@/services/apiService';
-import { getCurrentUserId } from '@/utils/TokenManager';
-import { PRICE_IDS } from '@/config/stripeConfig';
+import { startPaymentFlow } from '@/utils';
+import { logTransaction } from '@/utils/transactionLogger';
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { useTheme } from "@/components/theme/theme";
 import AuthGate from '@/components/AuthGate';
@@ -60,34 +58,15 @@ export default function BuyTokensScreen({ navigation }: Props) {
       }),
     [theme],
   );
-  const { user } = useUser();
   const [loading, setLoading] = React.useState<number | null>(null);
-  const purchase = async (amount: number) => {
-    setLoading(amount);
+  const purchase = async (amount: number, tokens: number) => {
+    setLoading(tokens);
     try {
-      const uid = await getCurrentUserId();
-      const priceId =
-        amount === 20
-          ? PRICE_IDS.TOKENS_20
-          : amount === 50
-          ? PRICE_IDS.TOKENS_50
-          : PRICE_IDS.TOKENS_100;
-      if (!uid || !priceId) {
-        console.warn('🚫 Stripe Checkout failed — missing uid or priceId', { uid, priceId });
-        return;
+      const success = await startPaymentFlow({ mode: 'payment', amount });
+      if (success) {
+        Alert.alert('Success', `${tokens} tokens added \uD83D\uDC8E`);
+        await logTransaction('tokens', amount);
       }
-      const payload = { uid, priceId };
-      console.log('🪙 Starting Stripe checkout for', amount, 'tokens...', payload);
-      const url = await startTokenCheckout(uid, priceId);
-      if (url) {
-        console.log('🔗 Redirecting to Stripe:', url);
-        await Linking.openURL(url);
-      } else {
-        Alert.alert('Checkout Error', 'Unable to start checkout. Please try again later.');
-      }
-    } catch (err: any) {
-      console.error('❌ Checkout error:', err?.message || err);
-      Alert.alert('Checkout Error', 'Please try again later.');
     } finally {
       setLoading(null);
     }
@@ -102,23 +81,23 @@ export default function BuyTokensScreen({ navigation }: Props) {
 
         <View style={styles.pack}>
           <CustomText style={styles.amount}>
-            20 Tokens — <CustomText style={styles.price}>$4.99</CustomText>
+            20 Tokens — <CustomText style={styles.price}>$5</CustomText>
           </CustomText>
-          <Button title="Buy 20 Tokens" onPress={() => purchase(20)} loading={loading === 20} />
+          <Button title="Buy 20 Tokens" onPress={() => purchase(500, 20)} loading={loading === 20} />
         </View>
 
         <View style={styles.pack}>
           <CustomText style={styles.amount}>
-            50 Tokens — <CustomText style={styles.price}>$9.99</CustomText>
+            50 Tokens — <CustomText style={styles.price}>$10</CustomText>
           </CustomText>
-          <Button title="Buy 50 Tokens" onPress={() => purchase(50)} loading={loading === 50} />
+          <Button title="Buy 50 Tokens" onPress={() => purchase(1000, 50)} loading={loading === 50} />
         </View>
 
         <View style={styles.pack}>
           <CustomText style={styles.amount}>
-            100 Tokens — <CustomText style={styles.price}>$19.99</CustomText>
+            100 Tokens — <CustomText style={styles.price}>$20</CustomText>
           </CustomText>
-          <Button title="Buy 100 Tokens" onPress={() => purchase(100)} loading={loading === 100} />
+          <Button title="Buy 100 Tokens" onPress={() => purchase(2000, 100)} loading={loading === 100} />
         </View>
 
         <View style={styles.buttonWrap}>
