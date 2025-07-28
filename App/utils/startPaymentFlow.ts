@@ -1,28 +1,16 @@
 import { Alert } from 'react-native';
-import { initializeApp, getApp, getApps } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
-import { getFunctions, httpsCallable } from 'firebase/functions';
 import { initPaymentSheet, presentPaymentSheet } from '@stripe/stripe-react-native';
 import Constants from 'expo-constants';
 import { useUserProfileStore } from '@/state/userProfile';
 import { logTransaction } from '@/utils/transactionLogger';
+import { getIdToken, getCurrentUserId } from '@/utils/authUtils';
+import { sendRequestWithGusBugLogging } from '@/utils/gusBugLogger';
 
-// Initialize Firebase if needed using Expo constants
-function getFirebaseApp() {
-  if (!getApps().length) {
-    const config = {
-      apiKey: Constants.expoConfig?.extra?.EXPO_PUBLIC_FIREBASE_API_KEY,
-      authDomain: Constants.expoConfig?.extra?.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,
-      projectId: Constants.expoConfig?.extra?.EXPO_PUBLIC_FIREBASE_PROJECT_ID,
-      storageBucket: Constants.expoConfig?.extra?.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET,
-      messagingSenderId: Constants.expoConfig?.extra?.EXPO_PUBLIC_FIREBASE_MSG_SENDER_ID,
-      appId: Constants.expoConfig?.extra?.EXPO_PUBLIC_FIREBASE_APP_ID,
-      measurementId: Constants.expoConfig?.extra?.EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID,
-    };
-    initializeApp(config);
-  }
-  return getApp();
+const API_URL = Constants.expoConfig?.extra?.EXPO_PUBLIC_API_URL || '';
+if (!API_URL) {
+  console.warn('⚠️ Missing EXPO_PUBLIC_API_URL in .env');
 }
+
 
 export type PaymentFlowParams = {
   mode: 'setup' | 'payment';
@@ -50,23 +38,52 @@ export async function startPaymentFlow({
       }
     }
 
-    const app = getFirebaseApp();
-    const auth = getAuth(app);
-    const user = auth.currentUser;
-    if (!user) {
+    const uid = await getCurrentUserId();
+    const idToken = await getIdToken(true);
+
+    if (!uid || !idToken) {
       Alert.alert('Authentication Required', 'Please sign in again.');
       return false;
     }
 
-    const uid = user.uid;
-    await user.getIdToken(true);
-
-    const functions = getFunctions(app);
-    const createIntent = httpsCallable(functions, 'createStripeSetupIntent');
-
     console.log('🚀 Requesting Stripe intent', { mode, amount, currency });
-    const res = await createIntent({ mode, amount, currency, uid });
-    const { paymentIntent, ephemeralKey, customer } = res.data as any;
+
+    const headers = {
+      Authorization: `Bearer ${idToken}`,
+      'Content-Type': 'application/json',
+    };
+
+    const payload = { data: { mode, amount, currency, uid } };
+
+    const res = await sendRequestWithGusBugLogging(() =>
+      fetch(`${API_URL}/createStripeSetupIntent`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(payload),
+      }),
+    );
+
+    const text = await res.text();
+    let data: any = {};
+    try {
+      data = JSON.parse(text);
+    } catch {}
+
+    if (!res.ok) {
+      const error = data?.error;
+      switch (error?.status) {
+        case 'permission-denied':
+        case 'unauthenticated':
+          throw new Error('Please sign in again.');
+        case 'invalid-argument':
+          throw new Error(error.message);
+        default:
+          throw new Error(error?.message || `HTTP ${res.status}`);
+      }
+    }
+
+    const result = data?.result || data?.data || data;
+    const { paymentIntent, ephemeralKey, customer } = result;
 
     const { error: initError } = await initPaymentSheet({
       customerId: customer,
