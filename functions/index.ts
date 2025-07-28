@@ -1922,8 +1922,8 @@ export const createStripeSetupIntent = functions.https.onRequest(
     const currency = typeof data.currency === 'string' ? data.currency : 'usd';
 
     logger.debug('Creating Stripe intent', { mode });
-    try {
-      if (mode === 'payment' || mode === 'subscription' || mode === 'donation') {
+    if (mode === 'payment' || mode === 'subscription' || mode === 'donation') {
+      try {
         const amount = Number(data.amount);
         if (!amount || isNaN(amount)) {
           res.status(400).json({ error: 'amount required for payment' });
@@ -1940,16 +1940,24 @@ export const createStripeSetupIntent = functions.https.onRequest(
           },
           automatic_payment_methods: { enabled: true },
         });
-      } else {
+      } catch (err: any) {
+        logger.error('Stripe PaymentIntent creation failed', err);
+        res.status(500).json({ error: err?.message || 'PaymentIntent creation failed' });
+        return;
+      }
+    } else {
+      logger.debug('Creating Stripe SetupIntent for customer', { customerId });
+      try {
         intent = await stripeClient.setupIntents.create({
           customer: customerId,
           automatic_payment_methods: { enabled: true },
         });
+        logger.info('SetupIntent created', { intentId: intent.id });
+      } catch (err: any) {
+        logger.error('Stripe SetupIntent failed', err);
+        res.status(500).json({ error: err?.message || 'Stripe SetupIntent failed' });
+        return;
       }
-    } catch (err: any) {
-      logger.error('Stripe intent creation failed', err);
-      res.status(500).json({ error: err?.message || 'Intent creation failed' });
-      return;
     }
 
     logger.info('Stripe intent created', { uid, mode, intentId: intent.id });
