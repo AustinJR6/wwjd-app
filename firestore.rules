@@ -28,7 +28,7 @@ service cloud.firestore {
 
       // 💵 Payment transactions
       match /transactions/{transactionId} {
-        allow read, write: if isSignedIn() && request.auth.uid == userId;
+        allow create, read: if request.auth != null && request.auth.uid == userId;
       }
     }
 

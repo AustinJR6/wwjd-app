@@ -1387,8 +1387,28 @@ export const handleStripeWebhookV2 = functions
           console.log('⬆️ Updating subscription docs for', uid);
           await db.doc(`subscriptions/${uid}`).set({ active: true }, { merge: true });
           console.log('✅ subscriptions doc updated');
-          await db.doc(`users/${uid}`).set({ isSubscribed: true }, { merge: true });
+          await db.doc(`users/${uid}`).set(
+            {
+              isSubscribed: true,
+              subscribedAt: admin.firestore.FieldValue.serverTimestamp(),
+              lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
+            },
+            { merge: true },
+          );
           console.log('✅ users doc updated');
+
+          await db.doc(`users/${uid}/transactions/${session.id}`).set(
+            {
+              amount: session.amount_total,
+              currency: session.currency,
+              stripeSessionId: session.id,
+              status: session.status,
+              type: 'subscription',
+              createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            },
+            { merge: true },
+          );
+          console.log('✅ transaction logged');
         } catch (err) {
           console.error('❌ Subscription Firestore update failed', err);
         }
@@ -2020,8 +2040,28 @@ export const finalizePaymentIntent = functions.https.onRequest(
       const uid = authData.uid;
 
       if (mode === 'subscription') {
-        await db.doc(`users/${uid}`).set({ isSubscribed: true }, { merge: true });
+        await db.doc(`users/${uid}`).set(
+          {
+            isSubscribed: true,
+            subscribedAt: admin.firestore.FieldValue.serverTimestamp(),
+            lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
+          },
+          { merge: true },
+        );
         console.log(`User ${uid} subscribed`);
+        await db.doc(`users/${uid}/transactions/${paymentIntentId}`).set(
+          {
+            amount: intent.amount,
+            currency: intent.currency,
+            stripePaymentIntentId: paymentIntentId,
+            paymentMethod: intent.payment_method_types?.[0] || 'unknown',
+            status: intent.status,
+            type: 'subscription',
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          },
+          { merge: true },
+        );
+        console.log('Transaction logged');
       } else if (mode === 'payment') {
         await addTokens(uid, tokenAmount);
         console.log(`Added ${tokenAmount} tokens to ${uid}`);
@@ -2040,18 +2080,6 @@ export const finalizePaymentIntent = functions.https.onRequest(
           status: 'completed',
           created: admin.firestore.FieldValue.serverTimestamp(),
           amount: intent.amount,
-        },
-        { merge: true }
-      );
-
-      await db.doc(`users/${uid}/transactions/${paymentIntentId}`).set(
-        {
-          amount: intent.amount,
-          currency: intent.currency,
-          stripePaymentIntentId: paymentIntentId,
-          paymentMethod: intent.payment_method_types?.[0] || 'unknown',
-          status: intent.status,
-          createdAt: admin.firestore.FieldValue.serverTimestamp(),
         },
         { merge: true }
       );

@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { View, ActivityIndicator, StyleSheet, Text } from 'react-native';
+import { View, ActivityIndicator, StyleSheet, Text, Alert } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import ScreenContainer from '@/components/theme/ScreenContainer';
 import { useTheme } from '@/components/theme/theme';
 import { useUserProfileStore } from '@/state/userProfile';
 import { loadUserProfile } from '@/utils/userProfile';
+import { getIdToken } from '@/utils/authUtils';
 import { useUser } from '@/hooks/useUser';
 import { SCREENS } from '@/navigation/screens';
 import { RootStackParamList } from '@/navigation/RootStackParamList';
@@ -34,11 +35,13 @@ export default function StripeSuccessScreen() {
     async function finalize() {
       if (!user?.uid) return;
       try {
+        await getIdToken(true);
         const profile = await loadUserProfile(user.uid);
         if (!mounted) return;
         if (profile) {
           setProfile(profile as any);
           if (profile.isSubscribed === true) {
+            Alert.alert('Upgrade Complete', 'Welcome to OneVine+!');
             navigation.replace('MainTabs', { screen: SCREENS.MAIN.CHALLENGE });
           } else {
             navigation.replace('MainTabs', { screen: SCREENS.MAIN.HOME });
