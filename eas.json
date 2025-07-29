@@ -37,7 +37,7 @@
       "channel": "production",
       "android": {
         "buildType": "apk",
-        "gradleCommand": ":app:assembleRelease",
+        "gradleCommand": ":app:assembleRelease --warning-mode all",
         "env": {
           "SENTRY_AUTH_TOKEN": "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"
         }
