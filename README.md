@@ -153,6 +153,26 @@ The app communicates with Firebase using the following REST endpoints:
 * `https://firestore.googleapis.com/v1/projects/{projectId}/databases/(default)/documents/...` – Firestore reads and writes
 * `https://us-central1-{projectId}.cloudfunctions.net/getUserProfile` – secure profile fetch
 
+Example REST call to read a user document:
+
+```ts
+const res = await fetch(
+  `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents/users/${uid}`,
+  { headers: { Authorization: `Bearer ${idToken}` } },
+);
+const userData = await res.json();
+```
+
+To list past transactions:
+
+```ts
+const res = await fetch(
+  `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents/users/${uid}/transactions?pageSize=20`,
+  { headers: { Authorization: `Bearer ${idToken}` } },
+);
+const txDocs = await res.json();
+```
+
 ## 📚 Codex Prompt Library
 
 Prompts used for Codex and Copilot live in the `codexPrompts` Firestore collection.
