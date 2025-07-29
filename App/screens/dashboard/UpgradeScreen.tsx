@@ -6,13 +6,14 @@ import ScreenContainer from "@/components/theme/ScreenContainer";
 import { useTheme } from "@/components/theme/theme";
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from "@/navigation/RootStackParamList";
-import { startPaymentFlow } from '@/utils';
+import { usePaymentFlow } from '@/utils';
 import { logTransaction } from '@/utils/transactionLogger';
 
 type Props = { navigation: NativeStackNavigationProp<RootStackParamList, 'MainTabs'> };
 
 export default function UpgradeScreen({ navigation }: Props) {
   const theme = useTheme();
+  const { startPaymentFlow } = usePaymentFlow();
   const styles = React.useMemo(
     () =>
       StyleSheet.create({

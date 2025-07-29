@@ -46,7 +46,11 @@ export default function App() {
   }
 
   return (
-    <StripeProvider publishableKey={Constants.expoConfig?.extra?.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY || ''}>
+    <StripeProvider
+      publishableKey={Constants.expoConfig?.extra?.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY || ''}
+      urlScheme="onevine"
+      merchantIdentifier="merchant.com.onevine.app"
+    >
       <ErrorBoundary>
         <AuthGate />
         {showAnim && <StartupAnimation onDone={() => setShowAnim(false)} />}
