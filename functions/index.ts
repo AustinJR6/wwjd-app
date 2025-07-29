@@ -1611,6 +1611,7 @@ export const onUserCreate = functions
         onboardingComplete: false,
         religion: "SpiritGuide",
         tokens: 0,
+        tokenCount: 0,
         skipTokensUsed: 0,
         individualPoints: 0,
         isSubscribed: false,
@@ -1632,7 +1633,7 @@ export const onUserCreate = functions
 
       logger.info("onUserCreate profile", profile);
 
-      await docRef.set(profile, { merge: false });
+      await docRef.set(profile, { merge: true });
       const subscriptionRef = admin.firestore().doc(`subscriptions/${uid}`);
       await subscriptionRef.set({
         isSubscribed: false,
@@ -2039,6 +2040,18 @@ export const finalizePaymentIntent = functions.https.onRequest(
           status: 'completed',
           created: admin.firestore.FieldValue.serverTimestamp(),
           amount: intent.amount,
+        },
+        { merge: true }
+      );
+
+      await db.doc(`users/${uid}/transactions/${paymentIntentId}`).set(
+        {
+          amount: intent.amount,
+          currency: intent.currency,
+          stripePaymentIntentId: paymentIntentId,
+          paymentMethod: intent.payment_method_types?.[0] || 'unknown',
+          status: intent.status,
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
         },
         { merge: true }
       );

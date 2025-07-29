@@ -25,6 +25,11 @@ service cloud.firestore {
       match /activeChallenge/{docId} {
         allow read, write: if isSignedIn() && request.auth.uid == userId;
       }
+
+      // 💵 Payment transactions
+      match /transactions/{transactionId} {
+        allow read, write: if isSignedIn() && request.auth.uid == userId;
+      }
     }
 
     // 📊 Subcollections used for tracking
