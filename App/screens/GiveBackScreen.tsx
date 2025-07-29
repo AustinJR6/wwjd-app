@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import CustomText from '@/components/CustomText';
 import { View, StyleSheet, Alert } from 'react-native';
 import Button from '@/components/common/Button';
-import { startPaymentFlow } from '@/utils';
+import { usePaymentFlow } from '@/utils';
 import { logTransaction } from '@/utils/transactionLogger';
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { useTheme } from "@/components/theme/theme";
@@ -15,6 +15,7 @@ type Props = { navigation: NativeStackNavigationProp<RootStackParamList, 'MainTa
 
 export default function GiveBackScreen({ navigation }: Props) {
   const theme = useTheme();
+  const { startPaymentFlow } = usePaymentFlow();
   const styles = React.useMemo(
     () =>
       StyleSheet.create({
