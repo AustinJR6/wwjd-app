@@ -1,14 +1,16 @@
 import React from 'react';
 import CustomText from '@/components/CustomText';
-import { View, StyleSheet, Alert, Linking } from 'react-native';
+import { View, StyleSheet, Alert } from 'react-native';
 import Button from '@/components/common/Button';
 import { logTransaction } from '@/utils/transactionLogger';
 import { createCheckoutSession } from '@/services/apiService';
 import { PRICE_IDS } from '@/config/stripeConfig';
-import { getCurrentUserId } from '@/utils/authUtils';
+import { getCurrentUserId, getIdToken } from '@/utils/authUtils';
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { useTheme } from "@/components/theme/theme";
 import AuthGate from '@/components/AuthGate';
+import { useStripe } from '@stripe/stripe-react-native';
+import { useUserProfileStore } from '@/state/userProfile';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from "@/navigation/RootStackParamList";
 
@@ -60,14 +62,44 @@ export default function BuyTokensScreen({ navigation }: Props) {
       }),
     [theme],
   );
+  const { initPaymentSheet, presentPaymentSheet } = useStripe();
+  const refreshProfile = useUserProfileStore((s) => s.refreshUserProfile);
   const [loading, setLoading] = React.useState<number | null>(null);
+
   const purchase = async (priceId: string, tokenAmount: number) => {
     setLoading(tokenAmount);
     try {
       const uid = await getCurrentUserId();
       if (!uid) throw new Error('Not signed in');
-      const url = await createCheckoutSession(uid, priceId, tokenAmount);
-      await Linking.openURL(url);
+
+      const result = await createCheckoutSession(uid, priceId, tokenAmount);
+      const clientSecret = result.clientSecret || result.paymentIntent;
+      if (!clientSecret || !result.ephemeralKey || !result.customerId) {
+        throw new Error('Missing payment details');
+      }
+
+      const { error: initError } = await initPaymentSheet({
+        customerId: result.customerId,
+        customerEphemeralKeySecret: result.ephemeralKey,
+        paymentIntentClientSecret: clientSecret,
+        merchantDisplayName: 'OneVine',
+        returnURL: 'onevine://payment-return',
+      });
+      if (initError) {
+        Alert.alert('Payment Error', initError.message);
+        return;
+      }
+
+      const { error } = await presentPaymentSheet();
+      if (error) {
+        if (error.code !== 'Canceled') {
+          Alert.alert('Payment Error', error.message);
+        }
+        return;
+      }
+
+      await getIdToken(true);
+      await refreshProfile();
       await logTransaction('tokens', tokenAmount);
     } catch (err: any) {
       Alert.alert('Checkout Error', err?.message || 'Unable to start checkout');
