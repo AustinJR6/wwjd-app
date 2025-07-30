@@ -1153,41 +1153,95 @@ export const startTokenCheckout = functions
 
 export const createCheckoutSession = functions
   .https.onRequest(withCors(async (req: Request, res: Response) => {
-    logger.info("createCheckoutSession payload", req.body);
-    const { uid, priceId, tokenAmount } = req.body || {};
+    logger.info('createCheckoutSession payload', req.body);
+    const { uid, priceId, tokenAmount, mode = 'payment', type } = req.body || {};
 
-    if (
-      !uid ||
-      !priceId ||
-      typeof tokenAmount !== "number" ||
-      tokenAmount <= 0
-    ) {
-      logger.warn("⚠️ Missing fields", { uid, priceId, tokenAmount });
-      res.status(400).json({ error: "Missing required fields" });
+    if (!uid || !priceId) {
+      logger.warn('⚠️ Missing uid or priceId', { uid, priceId });
+      res.status(400).json({ error: 'Missing required fields' });
       return;
     }
 
-    try {
-      const session = await stripe.checkout.sessions.create({
-        payment_method_types: ["card"],
-        mode: "payment",
-        line_items: [{ price: priceId, quantity: 1 }],
-        success_url: "onevine://checkout-success",
-        cancel_url: "onevine://checkout-cancel",
-        metadata: {
-          uid,
-          tokenAmount: String(tokenAmount),
-          type: "token_purchase",
-        },
-      });
+    if (mode === 'payment' && (typeof tokenAmount !== 'number' || tokenAmount <= 0)) {
+      logger.warn('⚠️ Missing tokenAmount for payment mode', { tokenAmount });
+      res.status(400).json({ error: 'tokenAmount required' });
+      return;
+    }
 
-      logger.info(`✅ Checkout session created ${session.id}`);
-      res.status(200).json({ url: session.url });
+    const stripeSecret = functions.config().stripe?.secret;
+    if (!stripeSecret) {
+      logger.error('Stripe secret not configured');
+      res.status(500).json({ error: 'Stripe not configured' });
+      return;
+    }
+
+    const stripeClient = new Stripe(stripeSecret, { apiVersion: '2023-10-16' } as any);
+
+    try {
+      const userRef = db.collection('users').doc(uid);
+      const snap = await userRef.get();
+      let customerId = (snap.data() as any)?.stripeCustomerId as string | undefined;
+      if (!customerId) {
+        const userRecord = await auth.getUser(uid);
+        const customer = await stripeClient.customers.create({
+          email: userRecord.email ?? undefined,
+          metadata: { uid },
+        });
+        customerId = customer.id;
+        await userRef.set({ stripeCustomerId: customerId }, { merge: true });
+        logger.info('Stripe customer created', { uid, customerId });
+      } else {
+        logger.info('Stripe customer reused', { uid, customerId });
+      }
+
+      const ephemeralKey = await stripeClient.ephemeralKeys.create(
+        { customer: customerId },
+        { apiVersion: '2023-10-16' }
+      );
+
+      if (mode === 'payment') {
+        const price = await stripeClient.prices.retrieve(priceId);
+        const amount = price.unit_amount;
+        if (!amount) {
+          res.status(400).json({ error: 'Unable to resolve price amount' });
+          return;
+        }
+        const intent = await stripeClient.paymentIntents.create({
+          amount,
+          currency: price.currency,
+          customer: customerId,
+          metadata: {
+            uid,
+            type: type || 'token_purchase',
+            tokenAmount: String(tokenAmount),
+            mode,
+          },
+          automatic_payment_methods: { enabled: true },
+        });
+
+        logger.info(`✅ PaymentIntent created ${intent.id}`);
+        res.status(200).json({
+          clientSecret: intent.client_secret,
+          ephemeralKey: ephemeralKey.secret,
+          customerId,
+        });
+      } else {
+        const session = await stripeClient.checkout.sessions.create({
+          mode,
+          line_items: [{ price: priceId, quantity: 1 }],
+          success_url: 'onevine://checkout-success',
+          cancel_url: 'onevine://checkout-cancel',
+          metadata: {
+            uid,
+            type: type || 'subscription',
+          },
+        });
+        logger.info(`✅ Checkout session created ${session.id}`);
+        res.status(200).json({ url: session.url });
+      }
     } catch (err) {
-      logger.error("createCheckoutSession failed", err);
-      res
-        .status(500)
-        .json({ error: (err as any)?.message || "Failed to create checkout" });
+      logger.error('createCheckoutSession failed', err);
+      res.status(500).json({ error: (err as any)?.message || 'Failed to create checkout' });
     }
   }));
 
@@ -1447,6 +1501,7 @@ export const handleStripeWebhookV2 = functions
           console.log('✅ User document updated for', uid);
 
           console.log('💲 Recording transaction amount:', session.amount_total);
+          console.log('📝 Recording transaction document for', uid);
           await db.doc(`users/${uid}/transactions/${session.id}`).set(
             {
               amount: session.amount_total,
@@ -1473,6 +1528,7 @@ export const handleStripeWebhookV2 = functions
               { merge: true },
             );
             console.log(`✅ Updated tokenCount for ${uid}`);
+            console.log('📝 Recording transaction document for', uid);
             await db.doc(`users/${uid}/transactions/${session.id}`).set(
               {
                 amount: session.amount_total,
@@ -1545,6 +1601,7 @@ export const handleStripeWebhookV2 = functions
         console.log('✅ User document updated for', uid);
 
         console.log('💲 Recording transaction amount:', intent.amount);
+        console.log('📝 Recording transaction document for', uid);
         await db.doc(`users/${uid}/transactions/${intent.id}`).set(
           {
             amount: intent.amount,
@@ -1571,6 +1628,7 @@ export const handleStripeWebhookV2 = functions
             { merge: true },
           );
           console.log(`✅ Updated tokenCount for ${uid}`);
+          console.log('📝 Recording transaction document for', uid);
           await db.doc(`users/${uid}/transactions/${intent.id}`).set(
             {
               amount: intent.amount,
@@ -1590,6 +1648,7 @@ export const handleStripeWebhookV2 = functions
     } else if (uid) {
       try {
         console.log('📝 Logging one-time payment for', uid);
+        console.log('📝 Recording transaction document for', uid);
         await db.doc(`users/${uid}/transactions/${intent.id}`).set(
           {
             amount: intent.amount,

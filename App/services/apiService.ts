@@ -7,7 +7,11 @@ import { logTokenIssue } from '@/shared/tokenLogger';
 import { showPermissionDenied } from '@/utils/gracefulError';
 
 type StripeCheckoutResponse = {
-  url: string;
+  url?: string;
+  clientSecret?: string;
+  paymentIntent?: string;
+  ephemeralKey?: string;
+  customerId?: string;
 };
 
 
@@ -116,7 +120,7 @@ export async function createCheckoutSession(
   uid: string,
   priceId: string,
   tokenAmount: number,
-): Promise<string> {
+): Promise<StripeCheckoutResponse> {
   if (
     typeof uid !== 'string' || !uid.trim() ||
     typeof priceId !== 'string' || !priceId.trim() ||
@@ -135,7 +139,7 @@ export async function createCheckoutSession(
   }
 
   try {
-    const payload = { uid, priceId, tokenAmount };
+    const payload = { uid, priceId, tokenAmount, mode: 'payment', type: 'token_purchase' };
     const res = await sendRequestWithGusBugLogging(() =>
       fetch(CHECKOUT_SESSION_URL, {
         method: 'POST',
@@ -153,7 +157,7 @@ export async function createCheckoutSession(
       throw new Error('Unable to start checkout.');
     }
     const data: StripeCheckoutResponse = JSON.parse(text);
-    return data.url;
+    return data;
   } catch (err: any) {
     console.warn('❌ createCheckoutSession failed:', err?.message || err);
     throw new Error(err?.message || 'Unable to start checkout.');
