@@ -1151,6 +1151,46 @@ export const startTokenCheckout = functions
   }
 }));
 
+export const createCheckoutSession = functions
+  .https.onRequest(withCors(async (req: Request, res: Response) => {
+    logger.info("createCheckoutSession payload", req.body);
+    const { uid, priceId, tokenAmount } = req.body || {};
+
+    if (
+      !uid ||
+      !priceId ||
+      typeof tokenAmount !== "number" ||
+      tokenAmount <= 0
+    ) {
+      logger.warn("⚠️ Missing fields", { uid, priceId, tokenAmount });
+      res.status(400).json({ error: "Missing required fields" });
+      return;
+    }
+
+    try {
+      const session = await stripe.checkout.sessions.create({
+        payment_method_types: ["card"],
+        mode: "payment",
+        line_items: [{ price: priceId, quantity: 1 }],
+        success_url: "onevine://checkout-success",
+        cancel_url: "onevine://checkout-cancel",
+        metadata: {
+          uid,
+          tokenAmount: String(tokenAmount),
+          type: "token_purchase",
+        },
+      });
+
+      logger.info(`✅ Checkout session created ${session.id}`);
+      res.status(200).json({ url: session.url });
+    } catch (err) {
+      logger.error("createCheckoutSession failed", err);
+      res
+        .status(500)
+        .json({ error: (err as any)?.message || "Failed to create checkout" });
+    }
+  }));
+
 export const startDonationCheckout = functions
   .https.onRequest(withCors(async (req: Request, res: Response) => {
   logger.info("💖 startDonationCheckout payload", req.body);
@@ -1387,7 +1427,8 @@ export const handleStripeWebhookV2 = functions
       console.log('🔍 UID extracted from session:', uid);
       console.log('🔍 Mode:', session.mode);
       console.log('💲 Amount:', session.amount_total);
-      console.log('🔢 Tokens to add:', session.metadata?.tokens);
+      console.log('🔢 Metadata tokenAmount:', session.metadata?.tokenAmount);
+      console.log('📑 Metadata type:', session.metadata?.type);
       console.log('✅ Stripe checkout completed for', uid);
       if (session.mode === 'subscription') {
         try {
@@ -1418,14 +1459,30 @@ export const handleStripeWebhookV2 = functions
         } catch (err) {
           console.error('❌ Subscription Firestore update failed', err);
         }
-      } else {
-        const amount = parseInt((session.metadata?.tokens as string) || '0', 10);
+      } else if (session.metadata?.type === 'token_purchase') {
+        const amount = parseInt((session.metadata?.tokenAmount as string) || '0', 10);
         console.log('🔢 Tokens to add parsed:', amount);
         if (amount > 0) {
           try {
             console.log(`⬆️ Adding ${amount} tokens to ${uid}`);
-            await addTokens(uid, amount);
-            console.log(`✅ Added ${amount} tokens to ${uid}`);
+            await db.doc(`users/${uid}`).set(
+              {
+                tokenCount: admin.firestore.FieldValue.increment(amount),
+                lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
+              },
+              { merge: true },
+            );
+            console.log(`✅ Updated tokenCount for ${uid}`);
+            await db.doc(`users/${uid}/transactions/${session.id}`).set(
+              {
+                amount: session.amount_total,
+                tokenAmount: amount,
+                type: 'token_purchase',
+                createdAt: admin.firestore.FieldValue.serverTimestamp(),
+              },
+              { merge: true },
+            );
+            console.log('✅ transaction logged');
           } catch (err) {
             console.error('❌ Token purchase handling failed', err);
           }
@@ -1445,7 +1502,9 @@ export const handleStripeWebhookV2 = functions
         } else {
           console.warn('⚠️ Missing session metadata type', { sessionId: session.id });
         }
-        const parsedAmount = session.mode === 'payment' ? parseInt((session.metadata?.tokens as string) || '0', 10) : undefined;
+        const parsedAmount = session.mode === 'payment'
+          ? parseInt((session.metadata?.tokenAmount as string) || '0', 10)
+          : undefined;
         if (parsedAmount !== undefined) {
           paymentData.amount = parsedAmount;
         } else if (session.mode === 'payment') {
@@ -1497,6 +1556,36 @@ export const handleStripeWebhookV2 = functions
         console.log('✅ transaction logged');
       } catch (err) {
         console.error('❌ Subscription Firestore update failed', err);
+      }
+    } else if (intent.metadata?.type === 'token_purchase' && uid) {
+      const tokenAmount = parseInt((intent.metadata?.tokenAmount as string) || '0', 10);
+      console.log('🔢 tokenAmount from intent:', tokenAmount);
+      if (tokenAmount > 0) {
+        try {
+          console.log(`⬆️ Adding ${tokenAmount} tokens to ${uid}`);
+          await db.doc(`users/${uid}`).set(
+            {
+              tokenCount: admin.firestore.FieldValue.increment(tokenAmount),
+              lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
+            },
+            { merge: true },
+          );
+          console.log(`✅ Updated tokenCount for ${uid}`);
+          await db.doc(`users/${uid}/transactions/${intent.id}`).set(
+            {
+              amount: intent.amount,
+              tokenAmount,
+              type: 'token_purchase',
+              createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            },
+            { merge: true },
+          );
+          console.log('✅ transaction logged');
+        } catch (err) {
+          console.error('❌ Token purchase Firestore update failed', err);
+        }
+      } else {
+        console.warn('⚠️ Invalid tokenAmount in intent metadata', { intentId: intent.id });
       }
     } else if (uid) {
       try {

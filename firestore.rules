@@ -8,29 +8,10 @@ service cloud.firestore {
 
     // 🔐 User profile document
     match /users/{userId} {
-      // Users can always read and modify their own profile data
-      allow get, create, update: if isSignedIn() && request.auth.uid == userId;
+      allow read, write: if request.auth != null && request.auth.uid == userId;
 
-      /*
-       * Allow authenticated users to query the users collection for leaderboard
-       * purposes. Only simple ordering by individualPoints with a small limit
-       * is permitted to reduce exposure of profile data. This enables queries
-       * such as `.orderBy('individualPoints').limit(10)`.
-       */
-      allow list: if isSignedIn() &&
-                  request.query.orderBy.field == 'individualPoints' &&
-                  request.query.limit <= 50;
-
-      // Subcollection storing each user's active challenge session
-      match /activeChallenge/{docId} {
-        allow read, write: if isSignedIn() && request.auth.uid == userId;
-      }
-
-      // 💵 Payment transactions
       match /transactions/{transactionId} {
-        // Only the authenticated user can read and write their own
-        // transactions subcollection
-        allow read, write: if isSignedIn() && request.auth.uid == userId;
+        allow read, write: if request.auth != null && request.auth.uid == userId;
       }
     }
 
