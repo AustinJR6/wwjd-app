@@ -9,24 +9,19 @@ import {
 import Button from '@/components/common/Button';
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { useTheme } from "@/components/theme/theme";
-import { getTokenCount, setTokenCount } from "@/utils/TokenManager";
 import { showGracefulError } from '@/utils/gracefulError';
 import { ASK_GEMINI_SIMPLE, GENERATE_CHALLENGE_URL } from "@/utils/constants";
 import {
   getOrCreateActiveChallenge,
   updateActiveChallenge,
+  deleteDocument,
 } from '@/services/firestoreService';
-import { loadUserProfile, updateUserProfile, getUserAIPrompt, incrementUserPoints } from '@/utils/userProfile';
+import { loadUserProfile, updateUserProfile, getUserAIPrompt } from '@/utils/userProfile';
 import { canLoadNewChallenge } from '@/services/challengeLimitService';
 import { completeChallengeWithStreakCheck } from '@/services/challengeStreakService';
-import {
-  callFunction,
-  awardPointsToUser,
-  createMultiDayChallenge,
-  completeChallengeDay,
-} from '@/services/functionService';
+import { createMultiDayChallenge, completeChallengeDay } from '@/services/functionService';
 import { ensureAuth } from '@/utils/authGuard';
-import { getToken, getCurrentUserId } from '@/utils/TokenManager';
+import { getCurrentUserId, getTokenCount, setTokenCount } from '@/utils/TokenManager';
 import { useAuth } from '@/hooks/useAuth';
 import { sendGeminiPrompt } from '@/services/geminiService';
 import AuthGate from '@/components/AuthGate';
@@ -65,6 +60,7 @@ export default function ChallengeScreen() {
   const [canSkip, setCanSkip] = useState(true);
   const [streakCount, setStreakCount] = useState(0);
   const [lastCompletedDate, setLastCompletedDate] = useState<Date | null>(null);
+  const [showGenerateButton, setShowGenerateButton] = useState(false);
   const { authReady, uid } = useAuth();
 
   const checkMilestoneReward = async (current: number) => {
@@ -314,6 +310,7 @@ export default function ChallengeScreen() {
     }
   };
 
+
   const handleComplete = async () => {
     const uid = await ensureAuth(await getCurrentUserId());
 
@@ -331,95 +328,48 @@ export default function ChallengeScreen() {
       return;
     }
 
-    const userData: UserProfile | null = await loadUserProfile(uid);
-    const profile = userData ?? ({} as UserProfile);
-
-    const today = new Date().toISOString().slice(0, 10);
-    const historyArr = Array.isArray(profile.dailyChallengeHistory)
-      ? [...profile.dailyChallengeHistory]
-      : [];
-    let todayEntry = historyArr.find((h) => h.date === today);
-    if (!todayEntry) {
-      todayEntry = { date: today, completed: 0, skipped: 0 };
-      historyArr.push(todayEntry);
-    }
-
-    const limit = (profile?.isSubscribed ?? false) ? 3 : 1;
-    let useToken = false;
-    if (history.completed >= limit) {
-      const tokens = await getTokenCount();
-      if (tokens <= 0) {
-        Alert.alert('Daily Limit Reached', 'You\u2019ve completed all allowed challenges today.');
-        return;
-      }
-      const confirmed = await new Promise<boolean>((resolve) => {
-        Alert.alert(
-          'Use 1 Token to Continue?',
-          'You\u2019ve hit today\u2019s limit. Spend a token for another challenge?',
-          [
-            { text: 'Cancel', onPress: () => resolve(false), style: 'cancel' },
-            { text: 'Yes', onPress: () => resolve(true) },
-          ],
-        );
-      });
-      if (!confirmed) return;
-      await setTokenCount(tokens - 1);
-      useToken = true;
-    }
-
-    todayEntry.completed += 1;
-    await updateUserProfile({ dailyChallengeHistory: historyArr }, uid);
     try {
-      console.log('Current user:', await getCurrentUserId());
-      const cfToken = await getToken(true);
-      console.log('ID Token:', cfToken);
-      await callFunction('completeChallenge', { useToken });
-    } catch (err) {
-      console.error('Backend validation failed:', err);
-    }
+      const userData: UserProfile | null = await loadUserProfile(uid);
+      const profile = userData ?? ({} as UserProfile);
+      const now = new Date().toISOString();
 
-    const updated = await completeChallengeWithStreakCheck();
-    const todayStr = new Date().toISOString().split('T')[0];
-    const lastStr = lastCompletedDate
-      ? lastCompletedDate.toISOString().split('T')[0]
-      : null;
+      const newPoints = (profile.individualPoints ?? 0) + 1;
+      const newStreak = (profile.challengeStreak?.count ?? 0) + 1;
 
-    if (updated != null) {
-      if (updated > streakCount) {
-        await checkMilestoneReward(updated);
+      const recent = Array.isArray(profile.recentChallenges)
+        ? [...profile.recentChallenges]
+        : [];
+      if (challenge && challenge.trim()) {
+        recent.push({ text: challenge.trim(), timestamp: now });
       }
-      setStreakCount(updated);
-      setLastCompletedDate(new Date());
-    }
 
-    const currentTokens = await getTokenCount();
-    await setTokenCount(currentTokens + 1);
-
-    await incrementUserPoints(1, uid);
-
-    try {
-      await awardPointsToUser(1);
-    } catch (err: any) {
-      console.error('🔥 Backend error:', err.response?.data || err.message);
-    }
-
-    if (updated != null && updated === streakCount && lastStr === todayStr) {
-      Alert.alert(
-        'Challenge Already Completed',
-        "You've already completed your challenge for today. Come back tomorrow to continue your streak and grow even stronger."
+      await updateUserProfile(
+        {
+          individualPoints: newPoints,
+          challengeStreak: { count: newStreak, lastCompletedDate: now },
+          recentChallenges: recent,
+        },
+        uid,
       );
-    } else {
+
+      await deleteDocument(`users/${uid}/activeChallenge/current`);
+
+      setStreakCount(newStreak);
+      setLastCompletedDate(new Date());
+      setChallenge('');
+      setChallengeAccepted(false);
+      setShowGenerateButton(true);
       Alert.alert('Great job!', 'Challenge completed.');
+    } catch (err) {
+      console.error('Complete challenge error:', err);
+      showGracefulError();
     }
-    await updateActiveChallenge(uid, {
-      isComplete: true,
-      lastCompleted: new Date().toISOString(),
-      completedDays: [...(active.completedDays || []), active.currentDay],
-    });
-    const shouldGenerateNew = useToken || todayEntry.completed < limit;
-    fetchChallenge(shouldGenerateNew);
   };
 
+  const handleGenerateNewChallenge = () => {
+    setShowGenerateButton(false);
+    fetchChallenge(true);
+  };
   useEffect(() => {
     if (!authReady || !uid) return;
     loadChallengeStreak();
@@ -454,6 +404,11 @@ export default function ChallengeScreen() {
             <Button title="Complete Day" onPress={handleComplete} />
           ) : challengeAccepted ? (
             <Button title="Mark Completed" onPress={handleComplete} />
+          ) : showGenerateButton ? (
+            <Button
+              title="Generate New Challenge (costs 1 token)"
+              onPress={handleGenerateNewChallenge}
+            />
           ) : (
             <Button title="Accept Challenge" onPress={handleAcceptChallenge} />
           )}
