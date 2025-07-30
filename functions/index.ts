@@ -1370,13 +1370,14 @@ export const handleStripeWebhookV2 = functions
   }
   if (event?.type === 'checkout.session.completed') {
     const session = event.data?.object as Stripe.Checkout.Session;
-    const uid = session.client_reference_id as string | undefined;
+    const uid = (session.metadata?.uid as string | undefined) || (session.client_reference_id as string | undefined);
     console.log('📦 Session:', JSON.stringify(session, null, 2));
     if (!session.amount_total) {
       console.warn('⚠️ Missing amount_total in Stripe webhook payload', { sessionId: session.id });
     }
     console.log('🔍 UID:', uid);
     console.log('🔍 Mode:', session.mode);
+    console.log('💲 Amount:', session.amount_total);
     console.log('🔢 Tokens to add:', session.metadata?.tokens);
     if (!uid) {
       console.warn('⚠️ Missing uid in Stripe webhook payload');
@@ -1387,6 +1388,7 @@ export const handleStripeWebhookV2 = functions
           console.log('⬆️ Updating subscription docs for', uid);
           await db.doc(`subscriptions/${uid}`).set({ active: true }, { merge: true });
           console.log('✅ subscriptions doc updated');
+          console.log('📝 Updating user document for', uid);
           await db.doc(`users/${uid}`).set(
             {
               isSubscribed: true,
@@ -1395,14 +1397,12 @@ export const handleStripeWebhookV2 = functions
             },
             { merge: true },
           );
-          console.log('✅ users doc updated');
+          console.log('✅ User document updated for', uid);
 
+          console.log('💲 Recording transaction amount:', session.amount_total);
           await db.doc(`users/${uid}/transactions/${session.id}`).set(
             {
               amount: session.amount_total,
-              currency: session.currency,
-              stripeSessionId: session.id,
-              status: session.status,
               type: 'subscription',
               createdAt: admin.firestore.FieldValue.serverTimestamp(),
             },
@@ -1450,6 +1450,43 @@ export const handleStripeWebhookV2 = functions
       } catch (err) {
         console.error('❌ Failed to log Stripe session', err);
       }
+    }
+  } else if (event?.type === 'payment_intent.succeeded') {
+    const intent = event.data?.object as Stripe.PaymentIntent;
+    const uid = intent.metadata?.uid as string | undefined;
+    const mode = intent.metadata?.mode;
+    console.log('📦 PaymentIntent:', JSON.stringify(intent, null, 2));
+    console.log('🔍 UID:', uid);
+    console.log('🔍 Mode:', mode);
+    console.log('💲 Amount:', intent.amount);
+    if (mode === 'subscription' && uid) {
+      try {
+        console.log('📝 Updating user document for', uid);
+        await db.doc(`users/${uid}`).set(
+          {
+            isSubscribed: true,
+            subscribedAt: admin.firestore.FieldValue.serverTimestamp(),
+            lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
+          },
+          { merge: true },
+        );
+        console.log('✅ User document updated for', uid);
+
+        console.log('💲 Recording transaction amount:', intent.amount);
+        await db.doc(`users/${uid}/transactions/${intent.id}`).set(
+          {
+            amount: intent.amount,
+            type: 'subscription',
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          },
+          { merge: true },
+        );
+        console.log('✅ transaction logged');
+      } catch (err) {
+        console.error('❌ Subscription Firestore update failed', err);
+      }
+    } else {
+      console.log('ℹ️ PaymentIntent not for subscription or missing uid');
     }
   }
   res.status(200).send({ received: true });
