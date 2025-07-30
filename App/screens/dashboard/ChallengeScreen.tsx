@@ -24,11 +24,12 @@ import { canLoadNewChallenge } from '@/services/challengeLimitService';
 import { completeChallengeWithStreakCheck } from '@/services/challengeStreakService';
 import { createMultiDayChallenge, completeChallengeDay } from '@/services/functionService';
 import { ensureAuth } from '@/utils/authGuard';
-import { getCurrentUserId, getTokenCount, setTokenCount } from '@/utils/TokenManager';
+import { getCurrentUserId, getTokenCount, getToken, setTokenCount } from '@/utils/TokenManager';
 import { useAuth } from '@/hooks/useAuth';
 import { sendGeminiPrompt } from '@/services/geminiService';
 import AuthGate from '@/components/AuthGate';
 import { UserProfile } from '../../../types';
+
 
 const showToast = (msg: string) => {
   if (Platform.OS === 'android') {
