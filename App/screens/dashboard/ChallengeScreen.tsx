@@ -5,7 +5,10 @@ import {
   ActivityIndicator,
   StyleSheet,
   Alert,
-  ScrollView} from 'react-native';
+  ScrollView,
+  ToastAndroid,
+  Platform,
+} from 'react-native';
 import Button from '@/components/common/Button';
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { useTheme } from "@/components/theme/theme";
@@ -26,6 +29,14 @@ import { useAuth } from '@/hooks/useAuth';
 import { sendGeminiPrompt } from '@/services/geminiService';
 import AuthGate from '@/components/AuthGate';
 import { UserProfile } from '../../../types';
+
+const showToast = (msg: string) => {
+  if (Platform.OS === 'android') {
+    ToastAndroid.show(msg, ToastAndroid.SHORT);
+  } else {
+    Alert.alert(msg);
+  }
+};
 export default function ChallengeScreen() {
   const theme = useTheme();
   const styles = React.useMemo(
@@ -343,6 +354,7 @@ export default function ChallengeScreen() {
         recent.push({ text: challenge.trim(), timestamp: now });
       }
 
+      console.log('➡️ Completing challenge for', uid);
       await updateUserProfile(
         {
           individualPoints: newPoints,
@@ -351,22 +363,35 @@ export default function ChallengeScreen() {
         },
         uid,
       );
+      console.log('✅ Challenge profile update successful');
 
+      console.log('➡️ Clearing active challenge');
       await deleteDocument(`users/${uid}/activeChallenge/current`);
+      console.log('✅ Active challenge cleared');
 
       setStreakCount(newStreak);
       setLastCompletedDate(new Date());
       setChallenge('');
       setChallengeAccepted(false);
       setShowGenerateButton(true);
-      Alert.alert('Great job!', 'Challenge completed.');
+      showToast(
+        "\ud83c\udf89 You've completed today's challenge and earned 1 point! Keep it up, soul traveler."
+      );
     } catch (err) {
       console.error('Complete challenge error:', err);
       showGracefulError();
     }
   };
 
-  const handleGenerateNewChallenge = () => {
+  const handleGenerateNewChallenge = async () => {
+    const tokens = await getTokenCount();
+    console.log('➡️ Generating new challenge, tokens:', tokens);
+    if (tokens < 5) {
+      Alert.alert('Not enough tokens', 'You need 5 tokens to generate a new challenge.');
+      return;
+    }
+    await setTokenCount(tokens - 5);
+    console.log('🪙 5 tokens deducted for new challenge');
     setShowGenerateButton(false);
     fetchChallenge(true);
   };
@@ -406,7 +431,7 @@ export default function ChallengeScreen() {
             <Button title="Mark Completed" onPress={handleComplete} />
           ) : showGenerateButton ? (
             <Button
-              title="Generate New Challenge (costs 1 token)"
+              title="Generate New Challenge (cost: 5 tokens)"
               onPress={handleGenerateNewChallenge}
             />
           ) : (
