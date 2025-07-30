@@ -1467,6 +1467,7 @@ export const handleStripeWebhookV2 = functions
   try {
     event = stripe.webhooks.constructEvent(req.rawBody, sig, STRIPE_WEBHOOK_SECRET);
     console.log('✅ Stripe webhook validated:', event.type);
+    console.log('➡️ Event type:', event.type);
   } catch (err: any) {
     console.error('❌ Stripe signature validation failed:', err.message);
     res.status(400).send(`Webhook Error: ${err.message}`);
@@ -1510,8 +1511,7 @@ export const handleStripeWebhookV2 = functions
           await db.doc(`users/${uid}`).set(
             {
               isSubscribed: true,
-              subscribedAt: admin.firestore.FieldValue.serverTimestamp(),
-              lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
+              lastSubscriptionUpdate: new Date().toISOString(),
             },
             { merge: true },
           );
@@ -1545,7 +1545,7 @@ export const handleStripeWebhookV2 = functions
               {
                 tokens: admin.firestore.FieldValue.increment(amount),
                 tokenCount: admin.firestore.FieldValue.increment(amount),
-                lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
+                lastTokenUpdate: new Date().toISOString(),
               },
               { merge: true },
             );
@@ -1618,8 +1618,7 @@ export const handleStripeWebhookV2 = functions
         await db.doc(`users/${uid}`).set(
           {
             isSubscribed: true,
-            subscribedAt: admin.firestore.FieldValue.serverTimestamp(),
-            lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
+            lastSubscriptionUpdate: new Date().toISOString(),
           },
           { merge: true },
         );
@@ -1649,14 +1648,14 @@ export const handleStripeWebhookV2 = functions
       if (tokenAmount > 0) {
         try {
           console.log(`Updating user ${uid} after successful token_purchase purchase`);
-          await db.doc(`users/${uid}`).set(
-            {
-              tokens: admin.firestore.FieldValue.increment(tokenAmount),
-              tokenCount: admin.firestore.FieldValue.increment(tokenAmount),
-              lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
-            },
-            { merge: true },
-          );
+        await db.doc(`users/${uid}`).set(
+          {
+            tokens: admin.firestore.FieldValue.increment(tokenAmount),
+            tokenCount: admin.firestore.FieldValue.increment(tokenAmount),
+            lastTokenUpdate: new Date().toISOString(),
+          },
+          { merge: true },
+        );
           console.log('Firestore user update complete');
           console.log('📝 Recording transaction document for', uid);
           await db
@@ -1691,6 +1690,41 @@ export const handleStripeWebhookV2 = functions
       }
     } else {
       console.log('ℹ️ PaymentIntent missing uid');
+    }
+  } else if (event?.type === 'invoice.paid') {
+    const invoice = event.data?.object as Stripe.Invoice;
+    const customerId = invoice.customer as string | undefined;
+    console.log('🧾 Invoice paid for customer:', customerId);
+    if (!customerId) {
+      console.error('❌ Invoice missing customer ID');
+    } else {
+      const uid = await findUidByCustomer(customerId);
+      console.log('🔍 UID from customer lookup:', uid);
+      if (!uid) {
+        console.error('❌ No user found for customer', customerId);
+      } else {
+        try {
+          await db.doc(`users/${uid}`).set(
+            {
+              isSubscribed: true,
+              lastSubscriptionUpdate: new Date().toISOString(),
+            },
+            { merge: true },
+          );
+          console.log('✅ User subscription updated for', uid);
+          await db
+            .collection(`users/${uid}/transactions`)
+            .add({
+              amount: invoice.amount_paid,
+              invoiceId: invoice.id,
+              type: 'subscription',
+              createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            });
+          console.log('✅ invoice transaction logged');
+        } catch (err) {
+          console.error('❌ Firestore update error:', err);
+        }
+      }
     }
   }
   res.status(200).send({ received: true });
