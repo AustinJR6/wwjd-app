@@ -1370,18 +1370,24 @@ export const handleStripeWebhookV2 = functions
   }
   if (event?.type === 'checkout.session.completed') {
     const session = event.data?.object as Stripe.Checkout.Session;
-    const uid = (session.metadata?.uid as string | undefined) || (session.client_reference_id as string | undefined);
+    const uid = (session.metadata?.uid as string | undefined) ||
+      (session.client_reference_id as string | undefined);
     console.log('📦 Session:', JSON.stringify(session, null, 2));
     if (!session.amount_total) {
-      console.warn('⚠️ Missing amount_total in Stripe webhook payload', { sessionId: session.id });
+      console.warn('⚠️ Missing amount_total in Stripe webhook payload', {
+        sessionId: session.id,
+      });
     }
-    console.log('🔍 UID:', uid);
-    console.log('🔍 Mode:', session.mode);
-    console.log('💲 Amount:', session.amount_total);
-    console.log('🔢 Tokens to add:', session.metadata?.tokens);
     if (!uid) {
-      console.warn('⚠️ Missing uid in Stripe webhook payload');
+      console.error('❌ Unable to extract uid from session metadata', {
+        sessionId: session.id,
+        metadata: session.metadata,
+      });
     } else {
+      console.log('🔍 UID extracted from session:', uid);
+      console.log('🔍 Mode:', session.mode);
+      console.log('💲 Amount:', session.amount_total);
+      console.log('🔢 Tokens to add:', session.metadata?.tokens);
       console.log('✅ Stripe checkout completed for', uid);
       if (session.mode === 'subscription') {
         try {
@@ -1456,7 +1462,14 @@ export const handleStripeWebhookV2 = functions
     const uid = intent.metadata?.uid as string | undefined;
     const mode = intent.metadata?.mode;
     console.log('📦 PaymentIntent:', JSON.stringify(intent, null, 2));
-    console.log('🔍 UID:', uid);
+    if (!uid) {
+      console.error('❌ Unable to extract uid from PaymentIntent metadata', {
+        intentId: intent.id,
+        metadata: intent.metadata,
+      });
+    } else {
+      console.log('🔍 UID extracted from intent:', uid);
+    }
     console.log('🔍 Mode:', mode);
     console.log('💲 Amount:', intent.amount);
     if (mode === 'subscription' && uid) {
@@ -1485,8 +1498,23 @@ export const handleStripeWebhookV2 = functions
       } catch (err) {
         console.error('❌ Subscription Firestore update failed', err);
       }
+    } else if (uid) {
+      try {
+        console.log('📝 Logging one-time payment for', uid);
+        await db.doc(`users/${uid}/transactions/${intent.id}`).set(
+          {
+            amount: intent.amount,
+            type: 'one-time',
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          },
+          { merge: true },
+        );
+        console.log('✅ transaction logged');
+      } catch (err) {
+        console.error('❌ One-time payment Firestore update failed', err);
+      }
     } else {
-      console.log('ℹ️ PaymentIntent not for subscription or missing uid');
+      console.log('ℹ️ PaymentIntent missing uid');
     }
   }
   res.status(200).send({ received: true });
