@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { STRIPE_CHECKOUT_URL, TOKEN_CHECKOUT_URL, SUBSCRIPTION_CHECKOUT_URL } from '@/config/apiConfig';
+import { STRIPE_CHECKOUT_URL, TOKEN_CHECKOUT_URL, SUBSCRIPTION_CHECKOUT_URL, CHECKOUT_SESSION_URL } from '@/config/apiConfig';
 import { STRIPE_SUCCESS_URL, STRIPE_CANCEL_URL } from '@/config/stripeConfig';
 import { getAuthHeaders } from '@/utils/authUtils';
 import { sendRequestWithGusBugLogging } from '@/utils/gusBugLogger';
@@ -108,6 +108,54 @@ export async function startTokenCheckout(uid: string, priceId: string): Promise<
     return url;
   } catch (err: any) {
     console.warn('❌ Firestore REST error on startTokenCheckout:', err?.message || err);
+    throw new Error(err?.message || 'Unable to start checkout.');
+  }
+}
+
+export async function createCheckoutSession(
+  uid: string,
+  priceId: string,
+  tokenAmount: number,
+): Promise<string> {
+  if (
+    typeof uid !== 'string' || !uid.trim() ||
+    typeof priceId !== 'string' || !priceId.trim() ||
+    typeof tokenAmount !== 'number' || tokenAmount <= 0
+  ) {
+    console.warn('Missing fields for createCheckoutSession', { uid, priceId, tokenAmount });
+    throw new Error('Invalid input');
+  }
+
+  let headers;
+  try {
+    headers = await getAuthHeaders();
+  } catch {
+    logTokenIssue('createCheckoutSession');
+    throw new Error('Missing auth token');
+  }
+
+  try {
+    const payload = { uid, priceId, tokenAmount };
+    const res = await sendRequestWithGusBugLogging(() =>
+      fetch(CHECKOUT_SESSION_URL, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(payload),
+      })
+    );
+    const text = await res.text();
+    if (!res.ok) {
+      console.warn('❌ createCheckoutSession error:', text);
+      if (res.status === 403) {
+        showPermissionDenied();
+        throw new Error('Permission denied');
+      }
+      throw new Error('Unable to start checkout.');
+    }
+    const data: StripeCheckoutResponse = JSON.parse(text);
+    return data.url;
+  } catch (err: any) {
+    console.warn('❌ createCheckoutSession failed:', err?.message || err);
     throw new Error(err?.message || 'Unable to start checkout.');
   }
 }
