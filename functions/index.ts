@@ -1454,281 +1454,136 @@ export const createStripeCheckout = functions
   }
 }));
 
-export const handleStripeWebhookV2 = functions
-  .https.onRequest(async (req: RawBodyRequest, res: Response) => {
-  console.log('💰 Gus Bug Webhook triggered. No auth needed!');
-  const sig = req.headers['stripe-signature'] as string | undefined;
-  if (!sig) {
-    console.error('❌ Missing Stripe signature header');
-    res.status(400).send('Signature required');
-    return;
-  }
-  let event: Stripe.Event;
-  try {
-    event = stripe.webhooks.constructEvent(req.rawBody, sig, STRIPE_WEBHOOK_SECRET);
-    console.log('✅ Stripe webhook validated:', event.type);
-    console.log('➡️ Event type:', event.type);
-  } catch (err: any) {
-    console.error('❌ Stripe signature validation failed:', err.message);
-    res.status(400).send(`Webhook Error: ${err.message}`);
-    return;
+export const handleStripeWebhookV2 = functions.https.onRequest(
+  async (req: RawBodyRequest, res: Response) => {
+    const sig = req.headers['stripe-signature'] as string | undefined;
+    if (!sig) {
+      res.status(400).send('Signature required');
+      return;
+    }
 
-  }
-  if (event?.type === 'checkout.session.completed') {
-    const session = event.data?.object as Stripe.Checkout.Session;
-    let uid = session.metadata?.uid as string | undefined;
-    if (!uid && session.customer) {
-      uid = (await findUidByCustomer(session.customer as string)) || undefined;
-      console.log('🔍 UID from customer lookup:', uid);
+    let event: Stripe.Event;
+    try {
+      event = stripe.webhooks.constructEvent(
+        req.rawBody,
+        sig,
+        STRIPE_WEBHOOK_SECRET,
+      );
+    } catch (err: any) {
+      console.error('Webhook signature verification failed', err.message);
+      res.status(400).send(`Webhook Error: ${err.message}`);
+      return;
     }
-    if (!uid) {
-      uid = session.client_reference_id as string | undefined;
+
+    async function logTransaction(
+      uid: string,
+      data: Record<string, any>,
+    ) {
+      await db
+        .collection(`users/${uid}/transactions`)
+        .add({
+          ...data,
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
     }
-    const type = session.metadata?.type as string | undefined;
-    console.log('📦 Session:', JSON.stringify(session, null, 2));
-    if (!session.amount_total) {
-      console.warn('⚠️ Missing amount_total in Stripe webhook payload', {
-        sessionId: session.id,
-      });
-    }
-    if (!uid) {
-      console.error('❌ Unable to determine uid for session', {
-        sessionId: session.id,
-        metadata: session.metadata,
-      });
-    } else {
-      console.log('🔍 UID extracted from session:', uid);
-      console.log('🔍 Mode:', session.mode);
-      console.log('💲 Amount:', session.amount_total);
-      console.log('🔢 Metadata tokenAmount:', session.metadata?.tokenAmount);
-      console.log('📑 Metadata type:', session.metadata?.type);
-      console.log('✅ Stripe checkout completed for', uid);
-      if (type === 'subscription' || session.mode === 'subscription') {
-        try {
-          console.log(`Updating user ${uid} after successful subscription purchase`);
-          await db.doc(`subscriptions/${uid}`).set({ active: true }, { merge: true });
-          console.log('✅ subscriptions doc updated');
+
+    switch (event.type) {
+      case 'checkout.session.completed': {
+        const session = event.data.object as Stripe.Checkout.Session;
+        let uid = (session.metadata?.uid as string) || undefined;
+        if (!uid) {
+          uid = (session.client_reference_id as string) || undefined;
+        }
+        if (!uid && session.customer) {
+          uid = (await findUidByCustomer(session.customer as string)) || undefined;
+        }
+        if (!uid) break;
+
+        const purchaseType =
+          (session.metadata?.type as string) || session.mode || '';
+        const amount = session.amount_total || 0;
+
+        if (purchaseType === 'subscription' || session.mode === 'subscription') {
           await db.doc(`users/${uid}`).set(
-            {
-              isSubscribed: true,
-              lastSubscriptionUpdate: new Date().toISOString(),
-            },
+            { isSubscribed: true },
             { merge: true },
           );
-          console.log('Firestore user update complete');
-
-          console.log('💲 Recording transaction amount:', session.amount_total);
-          console.log('📝 Recording transaction document for', uid);
-          await db
-            .collection(`users/${uid}/transactions`)
-            .add({
-              amount: session.amount_total,
-              type: 'subscription',
-              createdAt: admin.firestore.FieldValue.serverTimestamp(),
-            });
-          console.log('✅ transaction logged');
-        } catch (err) {
-          console.error('❌ Firestore update error:', err);
-        }
-      } else if (type === 'token_purchase' || type === 'tokens') {
-        const amount = parseInt(
-          (session.metadata?.tokens as string) ||
-            (session.metadata?.tokenAmount as string) ||
-            '0',
-          10,
-        );
-        console.log('🔢 Tokens to add parsed:', amount);
-        if (amount > 0) {
-          try {
-            console.log(`Updating user ${uid} after successful token_purchase purchase`);
+          await logTransaction(uid, { amount, type: 'subscription' });
+        } else if (purchaseType === 'token_purchase' || purchaseType === 'tokens') {
+          const tokens = parseInt(
+            (session.metadata?.tokens as string) || '0',
+            10,
+          );
+          if (tokens > 0) {
             await db.doc(`users/${uid}`).set(
               {
-                tokens: admin.firestore.FieldValue.increment(amount),
-                tokenCount: admin.firestore.FieldValue.increment(amount),
-                lastTokenUpdate: new Date().toISOString(),
+                tokens: admin.firestore.FieldValue.increment(tokens),
               },
               { merge: true },
             );
-            console.log('Firestore user update complete');
-            console.log('📝 Recording transaction document for', uid);
-            await db
-              .collection(`users/${uid}/transactions`)
-              .add({
-                amount: session.amount_total,
-                tokenAmount: amount,
-                type: 'tokens',
-                createdAt: admin.firestore.FieldValue.serverTimestamp(),
-              });
-            console.log('✅ transaction logged');
-          } catch (err) {
-            console.error('❌ Firestore update error:', err);
+            await logTransaction(uid, { amount, type: 'tokens' });
           }
-        } else {
-          console.warn('⚠️ No token amount in metadata', { sessionId: session.id });
         }
+        break;
       }
-      try {
-        console.log('📝 Logging payment session');
-        const paymentData: Record<string, any> = {
-          mode: session.mode,
-          status: 'completed',
-          created: admin.firestore.FieldValue.serverTimestamp(),
-        };
-        if (session.metadata?.type) {
-          paymentData.type = session.metadata.type;
-        } else {
-          console.warn('⚠️ Missing session metadata type', { sessionId: session.id });
+      case 'payment_intent.succeeded': {
+        const intent = event.data.object as Stripe.PaymentIntent;
+        let uid = (intent.metadata?.uid as string) || undefined;
+        if (!uid && intent.customer) {
+          uid = (await findUidByCustomer(intent.customer as string)) || undefined;
         }
-        const parsedAmount = session.mode === 'payment'
-          ? parseInt((session.metadata?.tokenAmount as string) || '0', 10)
-          : undefined;
-        if (parsedAmount !== undefined) {
-          paymentData.amount = parsedAmount;
-        } else if (session.mode === 'payment') {
-          console.warn('⚠️ Missing token amount in metadata', { sessionId: session.id });
-        }
-        await db.doc(`users/${uid}/payments/${session.id}`).set(paymentData, { merge: true });
-        console.log('✅ Payment session logged');
-      } catch (err) {
-        console.error('❌ Failed to log Stripe session', err);
-      }
-    }
-  } else if (event?.type === 'payment_intent.succeeded') {
-    const intent = event.data?.object as Stripe.PaymentIntent;
-    let uid = intent.metadata?.uid as string | undefined;
-    if (!uid && intent.customer) {
-      uid = (await findUidByCustomer(intent.customer as string)) || undefined;
-      console.log('🔍 UID from customer lookup:', uid);
-    }
-    const typeIntent = intent.metadata?.type as string | undefined;
-    console.log('📦 PaymentIntent:', JSON.stringify(intent, null, 2));
-    if (!uid) {
-      console.error('❌ Unable to extract uid from PaymentIntent metadata', {
-        intentId: intent.id,
-        metadata: intent.metadata,
-      });
-    } else {
-      console.log('🔍 UID extracted from intent:', uid);
-    }
-    console.log('🔍 Type:', typeIntent);
-    console.log('💲 Amount:', intent.amount);
-    if (typeIntent === 'subscription' && uid) {
-      try {
-        console.log(`Updating user ${uid} after successful subscription purchase`);
-        await db.doc(`users/${uid}`).set(
-          {
-            isSubscribed: true,
-            lastSubscriptionUpdate: new Date().toISOString(),
-          },
-          { merge: true },
-        );
-        console.log('Firestore user update complete');
+        if (!uid) break;
 
-        console.log('💲 Recording transaction amount:', intent.amount);
-        console.log('📝 Recording transaction document for', uid);
-        await db
-          .collection(`users/${uid}/transactions`)
-          .add({
-            amount: intent.amount,
-            type: 'subscription',
-            createdAt: admin.firestore.FieldValue.serverTimestamp(),
-          });
-        console.log('✅ transaction logged');
-      } catch (err) {
-        console.error('❌ Firestore update error:', err);
-      }
-    } else if (typeIntent === 'token_purchase' || typeIntent === 'tokens') {
-      const tokenAmount = parseInt(
-        (intent.metadata?.tokens as string) ||
-          (intent.metadata?.tokenAmount as string) ||
-          '0',
-        10,
-      );
-      console.log('🔢 tokenAmount from intent:', tokenAmount);
-      if (tokenAmount > 0) {
-        try {
-          console.log(`Updating user ${uid} after successful token_purchase purchase`);
-        await db.doc(`users/${uid}`).set(
-          {
-            tokens: admin.firestore.FieldValue.increment(tokenAmount),
-            tokenCount: admin.firestore.FieldValue.increment(tokenAmount),
-            lastTokenUpdate: new Date().toISOString(),
-          },
-          { merge: true },
-        );
-          console.log('Firestore user update complete');
-          console.log('📝 Recording transaction document for', uid);
-          await db
-            .collection(`users/${uid}/transactions`)
-            .add({
-              amount: intent.amount,
-              tokenAmount,
-              type: 'tokens',
-              createdAt: admin.firestore.FieldValue.serverTimestamp(),
-            });
-          console.log('✅ transaction logged');
-        } catch (err) {
-          console.error('❌ Firestore update error:', err);
-        }
-      } else {
-        console.warn('⚠️ Invalid tokenAmount in intent metadata', { intentId: intent.id });
-      }
-    } else if (uid) {
-      try {
-        console.log('📝 Logging one-time payment for', uid);
-        console.log('📝 Recording transaction document for', uid);
-        await db
-          .collection(`users/${uid}/transactions`)
-          .add({
-            amount: intent.amount,
-            type: 'one-time',
-            createdAt: admin.firestore.FieldValue.serverTimestamp(),
-          });
-        console.log('✅ transaction logged');
-      } catch (err) {
-        console.error('❌ Firestore update error:', err);
-      }
-    } else {
-      console.log('ℹ️ PaymentIntent missing uid');
-    }
-  } else if (event?.type === 'invoice.paid') {
-    const invoice = event.data?.object as Stripe.Invoice;
-    const customerId = invoice.customer as string | undefined;
-    console.log('🧾 Invoice paid for customer:', customerId);
-    if (!customerId) {
-      console.error('❌ Invoice missing customer ID');
-    } else {
-      const uid = await findUidByCustomer(customerId);
-      console.log('🔍 UID from customer lookup:', uid);
-      if (!uid) {
-        console.error('❌ No user found for customer', customerId);
-      } else {
-        try {
+        const purchaseType = intent.metadata?.type as string | undefined;
+        const amount = intent.amount;
+
+        if (purchaseType === 'subscription') {
           await db.doc(`users/${uid}`).set(
-            {
-              isSubscribed: true,
-              lastSubscriptionUpdate: new Date().toISOString(),
-            },
+            { isSubscribed: true },
             { merge: true },
           );
-          console.log('✅ User subscription updated for', uid);
-          await db
-            .collection(`users/${uid}/transactions`)
-            .add({
-              amount: invoice.amount_paid,
-              invoiceId: invoice.id,
-              type: 'subscription',
-              createdAt: admin.firestore.FieldValue.serverTimestamp(),
-            });
-          console.log('✅ invoice transaction logged');
-        } catch (err) {
-          console.error('❌ Firestore update error:', err);
+          await logTransaction(uid, { amount, type: 'subscription' });
+        } else if (purchaseType === 'token_purchase' || purchaseType === 'tokens') {
+          const tokens = parseInt(
+            (intent.metadata?.tokens as string) || '0',
+            10,
+          );
+          if (tokens > 0) {
+            await db.doc(`users/${uid}`).set(
+              {
+                tokens: admin.firestore.FieldValue.increment(tokens),
+              },
+              { merge: true },
+            );
+            await logTransaction(uid, { amount, type: 'tokens' });
+          }
         }
+        break;
       }
+      case 'invoice.paid': {
+        const invoice = event.data.object as Stripe.Invoice;
+        const customerId = invoice.customer as string | undefined;
+        if (!customerId) break;
+        const uid = (await findUidByCustomer(customerId)) || undefined;
+        if (!uid) break;
+
+        await db.doc(`users/${uid}`).set(
+          { isSubscribed: true },
+          { merge: true },
+        );
+        await logTransaction(uid, {
+          amount: invoice.amount_paid,
+          type: 'subscription',
+        });
+        break;
+      }
+      default:
+        console.log(`Unhandled event type ${event.type}`);
     }
-  }
-  res.status(200).send({ received: true });
-});
+
+    res.status(200).send({ received: true });
+  },
+);
 
 export const updateStreakAndXP = functions
   .https.onRequest(
