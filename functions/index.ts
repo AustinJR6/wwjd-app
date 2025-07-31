@@ -40,6 +40,7 @@ if (!GEMINI_API_KEY) {
 const LOGGING_MODE = process.env.LOGGING_MODE || "gusbug";
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || "";
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || "";
+const STRIPE_PUBLISHABLE_KEY = process.env.STRIPE_PUBLISHABLE_KEY || "";
 const APP_BASE_URL =
   process.env.APP_BASE_URL ||
   process.env.FRONTEND_URL ||
@@ -2220,6 +2221,73 @@ export const finalizePaymentIntent = functions.https.onRequest(
       res.status(500).json({ error: err?.message || 'Failed to finalize payment' });
     }
   })
+);
+
+export const createTokenPurchaseSheet = functions.https.onCall(
+  async (data: any, context: functions.https.CallableContext) => {
+    if (!context.auth) {
+      throw new functions.https.HttpsError('unauthenticated', 'Authentication required');
+    }
+
+    const amount = Number(data?.amount);
+    const uid = data?.uid;
+
+    if (!uid || uid !== context.auth.uid) {
+      throw new functions.https.HttpsError('permission-denied', 'UID mismatch');
+    }
+
+    if (![5, 20].includes(amount)) {
+      throw new functions.https.HttpsError('invalid-argument', 'amount must be 5 or 20');
+    }
+
+    const stripeSecret = functions.config().stripe?.secret || STRIPE_SECRET_KEY;
+    if (!stripeSecret) {
+      throw new functions.https.HttpsError('internal', 'Stripe not configured');
+    }
+
+    const publishableKey =
+      functions.config().stripe?.publishable || STRIPE_PUBLISHABLE_KEY;
+
+    const stripeClient = new Stripe(stripeSecret, { apiVersion: '2023-10-16' } as any);
+
+    let customerId: string;
+    const userRef = db.collection('users').doc(uid);
+    const snap = await userRef.get();
+    customerId = (snap.data() as any)?.stripeCustomerId;
+
+    if (!customerId) {
+      const userRecord = await auth.getUser(uid);
+      const customer = await stripeClient.customers.create({
+        email: userRecord.email ?? undefined,
+        metadata: { uid },
+      });
+      customerId = customer.id;
+      await userRef.set({ stripeCustomerId: customerId }, { merge: true });
+    }
+
+    const ephemeralKey = await stripeClient.ephemeralKeys.create(
+      { customer: customerId },
+      { apiVersion: '2023-10-16' }
+    );
+
+    const intent = await stripeClient.paymentIntents.create({
+      amount: Math.round(amount * 100),
+      currency: 'usd',
+      customer: customerId,
+      metadata: {
+        uid,
+        tokens: amount,
+      },
+      automatic_payment_methods: { enabled: true },
+    });
+
+    return {
+      paymentIntent: intent.client_secret,
+      ephemeralKey: ephemeralKey.secret,
+      customer: customerId,
+      publishableKey,
+    };
+  }
 );
 
 export { onCompletedChallengeCreate } from './firestoreArchitecture';
