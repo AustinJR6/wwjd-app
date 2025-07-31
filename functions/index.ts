@@ -2290,5 +2290,57 @@ export const createTokenPurchaseSheet = functions.https.onCall(
   }
 );
 
+export const createSubscriptionSession = functions.https.onCall(
+  async (data: any, context: functions.https.CallableContext) => {
+    if (!context.auth) {
+      throw new functions.https.HttpsError('unauthenticated', 'Authentication required');
+    }
+
+    const uid: string | undefined = data?.uid;
+    if (!uid || uid !== context.auth.uid) {
+      throw new functions.https.HttpsError('permission-denied', 'UID mismatch');
+    }
+
+    const stripeSecret = functions.config().stripe?.secret || STRIPE_SECRET_KEY;
+    if (!stripeSecret) {
+      throw new functions.https.HttpsError('internal', 'Stripe not configured');
+    }
+
+    const subscriptionPriceId =
+      functions.config().stripe?.sub_price_id || process.env.STRIPE_SUB_PRICE_ID;
+    if (!subscriptionPriceId) {
+      throw new functions.https.HttpsError('internal', 'Subscription price not configured');
+    }
+
+    const stripeClient = new Stripe(stripeSecret, { apiVersion: '2023-10-16' } as any);
+
+    const userRef = db.collection('users').doc(uid);
+    const snap = await userRef.get();
+    let customerId = (snap.data() as any)?.stripeCustomerId as string | undefined;
+
+    if (!customerId) {
+      const userRecord = await auth.getUser(uid);
+      const customer = await stripeClient.customers.create({
+        email: userRecord.email ?? undefined,
+        metadata: { uid },
+      });
+      customerId = customer.id;
+      await userRef.set({ stripeCustomerId: customerId }, { merge: true });
+    }
+
+    const session = await stripeClient.checkout.sessions.create({
+      mode: 'subscription',
+      line_items: [{ price: subscriptionPriceId, quantity: 1 }],
+      success_url: STRIPE_SUCCESS_URL,
+      cancel_url: STRIPE_CANCEL_URL,
+      client_reference_id: uid,
+      customer: customerId,
+      metadata: { uid, type: 'subscription' },
+    });
+
+    return { sessionId: session.id, url: session.url };
+  }
+);
+
 export { onCompletedChallengeCreate } from './firestoreArchitecture';
 export * from './stripeWebhooks';
