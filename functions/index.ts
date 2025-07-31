@@ -2223,3 +2223,4 @@ export const finalizePaymentIntent = functions.https.onRequest(
 );
 
 export { onCompletedChallengeCreate } from './firestoreArchitecture';
+export * from './stripeWebhooks';
