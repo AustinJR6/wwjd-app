@@ -48,12 +48,12 @@ export function useStripeCheckout() {
     }
   }
 
-  async function startSubscription(uid: string, priceId: string) {
+  async function startOneVinePlusCheckout(uid: string) {
     try {
-      const callable = httpsCallable(getFunctions(), 'createCheckoutSession');
-      const res = await callable({ priceId, uid });
+      const callable = httpsCallable(getFunctions(), 'createSubscriptionSession');
+      const res = await callable({ uid });
       const data = res.data as any;
-      const url = data?.url || data?.checkoutUrl;
+      const url = data?.url;
       if (!url) {
         throw new Error('Missing checkout URL');
       }
@@ -73,7 +73,7 @@ export function useStripeCheckout() {
     await webBrowser.openBrowserAsync(url);
   }
 
-  return { purchaseTokens, startSubscription };
+  return { purchaseTokens, startOneVinePlusCheckout };
 }
 
 export default useStripeCheckout;
