@@ -5,10 +5,28 @@ import Stripe from 'stripe';
 import { RawBodyRequest } from './types';
 import { db } from './firebase';
 
-const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || '';
-const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || '';
+const STRIPE_SECRET_KEY =
+  functions.config().stripe?.secret || process.env.STRIPE_SECRET_KEY || '';
+const STRIPE_WEBHOOK_SECRET =
+  functions.config().stripe.webhook_secret || process.env.STRIPE_WEBHOOK_SECRET || '';
 
 const stripe = new Stripe(STRIPE_SECRET_KEY, { apiVersion: '2023-10-16' } as any);
+
+async function logTransaction(
+  uid: string,
+  amount: number,
+  eventType: string,
+) {
+  try {
+    await db.collection(`users/${uid}/transactions`).add({
+      amount,
+      eventType,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+  } catch (err) {
+    functions.logger.error('Failed to log transaction', err);
+  }
+}
 
 function verifyEvent(req: RawBodyRequest, res: Response): Stripe.Event | null {
   const sig = req.headers['stripe-signature'] as string | undefined;
@@ -37,6 +55,8 @@ async function handleSubscriptionSuccess(session: Stripe.Checkout.Session) {
   const uid = getUidFromSession(session);
   if (!uid) return;
   await db.doc(`users/${uid}`).set({ isSubscribed: true }, { merge: true });
+  const amount = session.amount_total || 0;
+  await logTransaction(uid, amount, 'subscription');
 }
 
 async function handleTokenPurchase(session: Stripe.Checkout.Session) {
@@ -47,6 +67,8 @@ async function handleTokenPurchase(session: Stripe.Checkout.Session) {
     { tokens: admin.firestore.FieldValue.increment(tokens) },
     { merge: true },
   );
+  const amount = session.amount_total || 0;
+  await logTransaction(uid, amount, 'token_purchase');
 }
 
 async function handleDonation(session: Stripe.Checkout.Session) {
@@ -57,6 +79,7 @@ async function handleDonation(session: Stripe.Checkout.Session) {
     amount,
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
   });
+  await logTransaction(uid, amount, 'donation');
 }
 
 async function handleSubscriptionUpdate(sub: Stripe.Subscription) {
@@ -76,32 +99,36 @@ export const handleStripeWebhookV2 = functions.https.onRequest(
   async (req: RawBodyRequest, res: Response) => {
     const event = verifyEvent(req, res);
     if (!event) return;
-
-    switch (event.type) {
-      case 'checkout.session.completed': {
-        const session = event.data.object as Stripe.Checkout.Session;
-        if (session.mode === 'subscription') {
-          await handleSubscriptionSuccess(session);
-        } else if (session.mode === 'payment') {
-          const type = session.metadata?.type;
-          if (type === 'token_purchase') {
-            await handleTokenPurchase(session);
-          } else if (type === 'donation') {
-            await handleDonation(session);
+    try {
+      switch (event.type) {
+        case 'checkout.session.completed': {
+          const session = event.data.object as Stripe.Checkout.Session;
+          if (session.mode === 'subscription') {
+            await handleSubscriptionSuccess(session);
+          } else if (session.mode === 'payment') {
+            const type = session.metadata?.type;
+            if (type === 'token_purchase') {
+              await handleTokenPurchase(session);
+            } else if (type === 'donation') {
+              await handleDonation(session);
+            }
           }
+          break;
         }
-        break;
+        case 'customer.subscription.updated':
+          await handleSubscriptionUpdate(event.data.object as Stripe.Subscription);
+          break;
+        case 'customer.subscription.deleted':
+          await handleSubscriptionCancel(event.data.object as Stripe.Subscription);
+          break;
+        default:
+          functions.logger.info('Unhandled event type', event.type);
       }
-      case 'customer.subscription.updated':
-        await handleSubscriptionUpdate(event.data.object as Stripe.Subscription);
-        break;
-      case 'customer.subscription.deleted':
-        await handleSubscriptionCancel(event.data.object as Stripe.Subscription);
-        break;
-      default:
-        functions.logger.info('Unhandled event type', event.type);
-    }
 
-    res.status(200).json({ received: true });
+      res.status(200).json({ received: true });
+    } catch (err) {
+      functions.logger.error('Webhook handling failed', err);
+      res.status(500).json({ error: 'Internal webhook error' });
+    }
   },
 );
