@@ -49,9 +49,19 @@ const STRIPE_SUCCESS_URL =
   process.env.STRIPE_SUCCESS_URL ||
   `${APP_BASE_URL}/stripe-success?session_id={CHECKOUT_SESSION_ID}`;
 const STRIPE_CANCEL_URL = process.env.STRIPE_CANCEL_URL || "https://example.com/cancel";
-const STRIPE_20_TOKEN_PRICE_ID = process.env.STRIPE_20_TOKEN_PRICE_ID || "";
-const STRIPE_50_TOKEN_PRICE_ID = process.env.STRIPE_50_TOKEN_PRICE_ID || "";
-const STRIPE_100_TOKEN_PRICE_ID = process.env.STRIPE_100_TOKEN_PRICE_ID || "";
+function cleanPriceId(raw: string): string {
+  return raw.split('#')[0].trim();
+}
+
+const STRIPE_20_TOKEN_PRICE_ID = cleanPriceId(
+  process.env.STRIPE_20_TOKEN_PRICE_ID || ''
+);
+const STRIPE_50_TOKEN_PRICE_ID = cleanPriceId(
+  process.env.STRIPE_50_TOKEN_PRICE_ID || ''
+);
+const STRIPE_100_TOKEN_PRICE_ID = cleanPriceId(
+  process.env.STRIPE_100_TOKEN_PRICE_ID || ''
+);
 
 function getTokensFromPriceId(priceId: string): number | null {
   if (priceId === STRIPE_20_TOKEN_PRICE_ID) return 20;
@@ -1014,6 +1024,7 @@ export const startSubscriptionCheckout = functions
     res.status(400).json({ error: "Missing uid or priceId" });
     return;
   }
+  const cleanId = cleanPriceId(priceId);
 
   let authData: { uid: string; token: string };
   try {
@@ -1036,7 +1047,7 @@ export const startSubscriptionCheckout = functions
     }
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
-      line_items: [{ price: priceId, quantity: 1 }],
+      line_items: [{ price: cleanId, quantity: 1 }],
       success_url: STRIPE_SUCCESS_URL,
       cancel_url: STRIPE_CANCEL_URL,
       client_reference_id: uid,
@@ -1072,6 +1083,7 @@ export const startOneTimeTokenCheckout = functions
     res.status(400).json({ error: "Missing required fields" });
     return;
   }
+  const cleanId = cleanPriceId(priceId);
 
   let authData: { uid: string; token: string };
   try {
@@ -1092,12 +1104,12 @@ export const startOneTimeTokenCheckout = functions
     if (authData.uid !== userId) {
       logger.warn("⚠️ UID mismatch between token and payload");
     }
-    const tokens = getTokensFromPriceId(priceId);
+    const tokens = getTokensFromPriceId(cleanId);
     const metadata: Record<string, string> = { uid: userId, type: "tokens" };
     if (tokens) metadata.tokens = String(tokens);
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
-      line_items: [{ price: priceId, quantity: 1 }],
+      line_items: [{ price: cleanId, quantity: 1 }],
       success_url,
       cancel_url,
       client_reference_id: userId,
@@ -1122,6 +1134,7 @@ export const startTokenCheckout = functions
     res.status(400).json({ error: "Missing uid or priceId" });
     return;
   }
+  const cleanId = cleanPriceId(priceId);
 
   let authData: { uid: string; token: string };
   try {
@@ -1142,12 +1155,12 @@ export const startTokenCheckout = functions
     if (authData.uid !== uid) {
       logger.warn("⚠️ UID mismatch between token and payload");
     }
-    const tokens = getTokensFromPriceId(priceId);
+    const tokens = getTokensFromPriceId(cleanId);
     const metadata: Record<string, string> = { uid, type: "tokens" };
     if (tokens) metadata.tokens = String(tokens);
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
-      line_items: [{ price: priceId, quantity: 1 }],
+      line_items: [{ price: cleanId, quantity: 1 }],
       success_url: STRIPE_SUCCESS_URL,
       cancel_url: STRIPE_CANCEL_URL,
       client_reference_id: uid,
@@ -1173,6 +1186,7 @@ export const createCheckoutSession = functions
       res.status(400).json({ error: 'Missing required fields' });
       return;
     }
+    const cleanId = cleanPriceId(priceId);
 
     if (mode === 'payment' && (typeof tokenAmount !== 'number' || tokenAmount <= 0)) {
       logger.warn('⚠️ Missing tokenAmount for payment mode', { tokenAmount });
@@ -1212,7 +1226,7 @@ export const createCheckoutSession = functions
       );
 
       if (mode === 'payment') {
-        const price = await stripeClient.prices.retrieve(priceId);
+        const price = await stripeClient.prices.retrieve(cleanId);
         const amount = price.unit_amount;
         if (!amount) {
           res.status(400).json({ error: 'Unable to resolve price amount' });
@@ -1240,7 +1254,7 @@ export const createCheckoutSession = functions
       } else {
         const session = await stripeClient.checkout.sessions.create({
           mode,
-          line_items: [{ price: priceId, quantity: 1 }],
+          line_items: [{ price: cleanId, quantity: 1 }],
           success_url: 'onevine://checkout-success',
           cancel_url: 'onevine://checkout-cancel',
           metadata: {
@@ -1333,6 +1347,7 @@ export const startCheckoutSession = functions
     res.status(400).json({ error: "Missing required fields" });
     return;
   }
+  const cleanId = cleanPriceId(priceId);
 
   let authData: { uid: string; token: string };
   try {
@@ -1353,12 +1368,12 @@ export const startCheckoutSession = functions
     if (authData.uid !== userId) {
       logger.warn("⚠️ UID mismatch between token and payload");
     }
-    const tokens = getTokensFromPriceId(priceId);
+    const tokens = getTokensFromPriceId(cleanId);
     const metadata: Record<string, string> = { uid: userId };
     if (tokens) metadata.tokens = String(tokens);
     const session = await stripe.checkout.sessions.create({
       mode,
-      line_items: [{ price: priceId, quantity: 1 }],
+      line_items: [{ price: cleanId, quantity: 1 }],
       success_url,
       cancel_url,
       client_reference_id: userId,
@@ -1386,7 +1401,8 @@ export const createStripeCheckout = functions
     return;
   }
 
-  logger.debug("Creating Stripe session with", { uid, priceId });
+  const cleanId = cleanPriceId(priceId);
+  logger.debug("Creating Stripe session with", { uid, priceId: cleanId });
 
   const missing: string[] = [];
   if (!uid) missing.push("uid");
@@ -1409,8 +1425,8 @@ export const createStripeCheckout = functions
     return;
   }
 
-  let finalPriceId: string | undefined = priceId;
-  if (type === "tokens" && !priceId) {
+  let finalPriceId: string | undefined = cleanId;
+  if (type === "tokens" && !cleanId) {
     if (quantity === 20) finalPriceId = STRIPE_20_TOKEN_PRICE_ID;
     else if (quantity === 50) finalPriceId = STRIPE_50_TOKEN_PRICE_ID;
     else if (quantity === 100) finalPriceId = STRIPE_100_TOKEN_PRICE_ID;
@@ -1455,136 +1471,6 @@ export const createStripeCheckout = functions
   }
 }));
 
-export const handleStripeWebhookV2 = functions.https.onRequest(
-  async (req: RawBodyRequest, res: Response) => {
-    const sig = req.headers['stripe-signature'] as string | undefined;
-    if (!sig) {
-      res.status(400).send('Signature required');
-      return;
-    }
-
-    let event: Stripe.Event;
-    try {
-      event = stripe.webhooks.constructEvent(
-        req.rawBody,
-        sig,
-        STRIPE_WEBHOOK_SECRET,
-      );
-    } catch (err: any) {
-      console.error('Webhook signature verification failed', err.message);
-      res.status(400).send(`Webhook Error: ${err.message}`);
-      return;
-    }
-
-    async function logTransaction(
-      uid: string,
-      data: Record<string, any>,
-    ) {
-      await db
-        .collection(`users/${uid}/transactions`)
-        .add({
-          ...data,
-          createdAt: admin.firestore.FieldValue.serverTimestamp(),
-        });
-    }
-
-    switch (event.type) {
-      case 'checkout.session.completed': {
-        const session = event.data.object as Stripe.Checkout.Session;
-        let uid = (session.metadata?.uid as string) || undefined;
-        if (!uid) {
-          uid = (session.client_reference_id as string) || undefined;
-        }
-        if (!uid && session.customer) {
-          uid = (await findUidByCustomer(session.customer as string)) || undefined;
-        }
-        if (!uid) break;
-
-        const purchaseType =
-          (session.metadata?.type as string) || session.mode || '';
-        const amount = session.amount_total || 0;
-
-        if (purchaseType === 'subscription' || session.mode === 'subscription') {
-          await db.doc(`users/${uid}`).set(
-            { isSubscribed: true },
-            { merge: true },
-          );
-          await logTransaction(uid, { amount, type: 'subscription' });
-        } else if (purchaseType === 'token_purchase' || purchaseType === 'tokens') {
-          const tokens = parseInt(
-            (session.metadata?.tokens as string) || '0',
-            10,
-          );
-          if (tokens > 0) {
-            await db.doc(`users/${uid}`).set(
-              {
-                tokens: admin.firestore.FieldValue.increment(tokens),
-              },
-              { merge: true },
-            );
-            await logTransaction(uid, { amount, type: 'tokens' });
-          }
-        }
-        break;
-      }
-      case 'payment_intent.succeeded': {
-        const intent = event.data.object as Stripe.PaymentIntent;
-        let uid = (intent.metadata?.uid as string) || undefined;
-        if (!uid && intent.customer) {
-          uid = (await findUidByCustomer(intent.customer as string)) || undefined;
-        }
-        if (!uid) break;
-
-        const purchaseType = intent.metadata?.type as string | undefined;
-        const amount = intent.amount;
-
-        if (purchaseType === 'subscription') {
-          await db.doc(`users/${uid}`).set(
-            { isSubscribed: true },
-            { merge: true },
-          );
-          await logTransaction(uid, { amount, type: 'subscription' });
-        } else if (purchaseType === 'token_purchase' || purchaseType === 'tokens') {
-          const tokens = parseInt(
-            (intent.metadata?.tokens as string) || '0',
-            10,
-          );
-          if (tokens > 0) {
-            await db.doc(`users/${uid}`).set(
-              {
-                tokens: admin.firestore.FieldValue.increment(tokens),
-              },
-              { merge: true },
-            );
-            await logTransaction(uid, { amount, type: 'tokens' });
-          }
-        }
-        break;
-      }
-      case 'invoice.paid': {
-        const invoice = event.data.object as Stripe.Invoice;
-        const customerId = invoice.customer as string | undefined;
-        if (!customerId) break;
-        const uid = (await findUidByCustomer(customerId)) || undefined;
-        if (!uid) break;
-
-        await db.doc(`users/${uid}`).set(
-          { isSubscribed: true },
-          { merge: true },
-        );
-        await logTransaction(uid, {
-          amount: invoice.amount_paid,
-          type: 'subscription',
-        });
-        break;
-      }
-      default:
-        console.log(`Unhandled event type ${event.type}`);
-    }
-
-    res.status(200).send({ received: true });
-  },
-);
 
 export const updateStreakAndXP = functions
   .https.onRequest(

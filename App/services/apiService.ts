@@ -6,6 +6,10 @@ import { sendRequestWithGusBugLogging } from '@/utils/gusBugLogger';
 import { logTokenIssue } from '@/shared/tokenLogger';
 import { showPermissionDenied } from '@/utils/gracefulError';
 
+function cleanPriceId(raw: string): string {
+  return raw.split('#')[0].trim();
+}
+
 type StripeCheckoutResponse = {
   url?: string;
   clientSecret?: string;
@@ -36,7 +40,8 @@ export async function createStripeCheckout(
     throw new Error('Missing uid or priceId');
   }
 
-  console.log('Creating Stripe session with:', { uid, priceId: options.priceId });
+  const cleanId = cleanPriceId(options.priceId);
+  console.log('Creating Stripe session with:', { uid, priceId: cleanId });
 
   let headers;
   try {
@@ -49,7 +54,7 @@ export async function createStripeCheckout(
     const payload = {
       uid,
       email,
-      priceId: options.priceId,
+      priceId: cleanId,
       type: options.type,
       quantity: options.quantity,
       returnUrl: options.returnUrl ?? STRIPE_SUCCESS_URL,
@@ -76,8 +81,8 @@ export async function startTokenCheckout(uid: string, priceId: string): Promise<
     console.warn('🚫 Stripe Checkout failed — missing uid or priceId', { uid, priceId });
     return '';
   }
-
-  console.log('🪙 Starting Stripe checkout', { uid, priceId });
+  const cleanId = cleanPriceId(priceId);
+  console.log('🪙 Starting Stripe checkout', { uid, priceId: cleanId });
 
   let headers;
   try {
@@ -88,7 +93,7 @@ export async function startTokenCheckout(uid: string, priceId: string): Promise<
   }
 
   try {
-    const payload = { uid, priceId };
+    const payload = { uid, priceId: cleanId };
     const res = await sendRequestWithGusBugLogging(() =>
       fetch(TOKEN_CHECKOUT_URL, {
         method: 'POST',
@@ -139,7 +144,8 @@ export async function createCheckoutSession(
   }
 
   try {
-    const payload = { uid, priceId, tokenAmount, mode: 'payment', type: 'token_purchase' };
+    const cleanId = cleanPriceId(priceId);
+    const payload = { uid, priceId: cleanId, tokenAmount, mode: 'payment', type: 'token_purchase' };
     const res = await sendRequestWithGusBugLogging(() =>
       fetch(CHECKOUT_SESSION_URL, {
         method: 'POST',
@@ -169,8 +175,8 @@ export async function startSubscriptionCheckout(uid: string, priceId: string): P
     console.warn('🚫 Stripe Checkout failed — missing uid or priceId', { uid, priceId });
     return '';
   }
-
-  console.log('📦 Starting OneVine+ subscription...', { uid, priceId });
+  const cleanId = cleanPriceId(priceId);
+  console.log('📦 Starting OneVine+ subscription...', { uid, priceId: cleanId });
 
   let headers;
   try {
@@ -181,7 +187,7 @@ export async function startSubscriptionCheckout(uid: string, priceId: string): P
   }
 
   try {
-    const payload = { uid, priceId };
+    const payload = { uid, priceId: cleanId };
     const res = await sendRequestWithGusBugLogging(() =>
       fetch(SUBSCRIPTION_CHECKOUT_URL, {
         method: 'POST',
