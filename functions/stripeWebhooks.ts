@@ -13,14 +13,18 @@ const stripe = new Stripe(STRIPE_SECRET_KEY, { apiVersion: '2023-10-16' } as any
 function verifyEvent(req: RawBodyRequest, res: Response): Stripe.Event | null {
   const sig = req.headers['stripe-signature'] as string | undefined;
   if (!sig) {
-    res.status(400).send('Signature required');
+    res.status(400).json({ error: 'Signature required' });
     return null;
   }
   try {
-    return stripe.webhooks.constructEvent(req.rawBody, sig, STRIPE_WEBHOOK_SECRET);
+    return stripe.webhooks.constructEvent(
+      req.rawBody,
+      sig,
+      STRIPE_WEBHOOK_SECRET,
+    );
   } catch (err: any) {
-    console.error('Webhook signature verification failed', err.message);
-    res.status(400).send(`Webhook Error: ${err.message}`);
+    functions.logger.error('Webhook signature verification failed', err);
+    res.status(400).json({ error: `Webhook Error: ${err.message}` });
     return null;
   }
 }
@@ -30,24 +34,38 @@ export const handleSubscriptionWebhook = functions.https.onRequest(
     const event = verifyEvent(req, res);
     if (!event) return;
 
+    functions.logger.debug('Stripe event received', {
+      type: event.type,
+      id: event.id,
+      payload: event.data?.object,
+    });
+
     if (event.type !== 'checkout.session.completed') {
-      res.status(400).send('Unsupported event');
+      functions.logger.warn('Unsupported event type', { type: event.type });
+      res.status(400).json({ error: 'Unsupported event' });
       return;
     }
 
     const session = event.data.object as Stripe.Checkout.Session;
-    const uid = (session.client_reference_id as string) || (session.metadata?.uid as string) || '';
+    const uid =
+      (session.client_reference_id as string) || (session.metadata?.uid as string) || '';
+    functions.logger.debug('Parsed checkout session metadata', {
+      uid,
+      metadata: session.metadata,
+    });
     if (!uid) {
-      res.status(400).send('UID missing');
+      res.status(400).json({ error: 'UID missing' });
       return;
     }
 
     try {
+      functions.logger.info('Updating subscription status in Firestore', { uid });
       await db.doc(`users/${uid}`).set({ isSubscribed: true }, { merge: true });
-      res.status(200).send({ received: true });
+      functions.logger.info('Subscription status updated', { uid });
+      res.status(200).json({ received: true });
     } catch (err: any) {
-      console.error('Failed to update subscription status', err);
-      res.status(500).send('Internal error');
+      functions.logger.error('Failed to update subscription status', err);
+      res.status(500).json({ error: 'Internal error' });
     }
   },
 );
@@ -57,8 +75,15 @@ export const handleTokenPurchaseWebhook = functions.https.onRequest(
     const event = verifyEvent(req, res);
     if (!event) return;
 
+    functions.logger.debug('Stripe event received', {
+      type: event.type,
+      id: event.id,
+      payload: event.data?.object,
+    });
+
     if (event.type !== 'checkout.session.completed') {
-      res.status(400).send('Unsupported event');
+      functions.logger.warn('Unsupported event type', { type: event.type });
+      res.status(400).json({ error: 'Unsupported event' });
       return;
     }
 
@@ -66,20 +91,27 @@ export const handleTokenPurchaseWebhook = functions.https.onRequest(
     const uid = (session.metadata?.uid as string) || '';
     const tokensStr = (session.metadata?.tokens as string) || '0';
     const tokens = parseInt(tokensStr, 10);
+    functions.logger.debug('Parsed checkout session metadata', {
+      uid,
+      tokens,
+      metadata: session.metadata,
+    });
     if (!uid || !tokens) {
-      res.status(400).send('Missing uid or tokens');
+      res.status(400).json({ error: 'Missing uid or tokens' });
       return;
     }
 
     try {
+      functions.logger.info('Updating user tokens', { uid, tokens });
       await db.doc(`users/${uid}`).set(
         { tokens: admin.firestore.FieldValue.increment(tokens) },
         { merge: true },
       );
-      res.status(200).send({ received: true });
+      functions.logger.info('Token balance updated', { uid, tokens });
+      res.status(200).json({ received: true });
     } catch (err: any) {
-      console.error('Failed to update tokens', err);
-      res.status(500).send('Internal error');
+      functions.logger.error('Failed to update tokens', err);
+      res.status(500).json({ error: 'Internal error' });
     }
   },
 );
