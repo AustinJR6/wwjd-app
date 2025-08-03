@@ -6,14 +6,15 @@ import ScreenContainer from "@/components/theme/ScreenContainer";
 import { useTheme } from "@/components/theme/theme";
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from "@/navigation/RootStackParamList";
-import { usePaymentFlow } from '@/utils';
+import { useStripe } from '@stripe/stripe-react-native';
+import { getCurrentUserId, getIdToken } from '@/utils/authUtils';
 import { logTransaction } from '@/utils/transactionLogger';
 
 type Props = { navigation: NativeStackNavigationProp<RootStackParamList, 'MainTabs'> };
 
 export default function UpgradeScreen({ navigation }: Props) {
   const theme = useTheme();
-  const { startSubscriptionCheckoutFlow } = usePaymentFlow();
+  const { initPaymentSheet, presentPaymentSheet } = useStripe();
   const styles = React.useMemo(
     () =>
       StyleSheet.create({
@@ -51,11 +52,53 @@ export default function UpgradeScreen({ navigation }: Props) {
   const handleUpgrade = async () => {
     setLoading(true);
     try {
-      const ok = await startSubscriptionCheckoutFlow();
-      if (ok) {
-        setSuccess(true);
-        Alert.alert('Success', 'Redirecting to Stripe Checkout...');
+      // Get user ID and token
+      const uid = await getCurrentUserId();
+      const idToken = await getIdToken(true);
+      if (!uid || !idToken) {
+        Alert.alert('Authentication Required', 'Please sign in again.');
+        setLoading(false);
+        return;
       }
+      // Call backend to create SetupIntent for subscription
+      const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/createStripeSetupIntent`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${idToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ uid, mode: 'setup', type: 'subscription' }),
+      });
+      const result = await response.json();
+      const clientSecret = result?.setupIntent || result?.client_secret;
+      if (!clientSecret) {
+        Alert.alert('Payment Error', 'Missing client secret');
+        setLoading(false);
+        return;
+      }
+      // Initialize PaymentSheet
+      const { error: initError } = await initPaymentSheet({
+        setupIntentClientSecret: clientSecret,
+        merchantDisplayName: 'OneVine',
+      });
+      if (initError) {
+        Alert.alert('Payment Error', initError.message);
+        setLoading(false);
+        return;
+      }
+      // Present PaymentSheet
+      const { error } = await presentPaymentSheet();
+      if (error) {
+        Alert.alert('Payment Error', error.message);
+        setLoading(false);
+        return;
+      }
+      // Update user profile after successful purchase
+      setSuccess(true);
+      Alert.alert('Success', 'You are now a OneVine+ member 33F');
+      // Optionally refresh user profile here
+    } catch (err) {
+      Alert.alert('Payment Error', typeof err === 'object' && err !== null && 'message' in err ? String((err as any).message) : String(err) || 'Something went wrong.');
     } finally {
       setLoading(false);
     }
