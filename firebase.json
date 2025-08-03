@@ -1,6 +1,7 @@
 {
   "functions": {
     "source": "functions",
+    "gen": "gen1",
     "predeploy": [
       "npm --prefix \"$RESOURCE_DIR\" run build"
     ]
