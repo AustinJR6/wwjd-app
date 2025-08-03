@@ -43,48 +43,6 @@ function verifyEvent(req: RawBodyRequest, res: Response): Stripe.Event | null {
   }
 }
 
-function getUidFromSession(session: Stripe.Checkout.Session): string | undefined {
-  return (
-    (session.metadata?.uid as string) ||
-    (session.client_reference_id as string) ||
-    undefined
-  );
-}
-
-async function handleSubscriptionSuccess(session: Stripe.Checkout.Session) {
-  const uid = getUidFromSession(session);
-  if (!uid) return;
-  await db.doc(`users/${uid}`).set({
-    isSubscribed: true,
-    tokenCount: admin.firestore.FieldValue.increment(25)
-  }, { merge: true });
-  const amount = session.amount_total || 0;
-  await logTransaction(uid, amount, 'subscription');
-}
-
-async function handleTokenPurchase(session: Stripe.Checkout.Session) {
-  const uid = getUidFromSession(session);
-  const tokens = parseInt((session.metadata?.tokens as string) || '0', 10);
-  if (!uid || tokens <= 0) return;
-  await db.doc(`users/${uid}`).set(
-    { tokens: admin.firestore.FieldValue.increment(tokens) },
-    { merge: true },
-  );
-  const amount = session.amount_total || 0;
-  await logTransaction(uid, amount, 'token_purchase');
-}
-
-async function handleDonation(session: Stripe.Checkout.Session) {
-  const uid = getUidFromSession(session);
-  if (!uid) return;
-  const amount = session.amount_total || 0;
-  await db.collection(`users/${uid}/donations`).add({
-    amount,
-    createdAt: admin.firestore.FieldValue.serverTimestamp(),
-  });
-  await logTransaction(uid, amount, 'donation');
-}
-
 async function handleSubscriptionUpdate(sub: Stripe.Subscription) {
   const uid = (sub.metadata?.uid as string) || undefined;
   if (!uid) return;
@@ -104,17 +62,38 @@ export const handleStripeWebhookV2 = functions.https.onRequest(
     if (!event) return;
     try {
       switch (event.type) {
-        case 'checkout.session.completed': {
-          const session = event.data.object as Stripe.Checkout.Session;
-          if (session.mode === 'subscription') {
-            await handleSubscriptionSuccess(session);
-          } else if (session.mode === 'payment') {
-            const type = session.metadata?.type;
-            if (type === 'token_purchase') {
-              await handleTokenPurchase(session);
-            } else if (type === 'donation') {
-              await handleDonation(session);
+        case 'payment_intent.succeeded': {
+          const pi = event.data.object as Stripe.PaymentIntent;
+          const uid = pi.metadata?.uid;
+          const type = pi.metadata?.type;
+          if (uid && type === 'subscription') {
+            await db.doc(`users/${uid}`).set({ isSubscribed: true }, { merge: true });
+            const amount = pi.amount_received || 0;
+            await logTransaction(uid, amount, 'subscription');
+          } else if (uid && type === 'token') {
+            const tokens = parseInt(
+              (pi.metadata?.tokenAmount as string) || (pi.metadata?.tokens as string) || '0',
+              10,
+            );
+            if (tokens > 0) {
+              await db
+                .doc(`users/${uid}`)
+                .set(
+                  { tokenCount: admin.firestore.FieldValue.increment(tokens) },
+                  { merge: true },
+                );
             }
+            const amount = pi.amount_received || 0;
+            await logTransaction(uid, amount, 'token_purchase');
+          }
+          break;
+        }
+        case 'setup_intent.succeeded': {
+          const si = event.data.object as Stripe.SetupIntent;
+          const uid = si.metadata?.uid;
+          if (uid && si.metadata?.type === 'subscription') {
+            await db.doc(`users/${uid}`).set({ isSubscribed: true }, { merge: true });
+            await logTransaction(uid, 0, 'subscription');
           }
           break;
         }

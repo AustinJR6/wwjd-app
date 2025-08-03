@@ -1269,7 +1269,7 @@ export const createCheckoutSession = functions
           customer: customerId,
           metadata: {
             uid,
-            type: type || 'token_purchase',
+            type: 'token',
             tokenAmount: String(tokenAmount),
             mode,
           },
@@ -1290,7 +1290,7 @@ export const createCheckoutSession = functions
           cancel_url: 'onevine://checkout-cancel',
           metadata: {
             uid,
-            type: type || 'subscription',
+            type: 'subscription',
           },
         });
         logger.info(`✅ Checkout session created ${session.id}`);
@@ -2001,7 +2001,7 @@ export const createStripeSetupIntent = functions.https.onRequest(
           customer: customerId,
           metadata: {
             uid,
-            mode,
+            type: data.type || mode,
             ...(data.tokenAmount ? { tokenAmount: String(data.tokenAmount) } : {}),
           },
           automatic_payment_methods: { enabled: true },
@@ -2016,6 +2016,7 @@ export const createStripeSetupIntent = functions.https.onRequest(
       try {
         intent = await stripeClient.setupIntents.create({
           customer: customerId,
+          metadata: { uid, type: data.type || 'setup' },
           automatic_payment_methods: { enabled: true },
         });
         logger.info('SetupIntent created', { intentId: intent.id });
@@ -2191,6 +2192,7 @@ export const createTokenPurchaseSheet = functions.https.onCall(
       metadata: {
         uid,
         tokens: amount,
+        type: 'token',
       },
       automatic_payment_methods: { enabled: true },
     });
