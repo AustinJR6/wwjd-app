@@ -31,13 +31,15 @@ export function usePaymentFlow() {
   // ...existing code...
 
   // New Stripe Checkout subscription flow
-  async function startSubscriptionCheckoutFlow(priceId: string): Promise<boolean> {
+  async function startSubscriptionCheckoutFlow(): Promise<boolean> {
     try {
       const uid = await getCurrentUserId();
       if (!uid) {
         Alert.alert('Authentication Required', 'Please sign in again.');
         return false;
       }
+      // Hardcoded Stripe Price ID for subscription
+      const priceId = 'price_1RFjFaGLKcFWSqCIrIiOVfwM';
       // Call backend to create Stripe Checkout session
       const checkoutUrl = await startSubscriptionCheckout(uid, priceId);
       if (!checkoutUrl) {

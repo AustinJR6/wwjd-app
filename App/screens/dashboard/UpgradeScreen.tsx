@@ -51,9 +51,7 @@ export default function UpgradeScreen({ navigation }: Props) {
   const handleUpgrade = async () => {
     setLoading(true);
     try {
-      // Replace with your actual Stripe Price ID for the subscription
-      const priceId = 'price_XXXXXXXXXXXXXX';
-      const ok = await startSubscriptionCheckoutFlow(priceId);
+      const ok = await startSubscriptionCheckoutFlow();
       if (ok) {
         setSuccess(true);
         Alert.alert('Success', 'Redirecting to Stripe Checkout...');
