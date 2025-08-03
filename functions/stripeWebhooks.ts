@@ -54,7 +54,10 @@ function getUidFromSession(session: Stripe.Checkout.Session): string | undefined
 async function handleSubscriptionSuccess(session: Stripe.Checkout.Session) {
   const uid = getUidFromSession(session);
   if (!uid) return;
-  await db.doc(`users/${uid}`).set({ isSubscribed: true }, { merge: true });
+  await db.doc(`users/${uid}`).set({
+    isSubscribed: true,
+    tokenCount: admin.firestore.FieldValue.increment(25)
+  }, { merge: true });
   const amount = session.amount_total || 0;
   await logTransaction(uid, amount, 'subscription');
 }
