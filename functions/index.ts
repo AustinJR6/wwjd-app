@@ -1047,7 +1047,13 @@ export const startSubscriptionCheckout = functions
     }
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
-      line_items: [{ price: cleanId, quantity: 1 }],
+      payment_method_types: ["card"],
+      line_items: [
+        {
+          price: cleanId, // Replace with your actual Stripe Price ID
+          quantity: 1,
+        },
+      ],
       success_url: STRIPE_SUCCESS_URL,
       cancel_url: STRIPE_CANCEL_URL,
       client_reference_id: uid,
