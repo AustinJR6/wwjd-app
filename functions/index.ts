@@ -1,3 +1,24 @@
+// Create a new subscription after PaymentSheet setup
+export const createSubscription = functions.https.onRequest(async (req, res) => {
+  try {
+    const { customerId, paymentMethodId, uid } = req.body;
+    if (!customerId || !paymentMethodId || !uid) {
+      res.status(400).json({ error: 'Missing required fields' });
+      return;
+    }
+    const priceId = 'price_1RFjFaGLKcFWSqCIrIiOVfwM';
+    const subscription = await stripe.subscriptions.create({
+      customer: customerId,
+      default_payment_method: paymentMethodId,
+      items: [{ price: priceId }],
+      metadata: { uid },
+    });
+    res.status(200).json({ subscriptionId: subscription.id });
+  } catch (err) {
+    logger.error('createSubscription failed', err);
+    res.status(500).json({ error: err.message || 'Failed to create subscription' });
+  }
+});
 import * as functions from "firebase-functions/v1";
 import { Request, Response } from "express";
 import { auth, db } from "./firebase";

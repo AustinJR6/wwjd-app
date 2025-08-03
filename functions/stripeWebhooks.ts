@@ -124,6 +124,23 @@ export const handleStripeWebhookV2 = functions.https.onRequest(
         case 'customer.subscription.deleted':
           await handleSubscriptionCancel(event.data.object as Stripe.Subscription);
           break;
+        case 'invoice.payment_succeeded': {
+          const invoice = event.data.object as Stripe.Invoice;
+          const uid = invoice.metadata?.uid;
+          if (uid) {
+            await db.doc(`users/${uid}`).set({
+              isSubscribed: true,
+              tokenCount: admin.firestore.FieldValue.increment(25)
+            }, { merge: true });
+            const amount = invoice.amount_paid || 0;
+            await db.collection(`users/${uid}/transactions`).add({
+              amount,
+              eventType: 'subscription',
+              createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            });
+          }
+          break;
+        }
         default:
           functions.logger.info('Unhandled event type', event.type);
       }
