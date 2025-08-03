@@ -1,4 +1,4 @@
-import { onRequest } from 'firebase-functions/v2/https';
+import * as functions from 'firebase-functions/v1';
 import * as admin from 'firebase-admin';
 import Stripe from 'stripe';
 
@@ -11,7 +11,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
   apiVersion: '2023-10-16',
 } as any);
 
-export const handleStripeWebhookV2 = onRequest(async (req, res) => {
+export const handleStripeWebhookV2 = functions.https.onRequest(async (req, res) => {
   const sig = req.headers['stripe-signature'];
   if (typeof sig !== 'string') {
     res.status(400).send('Missing stripe-signature header');
@@ -70,6 +70,7 @@ export const handleStripeWebhookV2 = onRequest(async (req, res) => {
     console.warn(`⚠️ Unrecognized metadata.type: ${type}`);
   }
 
+  console.log('✅ Webhook handled successfully');
   res.status(200).send('Webhook handled');
 });
 
