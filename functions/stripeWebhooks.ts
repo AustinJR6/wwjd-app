@@ -12,9 +12,13 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
 } as any);
 
 export const handleStripeWebhookV2 = onRequest(async (req, res) => {
-  const sig = req.headers['stripe-signature'] as string | undefined;
-  let event: Stripe.Event;
+  const sig = req.headers['stripe-signature'];
+  if (typeof sig !== 'string') {
+    res.status(400).send('Missing stripe-signature header');
+    return;
+  }
 
+  let event: Stripe.Event;
   try {
     event = stripe.webhooks.constructEvent(
       (req as any).rawBody,
@@ -23,7 +27,8 @@ export const handleStripeWebhookV2 = onRequest(async (req, res) => {
     );
   } catch (err: any) {
     console.error('⚠️ Webhook signature verification failed.', err.message);
-    return res.status(400).send(`Webhook Error: ${err.message}`);
+    res.status(400).send(`Webhook Error: ${err.message}`);
+    return;
   }
 
   const supportedEvents = [
@@ -34,7 +39,8 @@ export const handleStripeWebhookV2 = onRequest(async (req, res) => {
 
   if (!supportedEvents.includes(event.type)) {
     console.log(`🔕 Unhandled event type: ${event.type}`);
-    return res.status(200).send('Event ignored');
+    res.status(200).send('Event ignored');
+    return;
   }
 
   const object: any = event.data.object;
@@ -45,7 +51,8 @@ export const handleStripeWebhookV2 = onRequest(async (req, res) => {
 
   if (!uid || !type) {
     console.warn('🚫 Missing metadata in event:', event.type);
-    return res.status(400).send('Missing metadata');
+    res.status(400).send('Missing metadata');
+    return;
   }
 
   const userRef = admin.firestore().collection('users').doc(uid);

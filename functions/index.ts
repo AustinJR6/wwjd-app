@@ -64,7 +64,6 @@ if (!GEMINI_API_KEY) {
 }
 const LOGGING_MODE = process.env.LOGGING_MODE || "gusbug";
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || "";
-const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || "";
 const STRIPE_PUBLISHABLE_KEY = process.env.STRIPE_PUBLISHABLE_KEY || "";
 const APP_BASE_URL =
   process.env.APP_BASE_URL ||
@@ -181,9 +180,6 @@ if (!STRIPE_SECRET_KEY) {
   );
 } else {
   logger.info("✅ Stripe key loaded");
-}
-if (!STRIPE_WEBHOOK_SECRET) {
-  logger.warn("⚠️ STRIPE_WEBHOOK_SECRET not set. Webhook verification will fail.");
 }
 
 const stripe = new Stripe(STRIPE_SECRET_KEY, {
@@ -2271,4 +2267,4 @@ export const createSubscriptionSession = functions.https.onCall(
 );
 
 export { onCompletedChallengeCreate } from './firestoreArchitecture';
-export * from './stripeWebhooks';
+export { handleStripeWebhookV2 } from './stripeWebhooks';
