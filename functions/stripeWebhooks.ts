@@ -95,23 +95,26 @@ export const handleStripeWebhookV2 = functions.https.onRequest(
 
           const metadata = pi.metadata || {};
           const uid = metadata.uid as string | undefined;
-          const eventType = metadata.eventType as string | undefined;
+          const productType = metadata.productType as string | undefined;
           const tokenAmount = metadata.tokenAmount as string | undefined;
           functions.logger.info('PaymentIntent metadata', metadata);
 
-          if (!uid || !eventType) {
-            functions.logger.error('Missing uid or eventType in PaymentIntent metadata', {
-              uid,
-              eventType,
-            });
+          if (!uid || !productType) {
+            functions.logger.error(
+              'Missing uid or productType in PaymentIntent metadata',
+              {
+                uid,
+                productType,
+              },
+            );
             break;
           }
 
-          if (eventType === 'subscription') {
+          if (productType === 'subscription') {
             const amount = pi.amount_received || 0;
             functions.logger.info(`Activating subscription for ${uid}`);
             await logTransaction(uid, amount, 'subscription');
-          } else if (eventType === 'token') {
+          } else if (productType === 'token') {
             const tokens = parseInt(tokenAmount || '0', 10);
             if (isNaN(tokens) || tokens <= 0) {
               functions.logger.error('Invalid tokenAmount in PaymentIntent metadata', {
@@ -124,7 +127,9 @@ export const handleStripeWebhookV2 = functions.https.onRequest(
             functions.logger.info(`Adding ${tokens} tokens to ${uid}`);
             await logTransaction(uid, amount, 'token', tokens);
           } else {
-            functions.logger.error('Unknown eventType in PaymentIntent', { eventType });
+            functions.logger.error('Unknown productType in PaymentIntent', {
+              productType,
+            });
           }
           break;
         }
@@ -134,22 +139,22 @@ export const handleStripeWebhookV2 = functions.https.onRequest(
 
           const metadata = si.metadata || {};
           const uid = metadata.uid as string | undefined;
-          const eventType = metadata.eventType as string | undefined;
+          const productType = metadata.productType as string | undefined;
           const tokenAmount = metadata.tokenAmount as string | undefined;
           functions.logger.info('SetupIntent metadata', metadata);
 
-          if (!uid || !eventType) {
-            functions.logger.error('Missing uid or eventType in SetupIntent metadata', {
+          if (!uid || !productType) {
+            functions.logger.error('Missing uid or productType in SetupIntent metadata', {
               uid,
-              eventType,
+              productType,
             });
             break;
           }
 
-          if (eventType === 'subscription') {
+          if (productType === 'subscription') {
             functions.logger.info(`Activating subscription for ${uid}`);
             await logTransaction(uid, 0, 'subscription');
-          } else if (eventType === 'token') {
+          } else if (productType === 'token') {
             const tokens = parseInt(tokenAmount || '0', 10);
             if (isNaN(tokens) || tokens <= 0) {
               functions.logger.error('Invalid tokenAmount in SetupIntent metadata', {
@@ -161,7 +166,9 @@ export const handleStripeWebhookV2 = functions.https.onRequest(
             functions.logger.info(`Adding ${tokens} tokens to ${uid}`);
             await logTransaction(uid, 0, 'token', tokens);
           } else {
-            functions.logger.error('Unknown eventType in SetupIntent', { eventType });
+            functions.logger.error('Unknown productType in SetupIntent', {
+              productType,
+            });
           }
           break;
         }
@@ -171,19 +178,26 @@ export const handleStripeWebhookV2 = functions.https.onRequest(
         case 'customer.subscription.deleted':
           await handleSubscriptionCancel(event.data.object as Stripe.Subscription);
           break;
-        case 'invoice.payment_succeeded': {
+        case 'invoice.paid': {
           const invoice = event.data.object as Stripe.Invoice;
-          const uid = invoice.metadata?.uid;
-          if (uid) {
+          const metadata = invoice.metadata || {};
+          const uid = metadata.uid as string | undefined;
+          const productType = metadata.productType as string | undefined;
+          functions.logger.info('Invoice metadata', metadata);
+
+          if (!uid || !productType) {
+            functions.logger.error('Missing uid or productType in Invoice metadata', {
+              uid,
+              productType,
+            });
+            break;
+          }
+
+          if (productType === 'subscription') {
             const amount = invoice.amount_paid || 0;
             await logTransaction(uid, amount, 'subscription');
-            await admin
-              .firestore()
-              .doc(`users/${uid}`)
-              .set(
-                { tokens: admin.firestore.FieldValue.increment(25) },
-                { merge: true },
-              );
+          } else {
+            functions.logger.error('Unknown productType in Invoice', { productType });
           }
           break;
         }
