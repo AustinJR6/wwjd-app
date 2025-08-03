@@ -1995,15 +1995,18 @@ export const createStripeSetupIntent = functions.https.onRequest(
           res.status(400).json({ error: 'amount required for payment' });
           return;
         }
+        const eventType = data.eventType || data.type || mode;
+        const metadata: Record<string, string> = {
+          uid,
+          eventType,
+          type: eventType,
+          ...(data.tokenAmount ? { tokenAmount: String(data.tokenAmount) } : {}),
+        };
         intent = await stripeClient.paymentIntents.create({
           amount,
           currency,
           customer: customerId,
-          metadata: {
-            uid,
-            type: data.type || mode,
-            ...(data.tokenAmount ? { tokenAmount: String(data.tokenAmount) } : {}),
-          },
+          metadata,
           automatic_payment_methods: { enabled: true },
         });
       } catch (err: any) {
@@ -2014,9 +2017,18 @@ export const createStripeSetupIntent = functions.https.onRequest(
     } else {
       logger.debug('Creating Stripe SetupIntent for customer', { customerId });
       try {
+        const eventType = data.eventType || data.type;
+        const metadata: Record<string, string> = { uid };
+        if (eventType) {
+          metadata.eventType = eventType;
+          metadata.type = eventType; // backward compatibility
+          if (eventType === 'token' && data.tokenAmount) {
+            metadata.tokenAmount = String(data.tokenAmount);
+          }
+        }
         intent = await stripeClient.setupIntents.create({
           customer: customerId,
-          metadata: { uid, type: data.type || 'setup' },
+          metadata,
           automatic_payment_methods: { enabled: true },
         });
         logger.info('SetupIntent created', { intentId: intent.id });
