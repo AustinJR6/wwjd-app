@@ -13,7 +13,7 @@ type Props = { navigation: NativeStackNavigationProp<RootStackParamList, 'MainTa
 
 export default function UpgradeScreen({ navigation }: Props) {
   const theme = useTheme();
-  const { startPaymentFlow } = usePaymentFlow();
+  const { startSubscriptionCheckoutFlow } = usePaymentFlow();
   const styles = React.useMemo(
     () =>
       StyleSheet.create({
@@ -51,11 +51,12 @@ export default function UpgradeScreen({ navigation }: Props) {
   const handleUpgrade = async () => {
     setLoading(true);
     try {
-      const ok = await startPaymentFlow({ mode: 'setup' });
+      // Replace with your actual Stripe Price ID for the subscription
+      const priceId = 'price_XXXXXXXXXXXXXX';
+      const ok = await startSubscriptionCheckoutFlow(priceId);
       if (ok) {
         setSuccess(true);
-        Alert.alert('Success', 'You are now a OneVine+ member \uD83C\uDF3F');
-        await logTransaction('subscription', 0);
+        Alert.alert('Success', 'Redirecting to Stripe Checkout...');
       }
     } finally {
       setLoading(false);
