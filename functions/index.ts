@@ -1,3 +1,16 @@
+import * as functions from 'firebase-functions';
+// import { onUserCreated } from 'firebase-functions/v2/auth';
+import * as admin from 'firebase-admin';
+import { Request, Response } from 'express';
+import Stripe from 'stripe';
+import * as dotenv from 'dotenv';
+import * as logger from 'firebase-functions/logger';
+// Initialize Firebase Admin if not already initialized
+if (!admin.apps.length) {
+  admin.initializeApp();
+}
+const db = admin.firestore();
+const auth = admin.auth();
 // Create a new subscription after PaymentSheet setup
 export const createSubscription = functions.https.onRequest(async (req, res) => {
   try {
@@ -14,20 +27,12 @@ export const createSubscription = functions.https.onRequest(async (req, res) => 
       metadata: { uid },
     });
     res.status(200).json({ subscriptionId: subscription.id });
-  } catch (err) {
+  } catch (err: any) {
     logger.error('createSubscription failed', err);
-    res.status(500).json({ error: err.message || 'Failed to create subscription' });
+    res.status(500).json({ error: err?.message || 'Failed to create subscription' });
   }
 });
-import * as functions from "firebase-functions/v1";
-import { Request, Response } from "express";
-import { auth, db } from "./firebase";
-import * as admin from "firebase-admin";
-import { RawBodyRequest } from "./types";
-import Stripe from "stripe";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import * as dotenv from "dotenv";
-import * as logger from "firebase-functions/logger";
 import { createGeminiModel, fetchReligionContext } from './geminiUtils';
 import {
   withCors,
@@ -42,8 +47,8 @@ import {
 function logTokenVerificationError(context: string, token: string | undefined, err: any) {
   logger.error(`${context} token verification failed`, {
     tokenPrefix: token ? token.slice(0, 10) : "none",
-    errorCode: err?.code,
-    message: err?.message,
+    errorCode: (err as any)?.code,
+    message: (err as any)?.message,
   });
 }
 
@@ -802,7 +807,7 @@ export const generateChallenge = functions
       });
       return;
     }
-    res.status(500).json({ error: "Gemini failed" });
+    res.status(500).json({ error: err.message || "Gemini failed" });
   }
 });
 
@@ -1653,66 +1658,63 @@ export const seedFirestore = functions
 });
 
 
-export const onUserCreate = functions
-  .auth
-  .user()
-  .onCreate(async (user: admin.auth.UserRecord) => {
-    const uid = user.uid;
-    try {
-      const docRef = admin.firestore().doc(`users/${uid}`);
-      const timestamp = admin.firestore.FieldValue.serverTimestamp();
-      const profile = {
-        uid: user.uid,
-        email: user.email ?? "",
-        emailVerified: !!user.emailVerified,
-        displayName: user.displayName || "",
-        username: "",
-        region: "",
-        createdAt: timestamp,
-        lastActive: timestamp,
-        lastFreeAsk: timestamp,
-        lastFreeSkip: timestamp,
-        onboardingComplete: false,
-        religion: "SpiritGuide",
-        tokens: 0,
-        tokenCount: 0,
-        skipTokensUsed: 0,
-        individualPoints: 0,
-        isSubscribed: false,
-        nightModeEnabled: false,
-        preferredName: user.displayName || "",
-        pronouns: "",
-        avatarURL: "",
-        profileComplete: false,
-        profileSchemaVersion: CURRENT_PROFILE_SCHEMA,
-        challengeStreak: { count: 0, lastCompletedDate: null },
-        dailyChallengeCount: 0,
-        dailySkipCount: 0,
-        lastChallengeLoadDate: null,
-        lastSkipDate: null,
-        organization: null,
-        organizationId: null,
-        religionPrefix: "",
-      };
-
-      logger.info("onUserCreate profile", profile);
-
-      await docRef.set(profile, { merge: true });
-      const subscriptionRef = admin.firestore().doc(`subscriptions/${uid}`);
-      await subscriptionRef.set({
-        isSubscribed: false,
-        plan: null,
-        startDate: null,
-        expiryDate: null,
-        createdAt: timestamp,
-      });
-    } catch (err) {
-      logger.error(`onUserCreate failed for ${uid}`, err);
-    }
-  });
+// export const onUserCreate = (functions as any).auth.user().onCreate(async (user: admin.auth.UserRecord) => {
+//   const uid = user.uid;
+//   try {
+//     const docRef = admin.firestore().doc(`users/${uid}`);
+//     const timestamp = admin.firestore.FieldValue.serverTimestamp();
+//     const profile = {
+//       uid: user.uid,
+//       email: user.email ?? "",
+//       emailVerified: !!user.emailVerified,
+//       displayName: user.displayName || "",
+//       username: "",
+//       region: "",
+//       createdAt: timestamp,
+//       lastActive: timestamp,
+//       lastFreeAsk: timestamp,
+//       lastFreeSkip: timestamp,
+//       onboardingComplete: false,
+//       religion: "SpiritGuide",
+//       tokens: 0,
+//       tokenCount: 0,
+//       skipTokensUsed: 0,
+//       individualPoints: 0,
+//       isSubscribed: false,
+//       nightModeEnabled: false,
+//       preferredName: user.displayName || "",
+//       pronouns: "",
+//       avatarURL: "",
+//       profileComplete: false,
+//       profileSchemaVersion: CURRENT_PROFILE_SCHEMA,
+//       challengeStreak: { count: 0, lastCompletedDate: null },
+//       dailyChallengeCount: 0,
+//       dailySkipCount: 0,
+//       lastChallengeLoadDate: null,
+//       lastSkipDate: null,
+//       organization: null,
+//       organizationId: null,
+//       religionPrefix: "",
+//     };
+//
+//     logger.info("onUserCreate profile", profile);
+//
+//     await docRef.set(profile, { merge: true });
+//     const subscriptionRef = admin.firestore().doc(`subscriptions/${uid}`);
+//     await subscriptionRef.set({
+//       isSubscribed: false,
+//       plan: null,
+//       startDate: null,
+//       expiryDate: null,
+//       createdAt: timestamp,
+//     });
+//   } catch (err) {
+//     logger.error(`onUserCreate failed for ${uid}`, err);
+//   }
+// });
 
 export const backfillUserProfiles = functions.https.onCall(
-  async (data: any, context: functions.https.CallableContext) => {
+  async (data: any, context: any) => {
     if (!context.auth) {
       throw new functions.https.HttpsError(
         "unauthenticated",
@@ -1798,7 +1800,7 @@ export const backfillUserProfiles = functions.https.onCall(
   });
 
 export const updateUserProfileCallable = functions.https.onCall(
-  async (data: any, context: functions.https.CallableContext) => {
+  async (data: any, context: any) => {
     if (!context.auth) {
       throw new functions.https.HttpsError(
         "unauthenticated",
@@ -1834,7 +1836,7 @@ export const updateUserProfileCallable = functions.https.onCall(
   });
 
 export const completeSignupAndProfile = functions.https.onCall(
-  async (data: any, context: functions.https.CallableContext) => {
+  async (data: any, context: any) => {
     if (!context.auth) {
       throw new functions.https.HttpsError(
         "unauthenticated",
@@ -2137,7 +2139,7 @@ export const finalizePaymentIntent = functions.https.onRequest(
 );
 
 export const createTokenPurchaseSheet = functions.https.onCall(
-  async (data: any, context: functions.https.CallableContext) => {
+  async (data: any, context: any) => {
     if (!context.auth) {
       throw new functions.https.HttpsError('unauthenticated', 'Authentication required');
     }
@@ -2204,7 +2206,7 @@ export const createTokenPurchaseSheet = functions.https.onCall(
 );
 
 export const createSubscriptionSession = functions.https.onCall(
-  async (data: any, context: functions.https.CallableContext) => {
+  async (data: any, context: any) => {
     if (!context.auth) {
       throw new functions.https.HttpsError('unauthenticated', 'Authentication required');
     }
