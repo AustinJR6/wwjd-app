@@ -19,21 +19,35 @@ async function logTransaction(
   tokenAmount = 25,
 ) {
   try {
-    await db.collection(`users/${uid}/transactions`).add({
+    functions.logger.info('Logging transaction', {
+      uid,
+      amount,
+      eventType,
+      tokenAmount,
+    });
+
+    const userRef = admin.firestore().doc(`users/${uid}`);
+    const batch = admin.firestore().batch();
+    const txnRef = db.collection(`users/${uid}/transactions`).doc();
+
+    batch.set(txnRef, {
       amount,
       eventType,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 
-    const userRef = admin.firestore().doc(`users/${uid}`);
     if (eventType === 'subscription') {
-      await userRef.set({ isSubscribed: true }, { merge: true });
+      batch.set(userRef, { isSubscribed: true }, { merge: true });
     } else if (eventType === 'token') {
-      await userRef.set(
-        { tokenCount: admin.firestore.FieldValue.increment(tokenAmount) },
+      batch.set(
+        userRef,
+        { tokens: admin.firestore.FieldValue.increment(tokenAmount) },
         { merge: true },
       );
     }
+
+    await batch.commit();
+    functions.logger.info('Transaction logged successfully');
   } catch (err) {
     functions.logger.error('Failed to log transaction', err);
   }
@@ -75,26 +89,79 @@ export const handleStripeWebhookV2 = functions.https.onRequest(
       switch (event.type) {
         case 'payment_intent.succeeded': {
           const pi = event.data.object as Stripe.PaymentIntent;
-          const uid = pi.metadata?.uid;
-          const type = pi.metadata?.type;
-          if (uid && type === 'subscription') {
+          functions.logger.info('Handling payment_intent.succeeded', {
+            id: pi.id,
+          });
+
+          const metadata = pi.metadata || {};
+          const uid = metadata.uid as string | undefined;
+          const eventType = metadata.eventType as string | undefined;
+          const tokenAmount = metadata.tokenAmount as string | undefined;
+          functions.logger.info('PaymentIntent metadata', metadata);
+
+          if (!uid || !eventType) {
+            functions.logger.error('Missing uid or eventType in PaymentIntent metadata', {
+              uid,
+              eventType,
+            });
+            break;
+          }
+
+          if (eventType === 'subscription') {
             const amount = pi.amount_received || 0;
+            functions.logger.info(`Activating subscription for ${uid}`);
             await logTransaction(uid, amount, 'subscription');
-          } else if (uid && type === 'token') {
-            const tokens = parseInt(
-              (pi.metadata?.tokenAmount as string) || (pi.metadata?.tokens as string) || '0',
-              10,
-            );
+          } else if (eventType === 'token') {
+            const tokens = parseInt(tokenAmount || '0', 10);
+            if (isNaN(tokens) || tokens <= 0) {
+              functions.logger.error('Invalid tokenAmount in PaymentIntent metadata', {
+                uid,
+                tokenAmount,
+              });
+              break;
+            }
             const amount = pi.amount_received || 0;
-            await logTransaction(uid, amount, 'token', tokens > 0 ? tokens : 25);
+            functions.logger.info(`Adding ${tokens} tokens to ${uid}`);
+            await logTransaction(uid, amount, 'token', tokens);
+          } else {
+            functions.logger.error('Unknown eventType in PaymentIntent', { eventType });
           }
           break;
         }
         case 'setup_intent.succeeded': {
           const si = event.data.object as Stripe.SetupIntent;
-          const uid = si.metadata?.uid;
-          if (uid && si.metadata?.type === 'subscription') {
+          functions.logger.info('Handling setup_intent.succeeded', { id: si.id });
+
+          const metadata = si.metadata || {};
+          const uid = metadata.uid as string | undefined;
+          const eventType = metadata.eventType as string | undefined;
+          const tokenAmount = metadata.tokenAmount as string | undefined;
+          functions.logger.info('SetupIntent metadata', metadata);
+
+          if (!uid || !eventType) {
+            functions.logger.error('Missing uid or eventType in SetupIntent metadata', {
+              uid,
+              eventType,
+            });
+            break;
+          }
+
+          if (eventType === 'subscription') {
+            functions.logger.info(`Activating subscription for ${uid}`);
             await logTransaction(uid, 0, 'subscription');
+          } else if (eventType === 'token') {
+            const tokens = parseInt(tokenAmount || '0', 10);
+            if (isNaN(tokens) || tokens <= 0) {
+              functions.logger.error('Invalid tokenAmount in SetupIntent metadata', {
+                uid,
+                tokenAmount,
+              });
+              break;
+            }
+            functions.logger.info(`Adding ${tokens} tokens to ${uid}`);
+            await logTransaction(uid, 0, 'token', tokens);
+          } else {
+            functions.logger.error('Unknown eventType in SetupIntent', { eventType });
           }
           break;
         }
@@ -114,7 +181,7 @@ export const handleStripeWebhookV2 = functions.https.onRequest(
               .firestore()
               .doc(`users/${uid}`)
               .set(
-                { tokenCount: admin.firestore.FieldValue.increment(25) },
+                { tokens: admin.firestore.FieldValue.increment(25) },
                 { merge: true },
               );
           }
