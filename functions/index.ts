@@ -1,5 +1,4 @@
-import * as functions from 'firebase-functions';
-// import { onUserCreated } from 'firebase-functions/v2/auth';
+import * as functions from 'firebase-functions/v1';
 import * as admin from 'firebase-admin';
 import { Request, Response } from 'express';
 import Stripe from 'stripe';
