@@ -15,7 +15,8 @@ const stripe = new Stripe(STRIPE_SECRET_KEY, { apiVersion: '2023-10-16' } as any
 async function logTransaction(
   uid: string,
   amount: number,
-  eventType: string,
+  eventType: 'subscription' | 'token',
+  tokenAmount = 25,
 ) {
   try {
     await db.collection(`users/${uid}/transactions`).add({
@@ -23,6 +24,16 @@ async function logTransaction(
       eventType,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
     });
+
+    const userRef = admin.firestore().doc(`users/${uid}`);
+    if (eventType === 'subscription') {
+      await userRef.set({ isSubscribed: true }, { merge: true });
+    } else if (eventType === 'token') {
+      await userRef.set(
+        { tokenCount: admin.firestore.FieldValue.increment(tokenAmount) },
+        { merge: true },
+      );
+    }
   } catch (err) {
     functions.logger.error('Failed to log transaction', err);
   }
@@ -67,7 +78,6 @@ export const handleStripeWebhookV2 = functions.https.onRequest(
           const uid = pi.metadata?.uid;
           const type = pi.metadata?.type;
           if (uid && type === 'subscription') {
-            await db.doc(`users/${uid}`).set({ isSubscribed: true }, { merge: true });
             const amount = pi.amount_received || 0;
             await logTransaction(uid, amount, 'subscription');
           } else if (uid && type === 'token') {
@@ -75,16 +85,8 @@ export const handleStripeWebhookV2 = functions.https.onRequest(
               (pi.metadata?.tokenAmount as string) || (pi.metadata?.tokens as string) || '0',
               10,
             );
-            if (tokens > 0) {
-              await db
-                .doc(`users/${uid}`)
-                .set(
-                  { tokenCount: admin.firestore.FieldValue.increment(tokens) },
-                  { merge: true },
-                );
-            }
             const amount = pi.amount_received || 0;
-            await logTransaction(uid, amount, 'token_purchase');
+            await logTransaction(uid, amount, 'token', tokens > 0 ? tokens : 25);
           }
           break;
         }
@@ -92,7 +94,6 @@ export const handleStripeWebhookV2 = functions.https.onRequest(
           const si = event.data.object as Stripe.SetupIntent;
           const uid = si.metadata?.uid;
           if (uid && si.metadata?.type === 'subscription') {
-            await db.doc(`users/${uid}`).set({ isSubscribed: true }, { merge: true });
             await logTransaction(uid, 0, 'subscription');
           }
           break;
@@ -107,16 +108,15 @@ export const handleStripeWebhookV2 = functions.https.onRequest(
           const invoice = event.data.object as Stripe.Invoice;
           const uid = invoice.metadata?.uid;
           if (uid) {
-            await db.doc(`users/${uid}`).set({
-              isSubscribed: true,
-              tokenCount: admin.firestore.FieldValue.increment(25)
-            }, { merge: true });
             const amount = invoice.amount_paid || 0;
-            await db.collection(`users/${uid}/transactions`).add({
-              amount,
-              eventType: 'subscription',
-              createdAt: admin.firestore.FieldValue.serverTimestamp(),
-            });
+            await logTransaction(uid, amount, 'subscription');
+            await admin
+              .firestore()
+              .doc(`users/${uid}`)
+              .set(
+                { tokenCount: admin.firestore.FieldValue.increment(25) },
+                { merge: true },
+              );
           }
           break;
         }
