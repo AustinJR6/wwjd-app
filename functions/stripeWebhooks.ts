@@ -139,7 +139,7 @@ async function processSubscription(
     type: 'subscription',
     amount,
     timestamp: admin.firestore.FieldValue.serverTimestamp(),
-    description: 'WWJD+ Subscription',
+    description: 'OneVine+ Subscription',
   });
 
   console.log(`Subscription processed for UID: ${uid}`);
@@ -174,13 +174,13 @@ async function processTokenPurchase(
   });
 
   const userSnap = await userRef.get();
-  if (userSnap.exists && typeof userSnap.data()?.tokenCount === 'number') {
+  if (userSnap.exists && typeof userSnap.data()?.tokens === 'number') {
     await userRef.set(
-      { tokenCount: admin.firestore.FieldValue.increment(tokenAmount) },
+      { tokens: admin.firestore.FieldValue.increment(tokenAmount) },
       { merge: true },
     );
   } else {
-    await userRef.set({ tokenCount: tokenAmount }, { merge: true });
+    await userRef.set({ tokens: tokenAmount }, { merge: true });
   }
 
   console.log(`Token purchase processed for UID: ${uid}`);
