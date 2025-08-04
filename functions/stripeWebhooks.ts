@@ -68,7 +68,10 @@ export const handleStripeWebhookV2 = functions.https.onRequest(async (req, res) 
         await processSubscription(event.type, object, uid);
       } else if (purchaseType === 'token' || purchaseType === 'token_purchase') {
         const tokenAmount = Number(object.metadata?.tokenAmount || 0);
-        await processTokenPurchase(uid, tokenAmount);
+        const stripeTransactionId =
+          (object.payment_intent as string | undefined) ||
+          (object.id as string);
+        await processTokenPurchase(uid, tokenAmount, stripeTransactionId);
       } else {
         console.log(`Unhandled purchase type: ${purchaseType}`);
       }
@@ -117,9 +120,10 @@ async function processSubscription(
 
   const subData = {
     active: true,
-    tier: 'paid',
+    tier: object.metadata?.tier || 'premium',
     subscribedAt: admin.firestore.FieldValue.serverTimestamp(),
     expiresAt: expiresAt || null,
+    updatedVia: 'stripeWebhook',
   };
   await subRef.set(subData, { merge: true });
 
@@ -139,26 +143,31 @@ async function processSubscription(
   console.log(`Subscription processed for UID: ${uid}`);
 }
 
-async function processTokenPurchase(uid: string, tokenAmount: number) {
+async function processTokenPurchase(
+  uid: string,
+  tokenAmount: number,
+  stripeTransactionId?: string,
+) {
   const userRef = firestore.collection('users').doc(uid);
   await firestore.runTransaction(async (t) => {
     const snap = await t.get(userRef);
-    if (!snap.exists) {
-      console.warn(`User ${uid} document does not exist. Creating new document.`);
+    const data = snap.data();
+    if (!snap.exists || typeof data?.tokens !== 'number') {
+      t.set(userRef, { tokens: 0 }, { merge: true });
     }
 
     t.set(
       userRef,
-      { tokenCount: admin.firestore.FieldValue.increment(tokenAmount) },
-      { merge: true }
+      { tokens: admin.firestore.FieldValue.increment(tokenAmount) },
+      { merge: true },
     );
 
     const txRef = userRef.collection('transactions').doc();
     t.set(txRef, {
-      type: 'token',
+      type: 'tokenPurchase',
       amount: tokenAmount,
       timestamp: admin.firestore.FieldValue.serverTimestamp(),
-      description: `Purchased ${tokenAmount} tokens`,
+      stripeTransactionId: stripeTransactionId || null,
     });
   });
 
