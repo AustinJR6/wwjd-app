@@ -2,10 +2,11 @@ import * as functions from 'firebase-functions/v1';
 import * as admin from 'firebase-admin';
 import Stripe from 'stripe';
 
-// Initialize Firebase Admin SDK if not already initialized
 if (!admin.apps.length) {
   admin.initializeApp();
 }
+
+const firestore = admin.firestore();
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
   apiVersion: '2023-10-16',
@@ -14,6 +15,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
 export const handleStripeWebhookV2 = functions.https.onRequest(async (req, res) => {
   const sig = req.headers['stripe-signature'];
   if (typeof sig !== 'string') {
+    console.error('Missing stripe-signature header');
     res.status(400).send('Missing stripe-signature header');
     return;
   }
@@ -26,51 +28,143 @@ export const handleStripeWebhookV2 = functions.https.onRequest(async (req, res) 
       process.env.STRIPE_WEBHOOK_SECRET || ''
     );
   } catch (err: any) {
-    console.error('⚠️ Webhook signature verification failed.', err.message);
+    console.error('Webhook signature verification failed.', err.message);
     res.status(400).send(`Webhook Error: ${err.message}`);
     return;
   }
 
-  const supportedEvents = [
-    'setup_intent.succeeded',
-    'payment_intent.succeeded',
-    'invoice.paid',
-  ];
+  try {
+    if (
+      event.type === 'checkout.session.completed' ||
+      event.type === 'invoice.paid'
+    ) {
+      const object: any = event.data.object;
+      const customerId = object.customer as string | undefined;
+      if (!customerId) {
+        console.error(`Missing customer on event ${event.type}`);
+        res.status(400).send('Missing customer');
+        return;
+      }
 
-  if (!supportedEvents.includes(event.type)) {
-    console.log(`🔕 Unhandled event type: ${event.type}`);
-    res.status(200).send('Event ignored');
-    return;
+      const customer = await stripe.customers.retrieve(customerId);
+      if ((customer as Stripe.Customer).deleted) {
+        console.error(`Customer ${customerId} is deleted`);
+        res.status(400).send('Customer deleted');
+        return;
+      }
+
+      const uid = (customer as Stripe.Customer).metadata?.uid as
+        | string
+        | undefined;
+      if (!uid) {
+        console.error(`UID missing in customer metadata for ${customerId}`);
+        res.status(400).send('Missing UID');
+        return;
+      }
+
+      const purchaseType = object.metadata?.type as string | undefined;
+
+      if (purchaseType === 'subscription') {
+        await processSubscription(event.type, object, uid);
+      } else if (purchaseType === 'token' || purchaseType === 'token_purchase') {
+        const tokenAmount = Number(object.metadata?.tokenAmount || 0);
+        await processTokenPurchase(uid, tokenAmount);
+      } else {
+        console.log(`Unhandled purchase type: ${purchaseType}`);
+      }
+    } else {
+      console.log(`Unhandled event type: ${event.type}`);
+    }
+
+    console.log('Webhook handled successfully');
+    res.status(200).send('Webhook handled');
+  } catch (err) {
+    console.error('Error processing webhook', err);
+    res.status(500).send('Internal Server Error');
   }
-
-  const object: any = event.data.object;
-  const metadata = object.metadata || {};
-  const uid = metadata.uid as string | undefined;
-  const type = metadata.type as string | undefined;
-  const tokenAmount = Number(metadata.tokenAmount || 0);
-
-  if (!uid || !type) {
-    console.warn('🚫 Missing metadata in event:', event.type);
-    res.status(400).send('Missing metadata');
-    return;
-  }
-
-  const userRef = admin.firestore().collection('users').doc(uid);
-
-  if (type === 'subscription') {
-    console.log(`📬 Setting isSubscribed: true for UID: ${uid}`);
-    await userRef.set({ isSubscribed: true }, { merge: true });
-  } else if (type === 'token_purchase') {
-    console.log(`💎 Adding ${tokenAmount} tokens for UID: ${uid}`);
-    await userRef.set(
-      { tokens: admin.firestore.FieldValue.increment(tokenAmount) },
-      { merge: true }
-    );
-  } else {
-    console.warn(`⚠️ Unrecognized metadata.type: ${type}`);
-  }
-
-  console.log('✅ Webhook handled successfully');
-  res.status(200).send('Webhook handled');
 });
+
+async function processSubscription(
+  eventType: string,
+  object: any,
+  uid: string
+) {
+  const userRef = firestore.collection('users').doc(uid);
+  const subRef = firestore.collection('subscriptions').doc(uid);
+
+  let amount = 0;
+  let subscriptionId: string | undefined;
+  if (eventType === 'invoice.paid') {
+    amount = object.amount_paid || 0;
+    subscriptionId = object.subscription as string | undefined;
+  } else if (eventType === 'checkout.session.completed') {
+    amount = object.amount_total || 0;
+    subscriptionId = object.subscription as string | undefined;
+  }
+
+  let expiresAt: admin.firestore.Timestamp | null = null;
+  if (subscriptionId) {
+    try {
+      const sub = await stripe.subscriptions.retrieve(subscriptionId);
+      const periodEnd = (sub as any).current_period_end as number | undefined;
+      if (periodEnd) {
+        expiresAt = admin.firestore.Timestamp.fromMillis(periodEnd * 1000);
+      }
+    } catch (err) {
+      console.error(`Failed to retrieve subscription ${subscriptionId}`, err);
+    }
+  }
+
+  const subSnap = await subRef.get();
+  const subData = {
+    active: true,
+    tier: 'plus',
+    subscribedAt: admin.firestore.FieldValue.serverTimestamp(),
+    expiresAt: expiresAt || null,
+  };
+  if (subSnap.exists) {
+    await subRef.update(subData);
+  } else {
+    await subRef.set(subData);
+  }
+
+  const userSnap = await userRef.get();
+  const userData = { isSubscribed: true };
+  if (userSnap.exists) {
+    await userRef.update(userData);
+  } else {
+    await userRef.set(userData);
+  }
+
+  await userRef.collection('transactions').add({
+    type: 'subscription',
+    amount,
+    timestamp: admin.firestore.FieldValue.serverTimestamp(),
+    description: 'Subscribed to OneVine+',
+  });
+
+  console.log(`Subscription processed for UID: ${uid}`);
+}
+
+async function processTokenPurchase(uid: string, tokenAmount: number) {
+  const userRef = firestore.collection('users').doc(uid);
+  const userSnap = await userRef.get();
+  if (!userSnap.exists) {
+    console.warn(`User ${uid} document does not exist. Creating new document.`);
+  }
+
+  await userRef.set(
+    { tokens: admin.firestore.FieldValue.increment(tokenAmount) },
+    { merge: true }
+  );
+
+  await userRef.collection('transactions').add({
+    type: 'token',
+    amount: tokenAmount,
+    timestamp: admin.firestore.FieldValue.serverTimestamp(),
+    description: `Purchased ${tokenAmount} tokens`,
+  });
+
+  console.log(`Token purchase processed for UID: ${uid}`);
+}
 
