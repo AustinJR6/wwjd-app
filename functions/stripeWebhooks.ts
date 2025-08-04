@@ -115,32 +115,25 @@ async function processSubscription(
     }
   }
 
-  const subSnap = await subRef.get();
   const subData = {
     active: true,
-    tier: 'plus',
+    tier: 'paid',
     subscribedAt: admin.firestore.FieldValue.serverTimestamp(),
     expiresAt: expiresAt || null,
   };
-  if (subSnap.exists) {
-    await subRef.update(subData);
-  } else {
-    await subRef.set(subData);
-  }
+  await subRef.set(subData, { merge: true });
 
-  const userSnap = await userRef.get();
-  const userData = { isSubscribed: true };
-  if (userSnap.exists) {
-    await userRef.update(userData);
-  } else {
-    await userRef.set(userData);
-  }
+  const userData = {
+    isSubscribed: true,
+    lastActive: admin.firestore.FieldValue.serverTimestamp(),
+  };
+  await userRef.set(userData, { merge: true });
 
   await userRef.collection('transactions').add({
     type: 'subscription',
     amount,
     timestamp: admin.firestore.FieldValue.serverTimestamp(),
-    description: 'Subscribed to OneVine+',
+    description: 'WWJD+ Subscription',
   });
 
   console.log(`Subscription processed for UID: ${uid}`);
@@ -148,21 +141,25 @@ async function processSubscription(
 
 async function processTokenPurchase(uid: string, tokenAmount: number) {
   const userRef = firestore.collection('users').doc(uid);
-  const userSnap = await userRef.get();
-  if (!userSnap.exists) {
-    console.warn(`User ${uid} document does not exist. Creating new document.`);
-  }
+  await firestore.runTransaction(async (t) => {
+    const snap = await t.get(userRef);
+    if (!snap.exists) {
+      console.warn(`User ${uid} document does not exist. Creating new document.`);
+    }
 
-  await userRef.set(
-    { tokens: admin.firestore.FieldValue.increment(tokenAmount) },
-    { merge: true }
-  );
+    t.set(
+      userRef,
+      { tokenCount: admin.firestore.FieldValue.increment(tokenAmount) },
+      { merge: true }
+    );
 
-  await userRef.collection('transactions').add({
-    type: 'token',
-    amount: tokenAmount,
-    timestamp: admin.firestore.FieldValue.serverTimestamp(),
-    description: `Purchased ${tokenAmount} tokens`,
+    const txRef = userRef.collection('transactions').doc();
+    t.set(txRef, {
+      type: 'token',
+      amount: tokenAmount,
+      timestamp: admin.firestore.FieldValue.serverTimestamp(),
+      description: `Purchased ${tokenAmount} tokens`,
+    });
   });
 
   console.log(`Token purchase processed for UID: ${uid}`);
