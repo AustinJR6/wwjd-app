@@ -120,9 +120,12 @@ async function processSubscription(
     }
   }
 
+  const subscriptionType = object.metadata?.tier || 'premium';
   const subData = {
     active: true,
-    tier: object.metadata?.tier || 'premium',
+    tier: subscriptionType,
+    isSubscribed: true,
+    subscriptionType,
     subscribedAt: admin.firestore.FieldValue.serverTimestamp(),
     expiresAt: expiresAt || null,
     updatedVia: 'stripeWebhook',
