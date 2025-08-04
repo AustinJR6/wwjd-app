@@ -115,6 +115,20 @@ export async function getDocument(path: string): Promise<any | null> {
     }
     if (status === 404) {
       // Document missing is not an auth issue
+      if (path.startsWith('subscriptions/')) {
+        const defaultSub = {
+          active: false,
+          tier: 'free',
+          subscribedAt: new Date(),
+          createdVia: 'autoInit',
+        };
+        try {
+          await setDocument(path, defaultSub);
+        } catch (createErr) {
+          console.error('Failed to auto-create subscription document', createErr);
+        }
+        return defaultSub;
+      }
       return null;
     }
     throw err;
