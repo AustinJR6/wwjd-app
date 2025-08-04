@@ -67,7 +67,9 @@ export const handleStripeWebhookV2 = functions.https.onRequest(async (req, res) 
       if (purchaseType === 'subscription') {
         await processSubscription(event.type, object, uid);
       } else if (purchaseType === 'token' || purchaseType === 'token_purchase') {
-        const tokenAmount = Number(object.metadata?.tokenAmount || 0);
+        const tokenAmount = Number(
+          object.metadata?.tokens || object.metadata?.tokenAmount || 0,
+        );
         const stripeTransactionId =
           (object.payment_intent as string | undefined) ||
           (object.id as string);
@@ -170,6 +172,16 @@ async function processTokenPurchase(
       stripeTransactionId: stripeTransactionId || null,
     });
   });
+
+  const userSnap = await userRef.get();
+  if (userSnap.exists && typeof userSnap.data()?.tokenCount === 'number') {
+    await userRef.set(
+      { tokenCount: admin.firestore.FieldValue.increment(tokenAmount) },
+      { merge: true },
+    );
+  } else {
+    await userRef.set({ tokenCount: tokenAmount }, { merge: true });
+  }
 
   console.log(`Token purchase processed for UID: ${uid}`);
 }
