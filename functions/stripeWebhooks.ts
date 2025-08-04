@@ -2,16 +2,19 @@ import * as functions from 'firebase-functions/v1';
 import * as admin from 'firebase-admin';
 import Stripe from 'stripe';
 
+// Initialize Firebase Admin if not already initialized
 if (!admin.apps.length) {
   admin.initializeApp();
 }
 
 const firestore = admin.firestore();
 
+// Initialize Stripe
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
   apiVersion: '2023-10-16',
 } as any);
 
+// Webhook handler
 export const handleStripeWebhookV2 = functions.https.onRequest(async (req, res) => {
   const sig = req.headers['stripe-signature'];
   if (typeof sig !== 'string') {
@@ -34,11 +37,12 @@ export const handleStripeWebhookV2 = functions.https.onRequest(async (req, res) 
   }
 
   try {
+    const object: any = event.data.object;
+
     if (
       event.type === 'checkout.session.completed' ||
       event.type === 'invoice.paid'
     ) {
-      const object: any = event.data.object;
       const customerId = object.customer as string | undefined;
       if (!customerId) {
         console.error(`Missing customer on event ${event.type}`);
@@ -53,9 +57,7 @@ export const handleStripeWebhookV2 = functions.https.onRequest(async (req, res) 
         return;
       }
 
-      const uid = (customer as Stripe.Customer).metadata?.uid as
-        | string
-        | undefined;
+      const uid = (customer as Stripe.Customer).metadata?.uid as string | undefined;
       if (!uid) {
         console.error(`UID missing in customer metadata for ${customerId}`);
         res.status(400).send('Missing UID');
@@ -68,11 +70,10 @@ export const handleStripeWebhookV2 = functions.https.onRequest(async (req, res) 
         await processSubscription(event.type, object, uid);
       } else if (purchaseType === 'token' || purchaseType === 'token_purchase') {
         const tokenAmount = Number(
-          object.metadata?.tokens || object.metadata?.tokenAmount || 0,
+          object.metadata?.tokens || object.metadata?.tokenAmount || 0
         );
         const stripeTransactionId =
-          (object.payment_intent as string | undefined) ||
-          (object.id as string);
+          (object.payment_intent as string | undefined) || (object.id as string);
         await processTokenPurchase(uid, tokenAmount, stripeTransactionId);
       } else {
         console.log(`Unhandled purchase type: ${purchaseType}`);
@@ -89,12 +90,12 @@ export const handleStripeWebhookV2 = functions.https.onRequest(async (req, res) 
   }
 });
 
+// Subscription handler
 async function processSubscription(
   eventType: string,
   object: any,
   uid: string
 ) {
-
   const subRef = firestore.collection('subscriptions').doc(uid);
 
   let amount = 0;
@@ -133,8 +134,6 @@ async function processSubscription(
   await subRef.set(subData, { merge: true });
 
   const userRef = firestore.collection('users').doc(uid);
-await userRef.set({ isSubscribed: true }, { merge: true });
-
   const userData = {
     isSubscribed: true,
     lastActive: admin.firestore.FieldValue.serverTimestamp(),
@@ -151,12 +150,14 @@ await userRef.set({ isSubscribed: true }, { merge: true });
   console.log(`Subscription processed for UID: ${uid}`);
 }
 
+// Token purchase handler
 async function processTokenPurchase(
   uid: string,
   tokenAmount: number,
-  stripeTransactionId?: string,
+  stripeTransactionId?: string
 ) {
   const userRef = firestore.collection('users').doc(uid);
+
   await firestore.runTransaction(async (t) => {
     const snap = await t.get(userRef);
     const data = snap.data();
@@ -167,7 +168,7 @@ async function processTokenPurchase(
     t.set(
       userRef,
       { tokens: admin.firestore.FieldValue.increment(tokenAmount) },
-      { merge: true },
+      { merge: true }
     );
 
     const txRef = userRef.collection('transactions').doc();
@@ -183,7 +184,7 @@ async function processTokenPurchase(
   if (userSnap.exists && typeof userSnap.data()?.tokens === 'number') {
     await userRef.set(
       { tokens: admin.firestore.FieldValue.increment(tokenAmount) },
-      { merge: true },
+      { merge: true }
     );
   } else {
     await userRef.set({ tokens: tokenAmount }, { merge: true });
@@ -191,4 +192,3 @@ async function processTokenPurchase(
 
   console.log(`Token purchase processed for UID: ${uid}`);
 }
-
