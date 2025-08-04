@@ -94,7 +94,7 @@ async function processSubscription(
   object: any,
   uid: string
 ) {
-  const userRef = firestore.collection('users').doc(uid);
+
   const subRef = firestore.collection('subscriptions').doc(uid);
 
   let amount = 0;
@@ -131,6 +131,9 @@ async function processSubscription(
     updatedVia: 'stripeWebhook',
   };
   await subRef.set(subData, { merge: true });
+
+  const userRef = firestore.collection('users').doc(uid);
+await userRef.set({ isSubscribed: true }, { merge: true });
 
   const userData = {
     isSubscribed: true,
