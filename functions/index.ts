@@ -1220,6 +1220,13 @@ export const createCheckoutSession = functions
       return;
     }
 
+    const allowedTokenAmounts = [20, 50, 100];
+    if (!allowedTokenAmounts.includes(tokenAmount)) {
+      logger.warn('⚠️ Invalid tokenAmount value', { tokenAmount });
+      res.status(400).json({ error: 'Invalid tokenAmount' });
+      return;
+    }
+
     const stripeSecret = functions.config().stripe?.secret;
     if (!stripeSecret) {
       logger.error('Stripe secret not configured');
@@ -1270,10 +1277,49 @@ export const createCheckoutSession = functions
         automatic_payment_methods: { enabled: true },
       });
 
+      const clientSecret = intent.client_secret;
+      const ephSecret = ephemeralKey.secret;
+
+      if (!clientSecret || !ephSecret || !customerId) {
+        logger.error('Missing Stripe values for checkout session', {
+          clientSecret: !!clientSecret,
+          ephSecret: !!ephSecret,
+          customerId: !!customerId,
+        });
+        res.status(500).json({ error: 'Failed to create checkout' });
+        return;
+      }
+
+      try {
+        await db
+          .collection('users')
+          .doc(uid)
+          .collection('transactions')
+          .doc(intent.id)
+          .set(
+            {
+              type: 'token',
+              tokenAmount,
+              amount,
+              currency: price.currency,
+              paymentIntentId: intent.id,
+              status: intent.status,
+              createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            },
+            { merge: true }
+          );
+      } catch (fireErr) {
+        logger.error('Failed to log token transaction', {
+          uid,
+          paymentIntentId: intent.id,
+          error: fireErr,
+        });
+      }
+
       logger.info(`✅ PaymentIntent created ${intent.id}`);
       res.status(200).json({
-        clientSecret: intent.client_secret,
-        ephemeralKey: ephemeralKey.secret,
+        clientSecret,
+        ephemeralKey: ephSecret,
         customerId,
       });
     } catch (err) {
@@ -1337,19 +1383,48 @@ export const createStripeSubscriptionIntent = functions
       const clientSecret = (latestInvoice as any)?.payment_intent?.client_secret as
         | string
         | undefined;
-      if (!clientSecret) {
-        logger.error('Failed to obtain client secret', {
+      const invoiceId = latestInvoice?.id;
+
+      if (!clientSecret || !invoiceId || !ephemeralKey.secret) {
+        logger.error('Failed to obtain subscription details', {
           subscriptionId: subscription.id,
-          latestInvoice,
+          hasClientSecret: !!clientSecret,
+          invoiceId,
+          hasEphKey: !!ephemeralKey.secret,
         });
         res.status(500).json({ error: 'Failed to obtain client secret' });
         return;
       }
 
+      try {
+        await db
+          .collection('users')
+          .doc(uid)
+          .collection('transactions')
+          .doc(invoiceId)
+          .set(
+            {
+              type: 'subscription',
+              tier,
+              subscriptionId: subscription.id,
+              invoiceId,
+              status: subscription.status,
+              createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            },
+            { merge: true }
+          );
+      } catch (fireErr) {
+        logger.error('Failed to log subscription transaction', {
+          uid,
+          invoiceId,
+          error: fireErr,
+        });
+      }
+
       res.status(200).json({
         clientSecret,
-        customerId,
         ephemeralKey: ephemeralKey.secret,
+        customerId,
       });
     } catch (err) {
       logger.error('createStripeSubscriptionIntent failed', err);
