@@ -53,8 +53,11 @@ export default function ForgotUsernameScreen() {
   useEffect(() => {
     const load = async () => {
       try {
-        const list = await queryCollection('regions');
-        list.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+        const list = await queryCollection('regions', {
+          orderByField: 'sortOrder',
+          direction: 'ASCENDING',
+          limit: 50,
+        });
         setRegions(list);
         if (!region && list.length) setRegion(list[0].name);
       } catch (err) {

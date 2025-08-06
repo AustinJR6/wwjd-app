@@ -879,10 +879,22 @@ export const generateDailyChallenge = functions
       timestamp: admin.firestore.FieldValue.serverTimestamp(),
     });
 
-    const allSnap = await historyRef.orderBy("timestamp", "desc").get();
-    const docs = allSnap.docs;
-    for (let i = 3; i < docs.length; i++) {
-      await docs[i].ref.delete();
+    let last = histSnap.docs[histSnap.docs.length - 1];
+    let snap = await historyRef
+      .orderBy("timestamp", "desc")
+      .startAfter(last)
+      .limit(20)
+      .get();
+    while (!snap.empty) {
+      const batch = db.batch();
+      snap.docs.forEach((d) => batch.delete(d.ref));
+      await batch.commit();
+      last = snap.docs[snap.docs.length - 1];
+      snap = await historyRef
+        .orderBy("timestamp", "desc")
+        .startAfter(last)
+        .limit(20)
+        .get();
     }
 
     await userRef.set(
@@ -1002,10 +1014,22 @@ export const skipDailyChallenge = functions
       timestamp: admin.firestore.FieldValue.serverTimestamp(),
     });
 
-    const allSnap = await historyRef.orderBy("timestamp", "desc").get();
-    const docs = allSnap.docs;
-    for (let i = 3; i < docs.length; i++) {
-      await docs[i].ref.delete();
+    let last = histSnap.docs[histSnap.docs.length - 1];
+    let snap = await historyRef
+      .orderBy("timestamp", "desc")
+      .startAfter(last)
+      .limit(20)
+      .get();
+    while (!snap.empty) {
+      const batch = db.batch();
+      snap.docs.forEach((d) => batch.delete(d.ref));
+      await batch.commit();
+      last = snap.docs[snap.docs.length - 1];
+      snap = await historyRef
+        .orderBy("timestamp", "desc")
+        .startAfter(last)
+        .limit(20)
+        .get();
     }
 
     await userRef.set(

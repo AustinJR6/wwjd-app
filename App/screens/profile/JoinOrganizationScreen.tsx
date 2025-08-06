@@ -61,14 +61,17 @@ export default function JoinOrganizationScreen() {
   const [query, setQuery] = useState('');
   const [orgs, setOrgs] = useState<any[]>([]);
   const [filtered, setFiltered] = useState<any[]>([]);
+  const [lastName, setLastName] = useState<string | null>(null);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   useEffect(() => {
     if (!authReady || !uid) return;
-    fetchOrgs();
+    fetchOrgs(true);
   }, [authReady, uid]);
 
-  const fetchOrgs = async () => {
+  const fetchOrgs = async (reset = false) => {
     try {
       try {
         await getAuthHeaders();
@@ -80,11 +83,30 @@ export default function JoinOrganizationScreen() {
       const uid = await ensureAuth(user?.uid);
       if (!uid) return;
 
-      const all = await queryCollection('organizations');
-      setOrgs(all);
-      setFiltered(all);
+      if (reset) {
+        setLastName(null);
+        setHasMore(true);
+      }
+
+      if (!hasMore && !reset) return;
+      setLoadingMore(true);
+
+      const page = await queryCollection('organizations', {
+        orderByField: 'name',
+        direction: 'ASCENDING',
+        limit: 20,
+        startAfter: reset ? undefined : lastName || undefined,
+      });
+
+      const newList = reset ? page : [...orgs, ...page];
+      setOrgs(newList);
+      setFiltered(newList);
+      setLastName(page.length ? page[page.length - 1].name : lastName);
+      setHasMore(page.length === 20);
+      setLoadingMore(false);
     } catch (err: any) {
       console.error('🔥 API Error:', err?.response?.data || err.message);
+      setLoadingMore(false);
     }
   };
 
@@ -185,21 +207,24 @@ export default function JoinOrganizationScreen() {
       />
 
       <FlatList
-        data={filtered}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <View style={styles.row}>
-            <View style={styles.infoWrap}>
-              <CustomText style={styles.name}>{item.name}</CustomText>
-              <CustomText style={styles.meta}>Tier: {item.tier}</CustomText>
-              <CustomText style={styles.meta}>
-                Seats: {item.members?.length || 0} / {item.seatLimit}
-              </CustomText>
-            </View>
-            <Button title="Join" onPress={() => joinOrg(item)} />
+      data={filtered}
+      keyExtractor={(item) => item.id}
+      renderItem={({ item }) => (
+        <View style={styles.row}>
+          <View style={styles.infoWrap}>
+            <CustomText style={styles.name}>{item.name}</CustomText>
+            <CustomText style={styles.meta}>Tier: {item.tier}</CustomText>
+            <CustomText style={styles.meta}>
+              Seats: {item.members?.length || 0} / {item.seatLimit}
+            </CustomText>
           </View>
-        )}
-      />
+          <Button title="Join" onPress={() => joinOrg(item)} />
+        </View>
+      )}
+      onEndReached={() => fetchOrgs(false)}
+      onEndReachedThreshold={0.5}
+      ListFooterComponent={loadingMore ? <CustomText>Loading...</CustomText> : null}
+    />
     </ScreenContainer>
     </AuthGate>
   );
