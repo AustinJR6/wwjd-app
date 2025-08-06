@@ -1333,8 +1333,13 @@ export const createStripeSubscriptionIntent = functions
         metadata: { uid, tier },
       });
 
-      const clientSecret = (subscription.latest_invoice as any)?.payment_intent?.client_secret as string | undefined;
+      const latestInvoice = subscription.latest_invoice as Stripe.Invoice | null;
+      const clientSecret = latestInvoice?.payment_intent?.client_secret as string | undefined;
       if (!clientSecret) {
+        logger.error('Failed to obtain client secret', {
+          subscriptionId: subscription.id,
+          latestInvoice,
+        });
         res.status(500).json({ error: 'Failed to obtain client secret' });
         return;
       }
