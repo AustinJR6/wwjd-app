@@ -1384,6 +1384,8 @@ export const createStripeSubscriptionIntent = functions
         | string
         | undefined;
       const invoiceId = latestInvoice?.id;
+      const amount = typeof latestInvoice?.amount_due === 'number' ? latestInvoice.amount_due : 0;
+      const currency = latestInvoice?.currency ?? 'usd';
 
       if (!clientSecret || !invoiceId || !ephemeralKey.secret) {
         logger.error('Failed to obtain subscription details', {
@@ -1398,8 +1400,34 @@ export const createStripeSubscriptionIntent = functions
 
       try {
         await db
-          .collection('users')
+          .collection('subscriptions')
           .doc(uid)
+          .set(
+            {
+              active: {
+                subscriptionId: subscription.id,
+                status: subscription.status,
+                invoiceId,
+                tier,
+                createdAt: admin.firestore.FieldValue.serverTimestamp(),
+                currentPeriodStart: subscription.current_period_start
+                  ? admin.firestore.Timestamp.fromMillis(
+                      subscription.current_period_start * 1000,
+                    )
+                  : undefined,
+                currentPeriodEnd: subscription.current_period_end
+                  ? admin.firestore.Timestamp.fromMillis(
+                      subscription.current_period_end * 1000,
+                    )
+                  : undefined,
+              },
+            },
+            { merge: true },
+          );
+
+        await userRef.set({ isSubscribed: true }, { merge: true });
+
+        await userRef
           .collection('transactions')
           .doc(invoiceId)
           .set(
@@ -1408,13 +1436,15 @@ export const createStripeSubscriptionIntent = functions
               tier,
               subscriptionId: subscription.id,
               invoiceId,
+              amount,
+              currency,
               status: subscription.status,
               createdAt: admin.firestore.FieldValue.serverTimestamp(),
             },
-            { merge: true }
+            { merge: true },
           );
       } catch (fireErr) {
-        logger.error('Failed to log subscription transaction', {
+        logger.error('Failed to persist subscription data', {
           uid,
           invoiceId,
           error: fireErr,
