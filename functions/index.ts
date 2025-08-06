@@ -1205,7 +1205,7 @@ export const startTokenCheckout = functions
 export const createCheckoutSession = functions
   .https.onRequest(withCors(async (req: Request, res: Response) => {
     logger.info('createCheckoutSession payload', req.body);
-    const { uid, priceId, tokenAmount, mode = 'payment', type } = req.body || {};
+    const { uid, priceId, tokenAmount } = req.body || {};
 
     if (!uid || !priceId) {
       logger.warn('⚠️ Missing uid or priceId', { uid, priceId });
@@ -1214,8 +1214,8 @@ export const createCheckoutSession = functions
     }
     const cleanId = cleanPriceId(priceId);
 
-    if (mode === 'payment' && (typeof tokenAmount !== 'number' || tokenAmount <= 0)) {
-      logger.warn('⚠️ Missing tokenAmount for payment mode', { tokenAmount });
+    if (typeof tokenAmount !== 'number' || tokenAmount <= 0) {
+      logger.warn('⚠️ Missing or invalid tokenAmount', { tokenAmount });
       res.status(400).json({ error: 'tokenAmount required' });
       return;
     }
@@ -1251,49 +1251,102 @@ export const createCheckoutSession = functions
         { apiVersion: '2023-10-16' }
       );
 
-      if (mode === 'payment') {
-        const price = await stripeClient.prices.retrieve(cleanId);
-        const amount = price.unit_amount;
-        if (!amount) {
-          res.status(400).json({ error: 'Unable to resolve price amount' });
-          return;
-        }
-        const intent = await stripeClient.paymentIntents.create({
-          amount,
-          currency: price.currency,
-          customer: customerId,
-          metadata: {
-            uid,
-            type: 'token',
-            tokenAmount: String(tokenAmount),
-            mode,
-          },
-          automatic_payment_methods: { enabled: true },
-        });
-
-        logger.info(`✅ PaymentIntent created ${intent.id}`);
-        res.status(200).json({
-          clientSecret: intent.client_secret,
-          ephemeralKey: ephemeralKey.secret,
-          customerId,
-        });
-      } else {
-        const session = await stripeClient.checkout.sessions.create({
-          mode,
-          line_items: [{ price: cleanId, quantity: 1 }],
-          success_url: 'onevine://checkout-success',
-          cancel_url: 'onevine://checkout-cancel',
-          metadata: {
-            uid,
-            type: 'subscription',
-          },
-        });
-        logger.info(`✅ Checkout session created ${session.id}`);
-        res.status(200).json({ url: session.url });
+      const price = await stripeClient.prices.retrieve(cleanId);
+      const amount = price.unit_amount;
+      if (!amount) {
+        res.status(400).json({ error: 'Unable to resolve price amount' });
+        return;
       }
+
+      const intent = await stripeClient.paymentIntents.create({
+        amount,
+        currency: price.currency,
+        customer: customerId,
+        metadata: {
+          uid,
+          purchaseType: 'token',
+          tokenAmount: String(tokenAmount),
+        },
+        automatic_payment_methods: { enabled: true },
+      });
+
+      logger.info(`✅ PaymentIntent created ${intent.id}`);
+      res.status(200).json({
+        clientSecret: intent.client_secret,
+        ephemeralKey: ephemeralKey.secret,
+        customerId,
+      });
     } catch (err) {
       logger.error('createCheckoutSession failed', err);
       res.status(500).json({ error: (err as any)?.message || 'Failed to create checkout' });
+    }
+  }));
+
+export const createStripeSubscriptionIntent = functions
+  .https.onRequest(withCors(async (req: Request, res: Response) => {
+    logger.info('createStripeSubscriptionIntent payload', req.body);
+    const { uid, priceId, tier = 'premium' } = req.body || {};
+
+    if (!uid || !priceId) {
+      logger.warn('⚠️ Missing uid or priceId', { uid, priceId });
+      res.status(400).json({ error: 'Missing required fields' });
+      return;
+    }
+
+    const stripeSecret = functions.config().stripe?.secret;
+    if (!stripeSecret) {
+      logger.error('Stripe secret not configured');
+      res.status(500).json({ error: 'Stripe not configured' });
+      return;
+    }
+
+    const stripeClient = new Stripe(stripeSecret, { apiVersion: '2023-10-16' } as any);
+
+    try {
+      const userRef = db.collection('users').doc(uid);
+      const snap = await userRef.get();
+      let customerId = (snap.data() as any)?.stripeCustomerId as string | undefined;
+      if (!customerId) {
+        const userRecord = await auth.getUser(uid);
+        const customer = await stripeClient.customers.create({
+          email: userRecord.email ?? undefined,
+          metadata: { uid, tier },
+        });
+        customerId = customer.id;
+        await userRef.set({ stripeCustomerId: customerId }, { merge: true });
+        logger.info('Stripe customer created', { uid, customerId });
+      } else {
+        await stripeClient.customers.update(customerId, { metadata: { uid, tier } });
+        logger.info('Stripe customer reused', { uid, customerId });
+      }
+
+      const ephemeralKey = await stripeClient.ephemeralKeys.create(
+        { customer: customerId },
+        { apiVersion: '2023-10-16' }
+      );
+
+      const subscription = await stripeClient.subscriptions.create({
+        customer: customerId,
+        items: [{ price: cleanPriceId(priceId) }],
+        payment_behavior: 'default_incomplete',
+        expand: ['latest_invoice.payment_intent'],
+        metadata: { uid, tier },
+      });
+
+      const clientSecret = (subscription.latest_invoice as any)?.payment_intent?.client_secret as string | undefined;
+      if (!clientSecret) {
+        res.status(500).json({ error: 'Failed to obtain client secret' });
+        return;
+      }
+
+      res.status(200).json({
+        clientSecret,
+        customerId,
+        ephemeralKey: ephemeralKey.secret,
+      });
+    } catch (err) {
+      logger.error('createStripeSubscriptionIntent failed', err);
+      res.status(500).json({ error: (err as any)?.message || 'Failed to create subscription' });
     }
   }));
 

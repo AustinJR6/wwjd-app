@@ -127,6 +127,9 @@ async function handleInvoice(invoice: Stripe.Invoice) {
   const amount = invoice.amount_paid || 0;
   const currency = invoice.currency || 'usd';
   const finalTier = tier || 'premium';
+  if (!tier) {
+    console.warn(`Tier missing in invoice ${invoice.id}, defaulting to 'premium'`);
+  }
 
   await processSubscription(
     uid as string,
@@ -167,7 +170,7 @@ async function processSubscription(
       currency,
       tier,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
-    });
+    }, { merge: true });
 
   console.log(`Subscription processed for UID: ${uid}`);
 }
@@ -196,13 +199,17 @@ async function processTokenPurchase(
     );
 
     const txRef = userRef.collection('transactions').doc(stripeTransactionId);
-    t.set(txRef, {
-      type: 'token',
-      amount,
-      currency,
-      tokenAmount,
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
-    });
+    t.set(
+      txRef,
+      {
+        type: 'token',
+        amount,
+        currency,
+        tokenAmount,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      },
+      { merge: true }
+    );
   });
 
   const userSnap = await userRef.get();
