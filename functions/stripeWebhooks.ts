@@ -64,6 +64,11 @@ async function handlePaymentIntent(intent: Stripe.PaymentIntent) {
     return;
   }
 
+  if (intent.status !== 'succeeded') {
+    console.log(`Ignoring payment intent with status: ${intent.status}`);
+    return;
+  }
+
   const uid = intent.metadata?.uid;
   const tokenAmount = Number(
     intent.metadata?.tokenAmount || intent.metadata?.tokens || 0
@@ -81,8 +86,11 @@ async function handlePaymentIntent(intent: Stripe.PaymentIntent) {
 
   const amount = intent.amount_received || intent.amount || 0;
   const currency = intent.currency || 'usd';
-
-  await processTokenPurchase(uid, tokenAmount, amount, currency, intent.id);
+  try {
+    await processTokenPurchase(uid, tokenAmount, amount, currency, intent.id);
+  } catch (err) {
+    console.error('Failed to process token purchase', err);
+  }
 }
 
 // Handle invoices for subscription activations
@@ -123,6 +131,10 @@ async function handleInvoice(invoice: Stripe.Invoice) {
     console.error('UID missing in invoice metadata');
     return;
   }
+  if (invoice.status !== 'paid') {
+    console.log(`Invoice ${invoice.id} not paid yet; status: ${invoice.status}`);
+    return;
+  }
 
   const amount = invoice.amount_paid || 0;
   const currency = invoice.currency || 'usd';
@@ -131,13 +143,17 @@ async function handleInvoice(invoice: Stripe.Invoice) {
     console.warn(`Tier missing in invoice ${invoice.id}, defaulting to 'premium'`);
   }
 
-  await processSubscription(
-    uid as string,
-    finalTier,
-    amount,
-    currency,
-    invoice.id as string
-  );
+  try {
+    await processSubscription(
+      uid as string,
+      finalTier,
+      amount,
+      currency,
+      invoice.id as string
+    );
+  } catch (err) {
+    console.error('Failed to process subscription', err);
+  }
 }
 
 // Subscription handler
@@ -149,28 +165,36 @@ async function processSubscription(
   invoiceId: string
 ) {
   const subRef = firestore.collection('subscriptions').doc(uid);
-  await subRef.set(
-    {
-      active: true,
-      tier,
-      subscribedAt: admin.firestore.FieldValue.serverTimestamp(),
-    },
-    { merge: true }
-  );
-
   const userRef = firestore.collection('users').doc(uid);
-  await userRef.set({ isSubscribed: true }, { merge: true });
 
-  await userRef
-    .collection('transactions')
-    .doc(invoiceId)
-    .set({
-      type: 'subscription',
-      amount,
-      currency,
-      tier,
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
-    }, { merge: true });
+  await withRetry(async () => {
+    await firestore.runTransaction(async (t) => {
+      t.set(
+        subRef,
+        {
+          active: true,
+          tier,
+          subscribedAt: admin.firestore.FieldValue.serverTimestamp(),
+        },
+        { merge: true }
+      );
+
+      t.set(userRef, { isSubscribed: true }, { merge: true });
+
+      const txRef = userRef.collection('transactions').doc(invoiceId);
+      t.set(
+        txRef,
+        {
+          type: 'subscription',
+          amount,
+          currency,
+          tier,
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        },
+        { merge: true }
+      );
+    });
+  });
 
   console.log(`Subscription processed for UID: ${uid}`);
 }
@@ -184,38 +208,47 @@ async function processTokenPurchase(
   stripeTransactionId: string
 ) {
   const userRef = firestore.collection('users').doc(uid);
+  await withRetry(async () => {
+    await firestore.runTransaction(async (t) => {
+      const snap = await t.get(userRef);
+      const data = snap.data();
+      if (!snap.exists || typeof data?.tokens !== 'number') {
+        t.set(userRef, { tokens: 0 }, { merge: true });
+      }
 
-  await firestore.runTransaction(async (t) => {
-    const snap = await t.get(userRef);
-    const data = snap.data();
-    if (!snap.exists || typeof data?.tokens !== 'number') {
-      t.set(userRef, { tokens: 0 }, { merge: true });
-    }
+      t.set(
+        userRef,
+        { tokens: admin.firestore.FieldValue.increment(tokenAmount) },
+        { merge: true }
+      );
 
-    t.set(
-      userRef,
-      { tokens: admin.firestore.FieldValue.increment(tokenAmount) },
-      { merge: true }
-    );
-
-    const txRef = userRef.collection('transactions').doc(stripeTransactionId);
-    t.set(
-      txRef,
-      {
-        type: 'token',
-        amount,
-        currency,
-        tokenAmount,
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      },
-      { merge: true }
-    );
+      const txRef = userRef.collection('transactions').doc(stripeTransactionId);
+      t.set(
+        txRef,
+        {
+          type: 'token',
+          amount,
+          currency,
+          tokenAmount,
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        },
+        { merge: true }
+      );
+    });
   });
 
-  const userSnap = await userRef.get();
-  if (!userSnap.exists || typeof userSnap.data()?.tokens !== 'number') {
-    await userRef.set({ tokens: tokenAmount }, { merge: true });
-  }
-
   console.log(`Token purchase processed for UID: ${uid}`);
+}
+
+async function withRetry(operation: () => Promise<void>, retries = 3) {
+  for (let attempt = 0; attempt < retries; attempt++) {
+    try {
+      await operation();
+      return;
+    } catch (err) {
+      if (attempt === retries - 1) throw err;
+      console.error(`Firestore operation failed (attempt ${attempt + 1})`, err);
+      await new Promise((r) => setTimeout(r, (attempt + 1) * 500));
+    }
+  }
 }
