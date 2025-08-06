@@ -1371,7 +1371,7 @@ export const createStripeSubscriptionIntent = functions
         { apiVersion: '2023-10-16' }
       );
 
-      const subscription = await stripeClient.subscriptions.create({
+      const subscriptionRes = await stripeClient.subscriptions.create({
         customer: customerId,
         items: [{ price: cleanPriceId(priceId) }],
         payment_behavior: 'default_incomplete',
@@ -1379,17 +1379,31 @@ export const createStripeSubscriptionIntent = functions
         metadata: { uid, tier },
       });
 
-      const latestInvoice = subscription.latest_invoice as Stripe.Invoice | null;
+      type SubWithPeriod = Stripe.Subscription & {
+        current_period_start?: number;
+        current_period_end?: number;
+      };
+      const subscription = subscriptionRes as SubWithPeriod;
+      const {
+        id: subscriptionId,
+        status,
+        current_period_start,
+        current_period_end,
+        latest_invoice,
+      } = subscription;
+
+      const latestInvoice = latest_invoice as Stripe.Invoice | null;
       const clientSecret = (latestInvoice as any)?.payment_intent?.client_secret as
         | string
         | undefined;
       const invoiceId = latestInvoice?.id;
-      const amount = typeof latestInvoice?.amount_due === 'number' ? latestInvoice.amount_due : 0;
+      const amount =
+        typeof latestInvoice?.amount_due === 'number' ? latestInvoice.amount_due : 0;
       const currency = latestInvoice?.currency ?? 'usd';
 
       if (!clientSecret || !invoiceId || !ephemeralKey.secret) {
         logger.error('Failed to obtain subscription details', {
-          subscriptionId: subscription.id,
+          subscriptionId,
           hasClientSecret: !!clientSecret,
           invoiceId,
           hasEphKey: !!ephemeralKey.secret,
@@ -1405,20 +1419,16 @@ export const createStripeSubscriptionIntent = functions
           .set(
             {
               active: {
-                subscriptionId: subscription.id,
-                status: subscription.status,
-                invoiceId,
+                subscriptionId,
+                status,
                 tier,
+                invoiceId,
                 createdAt: admin.firestore.FieldValue.serverTimestamp(),
-                currentPeriodStart: subscription.current_period_start
-                  ? admin.firestore.Timestamp.fromMillis(
-                      subscription.current_period_start * 1000,
-                    )
+                currentPeriodStart: current_period_start
+                  ? admin.firestore.Timestamp.fromMillis(current_period_start * 1000)
                   : undefined,
-                currentPeriodEnd: subscription.current_period_end
-                  ? admin.firestore.Timestamp.fromMillis(
-                      subscription.current_period_end * 1000,
-                    )
+                currentPeriodEnd: current_period_end
+                  ? admin.firestore.Timestamp.fromMillis(current_period_end * 1000)
                   : undefined,
               },
             },
@@ -1434,11 +1444,11 @@ export const createStripeSubscriptionIntent = functions
             {
               type: 'subscription',
               tier,
-              subscriptionId: subscription.id,
+              subscriptionId,
               invoiceId,
               amount,
               currency,
-              status: subscription.status,
+              status,
               createdAt: admin.firestore.FieldValue.serverTimestamp(),
             },
             { merge: true },
