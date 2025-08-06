@@ -205,24 +205,59 @@ export async function deleteDocument(path: string): Promise<void> {
   }
 }
 
-export async function queryCollection(collectionPath: string): Promise<any[]> {
+export async function queryCollection(
+  collectionPath: string,
+  options?: {
+    orderByField?: string;
+    direction?: 'ASCENDING' | 'DESCENDING';
+    limit?: number;
+    startAfter?: string;
+  },
+): Promise<any[]> {
   warnIfInvalidPath(collectionPath, false);
-  try {
-    console.log('➡️ Firestore QUERY', collectionPath);
-    const res = await apiClient.get(`${BASE}/${collectionPath}`, {
-      headers: await authHeaders(),
-    });
-    const docs = (res.data as any).documents || [];
-    return docs.map((d: any) => ({ id: d.name.split('/').pop(), ...fromFirestore(d) }));
-  } catch (err: any) {
-    logFirestoreError('GET', collectionPath, err);
-    if (err.response?.status === 403) {
-      await logPermissionDetails(collectionPath);
-      showPermissionDeniedForPath(collectionPath);
+  const needsQuery = options && (options.orderByField || options.limit || options.startAfter);
+  if (!needsQuery) {
+    try {
+      console.log('➡️ Firestore QUERY', collectionPath);
+      const res = await apiClient.get(`${BASE}/${collectionPath}`, {
+        headers: await authHeaders(),
+      });
+      const docs = (res.data as any).documents || [];
+      return docs.map((d: any) => ({ id: d.name.split('/').pop(), ...fromFirestore(d) }));
+    } catch (err: any) {
+      logFirestoreError('GET', collectionPath, err);
+      if (err.response?.status === 403) {
+        await logPermissionDetails(collectionPath);
+        showPermissionDeniedForPath(collectionPath);
+        return [];
+      }
       return [];
     }
-    return [];
   }
+
+  const segments = collectionPath.split('/').filter(Boolean);
+  const collectionId = segments.pop();
+  const parentPath = segments.join('/');
+  const parent = parentPath
+    ? `projects/${PROJECT_ID}/databases/(default)/documents/${parentPath}`
+    : `projects/${PROJECT_ID}/databases/(default)/documents`;
+  const query: any = { parent, from: [{ collectionId }] };
+  if (options?.orderByField) {
+    query.orderBy = [
+      {
+        field: { fieldPath: options.orderByField },
+        direction: options.direction || 'ASCENDING',
+      },
+    ];
+  }
+  if (options?.limit) query.limit = options.limit;
+  if (options?.startAfter) {
+    query.startAt = {
+      values: [{ stringValue: options.startAfter }],
+      before: false,
+    };
+  }
+  return runStructuredQuery(query);
 }
 
 export async function runStructuredQuery(query: any): Promise<any[]> {
@@ -294,19 +329,26 @@ export async function querySubcollection(
   collectionName: string,
   orderByField?: string,
   direction: 'ASCENDING' | 'DESCENDING' = 'ASCENDING',
+  limit?: number,
+  startAfter?: string,
 ): Promise<any[]> {
   const collectionPath = `${parentPath}/${collectionName}`;
   console.warn('📄 Structured subquery path:', collectionPath);
   if (!orderByField) {
-    return queryCollection(collectionPath);
+    return queryCollection(collectionPath, { limit, startAfter });
   }
-  const query = {
+  const query: any = {
     parent: `projects/${PROJECT_ID}/databases/(default)/documents/${parentPath}`,
     from: [{ collectionId: collectionName }],
     orderBy: [{ field: { fieldPath: orderByField }, direction }],
   };
+  if (limit) query.limit = limit;
+  if (startAfter) {
+    query.startAt = { values: [{ stringValue: startAfter }], before: false };
+  }
   console.warn('🔍 Structured query filters:', {
     orderBy: query.orderBy,
+    limit,
   });
   return runStructuredQuery(query);
 }

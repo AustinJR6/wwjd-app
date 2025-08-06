@@ -125,6 +125,9 @@ export default function JournalScreen() {
   );
   const [entry, setEntry] = useState('');
   const [entries, setEntries] = useState<any[]>([]);
+  const [lastTimestamp, setLastTimestamp] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
@@ -160,11 +163,7 @@ export default function JournalScreen() {
         const tokenPreview = await getToken(true);
         console.log('ID Token:', tokenPreview);
 
-        const list = await querySubcollection(
-          `journalEntries/${uid}`,
-          'entries'
-        );
-        setEntries(list);
+        await fetchEntries(true, uid);
         const userData = await loadUserProfile(uid);
         setReligion(userData?.religion ?? 'SpiritGuide');
       } catch (err: any) {
@@ -176,6 +175,30 @@ export default function JournalScreen() {
 
     authenticateAndLoad();
   }, [authReady, uid]);
+
+  const fetchEntries = async (reset = false, forcedUid?: string) => {
+    const storedUid = forcedUid || (await ensureAuth(await getCurrentUserId()));
+    if (!storedUid) return;
+    if (reset) {
+      setLastTimestamp(null);
+      setHasMore(true);
+    }
+    if (!hasMore && !reset) return;
+    setLoadingMore(true);
+    const page = await querySubcollection(
+      `journalEntries/${storedUid}`,
+      'entries',
+      'timestamp',
+      'DESCENDING',
+      20,
+      reset ? undefined : lastTimestamp || undefined,
+    );
+    const newEntries = reset ? page : [...entries, ...page];
+    setEntries(newEntries);
+    setLastTimestamp(page.length ? page[page.length - 1].timestamp : lastTimestamp);
+    setHasMore(page.length === 20);
+    setLoadingMore(false);
+  };
 
   const handleGuidedJournal = async () => {
     console.log('🔮 Start Guided Journal Pressed');
@@ -267,11 +290,7 @@ export default function JournalScreen() {
       setEmotion('');
       setTags('');
 
-      const list = await querySubcollection(
-        `journalEntries/${uid}`,
-        'entries'
-      );
-      setEntries(list);
+      await fetchEntries(true, uid);
     } catch (err: any) {
       console.error('❌ Journal save error:', {
         path: `journalEntries/${uid}/entries`,
@@ -388,6 +407,10 @@ export default function JournalScreen() {
             </View>
           </Pressable>
         ))}
+        {loadingMore && <ActivityIndicator style={{ marginVertical: 12 }} />}
+        {!loadingMore && hasMore && (
+          <Button title="Load More" onPress={() => fetchEntries(false)} />
+        )}
       </ScrollView>
 
       <Modal
