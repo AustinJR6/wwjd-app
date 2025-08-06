@@ -37,49 +37,15 @@ export const handleStripeWebhookV2 = functions.https.onRequest(async (req, res) 
   }
 
   try {
-    const object: any = event.data.object;
-
-    if (
-      event.type === 'checkout.session.completed' ||
-      event.type === 'invoice.paid'
-    ) {
-      const customerId = object.customer as string | undefined;
-      if (!customerId) {
-        console.error(`Missing customer on event ${event.type}`);
-        res.status(400).send('Missing customer');
-        return;
-      }
-
-      const customer = await stripe.customers.retrieve(customerId);
-      if ((customer as Stripe.Customer).deleted) {
-        console.error(`Customer ${customerId} is deleted`);
-        res.status(400).send('Customer deleted');
-        return;
-      }
-
-      const uid = (customer as Stripe.Customer).metadata?.uid as string | undefined;
-      if (!uid) {
-        console.error(`UID missing in customer metadata for ${customerId}`);
-        res.status(400).send('Missing UID');
-        return;
-      }
-
-      const purchaseType = object.metadata?.type as string | undefined;
-
-      if (purchaseType === 'subscription') {
-        await processSubscription(event.type, object, uid);
-      } else if (purchaseType === 'token' || purchaseType === 'token_purchase') {
-        const tokenAmount = Number(
-          object.metadata?.tokens || object.metadata?.tokenAmount || 0
-        );
-        const stripeTransactionId =
-          (object.payment_intent as string | undefined) || (object.id as string);
-        await processTokenPurchase(uid, tokenAmount, stripeTransactionId);
-      } else {
-        console.log(`Unhandled purchase type: ${purchaseType}`);
-      }
-    } else {
-      console.log(`Unhandled event type: ${event.type}`);
+    switch (event.type) {
+      case 'payment_intent.succeeded':
+        await handlePaymentIntent(event.data.object as Stripe.PaymentIntent);
+        break;
+      case 'invoice.payment_succeeded':
+        await handleInvoice(event.data.object as Stripe.Invoice);
+        break;
+      default:
+        console.log(`Unhandled event type: ${event.type}`);
     }
 
     console.log('Webhook handled successfully');
@@ -90,62 +56,118 @@ export const handleStripeWebhookV2 = functions.https.onRequest(async (req, res) 
   }
 });
 
-// Subscription handler
-async function processSubscription(
-  eventType: string,
-  object: any,
-  uid: string
-) {
-  const subRef = firestore.collection('subscriptions').doc(uid);
-
-  let amount = 0;
-  let subscriptionId: string | undefined;
-  if (eventType === 'invoice.paid') {
-    amount = object.amount_paid || 0;
-    subscriptionId = object.subscription as string | undefined;
-  } else if (eventType === 'checkout.session.completed') {
-    amount = object.amount_total || 0;
-    subscriptionId = object.subscription as string | undefined;
+// Handle payment intents for one-time token purchases
+async function handlePaymentIntent(intent: Stripe.PaymentIntent) {
+  const purchaseType = intent.metadata?.purchaseType || intent.metadata?.type;
+  if (purchaseType !== 'token') {
+    console.log(`Unhandled purchase type on payment intent: ${purchaseType}`);
+    return;
   }
 
-  let expiresAt: admin.firestore.Timestamp | null = null;
+  const uid = intent.metadata?.uid;
+  const tokenAmount = Number(
+    intent.metadata?.tokenAmount || intent.metadata?.tokens || 0
+  );
+
+  if (!uid) {
+    console.error('UID missing in payment intent metadata');
+    return;
+  }
+
+  if (!tokenAmount) {
+    console.error('tokenAmount missing or zero in payment intent metadata');
+    return;
+  }
+
+  const amount = intent.amount_received || intent.amount || 0;
+  const currency = intent.currency || 'usd';
+
+  await processTokenPurchase(uid, tokenAmount, amount, currency, intent.id);
+}
+
+// Handle invoices for subscription activations
+async function handleInvoice(invoice: Stripe.Invoice) {
+  const subscriptionId = (invoice as any).subscription as string | undefined;
+  let uid: string | undefined;
+  let tier: string | undefined;
+
   if (subscriptionId) {
     try {
-      const sub = await stripe.subscriptions.retrieve(subscriptionId);
-      const periodEnd = (sub as any).current_period_end as number | undefined;
-      if (periodEnd) {
-        expiresAt = admin.firestore.Timestamp.fromMillis(periodEnd * 1000);
-      }
+      const subscription = await stripe.subscriptions.retrieve(
+        subscriptionId as string
+      );
+      uid = subscription.metadata?.uid || uid;
+      tier = subscription.metadata?.tier || tier;
     } catch (err) {
       console.error(`Failed to retrieve subscription ${subscriptionId}`, err);
     }
   }
 
-  const subscriptionType = object.metadata?.tier || 'premium';
-  const subData = {
-    active: true,
-    tier: subscriptionType,
-    isSubscribed: true,
-    subscriptionType,
-    subscribedAt: admin.firestore.FieldValue.serverTimestamp(),
-    expiresAt: expiresAt || null,
-    updatedVia: 'stripeWebhook',
-  };
-  await subRef.set(subData, { merge: true });
+  if (!uid && invoice.customer) {
+    try {
+      const customerId =
+        typeof invoice.customer === 'string'
+          ? invoice.customer
+          : (invoice.customer as Stripe.Customer).id;
+      const customer = await stripe.customers.retrieve(customerId);
+      if (!(customer as Stripe.Customer).deleted) {
+        uid = (customer as Stripe.Customer).metadata?.uid || uid;
+        tier = tier || (customer as Stripe.Customer).metadata?.tier;
+      }
+    } catch (err) {
+      console.error(`Failed to retrieve customer ${invoice.customer}`, err);
+    }
+  }
+
+  if (!uid) {
+    console.error('UID missing in invoice metadata');
+    return;
+  }
+
+  const amount = invoice.amount_paid || 0;
+  const currency = invoice.currency || 'usd';
+  const finalTier = tier || 'premium';
+
+  await processSubscription(
+    uid as string,
+    finalTier,
+    amount,
+    currency,
+    invoice.id as string
+  );
+}
+
+// Subscription handler
+async function processSubscription(
+  uid: string,
+  tier: string,
+  amount: number,
+  currency: string,
+  invoiceId: string
+) {
+  const subRef = firestore.collection('subscriptions').doc(uid);
+  await subRef.set(
+    {
+      active: true,
+      tier,
+      subscribedAt: admin.firestore.FieldValue.serverTimestamp(),
+    },
+    { merge: true }
+  );
 
   const userRef = firestore.collection('users').doc(uid);
-  const userData = {
-    isSubscribed: true,
-    lastActive: admin.firestore.FieldValue.serverTimestamp(),
-  };
-  await userRef.set(userData, { merge: true });
+  await userRef.set({ isSubscribed: true }, { merge: true });
 
-  await userRef.collection('transactions').add({
-    type: 'subscription',
-    amount,
-    timestamp: admin.firestore.FieldValue.serverTimestamp(),
-    description: 'OneVine+ Subscription',
-  });
+  await userRef
+    .collection('transactions')
+    .doc(invoiceId)
+    .set({
+      type: 'subscription',
+      amount,
+      currency,
+      tier,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
 
   console.log(`Subscription processed for UID: ${uid}`);
 }
@@ -154,7 +176,9 @@ async function processSubscription(
 async function processTokenPurchase(
   uid: string,
   tokenAmount: number,
-  stripeTransactionId?: string
+  amount: number,
+  currency: string,
+  stripeTransactionId: string
 ) {
   const userRef = firestore.collection('users').doc(uid);
 
@@ -171,22 +195,18 @@ async function processTokenPurchase(
       { merge: true }
     );
 
-    const txRef = userRef.collection('transactions').doc();
+    const txRef = userRef.collection('transactions').doc(stripeTransactionId);
     t.set(txRef, {
-      type: 'tokenPurchase',
-      amount: tokenAmount,
-      timestamp: admin.firestore.FieldValue.serverTimestamp(),
-      stripeTransactionId: stripeTransactionId || null,
+      type: 'token',
+      amount,
+      currency,
+      tokenAmount,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
     });
   });
 
   const userSnap = await userRef.get();
-  if (userSnap.exists && typeof userSnap.data()?.tokens === 'number') {
-    await userRef.set(
-      { tokens: admin.firestore.FieldValue.increment(tokenAmount) },
-      { merge: true }
-    );
-  } else {
+  if (!userSnap.exists || typeof userSnap.data()?.tokens !== 'number') {
     await userRef.set({ tokens: tokenAmount }, { merge: true });
   }
 
