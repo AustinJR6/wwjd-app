@@ -44,6 +44,11 @@ export const handleStripeWebhookV2 = functions.https.onRequest(async (req, res) 
       case 'invoice.payment_succeeded':
         await handleInvoice(event.data.object as Stripe.Invoice);
         break;
+      case 'customer.subscription.updated':
+        await handleSubscriptionUpdate(
+          event.data.object as Stripe.Subscription
+        );
+        break;
       default:
         console.log(`Unhandled event type: ${event.type}`);
     }
@@ -153,6 +158,66 @@ async function handleInvoice(invoice: Stripe.Invoice) {
     );
   } catch (err) {
     console.error('Failed to process subscription', err);
+  }
+}
+
+// Handle updates to existing subscriptions
+async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
+  const uid = subscription.metadata?.uid;
+  const subscriptionId = subscription.id;
+  const status = subscription.status;
+  const tier = subscription.metadata?.tier || 'plus';
+
+  if (!uid) {
+    console.error('Missing uid in subscription metadata.');
+    return;
+  }
+
+  console.log(
+    `Processing subscription update for UID: ${uid}, status: ${status}`
+  );
+
+  if (status === 'active') {
+    const userRef = firestore.doc(`users/${uid}`);
+    const subRef = firestore.doc(`subscriptions/${uid}/active`);
+
+    await userRef.set(
+      {
+        isSubscribed: true,
+        subscriptionTier: tier,
+        lastSubscriptionUpdate: admin.firestore.FieldValue.serverTimestamp(),
+      },
+      { merge: true }
+    );
+    console.log(`Updated user profile for UID: ${uid}`);
+
+    await subRef.set(
+      {
+        subscriptionId,
+        tier,
+        status,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      },
+      { merge: true }
+    );
+    console.log(`Updated subscription doc for UID: ${uid}`);
+
+    const invoiceId = subscription.latest_invoice as string | undefined;
+    if (invoiceId) {
+      const txnRef = firestore.doc(`users/${uid}/transactions/${invoiceId}`);
+      await txnRef.set(
+        {
+          status: 'complete',
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        },
+        { merge: true }
+      );
+      console.log(
+        `Marked transaction ${invoiceId} as complete for UID: ${uid}`
+      );
+    }
+  } else {
+    console.log(`Subscription status is not active: ${status}`);
   }
 }
 
