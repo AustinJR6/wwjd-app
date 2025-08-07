@@ -170,20 +170,18 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
   const invoiceId = subscription.latest_invoice as string | undefined;
 
   if (!uid) {
-    console.error('Missing uid in subscription metadata.');
+    console.error('❌ Missing uid in subscription metadata.');
     return;
   }
 
-  console.log(
-    `🔔 Stripe subscription update: UID=${uid}, status=${status}, tier=${tier}`
-  );
+  console.log(`🔔 Stripe subscription update: UID=${uid}, status=${status}, tier=${tier}`);
 
   const userRef = firestore.doc(`users/${uid}`);
   const subRef = firestore.doc(`subscriptions/${uid}`);
   const activeRef = firestore.doc(`subscriptions/${uid}/active`);
 
   if (status === 'active') {
-    // Update user profile with subscription info
+    // Update user profile
     await userRef.set(
       {
         isSubscribed: true,
@@ -194,30 +192,28 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
     );
     console.log(`✅ Updated user profile for UID: ${uid}`);
 
-    // Write subscription under /active
+    // Check if /active doc already exists to preserve createdAt
+    const activeSnap = await activeRef.get();
+    const isNewActive = !activeSnap.exists;
+
     await activeRef.set(
       {
         subscriptionId,
         status,
         tier,
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        ...(isNewActive && { createdAt: admin.firestore.FieldValue.serverTimestamp() }),
       },
       { merge: true }
     );
-    console.log(`✅ Updated active subscription for UID: ${uid}`);
+    console.log(`✅ Updated active subscription doc for UID: ${uid}`);
 
-    // Delete old root-level tier field to avoid conflicts
-    await subRef
-      .update({ tier: admin.firestore.FieldValue.delete() })
-      .then(() =>
-        console.log(`🧹 Deleted legacy 'tier' field from subscriptions/${uid}`)
-      )
-      .catch((err) =>
-        console.warn(
-          `⚠️ Could not delete legacy 'tier' field from subscriptions/${uid}:`,
-          err.message
-        )
-      );
+    // Remove root-level 'tier' field if present
+    const rootSnap = await subRef.get();
+    if (rootSnap.exists && rootSnap.data()?.tier !== undefined) {
+      await subRef.update({ tier: admin.firestore.FieldValue.delete() });
+      console.log(`🧹 Removed legacy 'tier' field from subscriptions/${uid}`);
+    }
 
     // Optionally update related transaction
     if (invoiceId) {
@@ -229,7 +225,11 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
         },
         { merge: true }
       );
-      console.log(`✅ Marked transaction ${invoiceId} as complete for UID: ${uid}`);
+      console.log(`💳 Marked transaction ${invoiceId} as complete for UID: ${uid}`);
+    } else {
+      console.log(
+        `ℹ️ No invoice ID provided in subscription. Skipping transaction update.`
+      );
     }
   } else {
     console.log(`⏸️ Subscription status not active: ${status} for UID: ${uid}`);
