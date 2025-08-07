@@ -208,11 +208,41 @@ async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
     );
     console.log(`✅ Updated active subscription doc for UID: ${uid}`);
 
-    // Remove root-level 'tier' field if present
-    const rootSnap = await subRef.get();
-    if (rootSnap.exists && rootSnap.data()?.tier !== undefined) {
-      await subRef.update({ tier: admin.firestore.FieldValue.delete() });
-      console.log(`🧹 Removed legacy 'tier' field from subscriptions/${uid}`);
+    // Safely remove root-level 'tier' field and log final state
+    try {
+      const rootSnap = await subRef.get();
+      const rootData = rootSnap.data();
+      if (
+        rootSnap.exists &&
+        rootData &&
+        'tier' in rootData &&
+        rootData.tier !== undefined
+      ) {
+        await subRef.update({ tier: admin.firestore.FieldValue.delete() });
+        console.log(`🧹 Removed legacy 'tier' field from subscriptions/${uid}`);
+      } else {
+        console.log(
+          `ℹ️ No legacy 'tier' field found to delete for UID: ${uid}`
+        );
+      }
+    } catch (err) {
+      console.error(
+        `❌ Error while attempting to delete legacy 'tier' field for UID: ${uid}`,
+        err
+      );
+    }
+
+    try {
+      const postCleanupSnap = await subRef.get();
+      console.log(
+        `📄 Final state of subscriptions/${uid}:`,
+        postCleanupSnap.data()
+      );
+    } catch (err) {
+      console.warn(
+        `⚠️ Failed to log final state of subscriptions/${uid}:`,
+        err
+      );
     }
 
     // Optionally update related transaction
