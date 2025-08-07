@@ -6,7 +6,7 @@ import ScreenContainer from "@/components/theme/ScreenContainer";
 import TextField from "@/components/TextField";
 import Button from "@/components/common/Button";
 import { login, resetPassword } from "@/services/authService";
-import { loadUserProfile } from "@/utils";
+import { loadFreshUserProfile } from "@/utils";
 import { useUserProfileStore } from "@/state/userProfile";
 import type { UserProfile } from "../../../types";
 import { checkIfUserIsNewAndRoute } from "@/services/onboardingService";
@@ -33,7 +33,7 @@ export default function LoginScreen() {
       const result = await login(email, password);
       if (result.localId) {
         setUid(result.localId);
-        const profile: UserProfile | null = await loadUserProfile(result.localId);
+        const profile: UserProfile | null = await loadFreshUserProfile(result.localId);
         if (profile) {
           useUserProfileStore.getState().setUserProfile(profile as any);
         }

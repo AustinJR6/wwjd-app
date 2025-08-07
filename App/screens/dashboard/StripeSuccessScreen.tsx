@@ -5,7 +5,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import ScreenContainer from '@/components/theme/ScreenContainer';
 import { useTheme } from '@/components/theme/theme';
 import { useUserProfileStore } from '@/state/userProfile';
-import { loadUserProfile } from '@/utils/userProfile';
+import { handlePostSubscription } from '@/utils/profileRefresh';
 import { getIdToken } from '@/utils/authUtils';
 import { useUser } from '@/hooks/useUser';
 import { SCREENS } from '@/navigation/screens';
@@ -20,7 +20,6 @@ export default function StripeSuccessScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const theme = useTheme();
   const { user } = useUser();
-  const setProfile = useUserProfileStore((s) => s.setUserProfile);
   const refreshProfile = useUserProfileStore((s) => s.refreshUserProfile);
   const [loading, setLoading] = useState(true);
 
@@ -36,10 +35,9 @@ export default function StripeSuccessScreen() {
       if (!user?.uid) return;
       try {
         await getIdToken(true);
-        const profile = await loadUserProfile(user.uid);
+        const profile = await handlePostSubscription(user.uid);
         if (!mounted) return;
         if (profile) {
-          setProfile(profile as any);
           if (profile.isSubscribed === true) {
             Alert.alert('Upgrade Complete', 'Welcome to OneVine+!');
             navigation.replace('MainTabs', { screen: SCREENS.MAIN.CHALLENGE });
@@ -58,7 +56,7 @@ export default function StripeSuccessScreen() {
     return () => {
       mounted = false;
     };
-  }, [user?.uid, navigation, setProfile]);
+  }, [user?.uid, navigation]);
 
   const styles = React.useMemo(
     () =>

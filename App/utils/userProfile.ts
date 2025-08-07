@@ -67,7 +67,10 @@ function fromFirestore(doc: any): any {
 
 let cachedProfile: CachedProfile | null = null;
 
-export async function loadUserProfile(uid?: string): Promise<UserProfile | null> {
+export async function loadUserProfile(
+  uid?: string,
+  forceServer = false,
+): Promise<UserProfile | null> {
   const userId = uid ?? (await getCurrentUserId());
   if (!userId) {
     console.warn('loadUserProfile called with no uid');
@@ -76,8 +79,13 @@ export async function loadUserProfile(uid?: string): Promise<UserProfile | null>
 
   try {
     const headers = await getAuthHeaders();
+    const cacheBust = Date.now();
+    const requestOptions = forceServer
+      ? { headers: { ...headers, 'Cache-Control': 'no-store' }, params: { t: cacheBust } }
+      : { headers };
+
     const url = `${FIRESTORE_BASE}/users/${userId}`;
-    const res = await apiClient.get(url, { headers });
+    const res = await apiClient.get(url, requestOptions as any);
     const user = fromFirestore(res.data);
     let religionData: ReligionDocument | null = null;
     if (user.religion) {
@@ -88,7 +96,7 @@ export async function loadUserProfile(uid?: string): Promise<UserProfile | null>
     let isSubscribed = false;
     try {
       const subUrl = `${FIRESTORE_BASE}/subscriptions/${userId}`;
-      const subRes = await apiClient.get(subUrl, { headers });
+      const subRes = await apiClient.get(subUrl, requestOptions as any);
       const subDoc = fromFirestore(subRes.data);
       isSubscribed = subDoc?.active === true;
     } catch (subErr: any) {
@@ -123,6 +131,12 @@ export async function loadUserProfile(uid?: string): Promise<UserProfile | null>
     console.error('loadUserProfile failed', errorData || err);
     return null;
   }
+}
+
+export async function loadFreshUserProfile(
+  uid: string,
+): Promise<UserProfile | null> {
+  return loadUserProfile(uid, true);
 }
 
 export async function fetchProfileWithCounts(uid?: string): Promise<(UserProfile & { counts: Record<string, number> }) | null> {
