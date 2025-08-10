@@ -14,6 +14,9 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
   apiVersion: '2023-10-16',
 } as any);
 
+const tsFromUnix = (n?: number) =>
+  n ? admin.firestore.Timestamp.fromMillis(n * 1000) : null;
+
 // Webhook handler
 export const handleStripeWebhookV2 = functions.https.onRequest(async (req, res) => {
   const sig = req.headers['stripe-signature'];
@@ -36,329 +39,89 @@ export const handleStripeWebhookV2 = functions.https.onRequest(async (req, res) 
     return;
   }
 
-  try {
-    switch (event.type) {
-      case 'payment_intent.succeeded':
-        await handlePaymentIntent(event.data.object as Stripe.PaymentIntent);
-        break;
-      case 'invoice.payment_succeeded':
-        await handleInvoice(event.data.object as Stripe.Invoice);
-        break;
-      case 'customer.subscription.updated':
-        await handleSubscriptionUpdate(
-          event.data.object as Stripe.Subscription
+  switch (event.type) {
+    case 'checkout.session.completed': {
+      try {
+        const session = event.data.object as Stripe.Checkout.Session;
+        const uid = session.client_reference_id || session.metadata?.uid;
+        if (!uid) {
+          console.warn('Missing uid for checkout.session.completed', {
+            eventType: event.type,
+            sessionId: session.id,
+          });
+          res.sendStatus(200);
+          return;
+        }
+        const now = admin.firestore.FieldValue.serverTimestamp();
+        await firestore.doc(`subscriptions/${uid}`).set(
+          {
+            status: 'active',
+            sessionId: session.id,
+            subscribedAt: now,
+            updatedAt: now,
+          },
+          { merge: true }
         );
-        break;
-      default:
-        console.log(`Unhandled event type: ${event.type}`);
+        await firestore.doc(`users/${uid}`).set(
+          { isSubscribed: true, lastActive: now },
+          { merge: true }
+        );
+        res.sendStatus(200);
+      } catch (err) {
+        console.error('Error in checkout.session.completed', {
+          error: err,
+          eventType: event.type,
+          sessionId: (event.data.object as any)?.id,
+        });
+        res.sendStatus(400);
+      }
+      return;
     }
-
-    console.log('Webhook handled successfully');
-    res.status(200).send('Webhook handled');
-  } catch (err) {
-    console.error('Error processing webhook', err);
-    res.status(500).send('Internal Server Error');
+    case 'customer.subscription.created':
+    case 'customer.subscription.updated':
+    case 'customer.subscription.deleted': {
+      try {
+        const sub = event.data.object as Stripe.Subscription;
+        const uid = sub.metadata?.uid;
+        const minimal = { eventType: event.type, subscriptionId: sub.id };
+        if (!uid) {
+          console.warn('Missing uid in subscription', minimal);
+          res.sendStatus(200);
+          return;
+        }
+        const status = sub.status;
+        const doc = {
+          status,
+          subscriptionId: sub.id,
+          currentPeriodStart: tsFromUnix((sub as any).current_period_start),
+          currentPeriodEnd: tsFromUnix((sub as any).current_period_end),
+          invoiceId:
+            typeof sub.latest_invoice === 'string'
+              ? sub.latest_invoice
+              : sub.latest_invoice?.id || null,
+          tier: sub.metadata?.tier || null,
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        };
+        await firestore.doc(`subscriptions/${uid}`).set(doc, { merge: true });
+        const isActive = status === 'active' || status === 'trialing';
+        await firestore
+          .doc(`users/${uid}`)
+          .set({ isSubscribed: isActive }, { merge: true });
+        res.sendStatus(200);
+      } catch (err) {
+        console.error('Error in subscription event', {
+          error: err,
+          eventType: event.type,
+          subscriptionId: (event.data.object as any)?.id,
+        });
+        res.sendStatus(400);
+      }
+      return;
+    }
+    default:
+      console.log(`Unhandled event type: ${event.type}`);
+      res.sendStatus(200);
+      return;
   }
 });
 
-// Handle payment intents for one-time token purchases
-async function handlePaymentIntent(intent: Stripe.PaymentIntent) {
-  const purchaseType = intent.metadata?.purchaseType || intent.metadata?.type;
-  if (purchaseType !== 'token') {
-    console.log(`Unhandled purchase type on payment intent: ${purchaseType}`);
-    return;
-  }
-
-  if (intent.status !== 'succeeded') {
-    console.log(`Ignoring payment intent with status: ${intent.status}`);
-    return;
-  }
-
-  const uid = intent.metadata?.uid;
-  const tokenAmount = Number(
-    intent.metadata?.tokenAmount || intent.metadata?.tokens || 0
-  );
-
-  if (!uid) {
-    console.error('UID missing in payment intent metadata');
-    return;
-  }
-
-  if (!tokenAmount) {
-    console.error('tokenAmount missing or zero in payment intent metadata');
-    return;
-  }
-
-  const amount = intent.amount_received || intent.amount || 0;
-  const currency = intent.currency || 'usd';
-  try {
-    await processTokenPurchase(uid, tokenAmount, amount, currency, intent.id);
-  } catch (err) {
-    console.error('Failed to process token purchase', err);
-  }
-}
-
-// Handle invoices for subscription activations
-async function handleInvoice(invoice: Stripe.Invoice) {
-  const subscriptionId = (invoice as any).subscription as string | undefined;
-  let uid: string | undefined;
-  let tier: string | undefined;
-
-  if (subscriptionId) {
-    try {
-      const subscription = await stripe.subscriptions.retrieve(
-        subscriptionId as string
-      );
-      uid = subscription.metadata?.uid || uid;
-      tier = subscription.metadata?.tier || tier;
-    } catch (err) {
-      console.error(`Failed to retrieve subscription ${subscriptionId}`, err);
-    }
-  }
-
-  if (!uid && invoice.customer) {
-    try {
-      const customerId =
-        typeof invoice.customer === 'string'
-          ? invoice.customer
-          : (invoice.customer as Stripe.Customer).id;
-      const customer = await stripe.customers.retrieve(customerId);
-      if (!(customer as Stripe.Customer).deleted) {
-        uid = (customer as Stripe.Customer).metadata?.uid || uid;
-        tier = tier || (customer as Stripe.Customer).metadata?.tier;
-      }
-    } catch (err) {
-      console.error(`Failed to retrieve customer ${invoice.customer}`, err);
-    }
-  }
-
-  if (!uid) {
-    console.error('UID missing in invoice metadata');
-    return;
-  }
-  if (invoice.status !== 'paid') {
-    console.log(`Invoice ${invoice.id} not paid yet; status: ${invoice.status}`);
-    return;
-  }
-
-  const amount = invoice.amount_paid || 0;
-  const currency = invoice.currency || 'usd';
-  const finalTier = tier || 'premium';
-  if (!tier) {
-    console.warn(`Tier missing in invoice ${invoice.id}, defaulting to 'premium'`);
-  }
-
-  try {
-    await processSubscription(
-      uid as string,
-      finalTier,
-      amount,
-      currency,
-      invoice.id as string
-    );
-  } catch (err) {
-    console.error('Failed to process subscription', err);
-  }
-}
-
-// Handle updates to existing subscriptions
-async function handleSubscriptionUpdate(subscription: Stripe.Subscription) {
-  const uid = subscription.metadata?.uid;
-  const subscriptionId = subscription.id;
-  const status = subscription.status;
-  const tier = subscription.metadata?.tier || 'plus';
-  const invoiceId = subscription.latest_invoice as string | undefined;
-
-  if (!uid) {
-    console.error('❌ Missing uid in subscription metadata.');
-    return;
-  }
-
-  console.log(`🔔 Stripe subscription update: UID=${uid}, status=${status}, tier=${tier}`);
-
-  const userRef = firestore.doc(`users/${uid}`);
-  const subRef = firestore.doc(`subscriptions/${uid}`);
-  const activeRef = firestore.doc(`subscriptions/${uid}/active`);
-
-  if (status === 'active') {
-    // Update user profile
-    await userRef.set(
-      {
-        isSubscribed: true,
-        subscriptionTier: tier,
-        lastSubscriptionUpdate: admin.firestore.FieldValue.serverTimestamp(),
-      },
-      { merge: true }
-    );
-    console.log(`✅ Updated user profile for UID: ${uid}`);
-
-    // Check if /active doc already exists to preserve createdAt
-    const activeSnap = await activeRef.get();
-    const isNewActive = !activeSnap.exists;
-
-    await activeRef.set(
-      {
-        subscriptionId,
-        status,
-        tier,
-        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-        ...(isNewActive && { createdAt: admin.firestore.FieldValue.serverTimestamp() }),
-      },
-      { merge: true }
-    );
-    console.log(`✅ Updated active subscription doc for UID: ${uid}`);
-
-    // Safely remove root-level 'tier' field and log final state
-    try {
-      const rootSnap = await subRef.get();
-      const rootData = rootSnap.data();
-      if (
-        rootSnap.exists &&
-        rootData &&
-        'tier' in rootData &&
-        rootData.tier !== undefined
-      ) {
-        await subRef.update({ tier: admin.firestore.FieldValue.delete() });
-        console.log(`🧹 Removed legacy 'tier' field from subscriptions/${uid}`);
-      } else {
-        console.log(
-          `ℹ️ No legacy 'tier' field found to delete for UID: ${uid}`
-        );
-      }
-    } catch (err) {
-      console.error(
-        `❌ Error while attempting to delete legacy 'tier' field for UID: ${uid}`,
-        err
-      );
-    }
-
-    try {
-      const postCleanupSnap = await subRef.get();
-      console.log(
-        `📄 Final state of subscriptions/${uid}:`,
-        postCleanupSnap.data()
-      );
-    } catch (err) {
-      console.warn(
-        `⚠️ Failed to log final state of subscriptions/${uid}:`,
-        err
-      );
-    }
-
-    // Optionally update related transaction
-    if (invoiceId) {
-      const txnRef = firestore.doc(`users/${uid}/transactions/${invoiceId}`);
-      await txnRef.set(
-        {
-          status: 'complete',
-          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-        },
-        { merge: true }
-      );
-      console.log(`💳 Marked transaction ${invoiceId} as complete for UID: ${uid}`);
-    } else {
-      console.log(
-        `ℹ️ No invoice ID provided in subscription. Skipping transaction update.`
-      );
-    }
-  } else {
-    console.log(`⏸️ Subscription status not active: ${status} for UID: ${uid}`);
-  }
-}
-
-// Subscription handler
-async function processSubscription(
-  uid: string,
-  tier: string,
-  amount: number,
-  currency: string,
-  invoiceId: string
-) {
-  const subRef = firestore.collection('subscriptions').doc(uid);
-  const userRef = firestore.collection('users').doc(uid);
-
-  await withRetry(async () => {
-    await firestore.runTransaction(async (t) => {
-      t.set(
-        subRef,
-        {
-          active: true,
-          tier,
-          subscribedAt: admin.firestore.FieldValue.serverTimestamp(),
-        },
-        { merge: true }
-      );
-
-      t.set(userRef, { isSubscribed: true }, { merge: true });
-
-      const txRef = userRef.collection('transactions').doc(invoiceId);
-      t.set(
-        txRef,
-        {
-          type: 'subscription',
-          amount,
-          currency,
-          tier,
-          createdAt: admin.firestore.FieldValue.serverTimestamp(),
-        },
-        { merge: true }
-      );
-    });
-  });
-
-  console.log(`Subscription processed for UID: ${uid}`);
-}
-
-// Token purchase handler
-async function processTokenPurchase(
-  uid: string,
-  tokenAmount: number,
-  amount: number,
-  currency: string,
-  stripeTransactionId: string
-) {
-  const userRef = firestore.collection('users').doc(uid);
-  await withRetry(async () => {
-    await firestore.runTransaction(async (t) => {
-      const snap = await t.get(userRef);
-      const data = snap.data();
-      if (!snap.exists || typeof data?.tokens !== 'number') {
-        t.set(userRef, { tokens: 0 }, { merge: true });
-      }
-
-      t.set(
-        userRef,
-        { tokens: admin.firestore.FieldValue.increment(tokenAmount) },
-        { merge: true }
-      );
-
-      const txRef = userRef.collection('transactions').doc(stripeTransactionId);
-      t.set(
-        txRef,
-        {
-          type: 'token',
-          amount,
-          currency,
-          tokenAmount,
-          createdAt: admin.firestore.FieldValue.serverTimestamp(),
-        },
-        { merge: true }
-      );
-    });
-  });
-
-  console.log(`Token purchase processed for UID: ${uid}`);
-}
-
-async function withRetry(operation: () => Promise<void>, retries = 3) {
-  for (let attempt = 0; attempt < retries; attempt++) {
-    try {
-      await operation();
-      return;
-    } catch (err) {
-      if (attempt === retries - 1) throw err;
-      console.error(`Firestore operation failed (attempt ${attempt + 1})`, err);
-      await new Promise((r) => setTimeout(r, (attempt + 1) * 500));
-    }
-  }
-}
