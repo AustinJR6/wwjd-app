@@ -1,104 +1,85 @@
 import React, { useState } from 'react';
-import CustomText from '@/components/CustomText';
-import { View, StyleSheet, Alert } from 'react-native';
-import Button from '@/components/common/Button';
-import ScreenContainer from "@/components/theme/ScreenContainer";
-import { useTheme } from "@/components/theme/theme";
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from "@/navigation/RootStackParamList";
-import { getCurrentUserId } from '@/utils/authUtils';
-import useStripeCheckout from '@/hooks/useStripeCheckout';
+import { View, Text, Button, ActivityIndicator } from 'react-native';
+import { initStripe, useStripe } from '@stripe/stripe-react-native';
+import { ENV, validateEnv } from '@/config/env';
+import { Banner } from '@/components/Banner';
 
-type Props = { navigation: NativeStackNavigationProp<RootStackParamList, 'MainTabs'> };
-
-export default function UpgradeScreen({ navigation }: Props) {
-  const theme = useTheme();
-  const { startOneVinePlusCheckout } = useStripeCheckout();
-  const styles = React.useMemo(
-    () =>
-      StyleSheet.create({
-        content: { flex: 1, justifyContent: 'center' },
-        title: {
-          fontSize: 26,
-          fontWeight: 'bold',
-          textAlign: 'center',
-          color: theme.colors.primary,
-          marginBottom: 8,
-        },
-        subtitle: {
-          fontSize: 16,
-          textAlign: 'center',
-          marginBottom: 24,
-          color: theme.colors.text,
-        },
-        benefitsBox: { marginBottom: 24, paddingHorizontal: 8 },
-        benefit: { fontSize: 16, marginBottom: 8, color: theme.colors.text },
-        price: {
-          fontSize: 20,
-          fontWeight: '600',
-          textAlign: 'center',
-          marginBottom: 24,
-          color: theme.colors.accent,
-        },
-        buttonWrap: { marginVertical: 12, alignItems: 'center' },
-      }),
-    [theme],
-  );
-
+export default function UpgradeScreen() {
+  const { initPaymentSheet, presentPaymentSheet } = useStripe();
+  const [errorText, setErrorText] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
 
-  const handleUpgrade = async () => {
+  async function ensureStripeInit() {
+    await initStripe({
+      publishableKey: ENV.STRIPE_PUBLISHABLE_KEY!,
+      merchantIdentifier: 'merchant.onevine'
+    });
+  }
+
+  async function onSubscribePress() {
+    setErrorText(null);
     setLoading(true);
     try {
-      const uid = await getCurrentUserId();
-      if (!uid) {
-        Alert.alert('Authentication Required', 'Please sign in again.');
+      const missing = validateEnv(['API_BASE_URL','STRIPE_PUBLISHABLE_KEY','SUB_PRICE_ID']);
+      if (missing.length) {
+        setErrorText(`Missing env (${ENV.CHANNEL}): ${missing.join(', ')}`);
         setLoading(false);
         return;
       }
-      const ok = await startOneVinePlusCheckout(uid);
-      if (ok) {
-        setSuccess(true);
-        Alert.alert('Success', 'You are now a OneVine+ member 🌿');
+
+      await ensureStripeInit();
+
+      const res = await fetch(`${ENV.API_BASE_URL}/stripe/create-subscription`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ priceId: ENV.SUB_PRICE_ID }),
+      });
+
+      if (!res.ok) throw new Error(`Server ${res.status}: ${await res.text()}`);
+      const { customer, customerEphemeralKeySecret, setupIntentClientSecret } = await res.json();
+
+      console.log('[stripe/subscription:diag]', {
+        channel: ENV.CHANNEL,
+        pubKey: ENV.STRIPE_PUBLISHABLE_KEY?.slice(0, 16),
+        hasSetupSecret: !!setupIntentClientSecret,
+        customerId: customer?.id,
+        hasEphKey: !!customerEphemeralKeySecret,
+        apiBase: ENV.API_BASE_URL,
+      });
+
+      if (!setupIntentClientSecret || !customer?.id || !customerEphemeralKeySecret) {
+        setErrorText('Missing payment sheet parameters (setup intent / customer / ephemeral key).');
+        setLoading(false);
+        return;
       }
 
-    } catch (err) {
-      Alert.alert('Payment Error', typeof err === 'object' && err !== null && 'message' in err ? String((err as any).message) : String(err) || 'Something went wrong.');
+      const { error: initErr } = await initPaymentSheet({
+        merchantDisplayName: 'OneVine',
+        customerId: customer.id,
+        customerEphemeralKeySecret,
+        setupIntentClientSecret,
+        allowsDelayedPaymentMethods: false,
+      });
+      if (initErr) { setErrorText(`initPaymentSheet failed: ${initErr.message}`); setLoading(false); return; }
+
+      const { error: presentErr } = await presentPaymentSheet();
+      if (presentErr) { setErrorText(`PaymentSheet error: ${presentErr.message}`); setLoading(false); return; }
+
+      // Success: webhook updates user's subscription; client refetches profile via REST.
+    } catch (e: any) {
+      console.error('[stripe/subscribe fatal]', e);
+      setErrorText(e?.message ?? 'Unexpected error');
     } finally {
       setLoading(false);
     }
-  };
+  }
 
   return (
-    <ScreenContainer>
-      <View style={styles.content}>
-        <CustomText style={styles.title}>OneVine+ Membership</CustomText>
-        <CustomText style={styles.subtitle}>Experience the full blessing</CustomText>
-
-        <View style={styles.benefitsBox}>
-          <CustomText style={styles.benefit}>✅ Unlimited Religion AI questions</CustomText>
-          <CustomText style={styles.benefit}>✅ Full Confessional access</CustomText>
-          <CustomText style={styles.benefit}>✅ Personalized journaling prompts</CustomText>
-          <CustomText style={styles.benefit}>✅ Early access to new features</CustomText>
-        </View>
-
-        <CustomText style={styles.price}>$9.99 / month</CustomText>
-
-        <View style={styles.buttonWrap}>
-          <Button title="Subscribe to OneVine+" onPress={handleUpgrade} disabled={loading} loading={loading} />
-        </View>
-
-        {success && (
-          <CustomText style={styles.subtitle}>
-            You are now a OneVine+ member 🌿
-          </CustomText>
-        )}
-
-        <View style={styles.buttonWrap}>
-          <Button title="Back to Home" onPress={() => navigation.navigate('MainTabs', { screen: 'HomeScreen' })} />
-        </View>
-      </View>
-    </ScreenContainer>
+    <View style={{ flex: 1, padding: 16 }}>
+      {errorText ? <Banner text={errorText} /> : null}
+      <Text style={{ fontSize: 18, fontWeight: '700', marginBottom: 8 }}>OneVine+ Membership</Text>
+      <Button title="Subscribe to OneVine+" onPress={onSubscribePress} disabled={loading} />
+      {loading && <ActivityIndicator style={{ marginTop: 10 }} />}
+    </View>
   );
 }

@@ -1,8 +1,8 @@
-import Constants from 'expo-constants';
+import { ENV } from './env';
 
-const API_URL = Constants.expoConfig?.extra?.EXPO_PUBLIC_API_URL ?? '';
+const API_URL = ENV.API_BASE_URL;
 if (!API_URL) {
-  console.warn('⚠️ Missing EXPO_PUBLIC_API_URL in .env');
+  console.warn('⚠️ Missing API_BASE_URL');
 }
 
 export const GEMINI_API_URL = `${API_URL}/askGeminiV2`;

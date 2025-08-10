@@ -1,148 +1,83 @@
-import React from 'react';
-import CustomText from '@/components/CustomText';
-import { View, StyleSheet, Alert } from 'react-native';
-import Button from '@/components/common/Button';
-import { logTransaction } from '@/utils/transactionLogger';
-import { createCheckoutSession } from '@/services/apiService';
-import { PRICE_IDS } from '@/config/stripeConfig';
-import { getCurrentUserId, getIdToken } from '@/utils/authUtils';
-import ScreenContainer from "@/components/theme/ScreenContainer";
-import { useTheme } from "@/components/theme/theme";
-import AuthGate from '@/components/AuthGate';
-import { useStripe } from '@stripe/stripe-react-native';
-import { useUserProfileStore } from '@/state/userProfile';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from "@/navigation/RootStackParamList";
+import React, { useState } from 'react';
+import { View, Text, Button, ActivityIndicator } from 'react-native';
+import { initStripe, useStripe } from '@stripe/stripe-react-native';
+import { ENV, validateEnv } from '@/config/env';
+import { Banner } from '@/components/Banner';
 
-// We only care about navigation back to the MainTabs stack here, so type it accordingly
-type Props = { navigation: NativeStackNavigationProp<RootStackParamList, 'MainTabs'> };
-
-export default function BuyTokensScreen({ navigation }: Props) {
-  const theme = useTheme();
-  const styles = React.useMemo(
-    () =>
-      StyleSheet.create({
-        content: {
-          flex: 1,
-          justifyContent: 'center',
-        },
-        title: {
-          fontSize: 26,
-          fontWeight: 'bold',
-          textAlign: 'center',
-          marginBottom: 8,
-          color: theme.colors.primary,
-        },
-        subtitle: {
-          fontSize: 16,
-          textAlign: 'center',
-          color: theme.colors.text,
-          marginBottom: 32,
-        },
-        pack: {
-          marginBottom: 24,
-          padding: 16,
-          backgroundColor: theme.colors.surface,
-          borderRadius: 10,
-        },
-        amount: {
-          fontSize: 18,
-          marginBottom: 8,
-          textAlign: 'center',
-          color: theme.colors.text,
-        },
-        price: {
-          color: theme.colors.accent,
-          fontWeight: '600',
-        },
-        buttonWrap: {
-          marginTop: 32,
-          alignItems: 'center',
-        },
-      }),
-    [theme],
-  );
+export default function BuyTokensScreen() {
   const { initPaymentSheet, presentPaymentSheet } = useStripe();
-  const refreshProfile = useUserProfileStore((s) => s.refreshUserProfile);
-  const [loading, setLoading] = React.useState<number | null>(null);
+  const [errorText, setErrorText] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  const purchase = async (priceId: string, tokenAmount: number) => {
-    setLoading(tokenAmount);
+  async function ensureStripeInit() {
+    await initStripe({
+      publishableKey: ENV.STRIPE_PUBLISHABLE_KEY!,
+      merchantIdentifier: 'merchant.onevine'
+    });
+  }
+
+  async function onPurchase(envKey: 'TOKENS_20_PRICE_ID' | 'TOKENS_50_PRICE_ID' | 'TOKENS_100_PRICE_ID', tokenAmount: number) {
+    setErrorText(null);
+    setLoading(true);
     try {
-      const uid = await getCurrentUserId();
-      if (!uid) throw new Error('Not signed in');
-
-      const result = await createCheckoutSession(uid, priceId, tokenAmount);
-      const clientSecret = result.clientSecret || result.paymentIntent;
-      if (!clientSecret || !result.ephemeralKey || !result.customerId) {
-        throw new Error('Missing payment details');
+      const priceId = (ENV as any)[envKey] as string | undefined;
+      const missing = validateEnv(['API_BASE_URL', 'STRIPE_PUBLISHABLE_KEY', envKey]);
+      if (missing.length) {
+        setErrorText(`Missing env (${ENV.CHANNEL}): ${missing.join(', ')}`);
+        setLoading(false);
+        return;
       }
 
-      const { error: initError } = await initPaymentSheet({
-        customerId: result.customerId,
-        customerEphemeralKeySecret: result.ephemeralKey,
-        paymentIntentClientSecret: clientSecret,
-        merchantDisplayName: 'OneVine',
-        returnURL: 'onevine://payment-return',
+      await ensureStripeInit();
+
+      const res = await fetch(`${ENV.API_BASE_URL}/stripe/create-payment-intent`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ priceId, tokenAmount }),
       });
-      if (initError) {
-        Alert.alert('Payment Error', initError.message);
+
+      if (!res.ok) throw new Error(`Server ${res.status}: ${await res.text()}`);
+      const { paymentIntentClientSecret } = await res.json();
+
+      console.log('[stripe/tokens:diag]', {
+        channel: ENV.CHANNEL,
+        priceId: priceId?.slice(0, 16),
+        hasPiSecret: !!paymentIntentClientSecret,
+        apiBase: ENV.API_BASE_URL,
+      });
+
+      if (!paymentIntentClientSecret) {
+        setErrorText('Missing payment sheet parameters (payment intent).');
+        setLoading(false);
         return;
       }
 
-      const { error } = await presentPaymentSheet();
-      if (error) {
-        if (error.code !== 'Canceled') {
-          Alert.alert('Payment Error', error.message);
-        }
-        return;
-      }
+      const { error: initErr } = await initPaymentSheet({
+        merchantDisplayName: 'OneVine',
+        paymentIntentClientSecret,
+      });
+      if (initErr) { setErrorText(`initPaymentSheet failed: ${initErr.message}`); setLoading(false); return; }
 
-      await getIdToken(true);
-      await refreshProfile();
-      await logTransaction('tokens', tokenAmount);
-    } catch (err: any) {
-      Alert.alert('Checkout Error', err?.message || 'Unable to start checkout');
+      const { error: presentErr } = await presentPaymentSheet();
+      if (presentErr) { setErrorText(`PaymentSheet error: ${presentErr.message}`); setLoading(false); return; }
+
+      // Success: webhook updates user tokens; client can refetch via REST.
+    } catch (e: any) {
+      console.error('[stripe/tokens fatal]', e);
+      setErrorText(e?.message ?? 'Unexpected error');
     } finally {
-      setLoading(null);
+      setLoading(false);
     }
-  };
+  }
 
   return (
-    <AuthGate>
-    <ScreenContainer>
-      <View style={styles.content}>
-        <CustomText style={styles.title}>Buy Grace Tokens</CustomText>
-        <CustomText style={styles.subtitle}>Use tokens for extra asks and confessions</CustomText>
-
-        <View style={styles.pack}>
-          <CustomText style={styles.amount}>
-            20 Tokens — <CustomText style={styles.price}>$5</CustomText>
-          </CustomText>
-          <Button title="Buy 20 Tokens" onPress={() => purchase(PRICE_IDS.TOKENS_20, 20)} loading={loading === 20} />
-        </View>
-
-        <View style={styles.pack}>
-          <CustomText style={styles.amount}>
-            50 Tokens — <CustomText style={styles.price}>$10</CustomText>
-          </CustomText>
-          <Button title="Buy 50 Tokens" onPress={() => purchase(PRICE_IDS.TOKENS_50, 50)} loading={loading === 50} />
-        </View>
-
-        <View style={styles.pack}>
-          <CustomText style={styles.amount}>
-            100 Tokens — <CustomText style={styles.price}>$20</CustomText>
-          </CustomText>
-          <Button title="Buy 100 Tokens" onPress={() => purchase(PRICE_IDS.TOKENS_100, 100)} loading={loading === 100} />
-        </View>
-
-        <View style={styles.buttonWrap}>
-          <Button title="Back to Home" onPress={() => navigation.navigate('MainTabs', { screen: 'HomeScreen' })} />
-        </View>
-      </View>
-    </ScreenContainer>
-    </AuthGate>
+    <View style={{ flex: 1, padding: 16 }}>
+      {errorText ? <Banner text={errorText} /> : null}
+      <Text style={{ fontSize: 18, fontWeight: '700', marginBottom: 8 }}>Buy Grace Tokens</Text>
+      <Button title="Buy 20 Tokens" onPress={() => onPurchase('TOKENS_20_PRICE_ID', 20)} disabled={loading} />
+      <Button title="Buy 50 Tokens" onPress={() => onPurchase('TOKENS_50_PRICE_ID', 50)} disabled={loading} />
+      <Button title="Buy 100 Tokens" onPress={() => onPurchase('TOKENS_100_PRICE_ID', 100)} disabled={loading} />
+      {loading && <ActivityIndicator style={{ marginTop: 10 }} />}
+    </View>
   );
 }
-
-

@@ -1,104 +1,80 @@
 import React, { useState } from 'react';
-import CustomText from '@/components/CustomText';
-import { View, StyleSheet, Alert } from 'react-native';
-import Button from '@/components/common/Button';
-import { usePaymentFlow } from '@/utils';
-import { logTransaction } from '@/utils/transactionLogger';
-import ScreenContainer from "@/components/theme/ScreenContainer";
-import { useTheme } from "@/components/theme/theme";
-import AuthGate from '@/components/AuthGate';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from "@/navigation/RootStackParamList";
+import { View, Text, Button, ActivityIndicator } from 'react-native';
+import { initStripe, useStripe } from '@stripe/stripe-react-native';
+import { ENV, validateEnv } from '@/config/env';
+import { Banner } from '@/components/Banner';
 
-// The Give Back screen only needs navigation to MainTabs when closing
-type Props = { navigation: NativeStackNavigationProp<RootStackParamList, 'MainTabs'> };
+export default function GiveBackScreen() {
+  const { initPaymentSheet, presentPaymentSheet } = useStripe();
+  const [errorText, setErrorText] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-export default function GiveBackScreen({ navigation }: Props) {
-  const theme = useTheme();
-  const { startPaymentFlow } = usePaymentFlow();
-  const styles = React.useMemo(
-    () =>
-      StyleSheet.create({
-        content: { flex: 1, justifyContent: 'center' },
-        title: {
-          fontSize: 26,
-          fontWeight: 'bold',
-          textAlign: 'center',
-          marginBottom: 8,
-          color: theme.colors.primary,
-        },
-        subtitle: {
-          fontSize: 16,
-          textAlign: 'center',
-          marginBottom: 24,
-          color: theme.colors.text,
-        },
-        donateWrap: { marginBottom: 16, alignItems: 'center' },
-        price: { color: theme.colors.accent, fontWeight: '600' },
-        buttonWrap: { marginTop: 32, alignItems: 'center' },
-        section: {
-          marginVertical: 20,
-          padding: 16,
-          backgroundColor: '#fff',
-          borderRadius: 12,
-          shadowColor: '#000',
-          shadowOpacity: 0.05,
-          shadowOffset: { width: 0, height: 2 },
-          shadowRadius: 6,
-          elevation: 2,
-        }, // ✅ added missing 'section' style
-        buttonGroup: { flexDirection: 'row', justifyContent: 'space-around', marginVertical: 16 }, // ✅ added missing 'buttonGroup' style
-        note: { fontSize: 14, textAlign: 'center', marginTop: 16, color: theme.colors.text }, // ✅ added missing 'note' style
-        backWrap: { marginTop: 32, alignItems: 'center' }, // ✅ added missing 'backWrap' style
-      }),
-    [theme],
-  );
-  const [donating, setDonating] = useState<number | null>(null);
+  async function ensureStripeInit() {
+    await initStripe({
+      publishableKey: ENV.STRIPE_PUBLISHABLE_KEY!,
+      merchantIdentifier: 'merchant.onevine'
+    });
+  }
 
-  const handleDonation = async (amount: number) => {
-    setDonating(amount);
+  async function onDonate(amount: number) {
+    setErrorText(null);
+    setLoading(true);
     try {
-      const success = await startPaymentFlow({ mode: 'payment', amount });
-      if (success) {
-        Alert.alert('Thank you', 'Thank you for your donation \uD83D\uDE4F');
-        await logTransaction('donation', amount);
+      const missing = validateEnv(['API_BASE_URL','STRIPE_PUBLISHABLE_KEY']);
+      if (missing.length) {
+        setErrorText(`Missing env (${ENV.CHANNEL}): ${missing.join(', ')}`);
+        setLoading(false);
+        return;
       }
+
+      await ensureStripeInit();
+
+      const res = await fetch(`${ENV.API_BASE_URL}/stripe/create-payment-intent`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount }),
+      });
+
+      if (!res.ok) throw new Error(`Server ${res.status}: ${await res.text()}`);
+      const { paymentIntentClientSecret } = await res.json();
+
+      console.log('[stripe/donation:diag]', {
+        channel: ENV.CHANNEL,
+        amount,
+        hasPiSecret: !!paymentIntentClientSecret,
+        apiBase: ENV.API_BASE_URL,
+      });
+
+      if (!paymentIntentClientSecret) {
+        setErrorText('Missing payment sheet parameters (payment intent).');
+        setLoading(false);
+        return;
+      }
+
+      const { error: initErr } = await initPaymentSheet({
+        merchantDisplayName: 'OneVine',
+        paymentIntentClientSecret,
+      });
+      if (initErr) { setErrorText(`initPaymentSheet failed: ${initErr.message}`); setLoading(false); return; }
+
+      const { error: presentErr } = await presentPaymentSheet();
+      if (presentErr) { setErrorText(`PaymentSheet error: ${presentErr.message}`); setLoading(false); return; }
+    } catch (e: any) {
+      console.error('[stripe/donation fatal]', e);
+      setErrorText(e?.message ?? 'Unexpected error');
     } finally {
-      setDonating(null);
+      setLoading(false);
     }
-  };
+  }
 
   return (
-    <AuthGate>
-    <ScreenContainer>
-      <View style={styles.content}>
-        <CustomText style={styles.title}>Give Back</CustomText>
-        <CustomText style={styles.subtitle}>
-          Your support fuels OneVine’s mission to spread compassion and growth.
-        </CustomText>
-
-        <CustomText style={styles.section}>Make a One-Time Gift:</CustomText>
-
-        <View style={styles.buttonGroup}>
-          <Button title="$5" onPress={() => handleDonation(500)} disabled={!!donating} loading={donating === 500} />
-          <Button title="$10" onPress={() => handleDonation(1000)} disabled={!!donating} loading={donating === 1000} />
-          <Button title="$20" onPress={() => handleDonation(2000)} disabled={!!donating} loading={donating === 2000} />
-        </View>
-
-        <CustomText style={styles.note}>
-          Thank you for walking in love. Every gift reflects the heart of Christ.
-        </CustomText>
-        <CustomText style={styles.note}>
-          Donations are collected securely and will support community initiatives, charities, and platform growth.
-        </CustomText>
-
-        <View style={styles.backWrap}>
-          <Button title="Back to Home" onPress={() => navigation.navigate('MainTabs', { screen: 'HomeScreen' })} />
-        </View>
-      </View>
-    </ScreenContainer>
-    </AuthGate>
+    <View style={{ flex: 1, padding: 16 }}>
+      {errorText ? <Banner text={errorText} /> : null}
+      <Text style={{ fontSize: 18, fontWeight: '700', marginBottom: 8 }}>Give Back</Text>
+      <Button title="$5" onPress={() => onDonate(500)} disabled={loading} />
+      <Button title="$10" onPress={() => onDonate(1000)} disabled={loading} />
+      <Button title="$20" onPress={() => onDonate(2000)} disabled={loading} />
+      {loading && <ActivityIndicator style={{ marginTop: 10 }} />}
+    </View>
   );
 }
-
-
