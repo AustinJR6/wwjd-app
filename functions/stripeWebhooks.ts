@@ -47,6 +47,62 @@ const upsertSubscriptionFromStripe = async (sub: Stripe.Subscription) => {
   );
 };
 
+async function handleTokenPurchase(intent: Stripe.PaymentIntent) {
+  const purchaseType =
+    (intent.metadata?.purchaseType || intent.metadata?.type || '').toLowerCase();
+  if (purchaseType !== 'token' && purchaseType !== 'tokens') {
+    console.log('Token handler: ignoring non-token intent', {
+      type: purchaseType,
+      id: intent.id,
+    });
+    return;
+  }
+
+  const uid = intent.metadata?.uid;
+  const tokenAmountRaw =
+    intent.metadata?.tokenAmount ?? intent.metadata?.tokens ?? '0';
+  const tokenAmount = Number(tokenAmountRaw);
+  if (!uid || !Number.isFinite(tokenAmount) || tokenAmount <= 0) {
+    console.warn('Token handler: missing uid or invalid token amount', {
+      uid,
+      tokenAmountRaw,
+      id: intent.id,
+    });
+    return;
+  }
+
+  const userRef = firestore.doc(`users/${uid}`);
+  const txRef = userRef.collection('transactions').doc(intent.id);
+
+  await firestore.runTransaction(async (t) => {
+    const existing = await t.get(txRef);
+    if (existing.exists) {
+      console.log('Token handler: transaction already recorded, skipping increment', {
+        id: intent.id,
+        uid,
+      });
+      return;
+    }
+    t.set(userRef, { tokens: admin.firestore.FieldValue.increment(tokenAmount) }, { merge: true });
+    t.set(
+      txRef,
+      {
+        type: 'tokens',
+        amount: tokenAmount,
+        currency: intent.currency || 'usd',
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      },
+      { merge: true }
+    );
+  });
+
+  console.log('Token handler: credited tokens', {
+    uid,
+    tokenAmount,
+    id: intent.id,
+  });
+}
+
 // Webhook handler
 export const handleStripeWebhookV2 = functions.https.onRequest(async (req, res) => {
   const sig = req.headers['stripe-signature'];
@@ -124,51 +180,10 @@ export const handleStripeWebhookV2 = functions.https.onRequest(async (req, res) 
       }
       return;
     }
-    case 'payment_intent.succeeded': {
-      try {
-        const intent = event.data.object as Stripe.PaymentIntent;
-        const type = intent.metadata?.type;
-        if (type !== 'token') {
-          res.sendStatus(200);
-          return;
-        }
-        const uid = intent.metadata?.uid;
-        const tokenAmount = Number(
-          intent.metadata?.tokenAmount || intent.metadata?.tokens || 0
-        );
-        if (!uid || !tokenAmount) {
-          console.warn('Missing uid or tokenAmount for payment_intent.succeeded', {
-            intentId: intent.id,
-          });
-          res.sendStatus(200);
-          return;
-        }
-        const userRef = firestore.doc(`users/${uid}`);
-        await userRef.set(
-          { tokens: admin.firestore.FieldValue.increment(tokenAmount) },
-          { merge: true }
-        );
-        const txRef = userRef.collection('transactions').doc(intent.id);
-        await txRef.set(
-          {
-            type: 'token',
-            amount: tokenAmount,
-            currency: intent.currency || 'usd',
-            createdAt: admin.firestore.FieldValue.serverTimestamp(),
-          },
-          { merge: true }
-        );
-        res.sendStatus(200);
-      } catch (err) {
-        console.error('Error in payment_intent.succeeded', {
-          error: err,
-          eventType: event.type,
-          intentId: (event.data.object as any)?.id,
-        });
-        res.sendStatus(400);
-      }
+    case 'payment_intent.succeeded':
+      await handleTokenPurchase(event.data.object as Stripe.PaymentIntent);
+      res.sendStatus(200);
       return;
-    }
     default:
       console.log(`Unhandled event type: ${event.type}`);
       res.sendStatus(200);
