@@ -40,8 +40,8 @@ import {
   clearHistory,
   clearTempReligionChat,
   ChatMessage,
-  checkIfUserIsSubscribed,
 } from '@/services/chatHistoryService';
+import { useSubscriptionStatus } from '@/hooks/useSubscriptionStatus';
 import { showInterstitialAd } from '@/services/adService';
 import { getPersonaPrompt } from '@/utils/religionPersona';
 
@@ -108,29 +108,26 @@ export default function ReligionAIScreen() {
   const [question, setQuestion] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(false);
-  const [isSubscribed, setIsSubscribed] = useState(false);
+  const { authReady, uid } = useAuth();
+  const { isPlus: isSubscribed, refresh: refreshSubscription } = useSubscriptionStatus(uid);
   const [messageCount, setMessageCount] = useState(0);
   const [showMemoryClearedBanner, setShowMemoryClearedBanner] = useState(false);
   const { user } = useUser();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-
-  const { authReady, uid } = useAuth();
 
   useEffect(() => {
     if (!authReady || !uid) return;
     const loadHistory = async () => {
       const firebaseUid = await getCurrentUserId();
       if (!firebaseUid) {
-        setIsSubscribed(false);
         return;
       }
       const uid = await ensureAuth(firebaseUid);
       try {
         const userData: UserProfile | null = await loadUserProfile(uid);
         const profile = userData ?? ({} as UserProfile);
-        const subscribed = await checkIfUserIsSubscribed(uid);
-        setIsSubscribed(subscribed);
-        const hist = await fetchHistory(uid, subscribed);
+        await refreshSubscription();
+        const hist = await fetchHistory(uid, isSubscribed);
         setMessages(hist);
       } catch (err) {
         console.error('Failed to load ReligionAI history', err);
@@ -186,9 +183,8 @@ export default function ReligionAIScreen() {
       const oneDay = 24 * 60 * 60 * 1000;
       const canAskFree = !lastAsk || now.getTime() - lastAsk.getTime() > oneDay;
       const cost = 5;
-      const subscribed = await checkIfUserIsSubscribed(uid);
-      setIsSubscribed(subscribed);
-      console.log('💎 OneVine+ Status:', subscribed);
+      await refreshSubscription();
+      console.log('💎 OneVine+ Status:', isSubscribed);
 
       const religion = profile?.religion;
       if (!uid || !religion) {
@@ -232,7 +228,7 @@ export default function ReligionAIScreen() {
       }
 
 
-      const history = await fetchHistory(uid, subscribed);
+      const history = await fetchHistory(uid, isSubscribed);
       const formattedHistory: GeminiMessage[] = history.map((entry) => ({
         role: entry.role === 'user' ? 'user' : 'assistant',
         text: entry.text,

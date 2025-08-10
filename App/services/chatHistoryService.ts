@@ -16,8 +16,18 @@ export interface ChatMessage {
 export async function isSubscribed(uid: string): Promise<boolean> {
   const storedUid = await ensureAuth(uid);
   if (!storedUid) return false;
+  const userDoc = await getDocument(`users/${storedUid}`);
+  const usersIsSubscribed = userDoc?.isSubscribed;
+  console.log(
+    'SUBS ▶ REST users.isSubscribed',
+    usersIsSubscribed,
+    'fallback used?',
+    usersIsSubscribed === undefined,
+  );
+  if (typeof usersIsSubscribed === 'boolean') return usersIsSubscribed;
   const subDoc = await getDocument(`subscriptions/${storedUid}`);
-  return subDoc?.active === true;
+  const status = subDoc?.status;
+  return status === 'active' || status === 'trialing';
 }
 
 // Alias used by various screens

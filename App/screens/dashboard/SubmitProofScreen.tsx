@@ -16,10 +16,11 @@ import { getAuthHeaders } from '@/utils/TokenManager';
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { useTheme } from "@/components/theme/theme";
 import { ensureAuth } from '@/utils/authGuard';
-import * as SecureStore from 'expo-secure-store';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/navigation/RootStackParamList';
+import { useSubscriptionStatus } from '@/hooks/useSubscriptionStatus';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function SubmitProofScreen() {
   const theme = useTheme();
@@ -54,17 +55,15 @@ export default function SubmitProofScreen() {
   const [image, setImage] = useState<any>(null);
   const [uploading, setUploading] = useState(false);
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { uid } = useAuth();
+  const { isPlus, loading } = useSubscriptionStatus(uid);
 
   useEffect(() => {
-    const checkAccess = async () => {
-      const sub = await SecureStore.getItemAsync('isSubscribed');
-      if (sub !== 'true') {
-        Alert.alert('Access Denied', 'This feature is for OneVine+ or Org Managers only.');
-        navigation.goBack();
-      }
-    };
-    checkAccess();
-  }, []);
+    if (!loading && !isPlus) {
+      Alert.alert('Access Denied', 'This feature is for OneVine+ or Org Managers only.');
+      navigation.goBack();
+    }
+  }, [loading, isPlus, navigation]);
 
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({

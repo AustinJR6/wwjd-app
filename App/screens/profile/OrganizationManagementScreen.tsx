@@ -20,6 +20,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/navigation/RootStackParamList';
 import AuthGate from '@/components/AuthGate';
 import { useAuth } from '@/hooks/useAuth';
+import { useSubscriptionStatus } from '@/hooks/useSubscriptionStatus';
 
 export default function OrganizationManagementScreen() {
   const theme = useTheme();
@@ -71,18 +72,18 @@ export default function OrganizationManagementScreen() {
   const [org, setOrg] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-
+  const { isPlus, loading: subLoading } = useSubscriptionStatus(uid);
   useEffect(() => {
     const checkAccess = async () => {
       const admin = await SecureStore.getItemAsync('isAdmin');
       const manager = await SecureStore.getItemAsync('isOrgManager');
-      if (admin !== 'true' && manager !== 'true') {
+      if (!subLoading && !isPlus && admin !== 'true' && manager !== 'true') {
         Alert.alert('Access Denied', 'This feature is for OneVine+ or Org Managers only.');
         navigation.goBack();
       }
     };
     checkAccess();
-  }, []);
+  }, [isPlus, subLoading, navigation]);
 
   useEffect(() => {
     if (!authReady || !uid) return;
