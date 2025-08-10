@@ -17,6 +17,36 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
 const tsFromUnix = (n?: number) =>
   n ? admin.firestore.Timestamp.fromMillis(n * 1000) : null;
 
+const upsertSubscriptionFromStripe = async (sub: Stripe.Subscription) => {
+  const uid = sub.metadata?.uid;
+  if (!uid) {
+    console.warn('Missing uid in subscription', { subscriptionId: sub.id });
+    return;
+  }
+  const status = sub.status;
+  const doc = {
+    status,
+    subscriptionId: sub.id,
+    currentPeriodStart: tsFromUnix((sub as any).current_period_start),
+    currentPeriodEnd: tsFromUnix((sub as any).current_period_end),
+    invoiceId:
+      typeof sub.latest_invoice === 'string'
+        ? sub.latest_invoice
+        : sub.latest_invoice?.id || null,
+    tier: sub.metadata?.tier || null,
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+  };
+  await firestore.doc(`subscriptions/${uid}`).set(doc, { merge: true });
+  const isActive = status === 'active' || status === 'trialing';
+  await firestore.doc(`users/${uid}`).set(
+    {
+      isSubscribed: isActive,
+      lastActive: admin.firestore.FieldValue.serverTimestamp(),
+    },
+    { merge: true }
+  );
+};
+
 // Webhook handler
 export const handleStripeWebhookV2 = functions.https.onRequest(async (req, res) => {
   const sig = req.headers['stripe-signature'];
@@ -82,37 +112,58 @@ export const handleStripeWebhookV2 = functions.https.onRequest(async (req, res) 
     case 'customer.subscription.deleted': {
       try {
         const sub = event.data.object as Stripe.Subscription;
-        const uid = sub.metadata?.uid;
-        const minimal = { eventType: event.type, subscriptionId: sub.id };
-        if (!uid) {
-          console.warn('Missing uid in subscription', minimal);
-          res.sendStatus(200);
-          return;
-        }
-        const status = sub.status;
-        const doc = {
-          status,
-          subscriptionId: sub.id,
-          currentPeriodStart: tsFromUnix((sub as any).current_period_start),
-          currentPeriodEnd: tsFromUnix((sub as any).current_period_end),
-          invoiceId:
-            typeof sub.latest_invoice === 'string'
-              ? sub.latest_invoice
-              : sub.latest_invoice?.id || null,
-          tier: sub.metadata?.tier || null,
-          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-        };
-        await firestore.doc(`subscriptions/${uid}`).set(doc, { merge: true });
-        const isActive = status === 'active' || status === 'trialing';
-        await firestore
-          .doc(`users/${uid}`)
-          .set({ isSubscribed: isActive }, { merge: true });
+        await upsertSubscriptionFromStripe(sub);
         res.sendStatus(200);
       } catch (err) {
         console.error('Error in subscription event', {
           error: err,
           eventType: event.type,
           subscriptionId: (event.data.object as any)?.id,
+        });
+        res.sendStatus(400);
+      }
+      return;
+    }
+    case 'payment_intent.succeeded': {
+      try {
+        const intent = event.data.object as Stripe.PaymentIntent;
+        const type = intent.metadata?.type;
+        if (type !== 'token') {
+          res.sendStatus(200);
+          return;
+        }
+        const uid = intent.metadata?.uid;
+        const tokenAmount = Number(
+          intent.metadata?.tokenAmount || intent.metadata?.tokens || 0
+        );
+        if (!uid || !tokenAmount) {
+          console.warn('Missing uid or tokenAmount for payment_intent.succeeded', {
+            intentId: intent.id,
+          });
+          res.sendStatus(200);
+          return;
+        }
+        const userRef = firestore.doc(`users/${uid}`);
+        await userRef.set(
+          { tokens: admin.firestore.FieldValue.increment(tokenAmount) },
+          { merge: true }
+        );
+        const txRef = userRef.collection('transactions').doc(intent.id);
+        await txRef.set(
+          {
+            type: 'token',
+            amount: tokenAmount,
+            currency: intent.currency || 'usd',
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          },
+          { merge: true }
+        );
+        res.sendStatus(200);
+      } catch (err) {
+        console.error('Error in payment_intent.succeeded', {
+          error: err,
+          eventType: event.type,
+          intentId: (event.data.object as any)?.id,
         });
         res.sendStatus(400);
       }
