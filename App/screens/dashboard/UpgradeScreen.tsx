@@ -7,13 +7,22 @@ import { useTheme } from "@/components/theme/theme";
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from "@/navigation/RootStackParamList";
 import { getCurrentUserId } from '@/utils/authUtils';
-import useStripeCheckout from '@/hooks/useStripeCheckout';
+import { initStripe, useStripe } from '@stripe/stripe-react-native';
+import { ENV, validateEnv } from '@/config/env';
+import { Banner } from '@/components/Banner';
 
 type Props = { navigation: NativeStackNavigationProp<RootStackParamList, 'MainTabs'> };
 
 export default function UpgradeScreen({ navigation }: Props) {
   const theme = useTheme();
-  const { startOneVinePlusCheckout } = useStripeCheckout();
+  const { initPaymentSheet, presentPaymentSheet } = useStripe();
+  const [errorText, setErrorText] = React.useState<string | null>(null);
+
+  console.log('[onevine/env]', {
+    api: ENV.API_BASE_URL,
+    pk: ENV.STRIPE_PUBLISHABLE_KEY?.slice(0, 16),
+    sub: ENV.SUB_PRICE_ID,
+  });
   const styles = React.useMemo(
     () =>
       StyleSheet.create({
@@ -50,6 +59,7 @@ export default function UpgradeScreen({ navigation }: Props) {
 
   const handleUpgrade = async () => {
     setLoading(true);
+    setErrorText(null);
     try {
       const uid = await getCurrentUserId();
       if (!uid) {
@@ -57,24 +67,70 @@ export default function UpgradeScreen({ navigation }: Props) {
         setLoading(false);
         return;
       }
-      const ok = await startOneVinePlusCheckout(uid);
-      if (ok) {
-        setSuccess(true);
-        Alert.alert('Success', 'You are now a OneVine+ member 🌿');
+
+      const missing = validateEnv(['API_BASE_URL', 'STRIPE_PUBLISHABLE_KEY', 'SUB_PRICE_ID']);
+      if (missing.length) {
+        setErrorText(`Missing env: ${missing.join(', ')}`);
+        return;
       }
 
+      await initStripe({
+        publishableKey: ENV.STRIPE_PUBLISHABLE_KEY!,
+        merchantIdentifier: 'merchant.onevine',
+      });
+
+      const res = await fetch(`${ENV.API_BASE_URL}/stripe/create-subscription`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ priceId: ENV.SUB_PRICE_ID }),
+      });
+      if (!res.ok) throw new Error(`Server ${res.status}: ${await res.text()}`);
+
+      const { customer, customerEphemeralKeySecret, setupIntentClientSecret } = await res.json();
+
+      if (!setupIntentClientSecret || !customer?.id || !customerEphemeralKeySecret) {
+        setErrorText('Missing payment sheet parameters (setup intent / customer / ephemeral key).');
+        return;
+      }
+
+      const { error: initErr } = await initPaymentSheet({
+        merchantDisplayName: 'OneVine',
+        customerId: customer.id,
+        customerEphemeralKeySecret,
+        setupIntentClientSecret,
+        allowsDelayedPaymentMethods: false,
+      });
+      if (initErr) {
+        setErrorText(`initPaymentSheet failed: ${initErr.message}`);
+        return;
+      }
+
+      const { error: presentErr } = await presentPaymentSheet();
+      if (presentErr) {
+        setErrorText(`PaymentSheet error: ${presentErr.message}`);
+        return;
+      }
+
+      setSuccess(true);
+      Alert.alert('Success', 'You are now a OneVine+ member 🌿');
     } catch (err) {
-      Alert.alert('Payment Error', typeof err === 'object' && err !== null && 'message' in err ? String((err as any).message) : String(err) || 'Something went wrong.');
+      Alert.alert(
+        'Payment Error',
+        typeof err === 'object' && err !== null && 'message' in err
+          ? String((err as any).message)
+          : String(err) || 'Something went wrong.',
+      );
     } finally {
       setLoading(false);
     }
   };
 
-  return (
-    <ScreenContainer>
-      <View style={styles.content}>
-        <CustomText style={styles.title}>OneVine+ Membership</CustomText>
-        <CustomText style={styles.subtitle}>Experience the full blessing</CustomText>
+    return (
+      <ScreenContainer>
+        <View style={styles.content}>
+          {errorText ? <Banner text={errorText} /> : null}
+          <CustomText style={styles.title}>OneVine+ Membership</CustomText>
+          <CustomText style={styles.subtitle}>Experience the full blessing</CustomText>
 
         <View style={styles.benefitsBox}>
           <CustomText style={styles.benefit}>✅ Unlimited Religion AI questions</CustomText>

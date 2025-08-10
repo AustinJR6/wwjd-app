@@ -2,11 +2,13 @@ import React, { useState } from 'react';
 import CustomText from '@/components/CustomText';
 import { View, StyleSheet, Alert } from 'react-native';
 import Button from '@/components/common/Button';
-import { usePaymentFlow } from '@/utils';
 import { logTransaction } from '@/utils/transactionLogger';
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { useTheme } from "@/components/theme/theme";
 import AuthGate from '@/components/AuthGate';
+import { initStripe, useStripe } from '@stripe/stripe-react-native';
+import { ENV, validateEnv } from '@/config/env';
+import { Banner } from '@/components/Banner';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from "@/navigation/RootStackParamList";
 
@@ -15,7 +17,16 @@ type Props = { navigation: NativeStackNavigationProp<RootStackParamList, 'MainTa
 
 export default function GiveBackScreen({ navigation }: Props) {
   const theme = useTheme();
-  const { startPaymentFlow } = usePaymentFlow();
+  const { initPaymentSheet, presentPaymentSheet } = useStripe();
+  const [errorText, setErrorText] = useState<string | null>(null);
+
+  console.log('[onevine/env]', {
+    api: ENV.API_BASE_URL,
+    pk: ENV.STRIPE_PUBLISHABLE_KEY?.slice(0, 16),
+    d2: ENV.DONATE_2_PRICE_ID,
+    d5: ENV.DONATE_5_PRICE_ID,
+    d10: ENV.DONATE_10_PRICE_ID,
+  });
   const styles = React.useMemo(
     () =>
       StyleSheet.create({
@@ -55,14 +66,53 @@ export default function GiveBackScreen({ navigation }: Props) {
   );
   const [donating, setDonating] = useState<number | null>(null);
 
-  const handleDonation = async (amount: number) => {
+  const handleDonation = async (priceKey: keyof typeof ENV, amount: number) => {
     setDonating(amount);
+    setErrorText(null);
     try {
-      const success = await startPaymentFlow({ mode: 'payment', amount });
-      if (success) {
-        Alert.alert('Thank you', 'Thank you for your donation \uD83D\uDE4F');
-        await logTransaction('donation', amount);
+      const missing = validateEnv(['API_BASE_URL', 'STRIPE_PUBLISHABLE_KEY', priceKey]);
+      if (missing.length) {
+        setErrorText(`Missing env: ${missing.join(', ')}`);
+        return;
       }
+
+      await initStripe({
+        publishableKey: ENV.STRIPE_PUBLISHABLE_KEY!,
+        merchantIdentifier: 'merchant.onevine',
+      });
+
+      const res = await fetch(`${ENV.API_BASE_URL}/stripe/startDonation`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ priceId: ENV[priceKey] }),
+      });
+      if (!res.ok) throw new Error(`Server ${res.status}: ${await res.text()}`);
+
+      const { paymentIntentClientSecret } = await res.json();
+      if (!paymentIntentClientSecret) {
+        setErrorText('Missing paymentIntentClientSecret from server.');
+        return;
+      }
+
+      const { error: initErr } = await initPaymentSheet({
+        merchantDisplayName: 'OneVine',
+        paymentIntentClientSecret,
+      });
+      if (initErr) {
+        setErrorText(`initPaymentSheet failed: ${initErr.message}`);
+        return;
+      }
+
+      const { error: presentErr } = await presentPaymentSheet();
+      if (presentErr) {
+        if (presentErr.code !== 'Canceled') {
+          setErrorText(`PaymentSheet error: ${presentErr.message}`);
+        }
+        return;
+      }
+
+      Alert.alert('Thank you', 'Thank you for your donation \uD83D\uDE4F');
+      await logTransaction('donation', amount);
     } finally {
       setDonating(null);
     }
@@ -72,6 +122,7 @@ export default function GiveBackScreen({ navigation }: Props) {
     <AuthGate>
     <ScreenContainer>
       <View style={styles.content}>
+        {errorText ? <Banner text={errorText} /> : null}
         <CustomText style={styles.title}>Give Back</CustomText>
         <CustomText style={styles.subtitle}>
           Your support fuels OneVine’s mission to spread compassion and growth.
@@ -80,9 +131,9 @@ export default function GiveBackScreen({ navigation }: Props) {
         <CustomText style={styles.section}>Make a One-Time Gift:</CustomText>
 
         <View style={styles.buttonGroup}>
-          <Button title="$5" onPress={() => handleDonation(500)} disabled={!!donating} loading={donating === 500} />
-          <Button title="$10" onPress={() => handleDonation(1000)} disabled={!!donating} loading={donating === 1000} />
-          <Button title="$20" onPress={() => handleDonation(2000)} disabled={!!donating} loading={donating === 2000} />
+          <Button title="$2" onPress={() => handleDonation('DONATE_2_PRICE_ID', 200)} disabled={!!donating} loading={donating === 200} />
+          <Button title="$5" onPress={() => handleDonation('DONATE_5_PRICE_ID', 500)} disabled={!!donating} loading={donating === 500} />
+          <Button title="$10" onPress={() => handleDonation('DONATE_10_PRICE_ID', 1000)} disabled={!!donating} loading={donating === 1000} />
         </View>
 
         <CustomText style={styles.note}>
