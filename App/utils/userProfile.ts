@@ -92,28 +92,11 @@ export async function loadUserProfile(
       religionData = await getReligionProfile(user.religion);
     }
 
-    // Fetch subscription status separately. Missing docs should not throw.
-    let isSubscribed = false;
-    try {
-      const subUrl = `${FIRESTORE_BASE}/subscriptions/${userId}`;
-      const subRes = await apiClient.get(subUrl, requestOptions as any);
-      const subDoc = fromFirestore(subRes.data);
-      isSubscribed = subDoc?.active === true;
-    } catch (subErr: any) {
-      if (subErr?.response?.status === 404) {
-        console.warn(
-          `\u26A0\uFE0F Subscription document missing for uid: ${userId}, defaulting to isSubscribed: false`,
-        );
-      } else {
-        logFirestoreError('GET', `subscriptions/${userId}`, subErr);
-      }
-    }
-
     cachedProfile = {
       uid: userId,
       ...user,
       religionData,
-      isSubscribed,
+      isSubscribed: user?.isSubscribed ?? false,
     } as CachedProfile;
     if (user.profileSchemaVersion && user.profileSchemaVersion !== CURRENT_PROFILE_SCHEMA) {
       console.warn(
@@ -160,6 +143,8 @@ export async function fetchProfileWithCounts(uid?: string): Promise<(UserProfile
     return { ...profile, counts: {} };
   }
 }
+
+export const isUserPlus = (profile?: UserProfile | null) => !!profile?.isSubscribed;
 
 export async function updateUserProfile(
   fields: Record<string, any>,

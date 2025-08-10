@@ -5,29 +5,28 @@ import Button from '@/components/common/Button';
 import * as SecureStore from 'expo-secure-store';
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { useTheme } from "@/components/theme/theme";
-import { getTokenCount, syncSubscriptionStatus } from "@/utils/TokenManager";
+import { getTokenCount } from "@/utils/TokenManager";
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from "@/navigation/RootStackParamList";
 import AuthGate from '@/components/AuthGate';
 import { useAuth } from '@/hooks/useAuth';
+import { useSubscriptionStatus } from '@/hooks/useSubscriptionStatus';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'HomeScreen'>;
 
 export default function HomeScreen({ navigation }: Props) {
   const [tokens, setTokens] = useState<number>(0);
-  const [subscribed, setSubscribed] = useState<boolean>(false);
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [isOrgManager, setIsOrgManager] = useState<boolean>(false);
 
   const theme = useTheme();
   const { authReady, uid } = useAuth();
+  const { isPlus } = useSubscriptionStatus(uid);
   useEffect(() => {
     if (!authReady || !uid) return;
     const loadData = async () => {
       const t = await getTokenCount();
-      await syncSubscriptionStatus(); // updates Firestore token state
       setTokens(t);
-      setSubscribed(t >= 9999); // 9999 token cap implies OneVine+ sub
       const adminFlag = await SecureStore.getItemAsync('isAdmin');
       const managerFlag = await SecureStore.getItemAsync('isOrgManager');
       setIsAdmin(adminFlag === 'true');
@@ -89,7 +88,7 @@ export default function HomeScreen({ navigation }: Props) {
         <CustomText style={styles.subtitle}>Grow in Faith Daily</CustomText>
 
         <View style={styles.statusBox}>
-          {subscribed ? (
+          {isPlus ? (
             <CustomText style={styles.subscribed}>🌟 OneVine+ Active</CustomText>
           ) : (
             <CustomText style={styles.tokenInfo}>🎟️ Tokens: {tokens}</CustomText>

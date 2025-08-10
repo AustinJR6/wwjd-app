@@ -56,11 +56,29 @@ export const useFreeAsk = async () => {
 export const syncSubscriptionStatus = async () => {
   const uid = await ensureAuth();
   if (!uid) return;
-  const sub = await getDocument(`subscriptions/${uid}`);
-  const isSubscribed = !!sub && sub.active === true;
-  console.log('💎 OneVine+ Status:', isSubscribed);
-  if (isSubscribed) {
-    await updateUserProfile({ tokens: 9999 }, uid);
+  try {
+    const userDoc = await getDocument(`users/${uid}`);
+    const usersIsSubscribed = userDoc?.isSubscribed;
+    console.log(
+      'SUBS ▶ REST users.isSubscribed',
+      usersIsSubscribed,
+      'fallback used?',
+      usersIsSubscribed === undefined,
+    );
+    let isSubscribed: boolean;
+    if (typeof usersIsSubscribed === 'boolean') {
+      isSubscribed = usersIsSubscribed;
+    } else {
+      const subDoc = await getDocument(`subscriptions/${uid}`);
+      const status = subDoc?.status;
+      isSubscribed = status === 'active' || status === 'trialing';
+    }
+    console.log('💎 OneVine+ Status:', isSubscribed);
+    if (isSubscribed) {
+      await updateUserProfile({ tokens: 9999 }, uid);
+    }
+  } catch (err) {
+    console.error('❌ Subscription sync failed:', err);
   }
 };
 

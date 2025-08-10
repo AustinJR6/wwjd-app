@@ -10,6 +10,7 @@ import { getIdToken } from '@/utils/authUtils';
 import { useUser } from '@/hooks/useUser';
 import { SCREENS } from '@/navigation/screens';
 import { RootStackParamList } from '@/navigation/RootStackParamList';
+import { useSubscriptionStatus } from '@/hooks/useSubscriptionStatus';
 
 /**
  * Screen shown after returning from Stripe's success_url.
@@ -22,11 +23,13 @@ export default function StripeSuccessScreen() {
   const { user } = useUser();
   const refreshProfile = useUserProfileStore((s) => s.refreshUserProfile);
   const [loading, setLoading] = useState(true);
+  const { refresh } = useSubscriptionStatus(user?.uid ?? null);
 
   useFocusEffect(
     React.useCallback(() => {
       refreshProfile();
-    }, [refreshProfile]),
+      refresh();
+    }, [refreshProfile, refresh]),
   );
 
   useEffect(() => {
@@ -36,6 +39,7 @@ export default function StripeSuccessScreen() {
       try {
         await getIdToken(true);
         const profile = await handlePostSubscription(user.uid);
+        await refresh();
         if (!mounted) return;
         if (profile) {
           if (profile.isSubscribed === true) {
