@@ -6,14 +6,15 @@ import ScreenContainer from "@/components/theme/ScreenContainer";
 import { useTheme } from "@/components/theme/theme";
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from "@/navigation/RootStackParamList";
-import { getCurrentUserId } from '@/utils/authUtils';
-import useStripeCheckout from '@/hooks/useStripeCheckout';
+import { getCurrentUserId, getIdToken } from '@/utils/authUtils';
+import { ENV, validateEnv } from '../../config/env';
+import { initStripe, useStripe } from '@stripe/stripe-react-native';
 
 type Props = { navigation: NativeStackNavigationProp<RootStackParamList, 'MainTabs'> };
 
 export default function UpgradeScreen({ navigation }: Props) {
   const theme = useTheme();
-  const { startOneVinePlusCheckout } = useStripeCheckout();
+  const { initPaymentSheet, presentPaymentSheet } = useStripe();
   const styles = React.useMemo(
     () =>
       StyleSheet.create({
@@ -47,9 +48,29 @@ export default function UpgradeScreen({ navigation }: Props) {
 
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [, setErrorText] = useState('');
 
   const handleUpgrade = async () => {
     setLoading(true);
+    setErrorText('');
+    const missing = validateEnv(['API_BASE_URL', 'STRIPE_PUBLISHABLE_KEY', 'SUB_PRICE_ID']);
+    if (missing.length) {
+      setErrorText(`Missing env: ${missing.join(', ')}`);
+      setLoading(false);
+      return;
+    }
+
+    console.log('[onevine/env]', {
+      api: ENV.API_BASE_URL,
+      pk: ENV.STRIPE_PUBLISHABLE_KEY?.slice(0, 16),
+      price: ENV.SUB_PRICE_ID,
+    });
+
+    await initStripe({
+      publishableKey: ENV.STRIPE_PUBLISHABLE_KEY!,
+      merchantIdentifier: 'merchant.onevine',
+    });
+
     try {
       const uid = await getCurrentUserId();
       if (!uid) {
@@ -57,14 +78,51 @@ export default function UpgradeScreen({ navigation }: Props) {
         setLoading(false);
         return;
       }
-      const ok = await startOneVinePlusCheckout(uid);
-      if (ok) {
-        setSuccess(true);
-        Alert.alert('Success', 'You are now a OneVine+ member 🌿');
+
+      const token = await getIdToken(true);
+      const res = await fetch(`${ENV.API_BASE_URL}/createStripeSubscriptionIntent`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ uid, priceId: ENV.SUB_PRICE_ID }),
+      });
+      const data = await res.json();
+      const clientSecret = data.clientSecret || data.client_secret;
+      if (!clientSecret || !data.ephemeralKey || !data.customerId) {
+        throw new Error('Missing payment sheet parameters');
       }
 
+      const { error: initError } = await initPaymentSheet({
+        customerId: data.customerId,
+        customerEphemeralKeySecret: data.ephemeralKey,
+        paymentIntentClientSecret: clientSecret,
+        merchantDisplayName: 'OneVine',
+        returnURL: 'onevine://payment-return',
+      });
+      if (initError) {
+        Alert.alert('Payment Error', initError.message);
+        setLoading(false);
+        return;
+      }
+
+      const { error } = await presentPaymentSheet();
+      if (error) {
+        if (error.code !== 'Canceled') {
+          Alert.alert('Payment Error', error.message);
+        }
+        setLoading(false);
+        return;
+      }
+
+      setSuccess(true);
+      Alert.alert('Success', 'You are now a OneVine+ member 🌿');
     } catch (err) {
-      Alert.alert('Payment Error', typeof err === 'object' && err !== null && 'message' in err ? String((err as any).message) : String(err) || 'Something went wrong.');
+      Alert.alert(
+        'Payment Error',
+        typeof err === 'object' && err !== null && 'message' in err ? String((err as any).message) : String(err) || 'Something went wrong.',
+      );
     } finally {
       setLoading(false);
     }
