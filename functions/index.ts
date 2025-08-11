@@ -1296,7 +1296,10 @@ export const createCheckoutSession = functions
         metadata: {
           uid,
           purchaseType: 'token',
+          type: 'tokens',
           tokenAmount: String(tokenAmount),
+          tokens: String(tokenAmount),
+          priceId: cleanId,
         },
         automatic_payment_methods: { enabled: true },
       });
@@ -1327,6 +1330,7 @@ export const createCheckoutSession = functions
               amount,
               currency: price.currency,
               paymentIntentId: intent.id,
+              priceId: cleanId,
               status: intent.status,
               createdAt: admin.firestore.FieldValue.serverTimestamp(),
             },

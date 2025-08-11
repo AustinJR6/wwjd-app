@@ -14,6 +14,12 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
   apiVersion: '2023-10-16',
 } as any);
 
+const TOKEN_BY_PRICE_ID: Record<string, number> = {
+  'price_1RczHJGLKcFWSqCItdY2VIHf': 20,
+  'price_1RczI8GLKcFWSqCIs55unLMJ': 50,
+  'price_1RczJ0GLKcFWSqCIhUFpQqEq': 100,
+};
+
 const tsFromUnix = (n?: number) =>
   n ? admin.firestore.Timestamp.fromMillis(n * 1000) : null;
 
@@ -47,9 +53,10 @@ const upsertSubscriptionFromStripe = async (sub: Stripe.Subscription) => {
   );
 };
 
-async function handleTokenPurchase(intent: Stripe.PaymentIntent) {
-  const purchaseType =
-    (intent.metadata?.purchaseType || intent.metadata?.type || '').toLowerCase();
+async function handleTokenPurchase(event: Stripe.Event) {
+  const intent = event.data.object as Stripe.PaymentIntent;
+  const md = intent.metadata || ({} as Record<string, string>);
+  const purchaseType = (md.purchaseType || md.type || '').toLowerCase();
   if (purchaseType !== 'token' && purchaseType !== 'tokens') {
     console.log('Token handler: ignoring non-token intent', {
       type: purchaseType,
@@ -58,48 +65,74 @@ async function handleTokenPurchase(intent: Stripe.PaymentIntent) {
     return;
   }
 
-  const uid = intent.metadata?.uid;
-  const tokenAmountRaw =
-    intent.metadata?.tokenAmount ?? intent.metadata?.tokens ?? '0';
-  const tokenAmount = Number(tokenAmountRaw);
+  const uid = md.uid;
+  const tokensMeta = md.tokenAmount ?? md.tokens;
+  const priceId = md.priceId || '';
+  const tokensFromMeta = tokensMeta ? parseInt(tokensMeta, 10) : NaN;
+  const tokensFromPrice = TOKEN_BY_PRICE_ID[priceId] ?? NaN;
+  const tokenAmount = Number.isFinite(tokensFromMeta)
+    ? tokensFromMeta
+    : tokensFromPrice;
+
   if (!uid || !Number.isFinite(tokenAmount) || tokenAmount <= 0) {
     console.warn('Token handler: missing uid or invalid token amount', {
       uid,
-      tokenAmountRaw,
+      tokensMeta,
+      priceId,
       id: intent.id,
     });
     return;
   }
 
+  const eventRef = firestore.collection('stripe_events').doc(event.id);
   const userRef = firestore.doc(`users/${uid}`);
   const txRef = userRef.collection('transactions').doc(intent.id);
+  const amount = intent.amount_received ?? intent.amount ?? 0;
+  const currency = intent.currency || 'usd';
 
   await firestore.runTransaction(async (t) => {
-    const existing = await t.get(txRef);
-    if (existing.exists) {
-      console.log('Token handler: transaction already recorded, skipping increment', {
-        id: intent.id,
-        uid,
+    const evSnap = await t.get(eventRef);
+    if (evSnap.exists) {
+      console.log('Token handler: event already processed, skipping', {
+        eventId: event.id,
+        paymentIntentId: intent.id,
       });
       return;
     }
-    t.set(userRef, { tokens: admin.firestore.FieldValue.increment(tokenAmount) }, { merge: true });
+
+    t.set(
+      userRef,
+      { tokens: admin.firestore.FieldValue.increment(tokenAmount) },
+      { merge: true }
+    );
     t.set(
       txRef,
       {
-        type: 'tokens',
-        amount: tokenAmount,
-        currency: intent.currency || 'usd',
+        type: 'token_purchase',
+        tokens: tokenAmount,
+        amount,
+        currency,
+        priceId,
+        stripePaymentIntentId: intent.id,
+        eventId: event.id,
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
       },
       { merge: true }
     );
+    t.set(eventRef, {
+      processed: true,
+      kind: 'tokens',
+      paymentIntentId: intent.id,
+      tokens: tokenAmount,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
   });
 
   console.log('Token handler: credited tokens', {
     uid,
     tokenAmount,
     id: intent.id,
+    eventId: event.id,
   });
 }
 
@@ -181,7 +214,7 @@ export const handleStripeWebhookV2 = functions.https.onRequest(async (req, res) 
       return;
     }
     case 'payment_intent.succeeded':
-      await handleTokenPurchase(event.data.object as Stripe.PaymentIntent);
+      await handleTokenPurchase(event);
       res.sendStatus(200);
       return;
     default:
