@@ -2,8 +2,10 @@ import React, { useState } from 'react';
 import CustomText from '@/components/CustomText';
 import { View, StyleSheet, Alert } from 'react-native';
 import Button from '@/components/common/Button';
-import { usePaymentFlow } from '@/utils';
 import { logTransaction } from '@/utils/transactionLogger';
+import { ENV, validateEnv } from '../config/env';
+import { getIdToken } from '@/utils/authUtils';
+import { initStripe, useStripe } from '@stripe/stripe-react-native';
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { useTheme } from "@/components/theme/theme";
 import AuthGate from '@/components/AuthGate';
@@ -15,7 +17,7 @@ type Props = { navigation: NativeStackNavigationProp<RootStackParamList, 'MainTa
 
 export default function GiveBackScreen({ navigation }: Props) {
   const theme = useTheme();
-  const { startPaymentFlow } = usePaymentFlow();
+  const { initPaymentSheet, presentPaymentSheet } = useStripe();
   const styles = React.useMemo(
     () =>
       StyleSheet.create({
@@ -54,15 +56,74 @@ export default function GiveBackScreen({ navigation }: Props) {
     [theme],
   );
   const [donating, setDonating] = useState<number | null>(null);
+  const [, setErrorText] = useState('');
 
-  const handleDonation = async (amount: number) => {
+  const handleDonation = async (
+    priceKey: 'DONATE_2_PRICE_ID' | 'DONATE_5_PRICE_ID' | 'DONATE_10_PRICE_ID',
+    amount: number,
+  ) => {
     setDonating(amount);
+    setErrorText('');
+    const missing = validateEnv(['API_BASE_URL', 'STRIPE_PUBLISHABLE_KEY', priceKey]);
+    if (missing.length) {
+      setErrorText(`Missing env: ${missing.join(', ')}`);
+      setDonating(null);
+      return;
+    }
+
+    const priceId = ENV[priceKey];
+
+    console.log('[onevine/env]', {
+      api: ENV.API_BASE_URL,
+      pk: ENV.STRIPE_PUBLISHABLE_KEY?.slice(0, 16),
+      price: priceId,
+    });
+
+    await initStripe({
+      publishableKey: ENV.STRIPE_PUBLISHABLE_KEY!,
+      merchantIdentifier: 'merchant.onevine',
+    });
+
     try {
-      const success = await startPaymentFlow({ mode: 'payment', amount });
-      if (success) {
-        Alert.alert('Thank you', 'Thank you for your donation \uD83D\uDE4F');
-        await logTransaction('donation', amount);
+      const token = await getIdToken(true);
+      const res = await fetch(`${ENV.API_BASE_URL}/stripe/startDonationCheckout`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ priceId }),
+      });
+      const result = await res.json();
+      const clientSecret = result.clientSecret || result.paymentIntent;
+      if (!clientSecret || !result.ephemeralKey || !result.customerId) {
+        throw new Error('Missing payment sheet parameters');
       }
+
+      const { error: initError } = await initPaymentSheet({
+        customerId: result.customerId,
+        customerEphemeralKeySecret: result.ephemeralKey,
+        paymentIntentClientSecret: clientSecret,
+        merchantDisplayName: 'OneVine',
+        returnURL: 'onevine://payment-return',
+      });
+      if (initError) {
+        Alert.alert('Payment Error', initError.message);
+        return;
+      }
+
+      const { error } = await presentPaymentSheet();
+      if (error) {
+        if (error.code !== 'Canceled') {
+          Alert.alert('Payment Error', error.message);
+        }
+        return;
+      }
+
+      Alert.alert('Thank you', 'Thank you for your donation \uD83D\uDE4F');
+      await logTransaction('donation', amount);
+    } catch (err: any) {
+      Alert.alert('Donation Error', err?.message || 'Unable to start checkout');
     } finally {
       setDonating(null);
     }
@@ -80,9 +141,9 @@ export default function GiveBackScreen({ navigation }: Props) {
         <CustomText style={styles.section}>Make a One-Time Gift:</CustomText>
 
         <View style={styles.buttonGroup}>
-          <Button title="$5" onPress={() => handleDonation(500)} disabled={!!donating} loading={donating === 500} />
-          <Button title="$10" onPress={() => handleDonation(1000)} disabled={!!donating} loading={donating === 1000} />
-          <Button title="$20" onPress={() => handleDonation(2000)} disabled={!!donating} loading={donating === 2000} />
+          <Button title="$2" onPress={() => handleDonation('DONATE_2_PRICE_ID', 200)} disabled={!!donating} loading={donating === 200} />
+          <Button title="$5" onPress={() => handleDonation('DONATE_5_PRICE_ID', 500)} disabled={!!donating} loading={donating === 500} />
+          <Button title="$10" onPress={() => handleDonation('DONATE_10_PRICE_ID', 1000)} disabled={!!donating} loading={donating === 1000} />
         </View>
 
         <CustomText style={styles.note}>

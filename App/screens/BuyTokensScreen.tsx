@@ -3,13 +3,12 @@ import CustomText from '@/components/CustomText';
 import { View, StyleSheet, Alert } from 'react-native';
 import Button from '@/components/common/Button';
 import { logTransaction } from '@/utils/transactionLogger';
-import { createCheckoutSession } from '@/services/apiService';
-import { PRICE_IDS } from '@/config/stripeConfig';
 import { getCurrentUserId, getIdToken } from '@/utils/authUtils';
+import { ENV, validateEnv } from '../config/env';
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { useTheme } from "@/components/theme/theme";
 import AuthGate from '@/components/AuthGate';
-import { useStripe } from '@stripe/stripe-react-native';
+import { initStripe, useStripe } from '@stripe/stripe-react-native';
 import { useUserProfileStore } from '@/state/userProfile';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from "@/navigation/RootStackParamList";
@@ -65,14 +64,48 @@ export default function BuyTokensScreen({ navigation }: Props) {
   const { initPaymentSheet, presentPaymentSheet } = useStripe();
   const refreshProfile = useUserProfileStore((s) => s.refreshUserProfile);
   const [loading, setLoading] = React.useState<number | null>(null);
+  const [, setErrorText] = React.useState('');
 
-  const purchase = async (priceId: string, tokenAmount: number) => {
+  const purchase = async (
+    priceKey: 'TOKENS_20_PRICE_ID' | 'TOKENS_50_PRICE_ID' | 'TOKENS_100_PRICE_ID',
+    tokenAmount: number,
+  ) => {
     setLoading(tokenAmount);
+    setErrorText('');
+    const missing = validateEnv(['API_BASE_URL', 'STRIPE_PUBLISHABLE_KEY', priceKey]);
+    if (missing.length) {
+      setErrorText(`Missing env: ${missing.join(', ')}`);
+      setLoading(null);
+      return;
+    }
+
+    const priceId = ENV[priceKey];
+
+    console.log('[onevine/env]', {
+      api: ENV.API_BASE_URL,
+      pk: ENV.STRIPE_PUBLISHABLE_KEY?.slice(0, 16),
+      price: priceId,
+    });
+
+    await initStripe({
+      publishableKey: ENV.STRIPE_PUBLISHABLE_KEY!,
+      merchantIdentifier: 'merchant.onevine',
+    });
+
     try {
       const uid = await getCurrentUserId();
       if (!uid) throw new Error('Not signed in');
 
-      const result = await createCheckoutSession(uid, priceId, tokenAmount);
+      const token = await getIdToken(true);
+      const res = await fetch(`${ENV.API_BASE_URL}/stripe/startTokenCheckout`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ priceId }),
+      });
+      const result = await res.json();
       const clientSecret = result.clientSecret || result.paymentIntent;
       if (!clientSecret || !result.ephemeralKey || !result.customerId) {
         throw new Error('Missing payment details');
@@ -119,21 +152,21 @@ export default function BuyTokensScreen({ navigation }: Props) {
           <CustomText style={styles.amount}>
             20 Tokens — <CustomText style={styles.price}>$5</CustomText>
           </CustomText>
-          <Button title="Buy 20 Tokens" onPress={() => purchase(PRICE_IDS.TOKENS_20, 20)} loading={loading === 20} />
+          <Button title="Buy 20 Tokens" onPress={() => purchase('TOKENS_20_PRICE_ID', 20)} loading={loading === 20} />
         </View>
 
         <View style={styles.pack}>
           <CustomText style={styles.amount}>
             50 Tokens — <CustomText style={styles.price}>$10</CustomText>
           </CustomText>
-          <Button title="Buy 50 Tokens" onPress={() => purchase(PRICE_IDS.TOKENS_50, 50)} loading={loading === 50} />
+          <Button title="Buy 50 Tokens" onPress={() => purchase('TOKENS_50_PRICE_ID', 50)} loading={loading === 50} />
         </View>
 
         <View style={styles.pack}>
           <CustomText style={styles.amount}>
             100 Tokens — <CustomText style={styles.price}>$20</CustomText>
           </CustomText>
-          <Button title="Buy 100 Tokens" onPress={() => purchase(PRICE_IDS.TOKENS_100, 100)} loading={loading === 100} />
+          <Button title="Buy 100 Tokens" onPress={() => purchase('TOKENS_100_PRICE_ID', 100)} loading={loading === 100} />
         </View>
 
         <View style={styles.buttonWrap}>
