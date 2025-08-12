@@ -1,20 +1,12 @@
 import { getItem, setItem, deleteItem } from '@/utils/secureStore';
-import {
-  signUpWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  generateDefaultUserData,
-  createUserDocument,
-} from '../../firebaseRest';
+import { generateDefaultUserData, createUserDocument } from '../../firebaseRest';
+import { signUpWithEmail, signInWithEmail, withKey } from '../api/firebaseAuth';
 import axios from 'axios';
-import Constants from 'expo-constants';
+import { FIREBASE_WEB_API_KEY } from '../config/env';
 
 const TOKEN_KEY = 'firebase_id_token';
 const REFRESH_KEY = 'firebase_refresh_token';
 const UID_KEY = 'firebase_uid';
-const API_KEY = Constants.expoConfig?.extra?.EXPO_PUBLIC_FIREBASE_API_KEY || '';
-if (!API_KEY) {
-  console.warn('⚠️ Missing EXPO_PUBLIC_FIREBASE_API_KEY in .env');
-}
 
 let currentToken: string | null = null;
 let currentRefresh: string | null = null;
@@ -69,7 +61,7 @@ export function observeAuthState(cb: (user: any | null) => void) {
 
 export async function signup(email: string, password: string) {
   try {
-    const res = await signUpWithEmailAndPassword(email, password);
+    const res = await signUpWithEmail(email, password);
     currentToken = res.idToken;
     currentRefresh = res.refreshToken;
     currentUid = res.localId;
@@ -84,14 +76,14 @@ export async function signup(email: string, password: string) {
     console.log('🎉 Signup successful');
     return { uid: res.localId, email: res.email };
   } catch (error: any) {
-    console.warn('🚫 Signup Failed:', error.response?.data?.error?.message);
+    console.warn('🚫 Signup Failed:', error.response?.data?.error?.message || error.message);
     throw error;
   }
 }
 
 export async function login(email: string, password: string) {
   try {
-    const res = await signInWithEmailAndPassword(email, password);
+    const res = await signInWithEmail(email, password);
     currentToken = res.idToken;
     currentRefresh = res.refreshToken;
     currentUid = res.localId;
@@ -100,7 +92,7 @@ export async function login(email: string, password: string) {
     await setItem(UID_KEY, res.localId);
     return { uid: res.localId, email: res.email };
   } catch (error: any) {
-    console.warn('🚫 Login Failed:', error.response?.data?.error?.message);
+    console.warn('🚫 Login Failed:', error.response?.data?.error?.message || error.message);
     throw error;
   }
 }
@@ -115,14 +107,18 @@ export async function logout() {
 }
 
 export async function resetPassword(email: string) {
-  const url = `https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=${API_KEY}`;
+  const url = withKey('/accounts:sendOobCode');
   await axios.post(url, { requestType: 'PASSWORD_RESET', email });
 }
 
 export async function changePassword(newPassword: string) {
   const token = await getIdToken(true);
-  const url = `https://identitytoolkit.googleapis.com/v1/accounts:update?key=${API_KEY}`;
-  await axios.post(url, { idToken: token, password: newPassword, returnSecureToken: false });
+  const url = withKey('/accounts:update');
+  await axios.post(url, {
+    idToken: token,
+    password: newPassword,
+    returnSecureToken: false,
+  });
 }
 
 export async function getIdToken(forceRefresh = false): Promise<string | null> {
@@ -131,7 +127,12 @@ export async function getIdToken(forceRefresh = false): Promise<string | null> {
   if (!forceRefresh && currentToken && !isExpired(currentToken)) {
     return currentToken;
   }
-  const url = `https://securetoken.googleapis.com/v1/token?key=${API_KEY}`;
+  if (!FIREBASE_WEB_API_KEY) {
+    throw new Error('Missing Firebase Web API key');
+  }
+  const url = `https://securetoken.googleapis.com/v1/token?key=${encodeURIComponent(
+    FIREBASE_WEB_API_KEY,
+  )}`;
   const res = await axios.post(url, {
     grant_type: 'refresh_token',
     refresh_token: currentRefresh,

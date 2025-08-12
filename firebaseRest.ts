@@ -1,7 +1,7 @@
 import axios from "axios";
 import { logFirestoreError } from "./App/lib/logging";
-import Constants from "expo-constants";
 import { DEFAULT_RELIGION } from "./App/config/constants";
+import { FIREBASE_PROJECT_ID } from "./App/config/env";
 
 export function generateUsernameFromDisplayName(displayName: string): string {
   return displayName
@@ -11,72 +11,13 @@ export function generateUsernameFromDisplayName(displayName: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
-const API_KEY = Constants.expoConfig?.extra?.EXPO_PUBLIC_FIREBASE_API_KEY || "";
-const PROJECT_ID =
-  Constants.expoConfig?.extra?.EXPO_PUBLIC_FIREBASE_PROJECT_ID || "";
-if (!API_KEY) {
-  console.warn("⚠️ Missing EXPO_PUBLIC_FIREBASE_API_KEY in .env");
-}
-if (!PROJECT_ID) {
-  console.warn("⚠️ Missing EXPO_PUBLIC_FIREBASE_PROJECT_ID in .env");
+if (!FIREBASE_PROJECT_ID) {
+  console.warn(
+    '[env] Missing EXPO_PUBLIC_FIREBASE_PROJECT_ID; Firestore REST calls will fail',
+  );
 }
 
-const ID_BASE = `https://identitytoolkit.googleapis.com/v1`;
-export const FIRESTORE_BASE = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents`;
-
-export interface AuthResponse {
-  idToken: string;
-  refreshToken: string;
-  localId: string;
-  email: string;
-}
-
-export async function signUpWithEmailAndPassword(
-  email: string,
-  password: string,
-): Promise<AuthResponse> {
-  const url = `${ID_BASE}/accounts:signUp?key=${API_KEY}`;
-  const payload = { email, password, returnSecureToken: true };
-  console.log("➡️ signup request", { url, payload });
-  try {
-    const res = await axios.post(url, payload, {
-      headers: { "Content-Type": "application/json" },
-    });
-    console.log("✅ signup response", res.data);
-    return res.data as AuthResponse;
-  } catch (err: any) {
-    if (err.response) {
-      console.error('❌ signup error response', err.response.data);
-    } else {
-      console.error('❌ signup error', err.message);
-    }
-    console.warn('🚫 Signup Failed:', err.response?.data?.error?.message);
-    throw err;
-  }
-}
-
-export async function signInWithEmailAndPassword(
-  email: string,
-  password: string,
-): Promise<AuthResponse> {
-  const url = `${ID_BASE}/accounts:signInWithPassword?key=${API_KEY}`;
-  const payload = { email, password, returnSecureToken: true };
-  console.log('➡️ login request', { url, payload });
-  try {
-    const res = await axios.post(url, payload, {
-      headers: { 'Content-Type': 'application/json' },
-    });
-    console.log('✅ login response', res.data);
-    return res.data as AuthResponse;
-  } catch (err: any) {
-    if (err.response) {
-      console.error('❌ login error response', err.response.data);
-    } else {
-      console.error('❌ login error', err.message);
-    }
-    throw err;
-  }
-}
+export const FIRESTORE_BASE = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents`;
 
 export async function getUserData(uid: string, idToken: string) {
   const path = `users/${uid}`;
@@ -273,9 +214,3 @@ export async function saveJournalEntry(
   }
 }
 
-export const FIREBASE_ENDPOINTS = {
-  signUp: `${ID_BASE}/accounts:signUp`,
-  signIn: `${ID_BASE}/accounts:signInWithPassword`,
-  refreshToken: `https://securetoken.googleapis.com/v1/token`,
-  firestore: FIRESTORE_BASE,
-};

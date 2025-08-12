@@ -52,7 +52,7 @@ export default ({ config }) => ({
     STRIPE_CANCEL_URL: process.env.EXPO_PUBLIC_STRIPE_CANCEL_URL ?? '',
 
     // keep these if you read them via Constants.expoConfig.extra elsewhere
-    FIREBASE_API_KEY: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
+    FIREBASE_WEB_API_KEY: process.env.EXPO_PUBLIC_FIREBASE_WEB_API_KEY,
     FIREBASE_AUTH_DOMAIN: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,
     FIREBASE_PROJECT_ID: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID,
     FIREBASE_STORAGE_BUCKET: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET,

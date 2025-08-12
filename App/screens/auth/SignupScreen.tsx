@@ -56,44 +56,52 @@ export default function SignupScreen() {
       navigation.navigate(SCREENS.AUTH.PROFILE_COMPLETION as any);
     } catch (err: any) {
       console.warn(
-        "🚫 Signup Failed:",
+        '🚫 Signup Failed:',
         err?.response?.data?.error?.message || err,
       );
-      console.error("Signup Process Error:", err);
+      console.error('Signup Process Error:', err);
       const data = err?.response?.data;
-      let errMsg = err.message;
-      errMsg = data?.error?.message || errMsg;
-      const code = err.code || data?.error?.status || data?.error?.message;
-      let friendly = errMsg;
-      switch (code) {
-        case "EMAIL_EXISTS":
-          friendly = "Email already in use.";
-          navigation.navigate('Login');
-          break;
-        case "INVALID_EMAIL":
-          friendly = "Invalid email address.";
-          break;
-        case "WEAK_PASSWORD":
-          friendly = "Password should be at least 6 characters.";
-          break;
-        case "already-exists":
-          friendly = "This username is already taken.";
-          break;
-        case "invalid-argument":
-          friendly = err.message || "Invalid information provided.";
-          break;
-        case "permission-denied":
-        case "unauthenticated":
-          friendly = "Please sign in again.";
-          break;
-        case "internal":
-          friendly = "Server error. Please try again.";
-          break;
-        default:
-          if (code) friendly = errMsg;
+      const rawMsg = data?.error?.message || err.message || '';
+      let friendly = rawMsg;
+      if (
+        /MISSING_API_KEY|API key|PROJECT_NOT_FOUND|Method(?:\s|.*)does(?:n't| not) allow unregistered callers/i.test(
+          rawMsg,
+        )
+      ) {
+        friendly =
+          'Setup issue: app missing Firebase Web API key. Please update env and rebuild.';
+      } else {
+        const code = err.code || data?.error?.status || data?.error?.message;
+        switch (code) {
+          case 'EMAIL_EXISTS':
+            friendly = 'Email already in use.';
+            navigation.navigate('Login');
+            break;
+          case 'INVALID_EMAIL':
+            friendly = 'Invalid email address.';
+            break;
+          case 'WEAK_PASSWORD':
+            friendly = 'Password should be at least 6 characters.';
+            break;
+          case 'already-exists':
+            friendly = 'This username is already taken.';
+            break;
+          case 'invalid-argument':
+            friendly = err.message || 'Invalid information provided.';
+            break;
+          case 'permission-denied':
+          case 'unauthenticated':
+            friendly = 'Please sign in again.';
+            break;
+          case 'internal':
+            friendly = 'Server error. Please try again.';
+            break;
+          default:
+            friendly = 'Could not create account. Please try again.';
+        }
       }
       setErrorMsg(friendly);
-      Alert.alert("Signup Failed", friendly);
+      Alert.alert('Signup Failed', friendly);
     } finally {
       setLoading(false);
     }
