@@ -211,66 +211,27 @@ is saved back to `users/{uid}` so that returning users can skip onboarding.
 
 ### Handling Errors from Cloud Functions
 
-When calling HTTPS callable functions such as `completeSignupAndProfile` you may
-receive a structured error with a `status` code. Handle these responses before
-processing the result:
+When calling a Cloud Function over HTTP, inspect the response status code
+before processing the result. The logic below can live in the handler for your
+profile submission button:
 
 ```ts
-try {
-  const res = await fetch(`${API_URL}/completeSignupAndProfile`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({ data: { uid, profile } }),
-  });
-  if (!res.ok) {
-    const { error } = await res.json();
-    switch (error?.status) {
-      case 'permission-denied':
-      case 'unauthenticated':
-        throw new Error('Please sign in again.');
-      case 'invalid-argument':
-        throw new Error(error.message);
-      default:
-        throw new Error(error?.message || `HTTP ${res.status}`);
-    }
-  }
-} catch (err: any) {
-  Alert.alert('Signup Failed', err.message);
-}
-```
+import axios from 'axios';
 
-If you use the Firebase SDK to call the function, the error object will contain a
-`code` property matching the `HttpsError` codes thrown in the Cloud Function. The
-logic below can live in the handler for your profile submission button:
-
-```ts
-import { getFunctions, httpsCallable } from 'firebase/functions';
-
-const completeSignupAndProfile = httpsCallable(
-  getFunctions(),
-  'completeSignupAndProfile',
-);
-
-async function submitProfile(profile: any) {
+async function submitProfile(profile: any, idToken?: string) {
   try {
-    await completeSignupAndProfile({ uid: user.uid, profile });
+    await axios.post('https://<REGION>-<PROJECT>.cloudfunctions.net/postSignup', profile, {
+      headers: idToken ? { Authorization: `Bearer ${idToken}` } : undefined,
+    });
     // Navigate to the main screen on success
   } catch (err: any) {
-    switch (err.code) {
-      case 'unauthenticated':
-        Alert.alert('Signup Failed', 'You need to be logged in to complete your profile.');
-        break;
-      case 'permission-denied':
-        Alert.alert('Signup Failed', 'You do not have permission to perform this action.');
-        break;
-      case 'invalid-argument':
-        Alert.alert('Signup Failed', 'Please check the information you entered. Some fields are invalid.');
-        break;
-      case 'already-exists':
-        Alert.alert('Signup Failed', 'This username is already taken. Please choose a different one.');
-        break;
-      default:
-        Alert.alert('Signup Failed', 'An unexpected error occurred. Please try again later.');
+    const status = err.response?.status;
+    if (status === 401) {
+      Alert.alert('Signup Failed', 'You need to be logged in to complete your profile.');
+    } else if (status === 400) {
+      Alert.alert('Signup Failed', 'Please check the information you entered.');
+    } else {
+      Alert.alert('Signup Failed', 'An unexpected error occurred. Please try again later.');
     }
   }
 }

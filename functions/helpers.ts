@@ -5,7 +5,7 @@ import cors from 'cors';
 import { Request, Response } from 'express';
 import { auth, db } from './firebase';
 
-const corsHandler = cors({ origin: true });
+const corsHandler = cors({ origin: true, credentials: true });
 
 export function withCors(handler: (req: Request, res: Response) => void): (req: Request, res: Response) => void {
   return (req, res) => corsHandler(req, res, () => handler(req, res));
