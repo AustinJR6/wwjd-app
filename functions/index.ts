@@ -40,6 +40,7 @@ import {
   verifyAuth,
   extractAuthToken,
 } from "./helpers";
+import { optionalAuth } from './middleware/optionalAuth';
 
 
 function logTokenVerificationError(context: string, token: string | undefined, err: any) {
@@ -1996,124 +1997,87 @@ export const backfillUserProfiles = functions.https.onCall(
     return { processed, updated };
   });
 
-export const updateUserProfileCallable = functions.https.onCall(
-  async (data: any, context: any) => {
-    if (!context.auth) {
-      throw new functions.https.HttpsError(
-        "unauthenticated",
-        "Authentication required",
-      );
-    }
-
-    const uid: string | undefined = data?.uid || context.auth.uid;
-    const fields = data?.fields || {};
-
-    if (!uid) {
-      throw new functions.https.HttpsError("invalid-argument", "Missing uid");
-    }
-    if (typeof fields !== "object" || Array.isArray(fields)) {
-      throw new functions.https.HttpsError(
-        "invalid-argument",
-        "fields must be an object",
-      );
-    }
-
-    const docRef = admin.firestore().collection("users").doc(uid);
-    logger.info(`updateUserProfileCallable`, { uid, fields });
+logger.info('Initializing updateUserProfile (auth required)');
+export const updateUserProfile = functions.https.onRequest(
+  withCors(async (req: Request, res: Response) => {
+    // Requires auth
+    let uid: string;
     try {
-      await docRef.set(fields, { merge: true });
-      return { success: true };
+      const authData = await verifyAuth(req);
+      uid = authData.uid;
+    } catch (err) {
+      logTokenVerificationError('updateUserProfile', extractAuthToken(req), err);
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+
+    const fields = req.body?.fields;
+    if (typeof fields !== 'object' || Array.isArray(fields)) {
+      res.status(400).json({ error: 'fields must be an object' });
+      return;
+    }
+
+    logger.info(`updateUserProfile`, { uid, fields });
+    try {
+      await db.collection('users').doc(uid).set(fields, { merge: true });
+      res.status(200).json({ success: true });
     } catch (err: any) {
-      logger.error(`updateUserProfileCallable failed for ${uid}`, err);
-      throw new functions.https.HttpsError(
-        "internal",
-        err?.message || "Update failed",
-      );
+      logError('updateUserProfile', err);
+      res.status(500).json({ error: err?.message || 'Update failed' });
     }
-  });
+  })
+);
 
-export const completeSignupAndProfile = functions.https.onCall(
-  async (data: any, context: any) => {
-    if (!context.auth) {
-      throw new functions.https.HttpsError(
-        "unauthenticated",
-        "Authentication required",
-      );
+logger.info('Initializing postSignup (optional auth)');
+export const postSignup = functions.https.onRequest(
+  withCors(async (req: Request, res: Response) => {
+    // Allow unauthenticated; relies on input validation + rate limiting
+    await new Promise((resolve) => optionalAuth(req as any, res, resolve));
+
+    const { localId, email, displayName, preferredName, avatarURL } = req.body || {};
+    const uid = (req as any).user?.uid || localId;
+
+    if (typeof uid !== 'string' || !uid) {
+      res.status(400).json({ error: 'Missing localId' });
+      return;
     }
-
-    const uid: string | undefined = data?.uid;
-    const rawProfile = data?.profile || {};
-
-    if (!uid || uid !== context.auth.uid) {
-      throw new functions.https.HttpsError(
-        "permission-denied",
-        "UID mismatch",
-      );
+    if (email && typeof email !== 'string') {
+      res.status(400).json({ error: 'Invalid email' });
+      return;
     }
-
-    const profile = validateSignupProfile(rawProfile);
-
-    const existing = await admin
-      .firestore()
-      .collection("users")
-      .where("username", "==", profile.username)
-      .limit(1)
-      .get();
-    if (!existing.empty && existing.docs[0].id !== uid) {
-      throw new functions.https.HttpsError(
-        "already-exists",
-        "Username already taken",
-      );
+    if (displayName && typeof displayName !== 'string') {
+      res.status(400).json({ error: 'Invalid displayName' });
+      return;
+    }
+    if (preferredName && typeof preferredName !== 'string') {
+      res.status(400).json({ error: 'Invalid preferredName' });
+      return;
+    }
+    if (avatarURL && typeof avatarURL !== 'string') {
+      res.status(400).json({ error: 'Invalid avatarURL' });
+      return;
     }
 
     const timestamp = admin.firestore.FieldValue.serverTimestamp();
-
-    const defaultProfile = {
-      uid,
-      email: profile.email,
-      emailVerified: false,
-      displayName: profile.displayName || profile.username,
-      username: profile.username,
-      region: profile.region || "",
+    const userData = {
+      email: email ?? '',
+      displayName: displayName ?? '',
+      preferredName: preferredName ?? '',
+      avatarURL: avatarURL ?? '',
+      isSubscribed: false,
       createdAt: timestamp,
       lastActive: timestamp,
-      lastFreeAsk: timestamp,
-      lastFreeSkip: timestamp,
-      onboardingComplete: true,
-      religion: profile.religion,
-      tokens: 0,
-      skipTokensUsed: 0,
-      individualPoints: 0,
-      isSubscribed: false,
-      nightModeEnabled: false,
-      preferredName: profile.preferredName,
-      pronouns: profile.pronouns,
-      avatarURL: profile.avatarURL,
-      profileComplete: true,
-      profileSchemaVersion: CURRENT_PROFILE_SCHEMA,
-      challengeStreak: { count: 0, lastCompletedDate: null },
-      dailyChallengeCount: 0,
-      dailySkipCount: 0,
-      lastChallengeLoadDate: null,
-      lastSkipDate: null,
-      organization: profile.organization ?? null,
-      organizationId: null,
-      religionPrefix: "",
     };
 
-    const docRef = admin.firestore().collection("users").doc(uid);
-    logger.info(`completeSignupAndProfile`, { uid, profile: defaultProfile });
     try {
-      await docRef.set(defaultProfile, { merge: true });
-      return { success: true };
+      await db.doc(`users/${uid}`).set(userData, { merge: true });
+      res.status(200).json({ success: true });
     } catch (err: any) {
-      logger.error(`completeSignupAndProfile failed for ${uid}`, err);
-      throw new functions.https.HttpsError(
-        "internal",
-        err?.message || "Profile creation failed",
-      );
+      logError('postSignup', err);
+      res.status(500).json({ error: err?.message || 'Profile creation failed' });
     }
-  });
+  })
+);
 
 export const createStripeSetupIntent = functions.https.onRequest(
   withCors(async (req: Request, res: Response) => {
