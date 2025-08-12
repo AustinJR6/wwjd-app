@@ -1,5 +1,15 @@
 import Constants from 'expo-constants';
 
+export const FIREBASE_WEB_API_KEY =
+  process.env.EXPO_PUBLIC_FIREBASE_WEB_API_KEY ?? '';
+export const FIREBASE_PROJECT_ID =
+  process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID ?? '';
+if (!FIREBASE_WEB_API_KEY) {
+  console.warn(
+    '[env] Missing EXPO_PUBLIC_FIREBASE_WEB_API_KEY; Firebase Auth REST calls will fail',
+  );
+}
+
 type Extra = {
   API_BASE_URL?: string;
 

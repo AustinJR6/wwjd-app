@@ -9,6 +9,9 @@ import AuthGate from './App/navigation/AuthGate';
 import StartupAnimation from './App/components/common/StartupAnimation';
 import Constants from 'expo-constants';
 import { useTheme } from './App/components/theme/theme';
+import { FIREBASE_WEB_API_KEY } from './App/config/env';
+
+console.log('[env] FIREBASE_WEB_API_KEY present:', Boolean(FIREBASE_WEB_API_KEY));
 
 const dsn = process.env.SENTRY_DSN || process.env.EXPO_PUBLIC_SENTRY_DSN;
 if (!dsn || dsn.includes('your-key')) {
