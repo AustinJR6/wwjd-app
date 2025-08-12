@@ -11,7 +11,12 @@ import Constants from 'expo-constants';
 import { useTheme } from './App/components/theme/theme';
 import { FIREBASE_WEB_API_KEY } from './App/config/env';
 
-console.log('[env] FIREBASE_WEB_API_KEY present:', Boolean(FIREBASE_WEB_API_KEY));
+console.log(
+  '[env] key present?',
+  Boolean(FIREBASE_WEB_API_KEY),
+  '| head:',
+  (FIREBASE_WEB_API_KEY || '').slice(0, 6),
+);
 
 const dsn = process.env.SENTRY_DSN || process.env.EXPO_PUBLIC_SENTRY_DSN;
 if (!dsn || dsn.includes('your-key')) {

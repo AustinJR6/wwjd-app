@@ -5,7 +5,7 @@ export default ({ config }) => ({
   name: 'OneVine',
   slug: 'onevine-app',
   scheme: 'onevine',
-  version: '1.0.0',
+  version: '1.0.1',
   icon: './assets/icon.png',
   runtimeVersion: '1.0.0',
   plugins: [
@@ -25,6 +25,7 @@ export default ({ config }) => ({
   android: {
     package: 'com.whippybuckle.onevineapp',
     permissions: ['INTERNET'],
+    versionCode: 2,
   },
   extra: {
     eas: {

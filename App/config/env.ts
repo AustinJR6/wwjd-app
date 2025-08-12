@@ -1,12 +1,16 @@
 import Constants from 'expo-constants';
 
-export const FIREBASE_WEB_API_KEY =
-  process.env.EXPO_PUBLIC_FIREBASE_WEB_API_KEY ?? '';
+const webFromSecret = process.env.EXPO_PUBLIC_FIREBASE_WEB_API_KEY ?? '';
+const webFromPlain  = process.env.EXPO_PUBLIC_FIREBASE_API_KEY ?? '';
+
+export const FIREBASE_WEB_API_KEY = (webFromSecret || webFromPlain).trim();
+
 export const FIREBASE_PROJECT_ID =
-  process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID ?? '';
+  (process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID ?? '').trim();
+
 if (!FIREBASE_WEB_API_KEY) {
   console.warn(
-    '[env] Missing EXPO_PUBLIC_FIREBASE_WEB_API_KEY; Firebase Auth REST calls will fail',
+    '[env] Missing EXPO_PUBLIC_FIREBASE_WEB_API_KEY/EXPO_PUBLIC_FIREBASE_API_KEY',
   );
 }
 
