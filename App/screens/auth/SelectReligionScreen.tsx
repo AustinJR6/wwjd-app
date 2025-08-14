@@ -16,7 +16,7 @@ import { loadUserProfile, updateUserProfile } from '@/utils/userProfile';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from "@/navigation/RootStackParamList";
 import { ensureAuth } from '@/utils/authGuard';
-import { listReligions, Religion } from '../../../functions/lib/firestoreRest';
+import { listReligions, Religion } from '@/lib/firestoreRest';
 
 const FALLBACK_RELIGIONS: Religion[] = [{ id: 'spiritual', name: 'Spiritual' }];
 

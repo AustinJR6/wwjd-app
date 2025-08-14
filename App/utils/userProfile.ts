@@ -4,7 +4,7 @@ import { getAuthHeaders, getCurrentUserId } from '@/utils/authUtils';
 // API_URL no longer needed for direct Firestore PATCH
 import { logFirestoreError } from '@/lib/logging';
 import type { CachedProfile, ReligionDocument, UserProfile } from '../../types/profile';
-import { getReligionById } from '../../functions/lib/firestoreRest';
+import { getReligionById } from '@/lib/firestoreRest';
 
 export const CURRENT_PROFILE_SCHEMA = 1;
 

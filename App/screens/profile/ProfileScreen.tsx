@@ -14,7 +14,7 @@ import {
   updateUserProfile,
   setCachedUserProfile,
 } from '@/utils/userProfile';
-import { listReligions, Religion } from '../../../functions/lib/firestoreRest';
+import { listReligions, Religion } from '@/lib/firestoreRest';
 import type { UserProfile } from '../../../types';
 import { getDocument } from '@/services/firestoreService';
 import { useTheme } from '@/components/theme/theme';
