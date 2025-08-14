@@ -128,40 +128,95 @@ export type Religion = {
   order?: number;
 };
 
-/**
- * List all religions ordered by `order` then `name`.
- * Filters out inactive unless includeInactive = true.
- */
-export async function listReligions(params?: { includeInactive?: boolean }): Promise<Religion[]> {
-  const includeInactive = params?.includeInactive ?? false;
-
-  // Using "documents:list" for simplicity & speed
-  const url = `${BASE_URL}/religion?pageSize=200&orderBy=order&orderBy=name&key=${API_KEY}`;
-  const res = await fetch(url);
-  const data = await handleResponse(res);
-
-  const docs = Array.isArray(data.documents) ? data.documents : [];
-  const rows = docs
-    .map((d: any) => mapFirestoreDocToPlain<Religion>(d))
-    .filter((r: { name: string; }) => typeof r.name === 'string' && r.name.trim())
-    .filter((r: { active: boolean; }) => includeInactive || r.active !== false);
-
-  if (__DEV__) console.debug('[religion] loaded', rows.length);
-  return rows;
+function sortByOrderThenName(a: Religion, b: Religion) {
+  const ao = typeof a.order === 'number' ? a.order : Number.POSITIVE_INFINITY;
+  const bo = typeof b.order === 'number' ? b.order : Number.POSITIVE_INFINITY;
+  if (ao !== bo) return ao - bo;
+  const an = (a.name || '').toLowerCase();
+  const bn = (b.name || '').toLowerCase();
+  return an.localeCompare(bn);
 }
 
 /**
- * Fetch a single religion document by ID for AI prompt building.
+ * List all religions; fetch without server orderBy and sort client-side.
+ * If rules require auth, pass { idToken } to send Authorization header.
  */
-export async function getReligionById(id: string): Promise<Religion | null> {
+export async function listReligions(params?: {
+  includeInactive?: boolean;
+  idToken?: string;
+}): Promise<Religion[]> {
+  const includeInactive = params?.includeInactive ?? false;
+  const idToken = params?.idToken;
+
+  const url = idToken
+    ? `${BASE_URL}/religion?pageSize=200`
+    : `${BASE_URL}/religion?pageSize=200&key=${API_KEY}`;
+
   try {
-    const url = `${BASE_URL}/religion/${encodeURIComponent(id)}?key=${API_KEY}`;
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`Failed to fetch religion: ${res.status}`);
+    const res = await fetch(url, {
+      headers: idToken ? { Authorization: `Bearer ${idToken}` } : undefined,
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      console.warn('[religion] list failed', { status: res.status, code: body?.error?.status });
+      return [];
+    }
+
+    const data = await res.json();
+    const docs = Array.isArray(data.documents) ? data.documents : [];
+    const rows = docs
+      .map((d: any) => mapFirestoreDocToPlain<Religion>(d))
+      .filter((r: Religion) => typeof r.name === 'string' && r.name.trim())
+      .filter((r: Religion) => includeInactive || r.active !== false)
+      .sort(sortByOrderThenName);
+
+    if (__DEV__) console.debug('[religion] loaded', rows.length);
+    return rows;
+  } catch (err) {
+    console.warn('[religion] fetch error', err);
+    return [];
+  }
+}
+
+/**
+ * Fetch a single religion doc by ID for AI prompt building.
+ * If rules require auth, pass idToken to use Authorization header.
+ */
+export async function getReligionById(id: string, idToken?: string): Promise<Religion | null> {
+  try {
+    const url = idToken
+      ? `${BASE_URL}/religion/${encodeURIComponent(id)}`
+      : `${BASE_URL}/religion/${encodeURIComponent(id)}?key=${API_KEY}`;
+
+    const res = await fetch(url, {
+      headers: idToken ? { Authorization: `Bearer ${idToken}` } : undefined,
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      console.warn('[religion] get by id failed', { status: res.status, code: body?.error?.status });
+      return null;
+    }
     const doc = await res.json();
     return mapFirestoreDocToPlain<Religion>(doc);
   } catch (err) {
-    console.warn('[religion] get by id failed', err);
+    console.warn('[religion] get by id error', err);
     return null;
+  }
+}
+
+/** Dev-only probe to inspect status/body quickly when debugging dropdown issues. */
+export async function __debugReligions(idToken?: string) {
+  try {
+    const projectId = process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID;
+    const key = process.env.EXPO_PUBLIC_FIREBASE_WEB_API_KEY;
+    const base = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents`;
+    const url = idToken ? `${base}/religion?pageSize=50` : `${base}/religion?pageSize=50&key=${key}`;
+
+    const res = await fetch(url, { headers: idToken ? { Authorization: `Bearer ${idToken}` } : undefined });
+    const text = await res.text();
+    console.log('[debug] religions status:', res.status);
+    console.log('[debug] religions body:', text.slice(0, 400));
+  } catch (e) {
+    console.warn('[debug] religions fetch threw:', e);
   }
 }

@@ -14,7 +14,8 @@ import {
   updateUserProfile,
   setCachedUserProfile,
 } from '@/utils/userProfile';
-import { listReligions, Religion } from '@/lib/firestoreRest';
+import { listReligions, Religion, __debugReligions } from '@/lib/firestoreRest';
+import { getIdToken } from '@/utils/authUtils';
 import type { UserProfile } from '../../../types';
 import { getDocument } from '@/services/firestoreService';
 import { useTheme } from '@/components/theme/theme';
@@ -106,7 +107,10 @@ export default function ProfileScreen() {
     let cancelled = false;
     (async () => {
       try {
-        const rows = await listReligions();
+        const token = await (getIdToken?.() ?? Promise.resolve(null));
+        const idToken = token || undefined;
+        if (__DEV__) await __debugReligions(idToken);
+        const rows = await listReligions(idToken ? { idToken } : undefined);
         if (!cancelled) {
           setReligions(rows.length ? rows : [{ id: 'spiritual', name: 'Spiritual' }]);
         }
