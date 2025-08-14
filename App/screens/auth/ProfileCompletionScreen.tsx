@@ -14,6 +14,7 @@ import { Picker } from '@react-native-picker/picker';
 import { useLookupLists } from '@/hooks/useLookupLists';
 import { getDocument, updateDocument } from '@/services/firestoreService';
 import { updateUserProfile, loadUserProfile } from '@/utils/userProfile';
+import { listReligions, Religion } from '../../../functions/lib/firestoreRest';
 import { useUserProfileStore } from '@/state/userProfile';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -24,11 +25,15 @@ import { useAuth } from '@/hooks/useAuth';
 export default function ProfileCompletionScreen() {
   const { uid } = useAuth();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const { regions, religions, loading } = useLookupLists();
+  const { regions, loading: regionsLoading } = useLookupLists();
   const theme = useTheme();
 
+  const FALLBACK_RELIGIONS: Religion[] = [{ id: 'spiritual', name: 'Spiritual' }];
+
   const [region, setRegion] = useState('');
-  const [religion, setReligion] = useState('');
+  const [religionId, setReligionId] = useState('');
+  const [religions, setReligions] = useState<Religion[]>([]);
+  const [religionsLoading, setReligionsLoading] = useState(true);
   const [preferredName, setPreferredName] = useState('');
   const [pronouns, setPronouns] = useState('');
   const [avatarURL, setAvatarURL] = useState('');
@@ -46,8 +51,31 @@ export default function ProfileCompletionScreen() {
 
   useEffect(() => {
     if (!region && regions.length) setRegion(regions[0].name);
-    if (!religion && religions.length) setReligion(religions[0].id);
-  }, [regions, religions]);
+  }, [regions]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const rows = await listReligions();
+        if (!cancelled) {
+          setReligions(rows.length ? rows : FALLBACK_RELIGIONS);
+        }
+      } catch {
+        if (!cancelled) setReligions(FALLBACK_RELIGIONS);
+        console.warn('[religion] dropdown fetch failed');
+      } finally {
+        if (!cancelled) setReligionsLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!religionId && religions.length) setReligionId(religions[0].id);
+  }, [religions]);
 
   const handleSubmit = async () => {
     if (isLoading) return;
@@ -55,7 +83,7 @@ export default function ProfileCompletionScreen() {
     const existing = profileStore.profile;
     const hasDisplay = existing?.displayName && existing.displayName.trim();
     const hasUsername = existing?.username && existing.username.trim();
-    if (!region || !religion) {
+    if (!region || !religionId) {
       Alert.alert('Missing Info', 'Please select a region and religion.');
       return;
     }
@@ -67,7 +95,8 @@ export default function ProfileCompletionScreen() {
     try {
       const payload: Record<string, any> = {
         region,
-        religion,
+        religionId,
+        religion: religionId,
         preferredName: preferredName.trim(),
         onboardingComplete: true,
         profileComplete: true,
@@ -76,7 +105,7 @@ export default function ProfileCompletionScreen() {
       if (avatarURL.trim()) payload.avatarURL = avatarURL.trim();
 
       const regionPath = `regions/${region.toLowerCase()}`;
-      const religionPath = `religion/${religion}`;
+      const religionPath = `religion/${religionId}`;
 
       const [regionDoc, religionDoc] = await Promise.all([
         getDocument(regionPath),
@@ -130,7 +159,7 @@ export default function ProfileCompletionScreen() {
     [theme]
   );
 
-  if (loading) {
+  if (regionsLoading || religionsLoading) {
     return (
       <ScreenContainer>
         <ActivityIndicator size="large" color={theme.colors.primary} />
@@ -176,12 +205,13 @@ export default function ProfileCompletionScreen() {
         <CustomText style={{ marginBottom: 8 }}>Choose your spiritual lens:</CustomText>
         <View style={styles.pickerWrapper}>
           <Picker
-            selectedValue={religion}
-            onValueChange={(v) => setReligion(v)}
+            selectedValue={religionId}
+            onValueChange={(v) => setReligionId(v)}
             style={styles.picker}
+            enabled={!religionsLoading}
           >
             {religions.map((r) => (
-              <Picker.Item key={r.id} label={r.id} value={r.id} />
+              <Picker.Item key={r.id} label={r.name} value={r.id} />
             ))}
           </Picker>
         </View>

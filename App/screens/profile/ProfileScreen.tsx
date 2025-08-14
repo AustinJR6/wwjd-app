@@ -14,6 +14,7 @@ import {
   updateUserProfile,
   setCachedUserProfile,
 } from '@/utils/userProfile';
+import { listReligions, Religion } from '../../../functions/lib/firestoreRest';
 import type { UserProfile } from '../../../types';
 import { getDocument } from '@/services/firestoreService';
 import { useTheme } from '@/components/theme/theme';
@@ -33,9 +34,11 @@ export default function ProfileScreen() {
   const [username, setUsername] = useState(
     user?.username || user?.displayName || ''
   );
-  const { regions, religions, loading: listsLoading } = useLookupLists();
+  const { regions, loading: regionLoading } = useLookupLists();
   const [region, setRegion] = useState(user?.region || '');
-  const [religion, setReligion] = useState(user?.religion ?? 'SpiritGuide');
+  const [religionId, setReligionId] = useState(user?.religion ?? 'spiritual');
+  const [religions, setReligions] = useState<Religion[]>([]);
+  const [religionsLoading, setReligionsLoading] = useState(true);
   const [tokens, setTokens] = useState(0);
   const [points, setPoints] = useState(0);
   const [organization, setOrganization] = useState<string>('');
@@ -81,8 +84,8 @@ export default function ProfileScreen() {
         setPoints(profile.individualPoints || 0);
         setUsername(profile.username || profile.displayName || '');
         setRegion(profile.region || '');
-        setReligion(profile.religion ?? 'SpiritGuide');
-        console.log('🙏 Current religion from Firestore:', profile.religion);
+        setReligionId(profile.religionId || profile.religion || 'spiritual');
+        console.log('🙏 Current religion from Firestore:', profile.religionId || profile.religion);
         if (profile.organizationName) {
           setOrganization(profile.organizationName);
         } else if (profile.organizationId) {
@@ -97,23 +100,45 @@ export default function ProfileScreen() {
 
   useEffect(() => {
     if (!region && regions.length) setRegion(regions[0].name);
-    if (!religion && religions.length)
-      setReligion(religions[0].id || religions[0].name);
-  }, [regions, religions]);
+  }, [regions]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const rows = await listReligions();
+        if (!cancelled) {
+          setReligions(rows.length ? rows : [{ id: 'spiritual', name: 'Spiritual' }]);
+        }
+      } catch {
+        if (!cancelled) setReligions([{ id: 'spiritual', name: 'Spiritual' }]);
+        console.warn('[religion] dropdown fetch failed');
+      } finally {
+        if (!cancelled) setReligionsLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!religionId && religions.length) setReligionId(religions[0].id);
+  }, [religions]);
 
   const handleReligionChange = async (value: string) => {
-    if (value === religion) return;
-    setReligion(value);
+    if (value === religionId) return;
+    setReligionId(value);
     const uidVal = await ensureAuth(user?.uid);
     if (!uidVal) return;
     setReligionUpdating(true);
     console.log('➡️ Updating religion to', value);
     try {
-      await updateUserProfile({ religion: value });
+      await updateUserProfile({ religionId: value, religion: value });
       console.log('✅ Religion updated');
       const updated = await loadUserProfile(uidVal);
       setCachedUserProfile(updated as any);
-      setProfile({ ...user, religion: value } as any);
+      setProfile({ ...user, religion: value, religionId: value } as any);
       await updateUserProfile({ lastChallenge: null }, uidVal);
       Alert.alert('Religion Updated');
     } catch (err: any) {
@@ -152,7 +177,7 @@ export default function ProfileScreen() {
     }
   };
 
-  if (listsLoading) {
+  if (regionLoading || religionsLoading) {
     return (
       <ScreenContainer>
         <ActivityIndicator size="large" color={theme.colors.primary} />
@@ -181,12 +206,13 @@ export default function ProfileScreen() {
         <CustomText style={styles.label}>Religion</CustomText>
         <View style={styles.pickerWrapper}>
           <Picker
-            selectedValue={religion}
+            selectedValue={religionId}
             onValueChange={handleReligionChange}
             style={styles.picker}
+            enabled={!religionsLoading}
           >
             {religions.map((r) => (
-              <Picker.Item key={r.id || r.name} label={r.name} value={r.id || r.name} />
+              <Picker.Item key={r.id} label={r.name} value={r.id} />
             ))}
           </Picker>
         </View>

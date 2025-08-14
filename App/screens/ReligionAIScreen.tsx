@@ -43,7 +43,7 @@ import {
 } from '@/services/chatHistoryService';
 import { useSubscriptionStatus } from '@/hooks/useSubscriptionStatus';
 import { showInterstitialAd } from '@/services/adService';
-import { getPersonaPrompt } from '@/utils/religionPersona';
+import { getReligionById } from '../../functions/lib/firestoreRest';
 
 export default function ReligionAIScreen() {
   const theme = useTheme();
@@ -186,15 +186,16 @@ export default function ReligionAIScreen() {
       await refreshSubscription();
       console.log('💎 OneVine+ Status:', isSubscribed);
 
-      const religion = profile?.religion;
-      if (!uid || !religion) {
-        console.warn('⚠️ askGemini blocked — missing uid or religion', { uid, religion });
+      const religionId = profile?.religionId || profile?.religion;
+      if (!uid || !religionId) {
+        console.warn('⚠️ askGemini blocked — missing uid or religion', { uid, religionId });
         setLoading(false);
         return;
       }
-      const promptRole = getPersonaPrompt(religion);
+      const religionDoc = await getReligionById(religionId);
       const basePrompt = getUserAIPrompt();
-      console.log('👤 Persona resolved', { religion, promptRole, basePrompt });
+      const promptPrefix = `${basePrompt} ${religionDoc?.prompt || ''}`.trim();
+      console.log('👤 Persona resolved', { religionId, promptPrefix });
 
       if (!subscribed) {
         if (!canAskFree) {
@@ -234,22 +235,20 @@ export default function ReligionAIScreen() {
         text: entry.text,
       }));
 
-      const prompt =
-        `${basePrompt || `You are a ${promptRole} of the ${religion} faith. Answer the user using teachings from that tradition and cite any relevant scriptures.`}\n${question}`;
+      const prompt = `${promptPrefix} ${question}`.trim();
       console.log('📡 Sending Gemini prompt:', prompt);
-      console.log('👤 Role:', promptRole);
+      console.log('👤 Role:', religionDoc?.name || religionId);
 
       console.log('Current user:', await getCurrentUserId());
       const debugToken = await getToken(true);
       console.log('ID Token:', debugToken);
 
-      const prefix = getUserAIPrompt();
       const answer = await sendGeminiPrompt({
         url: ASK_GEMINI_V2,
-        prompt: `${prefix} ${prompt}`.trim(),
+        prompt,
         history: formattedHistory,
         token: debugToken || undefined,
-        religion,
+        religion: religionDoc?.id || religionId,
       });
       if (!answer) {
         showGracefulError();

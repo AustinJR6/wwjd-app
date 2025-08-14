@@ -19,8 +19,8 @@ import { getToken, getCurrentUserId } from '@/utils/TokenManager';
 import { showGracefulError } from '@/utils/gracefulError';
 import axios from 'axios';
 import type { GeminiMessage } from '@/services/geminiService';
-import { getPersonaPrompt } from '@/utils/religionPersona';
 import { CONFESSIONAL_AI_URL } from '@/utils/constants';
+import { getReligionById } from '../functions/lib/firestoreRest';
 import { useAuth } from '@/hooks/useAuth';
 import { saveTempMessage, fetchTempSession } from '@/services/confessionalSessionService';
 import { useConfessionalSession } from '@/hooks/useConfessionalSession';
@@ -98,13 +98,14 @@ export default function ConfessionalScreen() {
       console.log('Using token', token.slice(0, 10));
 
       const userData = await loadUserProfile(uid);
-      const religion = userData?.religion;
-      if (!uid || !religion) {
-        console.warn('⚠️ Confessional blocked — missing uid or religion', { uid, religion });
+      const religionId = userData?.religionId || userData?.religion;
+      if (!uid || !religionId) {
+        console.warn('⚠️ Confessional blocked — missing uid or religion', { uid, religionId });
         return;
       }
-      const role = getPersonaPrompt(religion);
-      console.log('👤 Persona resolved', { religionId: religion, role });
+      const religionDoc = await getReligionById(religionId);
+      const role = religionDoc?.prompt || '';
+      console.log('👤 Persona resolved', { religionId, role });
 
       await saveTempMessage(uid, 'user', text);
 
@@ -120,7 +121,7 @@ export default function ConfessionalScreen() {
           {
             history: historyMsgs,
             uid,
-            religion,
+            religion: religionDoc?.id || religionId,
           },
           {
             headers: { Authorization: `Bearer ${idTok}` },
