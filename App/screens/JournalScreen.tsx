@@ -25,7 +25,7 @@ import { ASK_GEMINI_SIMPLE } from '@/utils/constants';
 import { ensureAuth } from '@/utils/authGuard';
 import { getToken, getCurrentUserId } from '@/utils/TokenManager';
 import { sendGeminiPrompt } from '@/services/geminiService';
-import { getReligionById } from '../../functions/lib/firestoreRest';
+import { getReligionById } from '@/lib/firestoreRest';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';

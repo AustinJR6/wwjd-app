@@ -26,7 +26,7 @@ import { createMultiDayChallenge, completeChallengeDay } from '@/services/functi
 import { ensureAuth } from '@/utils/authGuard';
 import { getCurrentUserId, getTokenCount, getToken, setTokenCount } from '@/utils/TokenManager';
 import { useAuth } from '@/hooks/useAuth';
-import { getReligionById } from '../../../functions/lib/firestoreRest';
+import { getReligionById } from '@/lib/firestoreRest';
 import { sendGeminiPrompt } from '@/services/geminiService';
 import AuthGate from '@/components/AuthGate';
 import { UserProfile } from '../../../types';

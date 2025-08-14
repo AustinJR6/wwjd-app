@@ -14,7 +14,7 @@ import { Picker } from '@react-native-picker/picker';
 import { useLookupLists } from '@/hooks/useLookupLists';
 import { getDocument, updateDocument } from '@/services/firestoreService';
 import { updateUserProfile, loadUserProfile } from '@/utils/userProfile';
-import { listReligions, Religion } from '../../../functions/lib/firestoreRest';
+import { listReligions, Religion } from '@/lib/firestoreRest';
 import { useUserProfileStore } from '@/state/userProfile';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';

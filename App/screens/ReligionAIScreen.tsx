@@ -43,7 +43,7 @@ import {
 } from '@/services/chatHistoryService';
 import { useSubscriptionStatus } from '@/hooks/useSubscriptionStatus';
 import { showInterstitialAd } from '@/services/adService';
-import { getReligionById } from '../../functions/lib/firestoreRest';
+import { getReligionById } from '@/lib/firestoreRest';
 
 export default function ReligionAIScreen() {
   const theme = useTheme();
