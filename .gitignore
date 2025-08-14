@@ -6,6 +6,10 @@
 
 # Node modules and build artifacts
 node_modules/
+
+# Keep helper source in version control
+!functions/lib/
+!functions/lib/**/*.ts
 .expo/
 dist/
 build/
