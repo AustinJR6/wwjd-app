@@ -1,5 +1,5 @@
 // firebase/religion.ts
-// Backwards-compatible wrapper over the unified Firestore REST helper.
+// Backwards-compatible wrapper over unified Firestore REST helper.
 // Keeps existing imports working while routing through listReligions().
 
 import { listReligions } from '../functions/lib/firestoreRest';
@@ -16,19 +16,11 @@ export interface ReligionItem {
 
 let religionsCache: ReligionItem[] = [];
 
-/**
- * getReligions(forceRefresh?)
- * - Preserves the previous API so existing screens/components don't break.
- * - Delegates to listReligions() under the hood.
- * - Provides the same fallback behavior you relied on before.
- */
 export async function getReligions(forceRefresh = false): Promise<ReligionItem[]> {
   if (!forceRefresh && religionsCache.length) return religionsCache;
 
   try {
     const rows = await listReligions();
-
-    // Map to the legacy shape
     const mapped: ReligionItem[] = rows.map(r => ({
       id: r.id,
       name: r.name,
@@ -45,7 +37,7 @@ export async function getReligions(forceRefresh = false): Promise<ReligionItem[]
 
     if (__DEV__) console.debug('[religion] wrapper loaded', religionsCache.length);
     return religionsCache;
-  } catch (e) {
+  } catch {
     console.warn('[religion] wrapper failed, using fallback');
     return [{ id: 'spiritual', name: 'Spiritual', defaultChallenges: [] }];
   }

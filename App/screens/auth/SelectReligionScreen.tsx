@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import CustomText from '@/components/CustomText';
 import {
   View,
@@ -6,27 +6,21 @@ import {
   TouchableOpacity,
   StyleSheet,
   Button,
-  Alert
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { useTheme } from "@/components/theme/theme";
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { useUser } from "@/hooks/useUser";
-import { setDocument } from '@/services/firestoreService';
 import { loadUserProfile, updateUserProfile } from '@/utils/userProfile';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from "@/navigation/RootStackParamList";
 import { ensureAuth } from '@/utils/authGuard';
+import { listReligions, Religion } from '../../../functions/lib/firestoreRest';
+
+const FALLBACK_RELIGIONS: Religion[] = [{ id: 'spiritual', name: 'Spiritual' }];
 
 type Props = NativeStackScreenProps<RootStackParamList, 'SelectReligion'>;
-
-const RELIGIONS = [
-  'Christianity',
-  'Islam',
-  'Judaism',
-  'Hinduism',
-  'Buddhism',
-  'Spiritual / Other'
-];
 
 export default function SelectReligionScreen({ navigation }: Props) {
   const theme = useTheme();
@@ -45,21 +39,53 @@ export default function SelectReligionScreen({ navigation }: Props) {
           padding: 12,
           borderBottomWidth: 1,
           borderColor: theme.colors.border,
-        }, // ✅ added missing 'religionItem' style
-        religionText: { color: theme.colors.text }, // ✅ added missing 'religionText' style
-        selectedText: { color: theme.colors.background }, // ✅ added missing 'selectedText' style
+        },
+        religionText: { color: theme.colors.text },
+        selectedText: { color: theme.colors.background },
         title: {
           fontSize: 24,
           fontWeight: '700',
           color: theme.colors.text,
           marginBottom: 20,
           textAlign: 'center',
-        }, // ✅ added missing 'title' style
+        },
+        banner: { color: theme.colors.error, marginBottom: 8, textAlign: 'center' },
       }),
     [theme],
   );
   const [selected, setSelected] = useState<string | null>(null);
   const { user } = useUser();
+  const [options, setOptions] = useState<Religion[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const rows = await listReligions();
+        if (!cancelled) {
+          setOptions(rows.length ? rows : FALLBACK_RELIGIONS);
+          if (__DEV__) console.debug('[religion] loaded', rows.length);
+        }
+      } catch {
+        if (!cancelled) {
+          setOptions(FALLBACK_RELIGIONS);
+          setError(true);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const selectItems = useMemo(
+    () => options.map(r => ({ label: r.name, value: r.id })),
+    [options]
+  );
 
   const handleContinue = async () => {
     if (!selected) {
@@ -85,35 +111,41 @@ export default function SelectReligionScreen({ navigation }: Props) {
   return (
     <ScreenContainer>
       <CustomText style={styles.title}>Select Your Faith</CustomText>
-      <FlatList
-        data={RELIGIONS}
-        keyExtractor={(item) => item}
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            style={[
-              styles.religionItem,
-              selected === item && styles.selectedItem
-            ]}
-            onPress={() => setSelected(item)}
-          >
-            <CustomText
+      {error && (
+        <CustomText style={styles.banner}>
+          Couldn't load religions; using defaults.
+        </CustomText>
+      )}
+      {loading ? (
+        <ActivityIndicator size="large" color={theme.colors.primary} />
+      ) : (
+        <FlatList
+          data={selectItems}
+          keyExtractor={(item) => item.value}
+          renderItem={({ item }) => (
+            <TouchableOpacity
               style={[
-                styles.religionText,
-                selected === item && styles.selectedText
+                styles.religionItem,
+                selected === item.value && styles.selectedItem
               ]}
+              onPress={() => setSelected(item.value)}
+              disabled={loading}
             >
-              {item}
-            </CustomText>
-          </TouchableOpacity>
-        )}
-      />
-
+              <CustomText
+                style={[
+                  styles.religionText,
+                  selected === item.value && styles.selectedText
+                ]}
+              >
+                {item.label}
+              </CustomText>
+            </TouchableOpacity>
+          )}
+        />
+      )}
       <View style={styles.buttonWrap}>
-        <Button title="Continue" onPress={handleContinue} />
+        <Button title="Continue" onPress={handleContinue} disabled={loading} />
       </View>
     </ScreenContainer>
   );
 }
-
-
-
