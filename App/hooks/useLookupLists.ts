@@ -1,20 +1,13 @@
 import { useEffect, useState } from 'react';
 import { fetchRegionList, RegionItem } from '../../regionRest';
-import { getReligions, ReligionItem } from '../../firebase/religion';
+import { listReligions, Religion } from '../../functions/lib/firestoreRest';
 
 const FALLBACK_REGION: RegionItem = { id: 'unknown', name: 'Unknown' };
-const FALLBACK_RELIGION: ReligionItem = {
-  id: 'spiritual',
-  name: 'Spiritual Guide',
-  aiVoice: '',
-  defaultChallenges: [],
-  totalPoints: 0,
-  language: '',
-};
+const FALLBACK_RELIGION: Religion = { id: 'spiritual', name: 'Spiritual' };
 
 export function useLookupLists() {
   const [regions, setRegions] = useState<RegionItem[]>([]);
-  const [religions, setReligions] = useState<ReligionItem[]>([]);
+  const [religions, setReligions] = useState<Religion[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -24,7 +17,7 @@ export function useLookupLists() {
       try {
         const [rgns, rels] = await Promise.all([
           fetchRegionList(),
-          getReligions(),
+          listReligions(),
         ]);
         if (!isMounted) return;
         console.log('📖 Fetched regions', rgns);
