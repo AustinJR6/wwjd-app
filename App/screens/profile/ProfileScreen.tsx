@@ -35,7 +35,7 @@ export default function ProfileScreen() {
   const [username, setUsername] = useState(
     user?.username || user?.displayName || ''
   );
-  const { regions, loading: regionLoading } = useLookupLists();
+  const { regions, regionsLoading: regionLoading } = useLookupLists();
   const [region, setRegion] = useState(user?.region || '');
   const [religionId, setReligionId] = useState(user?.religion ?? 'spiritual');
   const [religions, setReligions] = useState<Religion[]>([]);
@@ -162,7 +162,11 @@ export default function ProfileScreen() {
     }
     setSaving(true);
     try {
-      const updates: Record<string, any> = { displayName: username, region };
+      const updates: Record<string, any> = {
+        displayName: username,
+        region,
+        regionId: region.toLowerCase(),
+      };
       if (username.trim()) updates.username = username.trim();
       await updateUserProfile(updates);
       if (user) {
@@ -171,6 +175,7 @@ export default function ProfileScreen() {
           displayName: username,
           ...(username.trim() ? { username } : {}),
           region,
+          regionId: region.toLowerCase(),
         } as any);
       }
       Alert.alert('Profile Updated');

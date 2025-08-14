@@ -78,20 +78,19 @@ service cloud.firestore {
 
     // 🌍 Static lookup: Regions (lowercase IDs)
     match /regions/{regionId} {
-      allow get, list: if isSignedIn();
-      // Allow incrementing userCount only
-      allow update: if isSignedIn() &&
-        request.resource.data.diff(resource.data).changedKeys().hasOnly(['userCount']) &&
-        request.resource.data.userCount is number;
+      allow read: if isSignedIn();
+      allow write: if false;
     }
 
-    // 📖 Static lookup: Religion (capitalized IDs)
+    match /religions/{religionId} {
+      allow read: if isSignedIn();
+      allow write: if false;
+    }
+
+    // Legacy singular path
     match /religion/{religionId} {
-      allow get, list: if isSignedIn();
-      // Allow incrementing userCount only
-      allow update: if isSignedIn() &&
-        request.resource.data.diff(resource.data).changedKeys().hasOnly(['userCount']) &&
-        request.resource.data.userCount is number;
+      allow read: if isSignedIn();
+      allow write: if false;
     }
 
     // 🏆 Leaderboards
