@@ -4,7 +4,7 @@ import { getAuthHeaders, getCurrentUserId } from '@/utils/authUtils';
 // API_URL no longer needed for direct Firestore PATCH
 import { logFirestoreError } from '@/lib/logging';
 import type { CachedProfile, ReligionDocument, UserProfile } from '../../types/profile';
-import { getReligionProfile } from '../../religionRest';
+import { getReligionById } from '../../functions/lib/firestoreRest';
 
 export const CURRENT_PROFILE_SCHEMA = 1;
 
@@ -87,14 +87,17 @@ export async function loadUserProfile(
     const url = `${FIRESTORE_BASE}/users/${userId}`;
     const res = await apiClient.get(url, requestOptions as any);
     const user = fromFirestore(res.data);
+    const religionId = user.religionId || user.religion;
     let religionData: ReligionDocument | null = null;
-    if (user.religion) {
-      religionData = await getReligionProfile(user.religion);
+    if (religionId) {
+      religionData = await getReligionById(religionId);
     }
 
     cachedProfile = {
       uid: userId,
       ...user,
+      religionId,
+      religion: religionId,
       religionData,
       isSubscribed: user?.isSubscribed ?? false,
     } as CachedProfile;
@@ -103,7 +106,7 @@ export async function loadUserProfile(
         `\u26A0\uFE0F profileSchemaVersion mismatch: expected ${CURRENT_PROFILE_SCHEMA}, got ${user.profileSchemaVersion}`,
       );
     }
-    if (!user?.region || !user?.religion || !user?.username) {
+    if (!user?.region || !religionId || !user?.username) {
       console.warn('⚠️ Missing required profile fields after onboarding:', user);
     }
     return cachedProfile;
@@ -177,11 +180,12 @@ export async function updateUserProfile(
     const body = { fields: toFirestoreFields(sanitized) };
     await apiClient.patch(url, body, { headers });
     if (cachedProfile && cachedProfile.uid === userId) {
-      if ('religion' in sanitized) {
-        const religionData = await getReligionProfile(sanitized.religion);
+      if ('religionId' in sanitized) {
+        const religionData = await getReligionById(sanitized.religionId);
         cachedProfile = {
           ...cachedProfile,
           ...sanitized,
+          religion: sanitized.religionId,
           religionData: religionData || null,
         } as CachedProfile;
       } else {

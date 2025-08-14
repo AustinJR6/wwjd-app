@@ -92,10 +92,11 @@ export default function TriviaScreen() {
 
     try {
       const profile = await loadUserProfile(uid);
-      const religion = profile?.religion;
-      const prefix = getUserAIPrompt();
-      if (!uid || !religion) {
-        console.warn('⚠️ askGemini blocked — missing uid or religion', { uid, religion });
+      const religionId = profile?.religionId || profile?.religion;
+      const religionDoc = await getReligionById(religionId || '');
+      const prefix = `${getUserAIPrompt()} ${religionDoc?.prompt || ''}`.trim();
+      if (!uid || !religionId) {
+        console.warn('⚠️ askGemini blocked — missing uid or religion', { uid, religionId });
         setLoading(false);
         return;
       }
@@ -104,7 +105,7 @@ export default function TriviaScreen() {
         url: ASK_GEMINI_SIMPLE,
         prompt: `${prefix} Give me a short moral story originally from any major world religion. Replace all real names and locations with fictional ones so that it seems to come from a different culture. Keep the meaning and lesson intact. After the story, add two lines: RELIGION: <religion> and STORY: <story name>.`.trim(),
         history: [],
-        religion,
+        religion: religionDoc?.id || religionId,
       });
       if (!data) {
         Alert.alert('Error', 'Could not load trivia. Please try again later.');

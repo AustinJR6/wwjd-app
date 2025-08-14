@@ -31,8 +31,9 @@ export const useUserProfileStore = create<ProfileStore>((set, get) => ({
     const uid = await ensureAuth();
     if (!current || !uid) return;
     const updates: Partial<UserProfile> = {};
-    if (!('religion' in current) || !current.religion) {
-      updates.religion = 'SpiritGuide';
+    if (!('religionId' in current) || !current.religionId) {
+      updates.religionId = 'spiritual';
+      updates.religion = 'spiritual';
     }
     if (current.profileComplete === undefined) {
       updates.profileComplete = false;

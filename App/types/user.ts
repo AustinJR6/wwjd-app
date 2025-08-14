@@ -9,6 +9,7 @@ export interface DefaultUserData {
   pronouns?: string;
   avatarURL?: string;
   religion?: string;
+  religionId?: string;
   idToken?: string;
 
   // App-specific defaults
@@ -55,5 +56,5 @@ export interface UserOnboardingInput {
   displayName: string;
   username: string;
   region: string;
-  religion: string;
+  religionId: string;
 }

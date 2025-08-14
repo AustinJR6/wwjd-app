@@ -59,6 +59,7 @@ export async function ensureUserProfile(
   ensureTimestamp('lastFreeAsk', now);
   ensureTimestamp('lastFreeSkip', now);
   ensureBoolean('onboardingComplete', false);
+  ensureString('religionId', DEFAULT_RELIGION);
   ensureString('religion', DEFAULT_RELIGION);
   ensureNullableString('organization', null);
   ensureNumber('tokens', 0);
@@ -99,7 +100,7 @@ export async function ensureUserProfile(
     lastFreeAsk: (v) => typeof v === 'string' && v.trim() !== '',
     lastFreeSkip: (v) => typeof v === 'string' && v.trim() !== '',
     onboardingComplete: (v) => typeof v === 'boolean',
-    religion: (v) => typeof v === 'string' && v.trim() !== '',
+    religionId: (v) => typeof v === 'string' && v.trim() !== '',
     organization: () => true,
     tokens: (v) => typeof v === 'number',
     skipTokensUsed: (v) => typeof v === 'number',

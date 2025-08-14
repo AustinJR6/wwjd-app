@@ -25,6 +25,7 @@ import { ASK_GEMINI_SIMPLE } from '@/utils/constants';
 import { ensureAuth } from '@/utils/authGuard';
 import { getToken, getCurrentUserId } from '@/utils/TokenManager';
 import { sendGeminiPrompt } from '@/services/geminiService';
+import { getReligionById } from '../../functions/lib/firestoreRest';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -134,7 +135,7 @@ export default function JournalScreen() {
   const [selectedEntry, setSelectedEntry] = useState<any | null>(null);
   const [emotion, setEmotion] = useState('');
   const [tags, setTags] = useState('');
-  const [religion, setReligion] = useState('');
+  const [religionId, setReligionId] = useState('');
   const [guidedMode, setGuidedMode] = useState(false);
   const [stage, setStage] = useState<JournalStage>('reflection');
   const [aiPrompt, setAiPrompt] = useState('');
@@ -165,7 +166,7 @@ export default function JournalScreen() {
 
         await fetchEntries(true, uid);
         const userData = await loadUserProfile(uid);
-        setReligion(userData?.religion ?? 'SpiritGuide');
+        setReligionId(userData?.religionId || userData?.religion || 'spiritual');
       } catch (err: any) {
         console.error('🔥 API Error:', err?.response?.data || err.message);
       } finally {
@@ -203,7 +204,6 @@ export default function JournalScreen() {
   const handleGuidedJournal = async () => {
     console.log('🔮 Start Guided Journal Pressed');
     const prompt = JOURNAL_PROMPTS[stage];
-    const prefix = getUserAIPrompt();
     setAiPrompt(prompt);
     setGuidedMode(true);
     try {
@@ -211,16 +211,18 @@ export default function JournalScreen() {
       console.log('Firebase currentUser:', await getCurrentUserId());
       const token = await getToken(true);
       console.log('ID Token:', token);
-      if (!uid || !religion) {
-        console.warn('⚠️ askGemini blocked — missing uid or religion', { uid, religion });
+      if (!uid || !religionId) {
+        console.warn('⚠️ askGemini blocked — missing uid or religion', { uid, religionId });
         return;
       }
+      const religionDoc = await getReligionById(religionId);
+      const prefix = `${getUserAIPrompt()} ${religionDoc?.prompt || ''}`.trim();
       const answer = await sendGeminiPrompt({
         url: ASK_GEMINI_SIMPLE,
         prompt: `${prefix} ${prompt}`.trim(),
         history: [],
         token: token || undefined,
-        religion,
+        religion: religionDoc?.id || religionId,
       });
       if (!answer) {
         Alert.alert('Guide Unavailable', 'We couldn\u2019t reach our guide right now. Write freely from the heart.');

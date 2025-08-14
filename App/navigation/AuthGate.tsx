@@ -93,7 +93,7 @@ export default function AuthGate() {
               email: fetched.email,
               username: fetched.username ?? '',
               displayName: fetched.displayName ?? '',
-              religion: fetched?.religion ?? 'SpiritGuide',
+              religion: fetched?.religion ?? 'spiritual',
               region: fetched.region ?? '',
               organizationId: fetched.organizationId,
               isSubscribed: fetched?.isSubscribed ?? false,

@@ -22,7 +22,8 @@ export interface UserProfile {
   preferredName?: string;
   pronouns?: string;
   avatarURL?: string;
-  religion: string;
+  religion?: string;
+  religionId?: string;
   points?: number;
   tokens?: number;
   streak?: Streak;

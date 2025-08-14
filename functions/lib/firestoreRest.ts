@@ -105,3 +105,18 @@ export async function listReligions(params?: {
     return [];
   }
 }
+
+export async function getReligionById(id: string, idToken?: string): Promise<Religion | null> {
+  try {
+    const url = `${BASE_URL}/religion/${id}?${idToken ? '' : `key=${ENV.FIREBASE_WEB_API_KEY}`}`;
+    const res = await fetch(url, {
+      headers: idToken ? { Authorization: `Bearer ${idToken}` } : undefined,
+    });
+    if (!res.ok) throw new Error(`Failed to fetch religion: ${res.status}`);
+    const doc = await res.json();
+    return mapFirestoreDocToPlain<Religion>(doc);
+  } catch (err) {
+    console.warn('[religion] get by id failed', err);
+    return null;
+  }
+}
