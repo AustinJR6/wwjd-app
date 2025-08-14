@@ -1,20 +1,14 @@
 import { useEffect, useState } from 'react';
 import { fetchRegionList, RegionItem } from '../../regionRest';
-import { getReligions, ReligionItem } from '../../firebase/religion';
+import { listReligions, Religion } from '../../functions/lib/firestoreRest';
 
 const FALLBACK_REGION: RegionItem = { id: 'unknown', name: 'Unknown' };
-const FALLBACK_RELIGION: ReligionItem = {
-  id: 'spiritual',
-  name: 'Spiritual Guide',
-  aiVoice: '',
-  defaultChallenges: [],
-  totalPoints: 0,
-  language: '',
-};
+const FALLBACK_RELIGION: Religion = { id: 'spiritual', name: 'Spiritual' };
 
-export function useLookupLists() {
+export function useLookupLists(opts?: { includeReligions?: boolean }) {
+  const includeReligions = opts?.includeReligions !== false;
   const [regions, setRegions] = useState<RegionItem[]>([]);
-  const [religions, setReligions] = useState<ReligionItem[]>([]);
+  const [religions, setReligions] = useState<Religion[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -22,20 +16,19 @@ export function useLookupLists() {
     const load = async () => {
       console.log('⏬ Loading region and religion lists');
       try {
-        const [rgns, rels] = await Promise.all([
-          fetchRegionList(),
-          getReligions(),
-        ]);
+        const regionPromise = fetchRegionList();
+        const religionPromise = includeReligions ? listReligions() : Promise.resolve<Religion[]>([]);
+        const [rgns, rels] = await Promise.all([regionPromise, religionPromise]);
         if (!isMounted) return;
         console.log('📖 Fetched regions', rgns);
-        console.log('📖 Fetched religions', rels);
+        if (includeReligions) console.log('📖 Fetched religions', rels);
         setRegions(rgns.length ? rgns : [FALLBACK_REGION]);
-        setReligions(rels.length ? rels : [FALLBACK_RELIGION]);
+        if (includeReligions) setReligions(rels.length ? rels : [FALLBACK_RELIGION]);
       } catch (err) {
         if (isMounted) {
           console.warn('Failed to load reference lists', err);
           setRegions([FALLBACK_REGION]);
-          setReligions([FALLBACK_RELIGION]);
+          if (includeReligions) setReligions([FALLBACK_RELIGION]);
           console.log('🕳️ Using fallback reference lists');
         }
       } finally {
@@ -46,7 +39,7 @@ export function useLookupLists() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [includeReligions]);
 
   return { regions, religions, loading };
 }

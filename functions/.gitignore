@@ -1,3 +1,4 @@
 node_modules/
-lib/
+lib/*
+!lib/firestoreRest.ts
 *.local

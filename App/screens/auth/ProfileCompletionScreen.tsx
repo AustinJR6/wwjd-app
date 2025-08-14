@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import CustomText from '@/components/CustomText';
 import {
   View,
@@ -6,12 +6,15 @@ import {
   ScrollView,
   Alert,
   ActivityIndicator,
+  ToastAndroid,
+  Platform,
 } from 'react-native';
 import ScreenContainer from '@/components/theme/ScreenContainer';
 import TextField from '@/components/TextField';
 import Button from '@/components/common/Button';
 import { Picker } from '@react-native-picker/picker';
 import { useLookupLists } from '@/hooks/useLookupLists';
+import { listReligions, Religion } from '../../../functions/lib/firestoreRest';
 import { getDocument, updateDocument } from '@/services/firestoreService';
 import { updateUserProfile, loadUserProfile } from '@/utils/userProfile';
 import { useUserProfileStore } from '@/state/userProfile';
@@ -21,10 +24,14 @@ import { RootStackParamList } from '@/navigation/RootStackParamList';
 import { useTheme } from '@/components/theme/theme';
 import { useAuth } from '@/hooks/useAuth';
 
+const FALLBACK_RELIGIONS: Religion[] = [{ id: 'spiritual', name: 'Spiritual' }];
+
 export default function ProfileCompletionScreen() {
   const { uid } = useAuth();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const { regions, religions, loading } = useLookupLists();
+  const { regions } = useLookupLists({ includeReligions: false });
+  const [options, setOptions] = useState<Religion[]>([]);
+  const [loading, setLoading] = useState(true);
   const theme = useTheme();
 
   const [region, setRegion] = useState('');
@@ -46,8 +53,50 @@ export default function ProfileCompletionScreen() {
 
   useEffect(() => {
     if (!region && regions.length) setRegion(regions[0].name);
-    if (!religion && religions.length) setReligion(religions[0].id);
-  }, [regions, religions]);
+  }, [regions]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const rows = await listReligions();
+        if (!cancelled) {
+          const list = rows.length ? rows : FALLBACK_RELIGIONS;
+          setOptions(list);
+          if (!rows.length) {
+            if (Platform.OS === 'android') {
+              ToastAndroid.show("Couldn't load religions; using defaults.", ToastAndroid.LONG);
+            } else {
+              console.warn("Couldn't load religions; using defaults.");
+            }
+          }
+          if (__DEV__) console.debug('[religion] loaded', rows.length);
+          if (!religion && list.length) setReligion(list[0].id);
+        }
+      } catch {
+        if (!cancelled) {
+          setOptions(FALLBACK_RELIGIONS);
+          if (Platform.OS === 'android') {
+            ToastAndroid.show("Couldn't load religions; using defaults.", ToastAndroid.LONG);
+          } else {
+            console.warn("Couldn't load religions; using defaults.");
+          }
+          console.warn('[onboarding] religion load failed');
+          if (!religion) setReligion(FALLBACK_RELIGIONS[0].id);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const selectItems = useMemo(
+    () => options.map((r) => ({ label: r.name, value: r.id })),
+    [options],
+  );
 
   const handleSubmit = async () => {
     if (isLoading) return;
@@ -175,13 +224,15 @@ export default function ProfileCompletionScreen() {
 
         <CustomText style={{ marginBottom: 8 }}>Choose your spiritual lens:</CustomText>
         <View style={styles.pickerWrapper}>
+          {loading && <ActivityIndicator style={{ position: 'absolute', alignSelf: 'center', top: 12 }} />}
           <Picker
+            enabled={!loading}
             selectedValue={religion}
             onValueChange={(v) => setReligion(v)}
             style={styles.picker}
           >
-            {religions.map((r) => (
-              <Picker.Item key={r.id} label={r.id} value={r.id} />
+            {selectItems.map((r) => (
+              <Picker.Item key={r.value} label={r.label} value={r.value} />
             ))}
           </Picker>
         </View>

@@ -186,7 +186,7 @@ export default function ProfileScreen() {
             style={styles.picker}
           >
             {religions.map((r) => (
-              <Picker.Item key={r.id || r.name} label={r.name} value={r.id || r.name} />
+              <Picker.Item key={r.id} label={r.name} value={r.id} />
             ))}
           </Picker>
         </View>
