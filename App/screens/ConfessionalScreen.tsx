@@ -20,7 +20,7 @@ import { showGracefulError } from '@/utils/gracefulError';
 import axios from 'axios';
 import type { GeminiMessage } from '@/services/geminiService';
 import { CONFESSIONAL_AI_URL } from '@/utils/constants';
-import { getReligionById } from '../../functions/lib/firestoreRest';
+import { getReligionById } from '../lib/firestoreRest';
 import { useAuth } from '@/hooks/useAuth';
 import { saveTempMessage, fetchTempSession } from '@/services/confessionalSessionService';
 import { useConfessionalSession } from '@/hooks/useConfessionalSession';
