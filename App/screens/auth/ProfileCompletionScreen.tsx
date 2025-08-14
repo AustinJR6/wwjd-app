@@ -12,7 +12,6 @@ import TextField from '@/components/TextField';
 import Button from '@/components/common/Button';
 import { Picker } from '@react-native-picker/picker';
 import { useLookupLists } from '@/hooks/useLookupLists';
-import { getDocument, updateDocument } from '@/services/firestoreService';
 import { updateUserProfile, loadUserProfile } from '@/utils/userProfile';
 import { useUserProfileStore } from '@/state/userProfile';
 import { useNavigation } from '@react-navigation/native';
@@ -24,11 +23,11 @@ import { useAuth } from '@/hooks/useAuth';
 export default function ProfileCompletionScreen() {
   const { uid } = useAuth();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const { regions, religions = [], loading } = useLookupLists() as any;
+  const { regions, religions, loading } = useLookupLists();
   const theme = useTheme();
 
   const [region, setRegion] = useState('');
-  const [religion, setReligion] = useState('');
+  const [religionId, setReligionId] = useState('');
   const [preferredName, setPreferredName] = useState('');
   const [pronouns, setPronouns] = useState('');
   const [avatarURL, setAvatarURL] = useState('');
@@ -47,8 +46,8 @@ export default function ProfileCompletionScreen() {
   // Initialize defaults once lists are available
   useEffect(() => {
     if (!region && regions.length) setRegion(regions[0].name);
-    if (!religion && religions.length) setReligion(religions[0].id);
-  }, [regions, religions, region, religion]);
+    if (!religionId && religions.length) setReligionId(religions[0].id);
+  }, [regions, religions, region, religionId]);
 
   const regionItems = useMemo(
     () => regions.map((r: { name: any; }) => ({ label: r.name, value: r.name })),
@@ -56,8 +55,7 @@ export default function ProfileCompletionScreen() {
   );
 
   const religionItems = useMemo(
-    // IMPORTANT: show names, but value is the document ID
-    () => religions.map((r: { name: any; id: any; }) => ({ label: r.name ?? r.id, value: r.id })),
+    () => religions.map((r) => ({ label: r.name ?? r.id, value: r.id })),
     [religions]
   );
 
@@ -68,7 +66,7 @@ export default function ProfileCompletionScreen() {
     const hasDisplay = existing?.displayName && existing.displayName.trim();
     const hasUsername = existing?.username && existing.username.trim();
 
-    if (!region || !religion) {
+    if (!region || !religionId) {
       Alert.alert('Missing Info', 'Please select a region and religion.');
       return;
     }
@@ -82,33 +80,16 @@ export default function ProfileCompletionScreen() {
       // Persist both for now: religionId (new) + religion (legacy mirror)
       const payload: Record<string, any> = {
         region,
-        religionId: religion,
-        religion,
+        regionId: region.toLowerCase(),
+        religionId,
+        religion: religionId,
         preferredName: preferredName.trim(),
         onboardingComplete: true,
         profileComplete: true,
       };
       if (pronouns.trim()) payload.pronouns = pronouns.trim();
       if (avatarURL.trim()) payload.avatarURL = avatarURL.trim();
-
-      const regionPath = `regions/${region.toLowerCase()}`;
-      const religionPath = `religion/${religion}`;
-
-      // Fetch current counts (service should map integerValue already)
-      const [regionDoc, religionDoc] = await Promise.all([
-        getDocument(regionPath),
-        getDocument(religionPath),
-      ]);
-
-      const regionCount = Number(regionDoc?.userCount ?? 0);
-      const religionCount = Number(religionDoc?.userCount ?? 0);
-
-      await Promise.all([
-        updateDocument(regionPath, { userCount: regionCount + 1 }),
-        updateDocument(religionPath, { userCount: religionCount + 1 }),
-        updateUserProfile(payload, uid),
-      ]);
-
+      await updateUserProfile(payload, uid);
       await profileStore.refreshUserProfile();
       navigation.reset({ index: 0, routes: [{ name: 'MainTabs' }] });
     } catch (err: any) {
@@ -194,11 +175,11 @@ export default function ProfileCompletionScreen() {
         <CustomText style={{ marginBottom: 8 }}>Choose your spiritual lens:</CustomText>
         <View style={styles.pickerWrapper}>
           <Picker
-            selectedValue={religion}
-            onValueChange={(v) => setReligion(v)}
+            selectedValue={religionId}
+            onValueChange={(v) => setReligionId(v)}
             style={styles.picker}
           >
-            {religionItems.map((r: { value: unknown; label: string | undefined; }) => (
+            {religionItems.map((r) => (
               <Picker.Item key={String(r.value)} label={r.label} value={r.value} />
             ))}
           </Picker>
