@@ -49,7 +49,7 @@ export default function SelectReligionScreen({ navigation }: Props) {
           marginBottom: 20,
           textAlign: 'center',
         },
-        banner: { color: theme.colors.error, marginBottom: 8, textAlign: 'center' },
+        banner: { color: theme.colors.danger, marginBottom: 8, textAlign: 'center' },
       }),
     [theme],
   );

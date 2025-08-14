@@ -64,7 +64,7 @@ export async function createStripeCheckout(
         headers,
       }) as unknown as Promise<Axios.AxiosXHR<StripeCheckoutResponse>>
     );
-    return res.data.url;
+    return res.data?.url ?? '';
   } catch (err: any) {
     console.warn('❌ Firestore REST error on createStripeCheckout:', err.response?.data || err.message);
     if (err.response?.status === 403) {

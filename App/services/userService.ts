@@ -93,7 +93,6 @@ export async function loadUser(uid: string): Promise<void> {
       avatarURL: user.avatarURL ?? "",
       isSubscribed: user?.isSubscribed ?? false,
       religion: user?.religion ?? 'spiritual',
-      religionId: user?.religionId || user?.religion || 'spiritual',
       region: user.region ?? "",
       organizationId: user.organizationId,
         onboardingComplete: user.onboardingComplete ?? false,

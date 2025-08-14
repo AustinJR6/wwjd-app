@@ -22,6 +22,7 @@ import { callFunction, awardPointsToUser } from '@/services/functionService';
 import { ensureAuth } from '@/utils/authGuard';
 import AuthGate from '@/components/AuthGate';
 import { useAuth } from '@/hooks/useAuth';
+import { getReligionById } from '@/lib/firestoreRest';
 
 export default function TriviaScreen() {
   const theme = useTheme();
