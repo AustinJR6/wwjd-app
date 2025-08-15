@@ -794,14 +794,8 @@ export const generateChallenge = functions
 
     res.status(200).json({ response: text });
   } catch (err: any) {
-    logTokenVerificationError('generateChallenge', idToken, err);
-    if (err.code === "auth/argument-error") {
-      res.status(401).json({
-        error: "Unauthorized — Gus bug cast an invalid token spell.",
-      });
-      return;
-    }
-    res.status(500).json({ error: err.message || "Gemini failed" });
+    logger.error("generateChallenge error", err);
+    res.status(500).json({ error: err.message || "Failed" });
   }
 });
 
@@ -1696,7 +1690,6 @@ export const createStripeCheckout = functions
   }
 }));
 
-
 export const updateStreakAndXP = functions
   .https.onRequest(
     withCors(async (req: Request, res: Response) => {
@@ -2236,9 +2229,9 @@ export const createStripeSetupIntent = functions.https.onRequest(
     logger.info('Stripe intent created', { uid, mode, intentId: intent.id });
 
     res.status(200).json({
-      client_secret: intent.client_secret,
+      setupIntentClientSecret: intent.client_secret, // Updated key name
       ephemeralKey: ephemeralKey.secret,
-      customerId,
+      customerId
     });
   })
 );

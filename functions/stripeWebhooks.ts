@@ -59,11 +59,15 @@ async function handleTokenPurchase(intent: Stripe.PaymentIntent) {
   }
 
   const uid = intent.metadata?.uid;
-  const tokenAmountRaw =
-    intent.metadata?.tokenAmount ?? intent.metadata?.tokens ?? '0';
+  if (!uid) {
+    console.warn('Token handler: missing uid', { id: intent.id });
+    return;
+  }
+
+  const tokenAmountRaw = intent.metadata?.tokens ?? '0';
   const tokenAmount = Number(tokenAmountRaw);
-  if (!uid || !Number.isFinite(tokenAmount) || tokenAmount <= 0) {
-    console.warn('Token handler: missing uid or invalid token amount', {
+  if (!Number.isFinite(tokenAmount) || tokenAmount <= 0) {
+    console.warn('Token handler: invalid token amount', {
       uid,
       tokenAmountRaw,
       id: intent.id,
@@ -96,11 +100,7 @@ async function handleTokenPurchase(intent: Stripe.PaymentIntent) {
     );
   });
 
-  console.log('Token handler: credited tokens', {
-    uid,
-    tokenAmount,
-    id: intent.id,
-  });
+  console.log('Token handler: credited tokens', { uid, tokenAmount });
 }
 
 // Webhook handler
@@ -129,7 +129,7 @@ export const handleStripeWebhookV2 = functions.https.onRequest(async (req, res) 
     case 'checkout.session.completed': {
       try {
         const session = event.data.object as Stripe.Checkout.Session;
-        const uid = session.client_reference_id || session.metadata?.uid;
+        const uid = session.metadata?.uid;
         if (!uid) {
           console.warn('Missing uid for checkout.session.completed', {
             eventType: event.type,
