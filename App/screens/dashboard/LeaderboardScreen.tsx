@@ -26,7 +26,7 @@ async function fetchTopReligions(idToken: string) {
   const url = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents:runQuery`;
   const payload = {
     structuredQuery: {
-      from: [{ collectionId: 'religions' }],
+      from: [{ collectionId: 'religion' }],
       orderBy: [
         { field: { fieldPath: 'totalPoints' }, direction: 'DESCENDING' },
       ],

@@ -5,14 +5,11 @@ const webFromPlain  = process.env.EXPO_PUBLIC_FIREBASE_API_KEY ?? '';
 
 export const FIREBASE_WEB_API_KEY = (webFromSecret || webFromPlain).trim();
 
-export const FIREBASE_PROJECT_ID =
-  process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID ||
-  process.env.FIREBASE_PROJECT_ID ||
-  '';
-
+export const FIREBASE_PROJECT_ID = process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID || '';
 if (!FIREBASE_PROJECT_ID) {
-  // Fail fast in dev; log loudly in prod
-  console.warn('[env] FIREBASE_PROJECT_ID is missing — Firestore REST calls will fail');
+  throw new Error(
+    '[env] Missing EXPO_PUBLIC_FIREBASE_PROJECT_ID — set it in EAS env for this build profile',
+  );
 }
 
 if (!FIREBASE_WEB_API_KEY) {
