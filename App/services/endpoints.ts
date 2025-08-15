@@ -1,0 +1,35 @@
+const BASE = process.env.EXPO_PUBLIC_API_URL;
+
+export const endpoints = {
+  askGeminiSimple: `${BASE}/askGeminiSimple`,
+  askGeminiV2: `${BASE}/askGeminiV2`,
+  awardPointsToUser: `${BASE}/awardPointsToUser`,
+  backfillUserProfiles: `${BASE}/backfillUserProfiles`,
+  completeChallenge: `${BASE}/completeChallenge`,
+  completeChallengeDay: `${BASE}/completeChallengeDay`,
+  completeSignupAndProfile: `${BASE}/completeSignupAndProfile`,
+  confessionalAI: `${BASE}/confessionalAI`,
+  createCheckoutSession: `${BASE}/createCheckoutSession`,
+  createMultiDayChallenge: `${BASE}/createMultiDayChallenge`,
+  createStripeCheckout: `${BASE}/createStripeCheckout`,
+  createStripeSetupIntent: `${BASE}/createStripeSetupIntent`,
+  createStripeSubscriptionIntent: `${BASE}/createStripeSubscriptionIntent`,
+  createSubscriptionSession: `${BASE}/createSubscriptionSession`,
+  createTokenPurchaseSheet: `${BASE}/createTokenPurchaseSheet`,
+  finalizePaymentIntent: `${BASE}/finalizePaymentIntent`,
+  generateChallenge: `${BASE}/generateChallenge`,
+  generateDailyChallenge: `${BASE}/generateDailyChallenge`,
+  getUserProfile: `${BASE}/getUserProfile`,
+  incrementReligionPoints: `${BASE}/incrementReligionPoints`,
+  seedFirestore: `${BASE}/seedFirestore`,
+  skipDailyChallenge: `${BASE}/skipDailyChallenge`,
+  startCheckoutSession: `${BASE}/startCheckoutSession`,
+  startDonationCheckout: `${BASE}/startDonationCheckout`,
+  startOneTimeTokenCheckout: `${BASE}/startOneTimeTokenCheckout`,
+  startSubscriptionCheckout: `${BASE}/startSubscriptionCheckout`,
+  startTokenCheckout: `${BASE}/startTokenCheckout`,
+  updateStreakAndXP: `${BASE}/updateStreakAndXP`,
+  updateUserProfileCallable: `${BASE}/updateUserProfileCallable`,
+} as const;
+
+export type EndpointName = keyof typeof endpoints;

@@ -13,7 +13,7 @@ import Button from '@/components/common/Button';
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { useTheme } from "@/components/theme/theme";
 import { showGracefulError } from '@/utils/gracefulError';
-import { ASK_GEMINI_SIMPLE, GENERATE_CHALLENGE_URL } from "@/utils/constants";
+import { endpoints } from '@/services/endpoints';
 import {
   getOrCreateActiveChallenge,
   updateActiveChallenge,
@@ -103,7 +103,7 @@ export default function ChallengeScreen() {
 
       const prefix = getUserAIPrompt();
       const blessing = await sendGeminiPrompt({
-        url: ASK_GEMINI_SIMPLE,
+        url: endpoints.askGeminiSimple,
         prompt: `${prefix} Provide a short blessing for a user who reached a ${current}-day spiritual challenge streak in the ${religion} tradition.`.trim(),
         history: [],
         religion,
@@ -193,7 +193,7 @@ export default function ChallengeScreen() {
 
       const prefix = getUserAIPrompt();
       let newChallenge = await sendGeminiPrompt({
-        url: GENERATE_CHALLENGE_URL,
+        url: endpoints.generateChallenge,
         prompt: `${prefix} ${prompt}`.trim(),
         history: [],
         token: debugToken || undefined,

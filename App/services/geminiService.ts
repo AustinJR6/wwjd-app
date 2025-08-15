@@ -1,4 +1,4 @@
-import { GEMINI_API_URL } from '@/config/apiConfig';
+import { endpoints } from './endpoints';
 import { sendRequestWithGusBugLogging } from '@/utils/gusBugLogger';
 import { useAuthStore } from '@/state/authStore';
 import { getIdToken } from '@/utils/authUtils';
@@ -9,7 +9,7 @@ export type GeminiMessage = { role: 'user' | 'assistant'; text: string };
 export async function sendGeminiPrompt({
   prompt,
   history = [],
-  url = GEMINI_API_URL,
+  url = endpoints.askGeminiV2,
   token,
   religion,
   onResponse,

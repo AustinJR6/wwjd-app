@@ -14,7 +14,7 @@ import { useUser } from '@/hooks/useUser';
 import { sendGeminiPrompt } from '@/services/geminiService';
 import ScreenContainer from '@/components/theme/ScreenContainer';
 import { useTheme } from '@/components/theme/theme';
-import { ASK_GEMINI_SIMPLE } from '@/utils/constants';
+import { endpoints } from '@/services/endpoints';
 import { setDocument } from '@/services/firestoreService';
 import { loadUserProfile, incrementUserPoints, getUserAIPrompt } from '@/utils/userProfile';
 import type { UserProfile } from '../../../types/profile';
@@ -101,7 +101,7 @@ export default function TriviaScreen() {
       }
 
       const data = await sendGeminiPrompt({
-        url: ASK_GEMINI_SIMPLE,
+        url: endpoints.askGeminiSimple,
         prompt: `${prefix} Give me a short moral story originally from any major world religion. Replace all real names and locations with fictional ones so that it seems to come from a different culture. Keep the meaning and lesson intact. After the story, add two lines: RELIGION: <religion> and STORY: <story name>.`.trim(),
         history: [],
         religion,

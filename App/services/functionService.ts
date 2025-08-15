@@ -1,14 +1,9 @@
 import { getAuthHeaders } from '@/utils/authUtils';
 import { logTokenIssue } from '@/shared/tokenLogger';
 import apiClient from '@/utils/apiClient';
-import Constants from 'expo-constants';
+import { endpoints, EndpointName } from './endpoints';
 
-const API_URL = Constants.expoConfig?.extra?.EXPO_PUBLIC_API_URL || '';
-if (!API_URL) {
-  console.warn('⚠️ Missing EXPO_PUBLIC_API_URL in .env');
-}
-
-export async function callFunction(name: string, data: any): Promise<any> {
+export async function callFunction(name: EndpointName, data: any): Promise<any> {
   let headers;
   try {
     headers = await getAuthHeaders();
@@ -18,7 +13,8 @@ export async function callFunction(name: string, data: any): Promise<any> {
   }
 
   try {
-    const res = await apiClient.post(`${API_URL}/${name}`, data, { headers });
+    const url = endpoints[name];
+    const res = await apiClient.post(url, data, { headers });
     return res.data as any;
   } catch (err: any) {
     console.error('🔥 Function error:', err?.message || err);

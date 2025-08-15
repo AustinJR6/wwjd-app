@@ -21,7 +21,7 @@ import { loadUserProfile, incrementUserPoints, getUserAIPrompt } from '@/utils/u
 import type { UserProfile } from '../../types/profile';
 
 import { callFunction, awardPointsToUser } from '@/services/functionService';
-import { ASK_GEMINI_SIMPLE } from '@/utils/constants';
+import { endpoints } from '@/services/endpoints';
 import { ensureAuth } from '@/utils/authGuard';
 import { getToken, getCurrentUserId } from '@/utils/TokenManager';
 import { sendGeminiPrompt } from '@/services/geminiService';
@@ -216,7 +216,7 @@ export default function JournalScreen() {
         return;
       }
       const answer = await sendGeminiPrompt({
-        url: ASK_GEMINI_SIMPLE,
+        url: endpoints.askGeminiSimple,
         prompt: `${prefix} ${prompt}`.trim(),
         history: [],
         token: token || undefined,

@@ -17,7 +17,7 @@ import ScreenContainer from "@/components/theme/ScreenContainer";
 import { useTheme } from "@/components/theme/theme";
 import { getTokenCount, setTokenCount } from "@/utils/TokenManager";
 import { showGracefulError } from '@/utils/gracefulError';
-import { ASK_GEMINI_V2 } from "@/utils/constants";
+import { endpoints } from '@/services/endpoints';
 import {
   loadUserProfile,
   updateUserProfile,
@@ -245,7 +245,7 @@ export default function ReligionAIScreen() {
 
       const prefix = getUserAIPrompt();
       const answer = await sendGeminiPrompt({
-        url: ASK_GEMINI_V2,
+        url: endpoints.askGeminiV2,
         prompt: `${prefix} ${prompt}`.trim(),
         history: formattedHistory,
         token: debugToken || undefined,
