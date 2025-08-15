@@ -46,6 +46,7 @@ export function useLookupLists() {
       try {
         setReligionsLoading(true);
         const data = await fetchReligions();
+        console.log('[lookups] religions loaded:', data.length, data.slice(0, 3));
         if (mounted) setReligions(data);
       } catch (e: any) {
         if (mounted)

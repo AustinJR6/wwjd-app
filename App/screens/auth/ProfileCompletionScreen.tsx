@@ -95,6 +95,7 @@ export default function ProfileCompletionScreen() {
       };
       if (pronouns.trim()) payload.pronouns = pronouns.trim();
       if (avatarURL.trim()) payload.avatarURL = avatarURL.trim();
+      console.log('[profile-save] setting religionId=', religionId);
       await updateUserProfile(payload, uid);
       await profileStore.refreshUserProfile();
       navigation.reset({ index: 0, routes: [{ name: 'MainTabs' }] });

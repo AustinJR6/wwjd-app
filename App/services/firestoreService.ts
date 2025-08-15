@@ -119,14 +119,14 @@ export async function listCollection<T = any>(collectionId: string, pageSize = 2
   const url = `${BASE_URL}/documents/${encodeURIComponent(collectionId)}?pageSize=${pageSize}`;
   const headers = await authHeaders();
   console.log(
-    '[firestore:listCollection]',
+    '[firestore] GET',
     url.replace(/(projects\/)[^/]+/, '$1<proj>'),
     'auth=',
     headers?.Authorization ? headers.Authorization.slice(0, 12) + '…' : 'none',
   );
   const { data } = await apiClient.get(url, { headers });
   const docs = (data?.documents ?? []).map(decodeDoc);
-  console.log(`[firestore:listCollection] ${collectionId} docs:`, docs.length);
+  console.log('[firestore:listCollection]', collectionId, 'docs:', docs.length);
   return docs as T[];
 }
 
@@ -135,7 +135,7 @@ export async function getDocument<T = any>(collectionId: string, docId: string):
   const url = `${BASE_URL}/documents/${pathJoin(collectionId, docId)}`;
   const headers = await authHeaders();
   console.log(
-    '[firestore:getDocument]',
+    '[firestore] GET',
     url.replace(/(projects\/)[^/]+/, '$1<proj>'),
     'auth=',
     headers?.Authorization ? headers.Authorization.slice(0, 12) + '…' : 'none',
@@ -164,8 +164,15 @@ export async function runQuery<T = any>(structuredQuery: any): Promise<T[]> {
 export async function getDocumentByPath(path: string): Promise<any | null> {
   warnIfInvalidPath(path, true);
   try {
-    console.log('➡️ Firestore GET', path);
-    const res = await apiClient.get(`${BASE}/${path}`, { headers: await authHeaders() });
+    const url = `${BASE}/${path}`;
+    const headers = await authHeaders();
+    console.log(
+      '[firestore] GET',
+      url.replace(/(projects\/)[^/]+/, '$1<proj>'),
+      'auth=',
+      headers?.Authorization ? headers.Authorization.slice(0, 12) + '…' : 'none',
+    );
+    const res = await apiClient.get(url, { headers });
     return fromFirestore(res.data);
   } catch (err: any) {
     logFirestoreError('GET', path, err);

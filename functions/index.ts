@@ -2435,4 +2435,4 @@ export const createSubscriptionSession = functions.https.onCall(
 export { onCompletedChallengeCreate } from './firestoreArchitecture';
 export { handleStripeWebhookV2 } from './stripeWebhooks';
 export { cleanLegacySubscriptionFields } from './cleanLegacySubscriptionFields';
-export { userCountsOnWrite, recomputeAllCounts } from './userCounts';
+export { onUserProfileWriteUpdateCounts, recomputeAllCounts } from './userCounts';

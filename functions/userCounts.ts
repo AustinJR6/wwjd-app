@@ -23,7 +23,7 @@ async function adjustCount(col: 'regions' | 'religions', id: string, delta: numb
   });
 }
 
-export const userCountsOnWrite = functions.firestore
+export const onUserProfileWriteUpdateCounts = functions.firestore
   .document('users/{uid}')
   .onWrite(async (change, context) => {
     const uid = context.params.uid;
@@ -34,7 +34,7 @@ export const userCountsOnWrite = functions.firestore
     const afterRegion = normalizeId(after?.regionId ?? after?.region)?.toLowerCase();
     const beforeRel = normalizeId(before?.religionId ?? before?.religion);
     const afterRel = normalizeId(after?.religionId ?? after?.religion);
-    console.log('[userCounts]', { uid, beforeRel, afterRel, beforeRegion, afterRegion });
+    console.log('[userCounts]', { uid, beforeRegion, afterRegion, beforeRel, afterRel });
 
     const jobs: Promise<void>[] = [];
 

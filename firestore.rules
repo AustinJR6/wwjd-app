@@ -79,12 +79,12 @@ service cloud.firestore {
     // 🌍 Static lookup: Regions (lowercase IDs)
     match /regions/{regionId} {
       allow read: if isSignedIn();
-      allow write: if false;
+      allow write: if false; // userCount maintained by Cloud Functions only
     }
 
     match /religions/{religionId} {
       allow read: if isSignedIn();
-      allow write: if false;
+      allow write: if false; // userCount maintained by Cloud Functions only
     }
 
     // Legacy singular path
