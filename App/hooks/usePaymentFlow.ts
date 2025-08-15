@@ -1,17 +1,11 @@
 import React, { useEffect } from 'react';
 import { Alert, Linking } from 'react-native';
 import { useStripe } from '@stripe/stripe-react-native';
-import Constants from 'expo-constants';
 import { useUserProfileStore } from '@/state/userProfile';
 import { logTransaction } from '@/utils/transactionLogger';
 import { getIdToken, getCurrentUserId } from '@/utils/authUtils';
 import { sendRequestWithGusBugLogging } from '@/utils/gusBugLogger';
 import { startSubscriptionCheckout } from '../services/apiService';
-const API_URL = Constants.expoConfig?.extra?.EXPO_PUBLIC_API_URL || '';
-if (!API_URL) {
-  console.warn('⚠️ Missing EXPO_PUBLIC_API_URL in .env');
-}
-
 export type PaymentFlowParams = {
   mode: 'setup' | 'payment';
   amount?: number;

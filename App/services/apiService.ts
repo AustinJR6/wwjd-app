@@ -1,6 +1,6 @@
 import axios from 'axios';
-import { STRIPE_CHECKOUT_URL, TOKEN_CHECKOUT_URL, SUBSCRIPTION_CHECKOUT_URL, CHECKOUT_SESSION_URL } from '@/config/apiConfig';
-import { STRIPE_SUCCESS_URL, STRIPE_CANCEL_URL } from '@/config/stripeConfig';
+import { endpoints } from './endpoints';
+import { STRIPE_SUCCESS_URL } from '@/config/stripeConfig';
 import { getAuthHeaders } from '@/utils/authUtils';
 import { sendRequestWithGusBugLogging } from '@/utils/gusBugLogger';
 import { logTokenIssue } from '@/shared/tokenLogger';
@@ -60,7 +60,7 @@ export async function createStripeCheckout(
       returnUrl: options.returnUrl ?? STRIPE_SUCCESS_URL,
     };
     const res = await sendRequestWithGusBugLogging(() =>
-      axios.post<StripeCheckoutResponse>(STRIPE_CHECKOUT_URL, payload, {
+      axios.post<StripeCheckoutResponse>(endpoints.createStripeCheckout, payload, {
         headers,
       }) as unknown as Promise<Axios.AxiosXHR<StripeCheckoutResponse>>
     );
@@ -98,7 +98,7 @@ export async function startTokenCheckout(uid: string, priceId: string): Promise<
   try {
     const payload = { uid, priceId: cleanId };
     const res = await sendRequestWithGusBugLogging(() =>
-      fetch(TOKEN_CHECKOUT_URL, {
+      fetch(endpoints.startTokenCheckout, {
         method: 'POST',
         headers,
         body: JSON.stringify(payload),
@@ -150,7 +150,7 @@ export async function createCheckoutSession(
     const cleanId = cleanPriceId(priceId);
     const payload = { uid, priceId: cleanId, tokenAmount, mode: 'payment', type: 'token_purchase' };
     const res = await sendRequestWithGusBugLogging(() =>
-      fetch(CHECKOUT_SESSION_URL, {
+      fetch(endpoints.createCheckoutSession, {
         method: 'POST',
         headers,
         body: JSON.stringify(payload),
@@ -192,7 +192,7 @@ export async function startSubscriptionCheckout(uid: string, priceId: string): P
   try {
     const payload = { uid, priceId: cleanId };
     const res = await sendRequestWithGusBugLogging(() =>
-      fetch(SUBSCRIPTION_CHECKOUT_URL, {
+      fetch(endpoints.startSubscriptionCheckout, {
         method: 'POST',
         headers,
         body: JSON.stringify(payload),
@@ -219,3 +219,31 @@ export async function startSubscriptionCheckout(uid: string, priceId: string): P
 }
 
 
+
+export async function finalizePaymentIntent(
+  paymentIntentId: string,
+  mode: 'payment' | 'subscription' | 'donation',
+  tokenAmount?: number,
+): Promise<void> {
+  let headers;
+  try {
+    headers = await getAuthHeaders();
+  } catch {
+    logTokenIssue('finalizePaymentIntent');
+    throw new Error('Missing auth token');
+  }
+  try {
+    const payload: any = { paymentIntentId, mode };
+    if (mode === 'payment') payload.tokenAmount = tokenAmount;
+    await sendRequestWithGusBugLogging(() =>
+      fetch(endpoints.finalizePaymentIntent, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(payload),
+      }),
+    );
+  } catch (err: any) {
+    console.warn('❌ finalizePaymentIntent failed:', err?.message || err);
+    throw err;
+  }
+}

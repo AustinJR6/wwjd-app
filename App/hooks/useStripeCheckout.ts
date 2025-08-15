@@ -1,15 +1,14 @@
 import { useStripe } from '@stripe/stripe-react-native';
-import Constants from 'expo-constants';
 import { Alert } from 'react-native';
 import { useUserProfileStore } from '@/state/userProfile';
 import { getIdToken } from '@/utils/authUtils';
 import { ONEVINE_PLUS_PRICE_ID } from '@/config/stripeConfig';
-import { createCheckoutSession } from '@/services/apiService';
+import { createCheckoutSession, finalizePaymentIntent } from '@/services/apiService';
+import { endpoints } from '@/services/endpoints';
 
 export function useStripeCheckout() {
   const { initPaymentSheet, presentPaymentSheet } = useStripe();
   const refreshProfile = useUserProfileStore((s) => s.refreshUserProfile);
-  const API_URL = Constants.expoConfig?.extra?.EXPO_PUBLIC_API_URL || '';
 
   async function purchaseTokens(uid: string, priceId: string, tokenAmount: number) {
     try {
@@ -38,6 +37,8 @@ export function useStripeCheckout() {
         }
         return false;
       }
+      const paymentIntentId = clientSecret.split('_secret')[0];
+      await finalizePaymentIntent(paymentIntentId, 'payment', tokenAmount);
       await refreshProfile();
       return true;
     } catch (err: any) {
@@ -49,7 +50,7 @@ export function useStripeCheckout() {
   async function startOneVinePlusCheckout(uid: string) {
     try {
       const token = await getIdToken(true);
-      const res = await fetch(`${API_URL}/createStripeSubscriptionIntent`, {
+      const res = await fetch(endpoints.createStripeSubscriptionIntent, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,

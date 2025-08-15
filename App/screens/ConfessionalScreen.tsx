@@ -20,7 +20,7 @@ import { showGracefulError } from '@/utils/gracefulError';
 import axios from 'axios';
 import type { GeminiMessage } from '@/services/geminiService';
 import { getPersonaPrompt } from '@/utils/religionPersona';
-import { CONFESSIONAL_AI_URL } from '@/utils/constants';
+import { endpoints } from '@/services/endpoints';
 import { useAuth } from '@/hooks/useAuth';
 import { saveTempMessage, fetchTempSession } from '@/services/confessionalSessionService';
 import { useConfessionalSession } from '@/hooks/useConfessionalSession';
@@ -116,7 +116,7 @@ export default function ConfessionalScreen() {
 
       const makeRequest = (idTok: string) =>
         axios.post(
-          CONFESSIONAL_AI_URL,
+          endpoints.confessionalAI,
           {
             history: historyMsgs,
             uid,
