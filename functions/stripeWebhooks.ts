@@ -60,60 +60,187 @@ export const upsertSubscriptionFromStripe = async (sub: Stripe.Subscription) => 
   );
 };
 
-async function handleTokenPurchase(intent: Stripe.PaymentIntent) {
-  const purchaseType =
-    (intent.metadata?.purchaseType || intent.metadata?.type || '').toLowerCase();
-  if (purchaseType !== 'token' && purchaseType !== 'tokens') {
-    console.log('Token handler: ignoring non-token intent', {
-      type: purchaseType,
-      id: intent.id,
-    });
-    return;
-  }
+interface TokenPurchase {
+  uid: string;
+  tokens: number;
+  amount: number;
+  paymentId: string;
+}
 
-  const uid = intent.metadata?.uid;
-  const tokenAmountRaw =
-    intent.metadata?.tokenAmount ?? intent.metadata?.tokens ?? '0';
-  const tokenAmount = Number(tokenAmountRaw);
-  if (!uid || !Number.isFinite(tokenAmount) || tokenAmount <= 0) {
-    console.warn('Token handler: missing uid or invalid token amount', {
+export async function creditTokenPurchase({
+  uid,
+  tokens,
+  amount,
+  paymentId,
+}: TokenPurchase) {
+  if (!uid || !Number.isFinite(tokens) || tokens <= 0) {
+    console.error('Token purchase missing uid or tokens', {
       uid,
-      tokenAmountRaw,
-      id: intent.id,
+      tokens,
+      paymentId,
     });
     return;
   }
 
   const userRef = firestore.doc(`users/${uid}`);
-  const txRef = userRef.collection('transactions').doc(intent.id);
+  const txRef = userRef.collection('transactions').doc(paymentId);
 
   await firestore.runTransaction(async (t) => {
     const existing = await t.get(txRef);
     if (existing.exists) {
-      console.log('Token handler: transaction already recorded, skipping increment', {
-        id: intent.id,
+      console.log('Token purchase already processed, skipping', {
         uid,
+        paymentId,
       });
       return;
     }
-    t.set(userRef, { tokens: admin.firestore.FieldValue.increment(tokenAmount) }, { merge: true });
     t.set(
       txRef,
       {
-        type: 'tokens',
-        amount: tokenAmount,
-        currency: intent.currency || 'usd',
+        amount,
+        tokens,
+        provider: 'stripe',
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
       },
-      { merge: true }
+      { merge: true },
+    );
+    t.set(
+      userRef,
+      {
+        tokens: admin.firestore.FieldValue.increment(tokens),
+        lastActive: admin.firestore.FieldValue.serverTimestamp(),
+      },
+      { merge: true },
     );
   });
 
-  console.log('Token handler: credited tokens', {
-    uid,
-    tokenAmount,
-    id: intent.id,
-  });
+  console.log(`tokens.credit uid=${uid} +${tokens}`);
+}
+
+async function extractTokenPurchase(
+  event: Stripe.Event,
+): Promise<TokenPurchase | null> {
+  switch (event.type) {
+    case 'payment_intent.succeeded': {
+      const intent = event.data.object as Stripe.PaymentIntent;
+      const meta = intent.metadata || {};
+      if (meta.type === 'token_pack') {
+        const uid = meta.uid;
+        const tokens = Number(meta.tokens);
+        const amount = intent.amount_received ?? intent.amount ?? 0;
+        return uid && Number.isFinite(tokens) && tokens > 0
+          ? { uid, tokens, amount, paymentId: intent.id }
+          : null;
+      }
+      return null;
+    }
+    case 'checkout.session.completed': {
+      const session = event.data.object as Stripe.Checkout.Session;
+      const meta = session.metadata || {};
+      if (meta.type === 'token_pack') {
+        const uid = meta.uid;
+        const tokens = Number(meta.tokens);
+        const amount = session.amount_total ?? 0;
+        const paymentId =
+          typeof session.payment_intent === 'string'
+            ? session.payment_intent
+            : (session.payment_intent as Stripe.PaymentIntent | null)?.id ||
+              session.id;
+        return uid && Number.isFinite(tokens) && tokens > 0
+          ? { uid, tokens, amount, paymentId }
+          : null;
+      }
+      try {
+        const items = await stripe.checkout.sessions.listLineItems(session.id, {
+          expand: ['data.price.product'],
+        });
+        for (const item of items.data) {
+          const price = item.price as Stripe.Price;
+          const product = price?.product as Stripe.Product;
+          const priceMeta = price?.metadata || {};
+          const productMeta = product?.metadata || {};
+          if (
+            priceMeta.type === 'token_pack' ||
+            productMeta.type === 'token_pack'
+          ) {
+            const uid = meta.uid || productMeta.uid;
+            const tokensStr = priceMeta.tokens || productMeta.tokens;
+            const tokens = Number(tokensStr);
+            const amount = item.amount_total ?? session.amount_total ?? 0;
+            const paymentId =
+              typeof session.payment_intent === 'string'
+                ? session.payment_intent
+                : (session.payment_intent as Stripe.PaymentIntent | null)?.id ||
+                  session.id;
+            return uid && Number.isFinite(tokens) && tokens > 0
+              ? { uid, tokens, amount, paymentId }
+              : null;
+          }
+        }
+      } catch (e) {
+        console.error('Failed to fetch line items for session', {
+          sessionId: session.id,
+          error: e,
+        });
+      }
+      return null;
+    }
+    case 'invoice.payment_succeeded': {
+      const invoice = event.data.object as Stripe.Invoice & {
+        payment_intent?: string | Stripe.PaymentIntent | null;
+      };
+      const meta = invoice.metadata || {};
+      const paymentIntent = (invoice as any).payment_intent;
+      if (meta.type === 'token_pack') {
+        const uid = meta.uid;
+        const tokens = Number(meta.tokens);
+        const paymentId =
+          typeof paymentIntent === 'string'
+            ? paymentIntent
+            : paymentIntent?.id || invoice.id;
+        const amount = invoice.amount_paid ?? 0;
+        return uid && Number.isFinite(tokens) && tokens > 0
+          ? { uid, tokens, amount, paymentId }
+          : null;
+      }
+      try {
+        const inv = (await stripe.invoices.retrieve(invoice.id!, {
+          expand: ['lines.data.price.product'],
+        })) as any;
+        for (const item of inv.lines.data as any[]) {
+          const price = item.price as Stripe.Price;
+          const product = price?.product as Stripe.Product;
+          const priceMeta = price?.metadata || {};
+          const productMeta = product?.metadata || {};
+          if (
+            priceMeta.type === 'token_pack' ||
+            productMeta.type === 'token_pack'
+          ) {
+            const uid = meta.uid || productMeta.uid;
+            const tokensStr = priceMeta.tokens || productMeta.tokens;
+            const tokens = Number(tokensStr);
+            const invPaymentIntent = (inv as any).payment_intent;
+            const paymentId =
+              typeof invPaymentIntent === 'string'
+                ? invPaymentIntent
+                : invPaymentIntent?.id || inv.id;
+            const amount = inv.amount_paid ?? 0;
+            return uid && Number.isFinite(tokens) && tokens > 0
+              ? { uid, tokens, amount, paymentId }
+              : null;
+          }
+        }
+      } catch (e) {
+        console.error('Failed to retrieve invoice line items', {
+          invoiceId: invoice.id,
+          error: e,
+        });
+      }
+      return null;
+    }
+    default:
+      return null;
+  }
 }
 
 // Webhook handler
@@ -135,6 +262,21 @@ export const handleStripeWebhookV2 = functions.https.onRequest(async (req, res) 
   } catch (err: any) {
     console.error('Webhook signature verification failed.', err.message);
     res.status(400).send(`Webhook Error: ${err.message}`);
+    return;
+  }
+
+  const tokenPurchase = await extractTokenPurchase(event);
+  if (tokenPurchase) {
+    try {
+      await creditTokenPurchase(tokenPurchase);
+      res.sendStatus(200);
+    } catch (err) {
+      console.error('Error crediting token purchase', {
+        error: err,
+        eventType: event.type,
+      });
+      res.sendStatus(400);
+    }
     return;
   }
 
@@ -225,7 +367,6 @@ export const handleStripeWebhookV2 = functions.https.onRequest(async (req, res) 
       return;
     }
     case 'payment_intent.succeeded':
-      await handleTokenPurchase(event.data.object as Stripe.PaymentIntent);
       res.sendStatus(200);
       return;
     default:
