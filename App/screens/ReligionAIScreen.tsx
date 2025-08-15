@@ -196,7 +196,7 @@ export default function ReligionAIScreen() {
       const basePrompt = getUserAIPrompt();
       console.log('👤 Persona resolved', { religion, promptRole, basePrompt });
 
-      if (!subscribed) {
+      if (!isSubscribed) {
         if (!canAskFree) {
           const tokens = await getTokenCount();
           if (tokens < cost) {
@@ -258,8 +258,8 @@ export default function ReligionAIScreen() {
       console.log('📖 ReligionAI input:', question);
       console.log('🙏 ReligionAI reply:', answer);
 
-      await saveMessage(uid, 'user', question, subscribed);
-      await saveMessage(uid, 'assistant', answer, subscribed);
+      await saveMessage(uid, 'user', question, isSubscribed);
+      await saveMessage(uid, 'assistant', answer, isSubscribed);
       setMessages((prev) => [
         ...prev,
         { role: 'user', text: question },
@@ -268,7 +268,7 @@ export default function ReligionAIScreen() {
 
       setMessageCount((c) => {
         const next = c + 1;
-        if (next % 5 === 0 && !subscribed) {
+        if (next % 5 === 0 && !isSubscribed) {
           showInterstitialAd();
         }
         return next;
