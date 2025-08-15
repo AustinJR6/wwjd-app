@@ -40,6 +40,7 @@ import {
   verifyAuth,
   extractAuthToken,
 } from "./helpers";
+import { upsertSubscriptionFromStripe } from './stripeWebhooks';
 
 
 function logTokenVerificationError(context: string, token: string | undefined, err: any) {
@@ -1434,6 +1435,50 @@ export async function prepareSubscriptionPaymentSheetHandler(
 
 export const prepareSubscriptionPaymentSheet = functions.https.onRequest(
   withCors(prepareSubscriptionPaymentSheetHandler),
+);
+
+export async function activateSubscriptionHandler(req: Request, res: Response) {
+  try {
+    const { uid, priceId, trial_days } = req.body || {};
+    if (!uid || !priceId) {
+      res.status(400).json({ error: 'Missing uid or priceId' });
+      return;
+    }
+
+    const authData = await verifyAuth(req);
+    if (authData.uid !== uid) {
+      res.status(403).json({ error: 'UID mismatch' });
+      return;
+    }
+
+    const customerId = await getOrCreateStripeCustomer(uid);
+    const params: Stripe.SubscriptionCreateParams = {
+      customer: customerId,
+      items: [{ price: priceId }],
+      payment_settings: { save_default_payment_method: 'on_subscription' },
+      metadata: { uid },
+      expand: ['latest_invoice.payment_intent'],
+    };
+    if (trial_days) {
+      params.trial_period_days = Number(trial_days);
+    }
+
+    const subscription = await stripe.subscriptions.create(params);
+    await upsertSubscriptionFromStripe(subscription);
+
+    res.status(200).json({
+      ok: true,
+      status: subscription.status,
+      currentPeriodEnd: (subscription as any).current_period_end || null,
+    });
+  } catch (err: any) {
+    logger.error('activateSubscription failed', err);
+    res.status(500).json({ error: err?.message || 'Internal error' });
+  }
+}
+
+export const activateSubscription = functions.https.onRequest(
+  withCors(activateSubscriptionHandler),
 );
 
 export const createStripeSubscriptionIntent = functions

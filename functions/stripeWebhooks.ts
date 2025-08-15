@@ -17,33 +17,46 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
 const tsFromUnix = (n?: number) =>
   n ? admin.firestore.Timestamp.fromMillis(n * 1000) : null;
 
-const upsertSubscriptionFromStripe = async (sub: Stripe.Subscription) => {
-  const uid = sub.metadata?.uid;
+export const upsertSubscriptionFromStripe = async (sub: Stripe.Subscription) => {
+  let uid = sub.metadata?.uid as string | undefined;
+  if (!uid) {
+    const customerId =
+      typeof sub.customer === 'string' ? sub.customer : sub.customer.id;
+    try {
+      const customer = (await stripe.customers.retrieve(customerId)) as Stripe.Customer;
+      uid = customer.metadata?.uid;
+    } catch (e) {
+      console.warn('Failed to retrieve customer for subscription', {
+        subscriptionId: sub.id,
+        customerId,
+      });
+    }
+  }
   if (!uid) {
     console.warn('Missing uid in subscription', { subscriptionId: sub.id });
     return;
   }
   const status = sub.status;
+  const price = sub.items.data[0]?.price;
+  const priceId = price?.id || null;
+  const productId =
+    price && typeof price.product === 'string'
+      ? price.product
+      : ((price?.product as Stripe.Product)?.id || null);
+  const isActive = status === 'active' || status === 'trialing';
   const doc = {
     status,
     subscriptionId: sub.id,
-    currentPeriodStart: tsFromUnix((sub as any).current_period_start),
     currentPeriodEnd: tsFromUnix((sub as any).current_period_end),
-    invoiceId:
-      typeof sub.latest_invoice === 'string'
-        ? sub.latest_invoice
-        : sub.latest_invoice?.id || null,
-    tier: sub.metadata?.tier || null,
+    productId,
+    priceId,
     updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    isActive,
   };
   await firestore.doc(`subscriptions/${uid}`).set(doc, { merge: true });
-  const isActive = status === 'active' || status === 'trialing';
-  await firestore.doc(`users/${uid}`).set(
-    {
-      isSubscribed: isActive,
-      lastActive: admin.firestore.FieldValue.serverTimestamp(),
-    },
-    { merge: true }
+  await firestore.doc(`users/${uid}`).set({ isSubscribed: isActive }, { merge: true });
+  console.log(
+    `sub.sync uid=${uid} sub=${sub.id} status=${status} periodEnd=${(sub as any).current_period_end}`,
   );
 };
 
@@ -175,6 +188,37 @@ export const handleStripeWebhookV2 = functions.https.onRequest(async (req, res) 
           error: err,
           eventType: event.type,
           subscriptionId: (event.data.object as any)?.id,
+        });
+        res.sendStatus(400);
+      }
+      return;
+    }
+    case 'invoice.payment_succeeded': {
+      try {
+        const invoice = event.data.object as Stripe.Invoice & {
+          subscription?: string | Stripe.Subscription | null;
+        };
+        const subId =
+          typeof invoice.subscription === 'string'
+            ? invoice.subscription
+            : invoice.subscription?.id;
+        if (!subId) {
+          console.warn('Invoice without subscription', {
+            eventType: event.type,
+            invoiceId: invoice.id,
+          });
+          res.sendStatus(200);
+          return;
+        }
+        const sub = await stripe.subscriptions.retrieve(subId, {
+          expand: ['items.data.price'],
+        });
+        await upsertSubscriptionFromStripe(sub);
+        res.sendStatus(200);
+      } catch (err) {
+        console.error('Error in invoice.payment_succeeded', {
+          error: err,
+          eventType: event.type,
         });
         res.sendStatus(400);
       }
