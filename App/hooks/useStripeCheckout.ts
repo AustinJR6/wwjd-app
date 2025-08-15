@@ -3,7 +3,6 @@ import Constants from 'expo-constants';
 import { Alert } from 'react-native';
 import { useUserProfileStore } from '@/state/userProfile';
 import { getIdToken } from '@/utils/authUtils';
-import { ONEVINE_PLUS_PRICE_ID } from '@/config/stripeConfig';
 import { createCheckoutSession } from '@/services/apiService';
 
 export function useStripeCheckout() {
@@ -49,26 +48,25 @@ export function useStripeCheckout() {
   async function startOneVinePlusCheckout(uid: string) {
     try {
       const token = await getIdToken(true);
-      const res = await fetch(`${API_URL}/createStripeSubscriptionIntent`, {
+      const res = await fetch(`${API_URL}/prepareSubscriptionPaymentSheet`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
+          uid,
         },
-        body: JSON.stringify({ uid, priceId: ONEVINE_PLUS_PRICE_ID }),
       });
       const data = await res.json();
-      const clientSecret = data.clientSecret || data.client_secret;
-      if (!clientSecret || !data.ephemeralKey || !data.customerId) {
+      const { customer, ephemeralKey, setupIntent, publishableKey } = data;
+      if (!customer || !ephemeralKey || !setupIntent || !publishableKey) {
         throw new Error('Missing payment sheet parameters');
       }
 
       const { error: initError } = await initPaymentSheet({
-        customerId: data.customerId,
-        customerEphemeralKeySecret: data.ephemeralKey,
-        paymentIntentClientSecret: clientSecret,
         merchantDisplayName: 'OneVine',
-        returnURL: 'onevine://payment-return',
+        customerId: customer,
+        customerEphemeralKeySecret: ephemeralKey,
+        setupIntentClientSecret: setupIntent,
       });
       if (initError) {
         Alert.alert('Payment Error', initError.message);
@@ -81,6 +79,19 @@ export function useStripeCheckout() {
           Alert.alert('Payment Error', error.message);
         }
         return false;
+      }
+
+      const activateRes = await fetch(`${API_URL}/activateSubscription`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          uid,
+        },
+      });
+      if (!activateRes.ok) {
+        const text = await activateRes.text();
+        throw new Error(text || 'Failed to activate subscription');
       }
 
       await refreshProfile();
