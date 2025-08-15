@@ -10,7 +10,14 @@
     "skipLibCheck": true,
     "resolveJsonModule": true,
     "moduleResolution": "Node",
-    "types": ["node"]
+    "types": ["node"],
+    "baseUrl": "src",
+    "paths": {
+      "@core/*": ["core/*"],
+      "@data/*": ["data/*"],
+      "@features/*": ["features/*"],
+      "@utils": ["utils"]
+    }
   },
   "include": ["**/*.ts"],
   "exclude": ["lib", "dist", "node_modules"]
