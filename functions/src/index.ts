@@ -21,7 +21,7 @@ export {
   backfillUserProfiles,
   updateUserProfileCallable,
   completeSignupAndProfile,
-} from './userHandlers';
+} from './features/users';
 export {
   startSubscriptionCheckout,
   startOneTimeTokenCheckout,
