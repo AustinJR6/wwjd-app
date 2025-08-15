@@ -185,6 +185,28 @@ const stripe = new Stripe(STRIPE_SECRET_KEY, {
   apiVersion: "2023-10-16",
 } as any);
 
+export async function getOrCreateStripeCustomer(
+  uid: string,
+  email?: string,
+): Promise<string> {
+  const userRef = db.collection("users").doc(uid);
+  const snap = await userRef.get();
+  let customerId = snap.exists
+    ? ((snap.data() as any)?.stripeCustomerId as string | undefined)
+    : undefined;
+
+  if (!customerId) {
+    const customer = await stripe.customers.create({
+      email,
+      metadata: { uid },
+    });
+    customerId = customer.id;
+    await userRef.set({ stripeCustomerId: customerId }, { merge: true });
+  }
+
+  return customerId;
+}
+
 async function addTokens(uid: string, amount: number): Promise<void> {
   const userRef = db.collection("users").doc(uid);
   await db.runTransaction(async (t) => {
@@ -1351,6 +1373,68 @@ export const createCheckoutSession = functions
       res.status(500).json({ error: (err as any)?.message || 'Failed to create checkout' });
     }
   }));
+
+export async function prepareSubscriptionPaymentSheetHandler(
+  req: Request,
+  res: Response,
+) {
+  try {
+    const uid = req.headers.uid as string | undefined;
+    if (!uid) {
+      res.status(400).json({ error: 'Missing uid header' });
+      return;
+    }
+
+    const publishableKey =
+      functions.config().stripe?.publishable || STRIPE_PUBLISHABLE_KEY;
+    if (!publishableKey) {
+      res.status(500).json({ error: 'Stripe publishable key missing' });
+      return;
+    }
+
+    const customerId = await getOrCreateStripeCustomer(uid);
+
+    const ephemeralKey = await stripe.ephemeralKeys.create(
+      { customer: customerId },
+      { apiVersion: '2023-10-16' },
+    );
+
+    const setupIntent = await stripe.setupIntents.create({
+      customer: customerId,
+      usage: 'off_session',
+    });
+
+    const response = {
+      customer: customerId,
+      ephemeralKey: ephemeralKey.secret,
+      setupIntent: setupIntent.client_secret,
+      publishableKey,
+    };
+
+    if (
+      !response.customer ||
+      !response.ephemeralKey ||
+      !response.setupIntent ||
+      !response.publishableKey
+    ) {
+      res.status(500).json({ error: 'Missing Stripe fields' });
+      return;
+    }
+
+    logger.info(
+      `prepareSubscriptionPaymentSheet: uid=${uid} customer=${customerId}`,
+    );
+
+    res.status(200).json(response);
+  } catch (err: any) {
+    logger.error('prepareSubscriptionPaymentSheet failed', err);
+    res.status(500).json({ error: err?.message || 'Internal error' });
+  }
+}
+
+export const prepareSubscriptionPaymentSheet = functions.https.onRequest(
+  withCors(prepareSubscriptionPaymentSheetHandler),
+);
 
 export const createStripeSubscriptionIntent = functions
   .https.onRequest(withCors(async (req: Request, res: Response) => {
