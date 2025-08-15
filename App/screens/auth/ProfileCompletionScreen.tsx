@@ -60,7 +60,10 @@ export default function ProfileCompletionScreen() {
   }, [uid]);
 
   const religionOptions = useMemo(
-    () => (__DEV__ && religionsError ? FALLBACK_RELIGIONS : religions ?? []),
+    () =>
+      __DEV__ && (religionsError || !religions?.length)
+        ? FALLBACK_RELIGIONS
+        : religions ?? [],
     [religions, religionsError]
   );
 
@@ -87,20 +90,11 @@ export default function ProfileCompletionScreen() {
 
     setIsLoading(true);
       try {
-        const payload: Record<string, any> = {
-          religionId,
-          preferredName: preferredName.trim(),
-          onboardingComplete: true,
-          profileComplete: true,
-        };
-      if (regionId) payload.regionId = regionId;
-      if (pronouns.trim()) payload.pronouns = pronouns.trim();
-      if (avatarURL.trim()) payload.avatarURL = avatarURL.trim();
-      console.log('[profile-save] setting religionId=', religionId);
-      await updateUserProfile(uid, payload, { merge: true });
-      await profileStore.refreshUserProfile();
-      navigation.reset({ index: 0, routes: [{ name: 'MainTabs' }] });
-    } catch (err: any) {
+        console.log('[profile-save] setting religionId=', religionId);
+        await updateUserProfile(uid, { religionId }, { merge: true });
+        await profileStore.refreshUserProfile();
+        navigation.reset({ index: 0, routes: [{ name: 'MainTabs' }] });
+      } catch (err: any) {
       Alert.alert('Error', err.message || 'Could not save profile or update counts');
       console.error('❌ Failed to complete profile:', err);
     } finally {

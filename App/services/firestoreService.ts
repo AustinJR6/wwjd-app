@@ -2,13 +2,14 @@ import apiClient from '@/utils/apiClient';
 import { getIdToken, getCurrentUserId } from '@/utils/authUtils';
 import { showPermissionDeniedForPath } from '@/utils/gracefulError';
 import { logFirestoreError } from '@/lib/logging';
+import { FIREBASE_PROJECT_ID } from '@/config/env';
 
-const PROJECT_ID = (process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID || '').trim();
-console.log('[env] PROJECT_ID=', PROJECT_ID);
-if (!PROJECT_ID) {
+console.log('[env] PROJECT_ID=', FIREBASE_PROJECT_ID);
+if (!FIREBASE_PROJECT_ID) {
   throw new Error('[firestore] Missing EXPO_PUBLIC_FIREBASE_PROJECT_ID');
 }
-const BASE_URL = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)`;
+const PROJECT_ID = FIREBASE_PROJECT_ID;
+const BASE_URL = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)`;
 const BASE = `${BASE_URL}/documents`;
 
 // Encode only individual path segments, not the whole path
@@ -96,7 +97,7 @@ async function authHeaders() {
     throw new Error('Missing auth token');
   }
   lastToken = token;
-  console.log('📡 Using ID token', token.slice(0, 8), 'for UID', uid);
+  console.log('[auth] Using ID token', token.slice(0, 8), 'for UID', uid);
   return { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
 }
 
@@ -360,11 +361,11 @@ export async function fetchTopUsersByPoints(limit = 10): Promise<any[]> {
 
 export async function fetchTopReligions(limit = 10): Promise<any[]> {
   const query = {
-    from: [{ collectionId: 'religions' }],
+    from: [{ collectionId: 'religion' }],
     orderBy: [{ field: { fieldPath: 'totalPoints' }, direction: 'DESCENDING' }],
     limit,
   };
-  console.warn('📄 Structured query path:', 'religions');
+  console.warn('📄 Structured query path:', 'religion');
   console.warn('🔍 Structured query filters:', {
     orderBy: query.orderBy,
     limit,
