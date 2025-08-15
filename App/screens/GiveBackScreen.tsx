@@ -15,7 +15,7 @@ type Props = { navigation: NativeStackNavigationProp<RootStackParamList, 'MainTa
 
 export default function GiveBackScreen({ navigation }: Props) {
   const theme = useTheme();
-  const { startPaymentFlow } = usePaymentFlow();
+  const { startSubscriptionCheckoutFlow } = usePaymentFlow();
   const styles = React.useMemo(
     () =>
       StyleSheet.create({
@@ -58,7 +58,7 @@ export default function GiveBackScreen({ navigation }: Props) {
   const handleDonation = async (amount: number) => {
     setDonating(amount);
     try {
-      const success = await startPaymentFlow({ mode: 'payment', amount });
+      const success = await startSubscriptionCheckoutFlow();
       if (success) {
         Alert.alert('Thank you', 'Thank you for your donation \uD83D\uDE4F');
         await logTransaction('donation', amount);
