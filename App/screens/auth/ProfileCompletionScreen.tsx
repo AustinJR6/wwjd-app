@@ -23,22 +23,34 @@ import { useAuth } from '@/hooks/useAuth';
 export default function ProfileCompletionScreen() {
   const { uid } = useAuth();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  const { regions, religions, loading } = useLookupLists();
+  const {
+    regions,
+    regionsLoading,
+    regionsError,
+    religions,
+    religionsLoading,
+    religionsError,
+    loading,
+  } = useLookupLists();
   const theme = useTheme();
 
   const [region, setRegion] = useState('');
-  const [religionId, setReligionId] = useState('');
+  const profileStore = useUserProfileStore();
+  const profile = profileStore.profile;
+  const [religionId, setReligionId] = useState(profile?.religionId ?? '');
   const [preferredName, setPreferredName] = useState('');
   const [pronouns, setPronouns] = useState('');
   const [avatarURL, setAvatarURL] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const profileStore = useUserProfileStore();
 
   useEffect(() => {
     async function loadProfile() {
       if (!uid) return;
       const prof = await loadUserProfile(uid);
-      if (prof) profileStore.setUserProfile(prof as any);
+      if (prof) {
+        profileStore.setUserProfile(prof as any);
+        if (prof.religionId) setReligionId(prof.religionId);
+      }
     }
     loadProfile();
   }, [uid]);
@@ -46,17 +58,11 @@ export default function ProfileCompletionScreen() {
   // Initialize defaults once lists are available
   useEffect(() => {
     if (!region && regions.length) setRegion(regions[0].name);
-    if (!religionId && religions.length) setReligionId(religions[0].id);
-  }, [regions, religions, region, religionId]);
+  }, [regions, region]);
 
   const regionItems = useMemo(
-    () => regions.map((r: { name: any; }) => ({ label: r.name, value: r.name })),
+    () => regions.map((r: { name: any }) => ({ label: r.name, value: r.name })),
     [regions]
-  );
-
-  const religionItems = useMemo(
-    () => religions.map((r) => ({ label: r.name ?? r.id, value: r.id })),
-    [religions]
   );
 
   const handleSubmit = async () => {
@@ -174,15 +180,25 @@ export default function ProfileCompletionScreen() {
 
         <CustomText style={{ marginBottom: 8 }}>Choose your spiritual lens:</CustomText>
         <View style={styles.pickerWrapper}>
-          <Picker
-            selectedValue={religionId}
-            onValueChange={(v) => setReligionId(v)}
-            style={styles.picker}
-          >
-            {religionItems.map((r) => (
-              <Picker.Item key={String(r.value)} label={r.label} value={r.value} />
-            ))}
-          </Picker>
+          {religionsLoading ? (
+            <ActivityIndicator />
+          ) : religionsError ? (
+            <CustomText style={{ color: 'tomato' }}>
+              Couldn’t load religions — {religionsError}
+            </CustomText>
+          ) : (
+            <Picker
+              selectedValue={religionId}
+              onValueChange={(v) => setReligionId(v)}
+              style={styles.picker}
+              mode="dropdown"
+            >
+              <Picker.Item label="Select a religion…" value="" />
+              {(religions ?? []).map((r) => (
+                <Picker.Item key={r.id} label={r.name} value={r.id} />
+              ))}
+            </Picker>
+          )}
         </View>
 
         <View style={styles.buttonWrap}>

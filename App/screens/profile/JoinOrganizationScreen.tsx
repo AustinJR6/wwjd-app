@@ -11,7 +11,7 @@ import Button from '@/components/common/Button';
 import { useUser } from '@/hooks/useUser';
 import ScreenContainer from '@/components/theme/ScreenContainer';
 import { useTheme } from '@/components/theme/theme';
-import { queryCollection, setDocument, getDocument } from '@/services/firestoreService';
+import { queryCollection, setDocument, getDocumentByPath } from '@/services/firestoreService';
 import { loadUserProfile, updateUserProfile } from '@/utils/userProfile';
 import type { UserProfile } from '../../../types';
 import { getAuthHeaders } from '@/utils/TokenManager';
@@ -131,7 +131,7 @@ export default function JoinOrganizationScreen() {
 
       setProfile(user ? { ...user, organizationId: undefined } as any : undefined as any);
 
-      const orgData = await getDocument(`organizations/${orgId}`);
+      const orgData = await getDocumentByPath(`organizations/${orgId}`);
       const members = (orgData?.members || []).filter((m: string) => m !== uid);
       await setDocument(`organizations/${orgId}`, { members });
     } catch (err: any) {
@@ -182,7 +182,7 @@ export default function JoinOrganizationScreen() {
 
       setProfile(user ? { ...user, organizationId: org.id } as any : undefined as any);
 
-      const orgData = await getDocument(`organizations/${org.id}`);
+      const orgData = await getDocumentByPath(`organizations/${org.id}`);
       const members = orgData?.members || [];
       await setDocument(`organizations/${org.id}`, {
         members: [...members, user.uid],

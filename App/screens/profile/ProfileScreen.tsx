@@ -17,7 +17,7 @@ import {
 import { listReligions, Religion, __debugReligions } from '@/lib/firestoreRest';
 import { getIdToken } from '@/utils/authUtils';
 import type { UserProfile } from '../../../types';
-import { getDocument } from '@/services/firestoreService';
+import { getDocumentByPath } from '@/services/firestoreService';
 import { useTheme } from '@/components/theme/theme';
 import { ensureAuth } from '@/utils/authGuard';
 import { useNavigation } from '@react-navigation/native';
@@ -90,7 +90,7 @@ export default function ProfileScreen() {
         if (profile.organizationName) {
           setOrganization(profile.organizationName);
         } else if (profile.organizationId) {
-          const org = await getDocument(`organizations/${profile.organizationId}`);
+          const org = await getDocumentByPath(`organizations/${profile.organizationId}`);
           setOrganization(org?.name || '');
         }
       }

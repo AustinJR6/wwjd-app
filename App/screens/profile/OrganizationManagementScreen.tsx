@@ -7,7 +7,7 @@ import {
   Alert,
   ActivityIndicator} from 'react-native';
 import Button from '@/components/common/Button';
-import { getDocument, setDocument } from '@/services/firestoreService';
+import { getDocumentByPath, setDocument } from '@/services/firestoreService';
 import { loadUserProfile } from '@/utils/userProfile';
 import { useUser } from '@/hooks/useUser';
 import { getAuthHeaders } from '@/utils/TokenManager';
@@ -106,7 +106,7 @@ export default function OrganizationManagementScreen() {
       const orgId = userSnap?.organizationId;
       if (!orgId) throw new Error('No organization found');
 
-      const orgSnap = await getDocument(`organizations/${orgId}`);
+      const orgSnap = await getDocumentByPath(`organizations/${orgId}`);
       setOrg({ id: orgId, ...orgSnap });
     } catch (err: any) {
       console.error('🔥 API Error:', err?.response?.data || err.message);
@@ -128,7 +128,7 @@ export default function OrganizationManagementScreen() {
     if (!authUid) return;
 
     try {
-      const orgData = await getDocument(`organizations/${org.id}`);
+      const orgData = await getDocumentByPath(`organizations/${org.id}`);
       const members = (orgData?.members || []).filter((m: string) => m !== uid);
       await setDocument(`organizations/${org.id}`, { members });
 

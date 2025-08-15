@@ -8,7 +8,22 @@ const PROJECT_ID = Constants.expoConfig?.extra?.EXPO_PUBLIC_FIREBASE_PROJECT_ID 
 if (!PROJECT_ID) {
   console.warn('⚠️ Missing EXPO_PUBLIC_FIREBASE_PROJECT_ID in .env');
 }
-const BASE = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents`;
+const BASE_URL = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)`;
+const BASE = `${BASE_URL}/documents`;
+
+// Encode only individual path segments, not the whole path
+function pathJoin(...segments: string[]) {
+  return segments
+    .filter(Boolean)
+    .map((s) => encodeURIComponent(s))
+    .join('/');
+}
+
+function decodeDoc(doc: any) {
+  const id = doc?.name?.split('/').pop();
+  const fields = fromFirestore(doc);
+  return { id, ...fields };
+}
 
 let lastToken: string | null = null;
 
@@ -99,7 +114,54 @@ async function logPermissionDetails(path: string) {
   console.warn(`🚫 Permission denied | uid: ${uid} | token: ${tokenPreview} | path: ${path}`);
 }
 
-export async function getDocument(path: string): Promise<any | null> {
+// List a root collection
+export async function listCollection<T = any>(collectionId: string, pageSize = 200): Promise<T[]> {
+  const url = `${BASE_URL}/documents/${encodeURIComponent(collectionId)}?pageSize=${pageSize}`;
+  const headers = await authHeaders();
+  console.log(
+    '[firestore:listCollection]',
+    url.replace(/(projects\/)[^/]+/, '$1<proj>'),
+    'auth=',
+    headers?.Authorization ? headers.Authorization.slice(0, 12) + '…' : 'none',
+  );
+  const { data } = await apiClient.get(url, { headers });
+  const docs = (data?.documents ?? []).map(decodeDoc);
+  console.log(`[firestore:listCollection] ${collectionId} docs:`, docs.length);
+  return docs as T[];
+}
+
+// Get a single document
+export async function getDocument<T = any>(collectionId: string, docId: string): Promise<T | null> {
+  const url = `${BASE_URL}/documents/${pathJoin(collectionId, docId)}`;
+  const headers = await authHeaders();
+  console.log(
+    '[firestore:getDocument]',
+    url.replace(/(projects\/)[^/]+/, '$1<proj>'),
+    'auth=',
+    headers?.Authorization ? headers.Authorization.slice(0, 12) + '…' : 'none',
+  );
+  const { data } = await apiClient.get(url, { headers });
+  return decodeDoc(data) as T;
+}
+
+// Structured query (if you use it elsewhere)
+export async function runQuery<T = any>(structuredQuery: any): Promise<T[]> {
+  const url = `${BASE_URL}/documents:runQuery`;
+  const headers = await authHeaders();
+  console.log(
+    '[firestore:runQuery]',
+    'auth=',
+    headers?.Authorization ? headers.Authorization.slice(0, 12) + '…' : 'none',
+  );
+  const { data } = await apiClient.post(url, { structuredQuery }, { headers });
+  const docs = (Array.isArray(data) ? data : [])
+    .filter((row: any) => row.document)
+    .map((row: any) => decodeDoc(row.document));
+  console.log('[firestore:runQuery] docs:', docs.length);
+  return docs as T[];
+}
+
+export async function getDocumentByPath(path: string): Promise<any | null> {
   warnIfInvalidPath(path, true);
   try {
     console.log('➡️ Firestore GET', path);
@@ -365,7 +427,7 @@ export async function getOrCreateActiveChallenge(
   uid: string,
 ): Promise<any> {
   const path = `users/${uid}/activeChallenge/current`;
-  let doc = await getDocument(path);
+  let doc = await getDocumentByPath(path);
   if (!doc) {
     doc = {
       challengeText: '',
