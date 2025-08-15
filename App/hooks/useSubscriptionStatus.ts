@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { getDocument } from '@/services/firestoreService';
+import { getDocumentByPath } from '@/services/firestoreService';
 
 export function useSubscriptionStatus(uid: string | null): {
   isPlus: boolean;
@@ -13,13 +13,13 @@ export function useSubscriptionStatus(uid: string | null): {
     if (!uid) return;
     setLoading(true);
     try {
-      const userDoc = await getDocument(`users/${uid}`);
+      const userDoc = await getDocumentByPath(`users/${uid}`);
       const usersIsSubscribed = userDoc?.isSubscribed;
       console.log('SUBS ▶ REST users.isSubscribed', usersIsSubscribed, 'fallback used?', usersIsSubscribed === undefined);
       if (typeof usersIsSubscribed === 'boolean') {
         setIsPlus(usersIsSubscribed);
       } else {
-        const subDoc = await getDocument(`subscriptions/${uid}`);
+        const subDoc = await getDocumentByPath(`subscriptions/${uid}`);
         const status = subDoc?.status;
         const active = status === 'active' || status === 'trialing';
         setIsPlus(active);

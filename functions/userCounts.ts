@@ -30,6 +30,12 @@ export const userCountsOnWrite = functions.firestore
     const before = change.before.exists ? change.before.data() : null;
     const after = change.after.exists ? change.after.data() : null;
 
+    const beforeRegion = normalizeId(before?.regionId ?? before?.region)?.toLowerCase();
+    const afterRegion = normalizeId(after?.regionId ?? after?.region)?.toLowerCase();
+    const beforeRel = normalizeId(before?.religionId ?? before?.religion);
+    const afterRel = normalizeId(after?.religionId ?? after?.religion);
+    console.log('[userCounts]', { uid, beforeRel, afterRel, beforeRegion, afterRegion });
+
     const jobs: Promise<void>[] = [];
 
     const log = (col: string, id: string, delta: number, reason: string) => {
@@ -37,16 +43,9 @@ export const userCountsOnWrite = functions.firestore
     };
 
     if (!before && after) {
-      const regionId = normalizeId(after.regionId ?? after.region)?.toLowerCase();
-      const religionId = normalizeId(after.religionId ?? after.religion);
-      if (regionId) jobs.push(adjustCount('regions', regionId, 1).then(() => log('regions', regionId, 1, 'create')));
-      if (religionId) jobs.push(adjustCount('religions', religionId, 1).then(() => log('religions', religionId, 1, 'create')));
+      if (afterRegion) jobs.push(adjustCount('regions', afterRegion, 1).then(() => log('regions', afterRegion, 1, 'create')));
+      if (afterRel) jobs.push(adjustCount('religions', afterRel, 1).then(() => log('religions', afterRel, 1, 'create')));
     } else if (before && after) {
-      const beforeRegion = normalizeId(before.regionId ?? before.region)?.toLowerCase();
-      const afterRegion = normalizeId(after.regionId ?? after.region)?.toLowerCase();
-      const beforeReligion = normalizeId(before.religionId ?? before.religion);
-      const afterReligion = normalizeId(after.religionId ?? after.religion);
-
       if (beforeRegion !== afterRegion) {
         if (beforeRegion)
           jobs.push(
@@ -61,33 +60,31 @@ export const userCountsOnWrite = functions.firestore
             ),
           );
       }
-      if (beforeReligion !== afterReligion) {
-        if (beforeReligion)
+      if (beforeRel !== afterRel) {
+        if (beforeRel)
           jobs.push(
-            adjustCount('religions', beforeReligion, -1).then(() =>
-              log('religions', beforeReligion, -1, 'update'),
+            adjustCount('religions', beforeRel, -1).then(() =>
+              log('religions', beforeRel, -1, 'update'),
             ),
           );
-        if (afterReligion)
+        if (afterRel)
           jobs.push(
-            adjustCount('religions', afterReligion, 1).then(() =>
-              log('religions', afterReligion, 1, 'update'),
+            adjustCount('religions', afterRel, 1).then(() =>
+              log('religions', afterRel, 1, 'update'),
             ),
           );
       }
     } else if (before && !after) {
-      const regionId = normalizeId(before.regionId ?? before.region)?.toLowerCase();
-      const religionId = normalizeId(before.religionId ?? before.religion);
-      if (regionId)
+      if (beforeRegion)
         jobs.push(
-          adjustCount('regions', regionId, -1).then(() =>
-            log('regions', regionId, -1, 'delete'),
+          adjustCount('regions', beforeRegion, -1).then(() =>
+            log('regions', beforeRegion, -1, 'delete'),
           ),
         );
-      if (religionId)
+      if (beforeRel)
         jobs.push(
-          adjustCount('religions', religionId, -1).then(() =>
-            log('religions', religionId, -1, 'delete'),
+          adjustCount('religions', beforeRel, -1).then(() =>
+            log('religions', beforeRel, -1, 'delete'),
           ),
         );
     }

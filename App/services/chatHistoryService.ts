@@ -1,7 +1,7 @@
 import {
   addDocument,
   querySubcollection,
-  getDocument,
+  getDocumentByPath,
   deleteDocument,
 } from '@/services/firestoreService';
 import { ensureAuth } from '@/utils/authGuard';
@@ -16,7 +16,7 @@ export interface ChatMessage {
 export async function isSubscribed(uid: string): Promise<boolean> {
   const storedUid = await ensureAuth(uid);
   if (!storedUid) return false;
-  const userDoc = await getDocument(`users/${storedUid}`);
+  const userDoc = await getDocumentByPath(`users/${storedUid}`);
   const usersIsSubscribed = userDoc?.isSubscribed;
   console.log(
     'SUBS ▶ REST users.isSubscribed',
@@ -25,7 +25,7 @@ export async function isSubscribed(uid: string): Promise<boolean> {
     usersIsSubscribed === undefined,
   );
   if (typeof usersIsSubscribed === 'boolean') return usersIsSubscribed;
-  const subDoc = await getDocument(`subscriptions/${storedUid}`);
+  const subDoc = await getDocumentByPath(`subscriptions/${storedUid}`);
   const status = subDoc?.status;
   return status === 'active' || status === 'trialing';
 }

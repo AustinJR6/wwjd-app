@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { fetchRegionList, RegionItem } from '../../regionRest';
 import { fetchReligions, Religion } from '@/services/lookupService';
+import { useAuth } from '@/hooks/useAuth';
 
 const FALLBACK_REGION: RegionItem = { id: 'unknown', name: 'Unknown' };
 
@@ -9,9 +10,11 @@ export function useLookupLists() {
   const [regionsLoading, setRegionsLoading] = useState(true);
   const [regionsError, setRegionsError] = useState<string | null>(null);
 
-  const [religions, setReligions] = useState<Religion[]>([]);
+  const [religions, setReligions] = useState<Religion[] | null>(null);
   const [religionsLoading, setReligionsLoading] = useState(false);
   const [religionsError, setReligionsError] = useState<string | null>(null);
+
+  const { user, initializing } = useAuth();
 
   useEffect(() => {
     let isMounted = true;
@@ -37,14 +40,18 @@ export function useLookupLists() {
   }, []);
 
   useEffect(() => {
+    if (initializing || !user) return;
     let mounted = true;
     (async () => {
       try {
         setReligionsLoading(true);
-        const list = await fetchReligions();
-        if (mounted) setReligions(list);
+        const data = await fetchReligions();
+        if (mounted) setReligions(data);
       } catch (e: any) {
-        if (mounted) setReligionsError(e?.message ?? 'Failed to load religions');
+        if (mounted)
+          setReligionsError(
+            e?.response?.data?.error?.message || e?.message || 'Failed to load religions'
+          );
       } finally {
         if (mounted) setReligionsLoading(false);
       }
@@ -52,7 +59,7 @@ export function useLookupLists() {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [initializing, user]);
 
   const loading = regionsLoading || religionsLoading;
   return {

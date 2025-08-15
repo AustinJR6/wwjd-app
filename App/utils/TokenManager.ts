@@ -1,4 +1,4 @@
-import { getDocument, setDocument } from '@/services/firestoreService';
+import { getDocumentByPath, setDocument } from '@/services/firestoreService';
 import { updateUserProfile } from './userProfile';
 import { ensureAuth } from '@/utils/authGuard';
 
@@ -6,7 +6,7 @@ export const getTokenCount = async () => {
   const uid = await ensureAuth();
   if (!uid) return 0;
   try {
-    const snapshot = await getDocument(`users/${uid}`);
+    const snapshot = await getDocumentByPath(`users/${uid}`);
     const count = snapshot?.tokens ?? 0;
     console.log('🪙 Token count:', count);
     return count;
@@ -35,7 +35,7 @@ export const canUseFreeAsk = async () => {
   const uid = await ensureAuth();
   if (!uid) return false;
 
-  const snapshot = await getDocument(`freeAsk/${uid}`);
+  const snapshot = await getDocumentByPath(`freeAsk/${uid}`);
   if (!snapshot) return true;
   const lastUsed = snapshot.date ? new Date(snapshot.date) : null;
   if (!lastUsed) return true;
@@ -57,7 +57,7 @@ export const syncSubscriptionStatus = async () => {
   const uid = await ensureAuth();
   if (!uid) return;
   try {
-    const userDoc = await getDocument(`users/${uid}`);
+    const userDoc = await getDocumentByPath(`users/${uid}`);
     const usersIsSubscribed = userDoc?.isSubscribed;
     console.log(
       'SUBS ▶ REST users.isSubscribed',
@@ -69,7 +69,7 @@ export const syncSubscriptionStatus = async () => {
     if (typeof usersIsSubscribed === 'boolean') {
       isSubscribed = usersIsSubscribed;
     } else {
-      const subDoc = await getDocument(`subscriptions/${uid}`);
+      const subDoc = await getDocumentByPath(`subscriptions/${uid}`);
       const status = subDoc?.status;
       isSubscribed = status === 'active' || status === 'trialing';
     }
