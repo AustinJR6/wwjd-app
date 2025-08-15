@@ -2,13 +2,15 @@ import apiClient from '@/utils/apiClient';
 import { getIdToken, getCurrentUserId } from '@/utils/authUtils';
 import { showPermissionDeniedForPath } from '@/utils/gracefulError';
 import { logFirestoreError } from '@/lib/logging';
-import Constants from 'expo-constants';
+import { FIREBASE_PROJECT_ID } from '@/config/env';
 
-const PROJECT_ID = Constants.expoConfig?.extra?.EXPO_PUBLIC_FIREBASE_PROJECT_ID || '';
-if (!PROJECT_ID) {
-  console.warn('⚠️ Missing EXPO_PUBLIC_FIREBASE_PROJECT_ID in .env');
-}
+console.log('[firestore] project set?', !!FIREBASE_PROJECT_ID);
+
+const PROJECT_ID = FIREBASE_PROJECT_ID;
 const BASE_URL = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)`;
+if (!PROJECT_ID) {
+  throw new Error('[firestore] Missing FIREBASE_PROJECT_ID');
+}
 const BASE = `${BASE_URL}/documents`;
 
 // Encode only individual path segments, not the whole path
@@ -367,11 +369,11 @@ export async function fetchTopUsersByPoints(limit = 10): Promise<any[]> {
 
 export async function fetchTopReligions(limit = 10): Promise<any[]> {
   const query = {
-    from: [{ collectionId: 'religion' }],
+    from: [{ collectionId: 'religions' }],
     orderBy: [{ field: { fieldPath: 'totalPoints' }, direction: 'DESCENDING' }],
     limit,
   };
-  console.warn('📄 Structured query path:', 'religion');
+  console.warn('📄 Structured query path:', 'religions');
   console.warn('🔍 Structured query filters:', {
     orderBy: query.orderBy,
     limit,

@@ -9,25 +9,24 @@ import {
 import axios from 'axios';
 import { fetchTopUsersByPoints } from '@/services/firestoreService';
 import { logFirestoreError } from '@/lib/logging';
-import Constants from 'expo-constants';
 import { showGracefulError } from '@/utils/gracefulError';
+import { FIREBASE_PROJECT_ID } from '@/config/env';
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { useTheme } from "@/components/theme/theme";
 import { ensureAuth } from '@/utils/authGuard';
 import AuthGate from '@/components/AuthGate';
 import { useAuth } from '@/hooks/useAuth';
 
-const PROJECT_ID =
-  Constants.expoConfig?.extra?.EXPO_PUBLIC_FIREBASE_PROJECT_ID || '';
+const PROJECT_ID = FIREBASE_PROJECT_ID;
 if (!PROJECT_ID) {
-  console.warn('⚠️ Missing EXPO_PUBLIC_FIREBASE_PROJECT_ID in .env');
+  console.warn('⚠️ Missing FIREBASE_PROJECT_ID');
 }
 
 async function fetchTopReligions(idToken: string) {
   const url = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents:runQuery`;
   const payload = {
     structuredQuery: {
-      from: [{ collectionId: 'religion' }],
+      from: [{ collectionId: 'religions' }],
       orderBy: [
         { field: { fieldPath: 'totalPoints' }, direction: 'DESCENDING' },
       ],
@@ -50,7 +49,7 @@ async function fetchTopReligions(idToken: string) {
         totalPoints: parseInt(doc.fields?.totalPoints?.integerValue || '0'),
       }));
   } catch (err: any) {
-    logFirestoreError('QUERY', 'runQuery religion', err);
+    logFirestoreError('QUERY', 'runQuery religions', err);
     throw err;
   }
 }
