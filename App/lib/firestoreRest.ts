@@ -1,8 +1,10 @@
 // app/lib/firestoreRest.ts
 // Client-side Firestore REST helper (no Firebase SDK). TypeScript + safe for Expo builds.
 
-const PROJECT_ID = process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID!;
-const API_KEY = process.env.EXPO_PUBLIC_FIREBASE_WEB_API_KEY!;
+import { FIREBASE_PROJECT_ID, FIREBASE_WEB_API_KEY } from '@/config/env';
+
+const PROJECT_ID = FIREBASE_PROJECT_ID;
+const API_KEY = FIREBASE_WEB_API_KEY;
 
 if (!PROJECT_ID || !API_KEY) {
   throw new Error(
@@ -149,8 +151,8 @@ export async function listReligions(params?: {
   const idToken = params?.idToken;
 
   const url = idToken
-    ? `${BASE_URL}/religion?pageSize=200`
-    : `${BASE_URL}/religion?pageSize=200&key=${API_KEY}`;
+    ? `${BASE_URL}/religions?pageSize=200`
+    : `${BASE_URL}/religions?pageSize=200&key=${API_KEY}`;
 
   try {
     const res = await fetch(url, {
@@ -185,8 +187,8 @@ export async function listReligions(params?: {
 export async function getReligionById(id: string, idToken?: string): Promise<Religion | null> {
   try {
     const url = idToken
-      ? `${BASE_URL}/religion/${encodeURIComponent(id)}`
-      : `${BASE_URL}/religion/${encodeURIComponent(id)}?key=${API_KEY}`;
+      ? `${BASE_URL}/religions/${encodeURIComponent(id)}`
+      : `${BASE_URL}/religions/${encodeURIComponent(id)}?key=${API_KEY}`;
 
     const res = await fetch(url, {
       headers: idToken ? { Authorization: `Bearer ${idToken}` } : undefined,
@@ -210,7 +212,7 @@ export async function __debugReligions(idToken?: string) {
     const projectId = process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID;
     const key = process.env.EXPO_PUBLIC_FIREBASE_WEB_API_KEY;
     const base = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents`;
-    const url = idToken ? `${base}/religion?pageSize=50` : `${base}/religion?pageSize=50&key=${key}`;
+    const url = idToken ? `${base}/religions?pageSize=50` : `${base}/religions?pageSize=50&key=${key}`;
 
     const res = await fetch(url, { headers: idToken ? { Authorization: `Bearer ${idToken}` } : undefined });
     const text = await res.text();

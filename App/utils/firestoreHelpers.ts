@@ -40,6 +40,7 @@ function toFirestoreFields(obj: any): any {
 export async function updateUserProfile(
   uidOrFields: string | Record<string, any>,
   maybeFields?: Record<string, any>,
+  _options?: { merge?: boolean },
 ) {
   const uid =
     typeof uidOrFields === 'string'

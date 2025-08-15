@@ -12,7 +12,8 @@ import TextField from '@/components/TextField';
 import Button from '@/components/common/Button';
 import { Picker } from '@react-native-picker/picker';
 import { useLookupLists } from '@/hooks/useLookupLists';
-import { updateUserProfile, loadUserProfile } from '@/utils/userProfile';
+import { updateUserProfile } from '@/utils/firestoreHelpers';
+import { loadUserProfile } from '@/utils/userProfile';
 import { useUserProfileStore } from '@/state/userProfile';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -96,7 +97,7 @@ export default function ProfileCompletionScreen() {
       if (pronouns.trim()) payload.pronouns = pronouns.trim();
       if (avatarURL.trim()) payload.avatarURL = avatarURL.trim();
       console.log('[profile-save] setting religionId=', religionId);
-      await updateUserProfile(payload, uid);
+      await updateUserProfile(uid, payload, { merge: true });
       await profileStore.refreshUserProfile();
       navigation.reset({ index: 0, routes: [{ name: 'MainTabs' }] });
     } catch (err: any) {

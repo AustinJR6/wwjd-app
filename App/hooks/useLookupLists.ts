@@ -1,12 +1,11 @@
 import { useEffect, useState } from 'react';
-import { fetchRegionList, RegionItem } from '../../regionRest';
-import { fetchReligions, Religion } from '@/services/lookupService';
+import { fetchReligions, Religion, fetchRegions, Region } from '@/services/lookupService';
 import { useAuth } from '@/hooks/useAuth';
 
-const FALLBACK_REGION: RegionItem = { id: 'unknown', name: 'Unknown' };
+const FALLBACK_REGION: Region = { id: 'unknown', name: 'Unknown' };
 
 export function useLookupLists() {
-  const [regions, setRegions] = useState<RegionItem[]>([]);
+  const [regions, setRegions] = useState<Region[]>([]);
   const [regionsLoading, setRegionsLoading] = useState(true);
   const [regionsError, setRegionsError] = useState<string | null>(null);
 
@@ -17,32 +16,23 @@ export function useLookupLists() {
   const { user, initializing } = useAuth();
 
   useEffect(() => {
-    let isMounted = true;
-    const loadRegions = async () => {
+    if (initializing || !user) return;
+    let mounted = true;
+    (async () => {
       try {
-        const rgns = await fetchRegionList();
-        if (!isMounted) return;
-        setRegions(rgns.length ? rgns : [FALLBACK_REGION]);
+        setRegionsLoading(true);
+        const rgns = await fetchRegions();
+        if (mounted) setRegions(rgns.length ? rgns : [FALLBACK_REGION]);
       } catch (err: any) {
-        if (isMounted) {
-          console.warn('Failed to load region list', err);
+        if (mounted) {
+          console.warn('Failed to load regions', err);
           setRegions([FALLBACK_REGION]);
           setRegionsError(err?.message ?? 'Failed to load regions');
         }
       } finally {
-        if (isMounted) setRegionsLoading(false);
+        if (mounted) setRegionsLoading(false);
       }
-    };
-    loadRegions();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
 
-  useEffect(() => {
-    if (initializing || !user) return;
-    let mounted = true;
-    (async () => {
       try {
         setReligionsLoading(true);
         const data = await fetchReligions();

@@ -13,7 +13,7 @@ export async function incrementUserReligionOrgPoints(uid: string, points: number
 
   await db.runTransaction(async (t: any) => {
     if (religion) {
-      const ref = db.collection('religion').doc(religion);
+      const ref = db.collection('religions').doc(religion);
       const snap = await t.get(ref);
       const current = snap.exists ? (snap.data()?.totalPoints || 0) : 0;
       t.set(ref, { name: religion, totalPoints: current + points }, { merge: true });
