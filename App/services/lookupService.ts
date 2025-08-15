@@ -13,5 +13,7 @@ export type Region = { id: string; name: string };
 
 export async function fetchRegions(): Promise<Region[]> {
   const docs = await listCollection<Region>('regions', 100);
-  return docs.filter((d) => d?.id && d?.name);
+  return docs
+    .filter((d) => d?.id && d?.name)
+    .sort((a, b) => (a.name ?? '').localeCompare(b.name ?? ''));
 }
