@@ -31,7 +31,7 @@ export function usePaymentFlow() {
   // ...existing code...
 
   // New Stripe Checkout subscription flow
-  async function startSubscriptionCheckoutFlow(): Promise<boolean> {
+  async function startSubscriptionCheckoutFlow(p0: { mode: string; amount: number; }): Promise<boolean> {
     try {
       const uid = await getCurrentUserId();
       if (!uid) {

@@ -64,6 +64,9 @@ export async function createStripeCheckout(
         headers,
       }) as unknown as Promise<Axios.AxiosXHR<StripeCheckoutResponse>>
     );
+    if (!res.data.url) {
+      throw new Error('Checkout URL is undefined');
+    }
     return res.data.url;
   } catch (err: any) {
     console.warn('❌ Firestore REST error on createStripeCheckout:', err.response?.data || err.message);

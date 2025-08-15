@@ -15,7 +15,7 @@ type Props = { navigation: NativeStackNavigationProp<RootStackParamList, 'MainTa
 
 export default function GiveBackScreen({ navigation }: Props) {
   const theme = useTheme();
-  const { startPaymentFlow } = usePaymentFlow();
+  const { startSubscriptionCheckoutFlow: startPaymentFlow } = usePaymentFlow();
   const styles = React.useMemo(
     () =>
       StyleSheet.create({
