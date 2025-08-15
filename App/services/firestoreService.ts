@@ -2,15 +2,13 @@ import apiClient from '@/utils/apiClient';
 import { getIdToken, getCurrentUserId } from '@/utils/authUtils';
 import { showPermissionDeniedForPath } from '@/utils/gracefulError';
 import { logFirestoreError } from '@/lib/logging';
-import { FIREBASE_PROJECT_ID } from '@/config/env';
 
-console.log('[firestore] project set?', !!FIREBASE_PROJECT_ID);
-
-const PROJECT_ID = FIREBASE_PROJECT_ID;
-const BASE_URL = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)`;
+const PROJECT_ID = (process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID || '').trim();
+console.log('[env] PROJECT_ID=', PROJECT_ID);
 if (!PROJECT_ID) {
-  throw new Error('[firestore] Missing FIREBASE_PROJECT_ID');
+  throw new Error('[firestore] Missing EXPO_PUBLIC_FIREBASE_PROJECT_ID');
 }
+const BASE_URL = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)`;
 const BASE = `${BASE_URL}/documents`;
 
 // Encode only individual path segments, not the whole path
@@ -102,6 +100,16 @@ async function authHeaders() {
   return { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
 }
 
+function logRequest(method: string, url: string, headers: Record<string, any>) {
+  console.log(
+    '[firestore]',
+    method,
+    url.replace(/(projects\/)[^/]+/, '$1<proj>'),
+    'auth=',
+    headers?.Authorization ? (headers.Authorization as string).slice(0, 8) : 'none',
+  );
+}
+
 async function logPermissionDetails(path: string) {
   const uid = await getCurrentUserId();
   const tokenPreview = lastToken ? lastToken.slice(0, 8) : 'none';
@@ -118,14 +126,9 @@ async function logPermissionDetails(path: string) {
 
 // List a root collection
 export async function listCollection<T = any>(collectionId: string, pageSize = 200): Promise<T[]> {
-  const url = `${BASE_URL}/documents/${encodeURIComponent(collectionId)}?pageSize=${pageSize}`;
+  const url = `${BASE_URL}/documents/${pathJoin(collectionId)}?pageSize=${pageSize}`;
   const headers = await authHeaders();
-  console.log(
-    '[firestore] GET',
-    url.replace(/(projects\/)[^/]+/, '$1<proj>'),
-    'auth=',
-    headers?.Authorization ? headers.Authorization.slice(0, 12) + '…' : 'none',
-  );
+  logRequest('GET', url, headers);
   const { data } = await apiClient.get(url, { headers });
   const docs = (data?.documents ?? []).map(decodeDoc);
   console.log('[firestore:listCollection]', collectionId, 'docs:', docs.length);
@@ -136,12 +139,7 @@ export async function listCollection<T = any>(collectionId: string, pageSize = 2
 export async function getDocument<T = any>(collectionId: string, docId: string): Promise<T | null> {
   const url = `${BASE_URL}/documents/${pathJoin(collectionId, docId)}`;
   const headers = await authHeaders();
-  console.log(
-    '[firestore] GET',
-    url.replace(/(projects\/)[^/]+/, '$1<proj>'),
-    'auth=',
-    headers?.Authorization ? headers.Authorization.slice(0, 12) + '…' : 'none',
-  );
+  logRequest('GET', url, headers);
   const { data } = await apiClient.get(url, { headers });
   return decodeDoc(data) as T;
 }
@@ -150,11 +148,7 @@ export async function getDocument<T = any>(collectionId: string, docId: string):
 export async function runQuery<T = any>(structuredQuery: any): Promise<T[]> {
   const url = `${BASE_URL}/documents:runQuery`;
   const headers = await authHeaders();
-  console.log(
-    '[firestore:runQuery]',
-    'auth=',
-    headers?.Authorization ? headers.Authorization.slice(0, 12) + '…' : 'none',
-  );
+  logRequest('POST', url, headers);
   const { data } = await apiClient.post(url, { structuredQuery }, { headers });
   const docs = (Array.isArray(data) ? data : [])
     .filter((row: any) => row.document)
@@ -168,12 +162,7 @@ export async function getDocumentByPath(path: string): Promise<any | null> {
   try {
     const url = `${BASE}/${path}`;
     const headers = await authHeaders();
-    console.log(
-      '[firestore] GET',
-      url.replace(/(projects\/)[^/]+/, '$1<proj>'),
-      'auth=',
-      headers?.Authorization ? headers.Authorization.slice(0, 12) + '…' : 'none',
-    );
+    logRequest('GET', url, headers);
     const res = await apiClient.get(url, { headers });
     return fromFirestore(res.data);
   } catch (err: any) {
@@ -221,8 +210,9 @@ export async function setDocument(
     if (options?.requireExists) {
       url += maskParams ? '&currentDocument.exists=true' : '?currentDocument.exists=true';
     }
-    console.log('➡️ Firestore SET', path, data);
-    await apiClient.patch(url, body, { headers: await authHeaders() });
+    const headers = await authHeaders();
+    logRequest('PATCH', url, headers);
+    await apiClient.patch(url, body, { headers });
   } catch (err: any) {
     logFirestoreError('SET', path, err);
     if (err.response?.status === 403) {
@@ -242,10 +232,10 @@ export async function addDocument(collectionPath: string, data: any): Promise<st
   warnIfInvalidPath(collectionPath, false);
   try {
     const body = { fields: toFirestoreFields(data) };
-    console.log('➡️ Firestore ADD', collectionPath, data);
-    const res = await apiClient.post(`${BASE}/${collectionPath}`, body, {
-      headers: await authHeaders(),
-    });
+    const url = `${BASE}/${collectionPath}`;
+    const headers = await authHeaders();
+    logRequest('POST', url, headers);
+    const res = await apiClient.post(url, body, { headers });
     const resData = res.data as { name: string };
     const parts = resData.name.split('/');
     return parts[parts.length - 1];
@@ -263,8 +253,10 @@ export async function addDocument(collectionPath: string, data: any): Promise<st
 export async function deleteDocument(path: string): Promise<void> {
   warnIfInvalidPath(path, true);
   try {
-    console.log('➡️ Firestore DELETE', path);
-    await apiClient.delete(`${BASE}/${path}`, { headers: await authHeaders() });
+    const url = `${BASE}/${path}`;
+    const headers = await authHeaders();
+    logRequest('DELETE', url, headers);
+    await apiClient.delete(url, { headers });
   } catch (err: any) {
     logFirestoreError('DELETE', path, err);
     if (err.response?.status === 403) {
@@ -289,10 +281,10 @@ export async function queryCollection(
   const needsQuery = options && (options.orderByField || options.limit || options.startAfter);
   if (!needsQuery) {
     try {
-      console.log('➡️ Firestore QUERY', collectionPath);
-      const res = await apiClient.get(`${BASE}/${collectionPath}`, {
-        headers: await authHeaders(),
-      });
+      const url = `${BASE}/${collectionPath}`;
+      const headers = await authHeaders();
+      logRequest('GET', url, headers);
+      const res = await apiClient.get(url, { headers });
       const docs = (res.data as any).documents || [];
       return docs.map((d: any) => ({ id: d.name.split('/').pop(), ...fromFirestore(d) }));
     } catch (err: any) {
@@ -334,10 +326,9 @@ export async function queryCollection(
 export async function runStructuredQuery(query: any): Promise<any[]> {
   const url = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents:runQuery`;
   try {
-    console.log('➡️ Firestore RUNQUERY', JSON.stringify(query));
-    const res = await apiClient.post(url, { structuredQuery: query }, {
-      headers: await authHeaders(),
-    });
+    const headers = await authHeaders();
+    logRequest('POST', url, headers);
+    const res = await apiClient.post(url, { structuredQuery: query }, { headers });
     const docs = Array.isArray(res.data) ? (res.data as any[]) : [];
     return docs
       .filter((d: any) => d.document)

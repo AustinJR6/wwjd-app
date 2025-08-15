@@ -20,6 +20,10 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/navigation/RootStackParamList';
 import { useTheme } from '@/components/theme/theme';
 import { useAuth } from '@/hooks/useAuth';
+import type { Religion, Region } from '@/services/lookupService';
+
+const FALLBACK_RELIGIONS: Religion[] = [{ id: 'spiritual', name: 'Spiritual' }];
+const FALLBACK_REGIONS: Region[] = [{ id: 'unknown', name: 'Unknown' }];
 
 export default function ProfileCompletionScreen() {
   const { uid } = useAuth();
@@ -31,11 +35,10 @@ export default function ProfileCompletionScreen() {
     religions,
     religionsLoading,
     religionsError,
-    loading,
   } = useLookupLists();
   const theme = useTheme();
 
-  const [region, setRegion] = useState('');
+  const [regionId, setRegionId] = useState('');
   const profileStore = useUserProfileStore();
   const profile = profileStore.profile;
   const [religionId, setReligionId] = useState(profile?.religionId ?? '');
@@ -56,14 +59,14 @@ export default function ProfileCompletionScreen() {
     loadProfile();
   }, [uid]);
 
-  // Initialize defaults once lists are available
-  useEffect(() => {
-    if (!region && regions.length) setRegion(regions[0].name);
-  }, [regions, region]);
+  const religionOptions = useMemo(
+    () => (__DEV__ && religionsError ? FALLBACK_RELIGIONS : religions ?? []),
+    [religions, religionsError]
+  );
 
-  const regionItems = useMemo(
-    () => regions.map((r: { name: any }) => ({ label: r.name, value: r.name })),
-    [regions]
+  const regionOptions = useMemo(
+    () => (__DEV__ && regionsError ? FALLBACK_REGIONS : regions),
+    [regions, regionsError]
   );
 
   const handleSubmit = async () => {
@@ -73,8 +76,8 @@ export default function ProfileCompletionScreen() {
     const hasDisplay = existing?.displayName && existing.displayName.trim();
     const hasUsername = existing?.username && existing.username.trim();
 
-    if (!region || !religionId) {
-      Alert.alert('Missing Info', 'Please select a region and religion.');
+    if (!religionId) {
+      Alert.alert('Missing Info', 'Please select a religion.');
       return;
     }
     if (!hasDisplay || !hasUsername || !preferredName.trim()) {
@@ -83,17 +86,14 @@ export default function ProfileCompletionScreen() {
     }
 
     setIsLoading(true);
-    try {
-      // Persist both for now: religionId (new) + religion (legacy mirror)
-      const payload: Record<string, any> = {
-        region,
-        regionId: region.toLowerCase(),
-        religionId,
-        religion: religionId,
-        preferredName: preferredName.trim(),
-        onboardingComplete: true,
-        profileComplete: true,
-      };
+      try {
+        const payload: Record<string, any> = {
+          religionId,
+          preferredName: preferredName.trim(),
+          onboardingComplete: true,
+          profileComplete: true,
+        };
+      if (regionId) payload.regionId = regionId;
       if (pronouns.trim()) payload.pronouns = pronouns.trim();
       if (avatarURL.trim()) payload.avatarURL = avatarURL.trim();
       console.log('[profile-save] setting religionId=', religionId);
@@ -136,14 +136,6 @@ export default function ProfileCompletionScreen() {
     [theme]
   );
 
-  if (loading) {
-    return (
-      <ScreenContainer>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
-      </ScreenContainer>
-    );
-  }
-
   return (
     <ScreenContainer>
       <ScrollView contentContainerStyle={{ paddingBottom: theme.spacing.lg }}>
@@ -169,25 +161,29 @@ export default function ProfileCompletionScreen() {
 
         <CustomText style={{ marginBottom: 8 }}>Select your region:</CustomText>
         <View style={styles.pickerWrapper}>
-          <Picker
-            selectedValue={region}
-            onValueChange={(v) => setRegion(v)}
-            style={styles.picker}
-          >
-            {regionItems.map((r: { value: unknown; label: string | undefined; }) => (
-              <Picker.Item key={String(r.value)} label={r.label} value={r.value} />
-            ))}
-          </Picker>
+          {regionsLoading ? (
+            <ActivityIndicator />
+          ) : (
+            <Picker
+              selectedValue={regionId}
+              onValueChange={(v) => setRegionId(v)}
+              style={styles.picker}
+            >
+              <Picker.Item label="Select a region..." value="" />
+              {regionOptions.map((r) => (
+                <Picker.Item key={r.id} label={r.name} value={r.id} />
+              ))}
+            </Picker>
+          )}
         </View>
+        {regionsError && (
+          <CustomText style={{ color: 'tomato' }}>{regionsError}</CustomText>
+        )}
 
         <CustomText style={{ marginBottom: 8 }}>Choose your spiritual lens:</CustomText>
         <View style={styles.pickerWrapper}>
           {religionsLoading ? (
             <ActivityIndicator />
-          ) : religionsError ? (
-            <CustomText style={{ color: 'tomato' }}>
-              Couldn’t load religions — {religionsError}
-            </CustomText>
           ) : (
             <Picker
               selectedValue={religionId}
@@ -196,12 +192,15 @@ export default function ProfileCompletionScreen() {
               mode="dropdown"
             >
               <Picker.Item label="Select a religion…" value="" />
-              {(religions ?? []).map((r) => (
+              {religionOptions.map((r) => (
                 <Picker.Item key={r.id} label={r.name} value={r.id} />
               ))}
             </Picker>
           )}
         </View>
+        {religionsError && (
+          <CustomText style={{ color: 'tomato' }}>{religionsError}</CustomText>
+        )}
 
         <View style={styles.buttonWrap}>
           <Button
