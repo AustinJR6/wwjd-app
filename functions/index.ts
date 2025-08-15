@@ -4,6 +4,10 @@ import { Request, Response } from 'express';
 import Stripe from 'stripe';
 import * as dotenv from 'dotenv';
 import * as logger from 'firebase-functions/logger';
+import { onRequest, onCall } from 'firebase-functions/v2/https';
+import { STRIPE_SECRET_KEY as STRIPE_SECRET } from './params';
+import { getStripe } from './stripeClient';
+import { getOrCreateStripeCustomer } from './stripeHelpers';
 // Initialize Firebase Admin if not already initialized
 if (!admin.apps.length) {
   admin.initializeApp();
@@ -40,7 +44,6 @@ import {
   verifyAuth,
   extractAuthToken,
 } from "./helpers";
-import { upsertSubscriptionFromStripe } from './stripeWebhooks';
 
 
 function logTokenVerificationError(context: string, token: string | undefined, err: any) {
@@ -174,39 +177,6 @@ if (!process.env.STRIPE_SUB_PRICE_ID) {
   logger.warn("⚠️ Missing STRIPE_SUB_PRICE_ID in .env");
 }
 
-if (!STRIPE_SECRET_KEY) {
-  logger.error(
-    "❌ STRIPE_SECRET_KEY missing. Set this in your environment."
-  );
-} else {
-  logger.info("✅ Stripe key loaded");
-}
-
-const stripe = new Stripe(STRIPE_SECRET_KEY, {
-  apiVersion: "2023-10-16",
-} as any);
-
-export async function getOrCreateStripeCustomer(
-  uid: string,
-  email?: string,
-): Promise<string> {
-  const userRef = db.collection("users").doc(uid);
-  const snap = await userRef.get();
-  let customerId = snap.exists
-    ? ((snap.data() as any)?.stripeCustomerId as string | undefined)
-    : undefined;
-
-  if (!customerId) {
-    const customer = await stripe.customers.create({
-      email,
-      metadata: { uid },
-    });
-    customerId = customer.id;
-    await userRef.set({ stripeCustomerId: customerId }, { merge: true });
-  }
-
-  return customerId;
-}
 
 async function addTokens(uid: string, amount: number): Promise<void> {
   const userRef = db.collection("users").doc(uid);
@@ -1108,6 +1078,7 @@ export const startSubscriptionCheckout = functions
     return;
   }
 
+  const stripe = getStripe();
   try {
     if (authData.uid !== uid) {
       logger.warn("⚠️ UID mismatch between token and payload");
@@ -1173,6 +1144,7 @@ export const startOneTimeTokenCheckout = functions
     return;
   }
 
+  const stripe = getStripe();
   try {
     if (authData.uid !== userId) {
       logger.warn("⚠️ UID mismatch between token and payload");
@@ -1224,6 +1196,7 @@ export const startTokenCheckout = functions
     return;
   }
 
+  const stripe = getStripe();
   try {
     if (authData.uid !== uid) {
       logger.warn("⚠️ UID mismatch between token and payload");
@@ -1249,70 +1222,52 @@ export const startTokenCheckout = functions
   }
 }));
 
-export const createCheckoutSession = functions
-  .https.onRequest(withCors(async (req: Request, res: Response) => {
-    logger.info('createCheckoutSession payload', req.body);
+export const createCheckoutSession = onRequest(
+  { secrets: [STRIPE_SECRET], cors: true },
+  async (req: Request, res: Response) => {
+    console.info('createCheckoutSession payload', req.body);
     const { uid, priceId, tokenAmount } = req.body || {};
 
     if (!uid || !priceId) {
-      logger.warn('⚠️ Missing uid or priceId', { uid, priceId });
+      console.error('createCheckoutSession.missing', { uid, priceId });
       res.status(400).json({ error: 'Missing required fields' });
       return;
     }
     const cleanId = cleanPriceId(priceId);
 
     if (typeof tokenAmount !== 'number' || tokenAmount <= 0) {
-      logger.warn('⚠️ Missing or invalid tokenAmount', { tokenAmount });
+      console.error('createCheckoutSession.invalidTokenAmount', { tokenAmount });
       res.status(400).json({ error: 'tokenAmount required' });
       return;
     }
 
     const allowedTokenAmounts = [20, 50, 100];
     if (!allowedTokenAmounts.includes(tokenAmount)) {
-      logger.warn('⚠️ Invalid tokenAmount value', { tokenAmount });
+      console.error('createCheckoutSession.invalidValue', { tokenAmount });
       res.status(400).json({ error: 'Invalid tokenAmount' });
       return;
     }
 
-    const stripeSecret = functions.config().stripe?.secret;
-    if (!stripeSecret) {
-      logger.error('Stripe secret not configured');
-      res.status(500).json({ error: 'Stripe not configured' });
-      return;
-    }
-
-    const stripeClient = new Stripe(stripeSecret, { apiVersion: '2023-10-16' } as any);
+    const stripe = getStripe();
 
     try {
-      const userRef = db.collection('users').doc(uid);
-      const snap = await userRef.get();
-      let customerId = (snap.data() as any)?.stripeCustomerId as string | undefined;
-      if (!customerId) {
-        const userRecord = await auth.getUser(uid);
-        const customer = await stripeClient.customers.create({
-          email: userRecord.email ?? undefined,
-          metadata: { uid },
-        });
-        customerId = customer.id;
-        await userRef.set({ stripeCustomerId: customerId }, { merge: true });
-        logger.info('Stripe customer created', { uid, customerId });
-      } else {
-        logger.info('Stripe customer reused', { uid, customerId });
-      }
+      const userRecord = await auth.getUser(uid).catch(() => null);
+      const email = userRecord?.email || undefined;
+      const customerId = await getOrCreateStripeCustomer(uid, email);
 
-      const ephemeralKey = await stripeClient.ephemeralKeys.create(
+      const ephemeralKey = await stripe.ephemeralKeys.create(
         { customer: customerId },
         { apiVersion: '2023-10-16' }
       );
 
-      const price = await stripeClient.prices.retrieve(cleanId);
+      const price = await stripe.prices.retrieve(cleanId);
       const amount = price.unit_amount;
       if (!amount) {
         res.status(400).json({ error: 'Unable to resolve price amount' });
         return;
       }
 
-      const intent = await stripeClient.paymentIntents.create({
+      const intent = await stripe.paymentIntents.create({
         amount,
         currency: price.currency,
         customer: customerId,
@@ -1324,207 +1279,64 @@ export const createCheckoutSession = functions
         automatic_payment_methods: { enabled: true },
       });
 
-      const clientSecret = intent.client_secret;
-      const ephSecret = ephemeralKey.secret;
+      await db
+        .collection('users')
+        .doc(uid)
+        .collection('transactions')
+        .doc(intent.id)
+        .set(
+          {
+            type: 'token',
+            tokenAmount,
+            amount,
+            currency: price.currency,
+            paymentIntentId: intent.id,
+            status: intent.status,
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          },
+          { merge: true }
+        );
 
-      if (!clientSecret || !ephSecret || !customerId) {
-        logger.error('Missing Stripe values for checkout session', {
-          clientSecret: !!clientSecret,
-          ephSecret: !!ephSecret,
-          customerId: !!customerId,
-        });
-        res.status(500).json({ error: 'Failed to create checkout' });
-        return;
-      }
-
-      try {
-        await db
-          .collection('users')
-          .doc(uid)
-          .collection('transactions')
-          .doc(intent.id)
-          .set(
-            {
-              type: 'token',
-              tokenAmount,
-              amount,
-              currency: price.currency,
-              paymentIntentId: intent.id,
-              status: intent.status,
-              createdAt: admin.firestore.FieldValue.serverTimestamp(),
-            },
-            { merge: true }
-          );
-      } catch (fireErr) {
-        logger.error('Failed to log token transaction', {
-          uid,
-          paymentIntentId: intent.id,
-          error: fireErr,
-        });
-      }
-
-      logger.info(`✅ PaymentIntent created ${intent.id}`);
+      console.info('createCheckoutSession', { uid, customerId });
       res.status(200).json({
-        clientSecret,
-        ephemeralKey: ephSecret,
+        clientSecret: intent.client_secret,
+        ephemeralKey: ephemeralKey.secret,
         customerId,
       });
-    } catch (err) {
-      logger.error('createCheckoutSession failed', err);
-      res.status(500).json({ error: (err as any)?.message || 'Failed to create checkout' });
+    } catch (err: any) {
+      console.error('createCheckoutSession.error', err?.message || err);
+      res.status(500).json({ error: err?.message || 'Failed to create checkout' });
     }
-  }));
-
-export async function prepareSubscriptionPaymentSheetHandler(
-  req: Request,
-  res: Response,
-) {
-  try {
-    const uid = req.headers.uid as string | undefined;
-    if (!uid) {
-      res.status(400).json({ error: 'Missing uid header' });
-      return;
-    }
-
-    const publishableKey =
-      functions.config().stripe?.publishable || STRIPE_PUBLISHABLE_KEY;
-    if (!publishableKey) {
-      res.status(500).json({ error: 'Stripe publishable key missing' });
-      return;
-    }
-
-    const customerId = await getOrCreateStripeCustomer(uid);
-
-    const ephemeralKey = await stripe.ephemeralKeys.create(
-      { customer: customerId },
-      { apiVersion: '2023-10-16' },
-    );
-
-    const setupIntent = await stripe.setupIntents.create({
-      customer: customerId,
-      usage: 'off_session',
-    });
-
-    const response = {
-      customer: customerId,
-      ephemeralKey: ephemeralKey.secret,
-      setupIntent: setupIntent.client_secret,
-      publishableKey,
-    };
-
-    if (
-      !response.customer ||
-      !response.ephemeralKey ||
-      !response.setupIntent ||
-      !response.publishableKey
-    ) {
-      res.status(500).json({ error: 'Missing Stripe fields' });
-      return;
-    }
-
-    logger.info(
-      `prepareSubscriptionPaymentSheet: uid=${uid} customer=${customerId}`,
-    );
-
-    res.status(200).json(response);
-  } catch (err: any) {
-    logger.error('prepareSubscriptionPaymentSheet failed', err);
-    res.status(500).json({ error: err?.message || 'Internal error' });
   }
-}
-
-export const prepareSubscriptionPaymentSheet = functions.https.onRequest(
-  withCors(prepareSubscriptionPaymentSheetHandler),
 );
 
-export async function activateSubscriptionHandler(req: Request, res: Response) {
-  try {
-    const { uid, priceId, trial_days } = req.body || {};
-    if (!uid || !priceId) {
-      res.status(400).json({ error: 'Missing uid or priceId' });
-      return;
-    }
 
-    const authData = await verifyAuth(req);
-    if (authData.uid !== uid) {
-      res.status(403).json({ error: 'UID mismatch' });
-      return;
-    }
-
-    const customerId = await getOrCreateStripeCustomer(uid);
-    const params: Stripe.SubscriptionCreateParams = {
-      customer: customerId,
-      items: [{ price: priceId }],
-      payment_settings: { save_default_payment_method: 'on_subscription' },
-      metadata: { uid },
-      expand: ['latest_invoice.payment_intent'],
-    };
-    if (trial_days) {
-      params.trial_period_days = Number(trial_days);
-    }
-
-    const subscription = await stripe.subscriptions.create(params);
-    await upsertSubscriptionFromStripe(subscription);
-
-    res.status(200).json({
-      ok: true,
-      status: subscription.status,
-      currentPeriodEnd: (subscription as any).current_period_end || null,
-    });
-  } catch (err: any) {
-    logger.error('activateSubscription failed', err);
-    res.status(500).json({ error: err?.message || 'Internal error' });
-  }
-}
-
-export const activateSubscription = functions.https.onRequest(
-  withCors(activateSubscriptionHandler),
-);
-
-export const createStripeSubscriptionIntent = functions
-  .https.onRequest(withCors(async (req: Request, res: Response) => {
-    logger.info('createStripeSubscriptionIntent payload', req.body);
+export const createStripeSubscriptionIntent = onRequest(
+  { secrets: [STRIPE_SECRET], cors: true },
+  async (req: Request, res: Response) => {
+    console.info('createStripeSubscriptionIntent payload', req.body);
     const { uid, priceId, tier = 'premium' } = req.body || {};
 
     if (!uid || !priceId) {
-      logger.warn('⚠️ Missing uid or priceId', { uid, priceId });
+      console.error('createStripeSubscriptionIntent.missing', { uid, priceId });
       res.status(400).json({ error: 'Missing required fields' });
       return;
     }
 
-    const stripeSecret = functions.config().stripe?.secret;
-    if (!stripeSecret) {
-      logger.error('Stripe secret not configured');
-      res.status(500).json({ error: 'Stripe not configured' });
-      return;
-    }
-
-    const stripeClient = new Stripe(stripeSecret, { apiVersion: '2023-10-16' } as any);
+    const stripe = getStripe();
 
     try {
-      const userRef = db.collection('users').doc(uid);
-      const snap = await userRef.get();
-      let customerId = (snap.data() as any)?.stripeCustomerId as string | undefined;
-      if (!customerId) {
-        const userRecord = await auth.getUser(uid);
-        const customer = await stripeClient.customers.create({
-          email: userRecord.email ?? undefined,
-          metadata: { uid, tier },
-        });
-        customerId = customer.id;
-        await userRef.set({ stripeCustomerId: customerId }, { merge: true });
-        logger.info('Stripe customer created', { uid, customerId });
-      } else {
-        await stripeClient.customers.update(customerId, { metadata: { uid, tier } });
-        logger.info('Stripe customer reused', { uid, customerId });
-      }
+      const userRecord = await auth.getUser(uid).catch(() => null);
+      const email = userRecord?.email || undefined;
+      const customerId = await getOrCreateStripeCustomer(uid, email);
+      await stripe.customers.update(customerId, { metadata: { uid, tier } });
 
-      const ephemeralKey = await stripeClient.ephemeralKeys.create(
+      const ephemeralKey = await stripe.ephemeralKeys.create(
         { customer: customerId },
         { apiVersion: '2023-10-16' }
       );
 
-      const subscriptionRes = await stripeClient.subscriptions.create({
+      const subscriptionRes = await stripe.subscriptions.create({
         customer: customerId,
         items: [{ price: cleanPriceId(priceId) }],
         payment_behavior: 'default_incomplete',
@@ -1555,7 +1367,7 @@ export const createStripeSubscriptionIntent = functions
       const currency = latestInvoice?.currency ?? 'usd';
 
       if (!clientSecret || !invoiceId || !ephemeralKey.secret) {
-        logger.error('Failed to obtain subscription details', {
+        console.error('createStripeSubscriptionIntent.missingDetails', {
           subscriptionId,
           hasClientSecret: !!clientSecret,
           invoiceId,
@@ -1588,11 +1400,13 @@ export const createStripeSubscriptionIntent = functions
             { merge: true },
           );
 
-        await userRef.set({ isSubscribed: true }, { merge: true });
+        await db.collection('users').doc(uid).set({ isSubscribed: true }, { merge: true });
 
-        await userRef
+        await db
+          .collection('users')
+          .doc(uid)
           .collection('transactions')
-          .doc(invoiceId)
+          .doc(invoiceId!)
           .set(
             {
               type: 'subscription',
@@ -1607,11 +1421,7 @@ export const createStripeSubscriptionIntent = functions
             { merge: true },
           );
       } catch (fireErr) {
-        logger.error('Failed to persist subscription data', {
-          uid,
-          invoiceId,
-          error: fireErr,
-        });
+        console.error('createStripeSubscriptionIntent.persist.error', { uid, invoiceId, error: fireErr });
       }
 
       res.status(200).json({
@@ -1619,11 +1429,14 @@ export const createStripeSubscriptionIntent = functions
         ephemeralKey: ephemeralKey.secret,
         customerId,
       });
-    } catch (err) {
-      logger.error('createStripeSubscriptionIntent failed', err);
-      res.status(500).json({ error: (err as any)?.message || 'Failed to create subscription' });
+      return;
+    } catch (err: any) {
+      console.error('createStripeSubscriptionIntent.error', err?.message || err);
+      res.status(500).json({ error: err?.message || 'Failed to create subscription' });
+      return;
     }
-  }));
+  }
+);
 
 export const startDonationCheckout = functions
   .https.onRequest(withCors(async (req: Request, res: Response) => {
@@ -1650,6 +1463,7 @@ export const startDonationCheckout = functions
     return;
   }
 
+  const stripe = getStripe();
   try {
     if (authData.uid !== userId) {
       logger.warn("⚠️ UID mismatch between token and payload");
@@ -1718,6 +1532,7 @@ export const startCheckoutSession = functions
     return;
   }
 
+  const stripe = getStripe();
   try {
     if (authData.uid !== userId) {
       logger.warn("⚠️ UID mismatch between token and payload");
@@ -1798,6 +1613,7 @@ export const createStripeCheckout = functions
     return;
   }
 
+  const stripe = getStripe();
   try {
     if (authData.uid !== uid) {
       logger.warn("⚠️ UID mismatch between token and payload");
@@ -2240,8 +2056,9 @@ export const completeSignupAndProfile = functions.https.onCall(
     }
   });
 
-export const createStripeSetupIntent = functions.https.onRequest(
-  withCors(async (req: Request, res: Response) => {
+export const createStripeSetupIntent = onRequest(
+  { secrets: [STRIPE_SECRET], cors: true },
+  async (req: Request, res: Response) => {
     logger.info('createStripeSetupIntent called', { body: req.body });
 
     logger.debug('Verifying auth token');
@@ -2258,35 +2075,13 @@ export const createStripeSetupIntent = functions.https.onRequest(
     const data = req.body || {};
     const uid = authData.uid;
 
-    logger.debug('Checking Stripe secret configuration');
-    const stripeSecret = functions.config().stripe?.secret;
-    if (!stripeSecret) {
-      logger.error('Stripe secret not configured');
-      res.status(500).json({ error: 'Stripe not configured' });
-      return;
-    }
-
-    const stripeClient = new Stripe(stripeSecret, { apiVersion: '2023-10-16' } as any);
-
+    const stripe = getStripe();
     logger.debug('Retrieving or creating Stripe customer');
     let customerId: string;
     try {
-      const userRef = db.collection('users').doc(uid);
-      const snap = await userRef.get();
-      customerId = (snap.data() as any)?.stripeCustomerId;
-
-      if (!customerId) {
-        const userRecord = await auth.getUser(uid);
-        const customer = await stripeClient.customers.create({
-          email: userRecord.email ?? undefined,
-          metadata: { uid },
-        });
-        customerId = customer.id;
-        await userRef.set({ stripeCustomerId: customerId }, { merge: true });
-        logger.info('Stripe customer created', { uid, customerId });
-      } else {
-        logger.info('Stripe customer reused', { uid, customerId });
-      }
+      const userRecord = await auth.getUser(uid).catch(() => null);
+      customerId = await getOrCreateStripeCustomer(uid, userRecord?.email || undefined);
+      logger.info('Stripe customer ready', { uid, customerId });
     } catch (err) {
       logger.error('Failed to retrieve or create Stripe customer', err);
       res.status(500).json({ error: 'Unable to create customer' });
@@ -2296,7 +2091,7 @@ export const createStripeSetupIntent = functions.https.onRequest(
     logger.debug('Creating Stripe ephemeral key');
     let ephemeralKey: Stripe.EphemeralKey;
     try {
-      ephemeralKey = await stripeClient.ephemeralKeys.create(
+      ephemeralKey = await stripe.ephemeralKeys.create(
         { customer: customerId },
         { apiVersion: '2023-10-16' }
       );
@@ -2325,7 +2120,7 @@ export const createStripeSetupIntent = functions.https.onRequest(
           type: eventType,
           ...(data.tokenAmount ? { tokenAmount: String(data.tokenAmount) } : {}),
         };
-        intent = await stripeClient.paymentIntents.create({
+        intent = await stripe.paymentIntents.create({
           amount,
           currency,
           customer: customerId,
@@ -2349,7 +2144,7 @@ export const createStripeSetupIntent = functions.https.onRequest(
             metadata.tokenAmount = String(data.tokenAmount);
           }
         }
-        intent = await stripeClient.setupIntents.create({
+        intent = await stripe.setupIntents.create({
           customer: customerId,
           metadata,
           automatic_payment_methods: { enabled: true },
@@ -2369,11 +2164,11 @@ export const createStripeSetupIntent = functions.https.onRequest(
       ephemeralKey: ephemeralKey.secret,
       customerId,
     });
-  })
-);
+  });
 
-export const finalizePaymentIntent = functions.https.onRequest(
-  withCors(async (req: Request, res: Response) => {
+export const finalizePaymentIntent = onRequest(
+  { secrets: [STRIPE_SECRET], cors: true },
+  async (req: Request, res: Response) => {
     logger.info('finalizePaymentIntent called', { body: req.body });
 
     let authData: { uid: string; token: string };
@@ -2402,17 +2197,10 @@ export const finalizePaymentIntent = functions.https.onRequest(
       return;
     }
 
-    const stripeSecret = functions.config().stripe?.secret;
-    if (!stripeSecret) {
-      logger.error('Stripe secret not configured');
-      res.status(500).json({ error: 'Stripe not configured' });
-      return;
-    }
-
-    const stripeClient = new Stripe(stripeSecret, { apiVersion: '2023-10-16' } as any);
+    const stripe = getStripe();
 
     try {
-      const intent = await stripeClient.paymentIntents.retrieve(paymentIntentId);
+      const intent = await stripe.paymentIntents.retrieve(paymentIntentId);
       if (intent.status !== 'succeeded') {
         res.status(400).json({ error: 'Payment not completed' });
         return;
@@ -2470,19 +2258,19 @@ export const finalizePaymentIntent = functions.https.onRequest(
       logger.error('finalizePaymentIntent failed', err);
       res.status(500).json({ error: err?.message || 'Failed to finalize payment' });
     }
-  })
-);
+  });
 
-export const createTokenPurchaseSheet = functions.https.onCall(
-  async (data: any, context: any) => {
-    if (!context.auth) {
+export const createTokenPurchaseSheet = onCall(
+  { secrets: [STRIPE_SECRET] },
+  async (request) => {
+    if (!request.auth) {
       throw new functions.https.HttpsError('unauthenticated', 'Authentication required');
     }
 
-    const amount = Number(data?.amount);
-    const uid = data?.uid;
+    const amount = Number(request.data?.amount);
+    const uid = request.data?.uid;
 
-    if (!uid || uid !== context.auth.uid) {
+    if (!uid || uid !== request.auth.uid) {
       throw new functions.https.HttpsError('permission-denied', 'UID mismatch');
     }
 
@@ -2490,37 +2278,19 @@ export const createTokenPurchaseSheet = functions.https.onCall(
       throw new functions.https.HttpsError('invalid-argument', 'amount must be 5 or 20');
     }
 
-    const stripeSecret = functions.config().stripe?.secret || STRIPE_SECRET_KEY;
-    if (!stripeSecret) {
-      throw new functions.https.HttpsError('internal', 'Stripe not configured');
-    }
-
     const publishableKey =
       functions.config().stripe?.publishable || STRIPE_PUBLISHABLE_KEY;
 
-    const stripeClient = new Stripe(stripeSecret, { apiVersion: '2023-10-16' } as any);
+    const stripe = getStripe();
+    const userRecord = await auth.getUser(uid).catch(() => null);
+    const customerId = await getOrCreateStripeCustomer(uid, userRecord?.email || undefined);
 
-    let customerId: string;
-    const userRef = db.collection('users').doc(uid);
-    const snap = await userRef.get();
-    customerId = (snap.data() as any)?.stripeCustomerId;
-
-    if (!customerId) {
-      const userRecord = await auth.getUser(uid);
-      const customer = await stripeClient.customers.create({
-        email: userRecord.email ?? undefined,
-        metadata: { uid },
-      });
-      customerId = customer.id;
-      await userRef.set({ stripeCustomerId: customerId }, { merge: true });
-    }
-
-    const ephemeralKey = await stripeClient.ephemeralKeys.create(
+    const ephemeralKey = await stripe.ephemeralKeys.create(
       { customer: customerId },
       { apiVersion: '2023-10-16' }
     );
 
-    const intent = await stripeClient.paymentIntents.create({
+    const intent = await stripe.paymentIntents.create({
       amount: Math.round(amount * 100),
       currency: 'usd',
       customer: customerId,
@@ -2541,20 +2311,16 @@ export const createTokenPurchaseSheet = functions.https.onCall(
   }
 );
 
-export const createSubscriptionSession = functions.https.onCall(
-  async (data: any, context: any) => {
-    if (!context.auth) {
+export const createSubscriptionSession = onCall(
+  { secrets: [STRIPE_SECRET] },
+  async (request) => {
+    if (!request.auth) {
       throw new functions.https.HttpsError('unauthenticated', 'Authentication required');
     }
 
-    const uid: string | undefined = data?.uid;
-    if (!uid || uid !== context.auth.uid) {
+    const uid: string | undefined = request.data?.uid;
+    if (!uid || uid !== request.auth.uid) {
       throw new functions.https.HttpsError('permission-denied', 'UID mismatch');
-    }
-
-    const stripeSecret = functions.config().stripe?.secret || STRIPE_SECRET_KEY;
-    if (!stripeSecret) {
-      throw new functions.https.HttpsError('internal', 'Stripe not configured');
     }
 
     const subscriptionPriceId =
@@ -2562,24 +2328,11 @@ export const createSubscriptionSession = functions.https.onCall(
     if (!subscriptionPriceId) {
       throw new functions.https.HttpsError('internal', 'Subscription price not configured');
     }
+    const stripe = getStripe();
+    const userRecord = await auth.getUser(uid).catch(() => null);
+    const customerId = await getOrCreateStripeCustomer(uid, userRecord?.email || undefined);
 
-    const stripeClient = new Stripe(stripeSecret, { apiVersion: '2023-10-16' } as any);
-
-    const userRef = db.collection('users').doc(uid);
-    const snap = await userRef.get();
-    let customerId = (snap.data() as any)?.stripeCustomerId as string | undefined;
-
-    if (!customerId) {
-      const userRecord = await auth.getUser(uid);
-      const customer = await stripeClient.customers.create({
-        email: userRecord.email ?? undefined,
-        metadata: { uid },
-      });
-      customerId = customer.id;
-      await userRef.set({ stripeCustomerId: customerId }, { merge: true });
-    }
-
-    const session = await stripeClient.checkout.sessions.create({
+    const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
       line_items: [{ price: subscriptionPriceId, quantity: 1 }],
       success_url: STRIPE_SUCCESS_URL,
@@ -2596,3 +2349,4 @@ export const createSubscriptionSession = functions.https.onCall(
 export { onCompletedChallengeCreate } from './firestoreArchitecture';
 export { handleStripeWebhookV2 } from './stripeWebhooks';
 export { cleanLegacySubscriptionFields } from './cleanLegacySubscriptionFields';
+export { prepareSubscriptionPaymentSheet, activateSubscription } from './subscriptions';
