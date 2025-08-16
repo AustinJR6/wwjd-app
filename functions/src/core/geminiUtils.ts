@@ -1,7 +1,7 @@
 import * as logger from 'firebase-functions/logger';
 import * as functions from 'firebase-functions/v1';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { db } from './firebase';
+import { db } from '@core/firebase';
 
 const GEMINI_API_KEY = functions.config().gemini?.key || '';
 

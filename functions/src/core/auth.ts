@@ -1,5 +1,5 @@
 import { Request } from 'express';
-import { auth } from '../../firebase';
+import { auth } from '@core/firebase';
 
 export function extractBearerToken(req: Request): string | undefined {
   const header = req.headers.authorization;

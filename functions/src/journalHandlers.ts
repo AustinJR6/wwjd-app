@@ -2,8 +2,8 @@ import * as functions from 'firebase-functions/v1';
 import { Request, Response } from 'express';
 import * as logger from 'firebase-functions/logger';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { auth, db } from '../firebase';
-import { createGeminiModel, fetchReligionContext } from '../geminiUtils';
+import { auth, db } from '@core/firebase';
+import { createGeminiModel, fetchReligionContext } from '@core/geminiUtils';
 import { logTokenVerificationError } from './utils';
 
 export const askGeminiSimple = functions

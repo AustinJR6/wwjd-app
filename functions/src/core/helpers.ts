@@ -3,7 +3,7 @@ import * as functions from 'firebase-functions/v1';
 import { SecretManagerServiceClient } from '@google-cloud/secret-manager';
 import cors from 'cors';
 import { Request, Response } from 'express';
-import { auth, db } from './firebase';
+import { auth, db } from '@core/firebase';
 
 const corsHandler = cors({ origin: true });
 

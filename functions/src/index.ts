@@ -37,6 +37,6 @@ export {
   createSubscriptionSession,
 } from './stripeHandlers';
 
-export { onCompletedChallengeCreate } from '../firestoreArchitecture';
-export { handleStripeWebhookV2 } from '../stripeWebhooks';
+export { onCompletedChallengeCreate } from './firestoreArchitecture';
+export { handleStripeWebhookV2 } from './stripeWebhooks';
 export { cleanLegacySubscriptionFields } from './cleanLegacySubscriptionFields';

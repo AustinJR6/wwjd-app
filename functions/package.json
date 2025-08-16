@@ -4,9 +4,11 @@
   "main": "lib/src/index.js",
   "scripts": {
     "clean": "rimraf lib",
-    "build": "npm run clean && tsc",
-    "deploy": "npm run clean && npm run build && firebase deploy --only functions --runtime=nodejs20",
-    "start": "npm run clean && npm run build && firebase emulators:start --only functions",
+    "build": "npm run clean && tsc && tsc-alias",
+    "build:watch": "concurrently \"tsc -w\" \"tsc-alias -w\"",
+    "predeploy": "npm run build",
+    "deploy": "npm run build && firebase deploy --only functions --runtime=nodejs20",
+    "start": "npm run build && firebase emulators:start --only functions",
     "verify:triggers": "node scripts/verify-triggers.mjs",
     "test": "jest --passWithNoTests"
   },
@@ -27,7 +29,9 @@
     "@types/node": "^24.0.4",
     "rimraf": "^6.0.1",
     "typescript": "^5.8.3",
-    "jest": "^30.0.4"
+    "jest": "^30.0.4",
+    "tsc-alias": "^1.8.8",
+    "concurrently": "^8"
   },
   "private": true
 }

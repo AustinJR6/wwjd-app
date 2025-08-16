@@ -3,7 +3,7 @@ import * as admin from 'firebase-admin';
 import Stripe from 'stripe';
 import * as dotenv from 'dotenv';
 import * as logger from 'firebase-functions/logger';
-import { db } from '../firebase';
+import { db } from '@core/firebase';
 import { env } from '@core/env';
 
 dotenv.config();

@@ -1,8 +1,9 @@
 import * as functions from 'firebase-functions/v1';
 import { Request, Response } from 'express';
 import * as logger from 'firebase-functions/logger';
-import { withCors, verifyIdToken, logError } from '../helpers';
-import { db } from '../firebase';
+import { withCors } from '@core/http';
+import { verifyIdToken, logError } from '@core/helpers';
+import { db } from '@core/firebase';
 
 export const incrementReligionPoints = functions
   .https.onRequest(

@@ -3,8 +3,9 @@ import { Request, Response } from 'express';
 import * as logger from 'firebase-functions/logger';
 import Stripe from 'stripe';
 import * as admin from 'firebase-admin';
-import { withCors, verifyAuth, extractAuthToken } from '../helpers';
-import { auth, db } from '../firebase';
+import { withCors } from '@core/http';
+import { verifyAuth, extractAuthToken } from '@core/helpers';
+import { auth, db } from '@core/firebase';
 import {
   cleanPriceId,
   getTokensFromPriceId,

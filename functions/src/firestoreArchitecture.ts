@@ -1,8 +1,8 @@
 import * as functions from 'firebase-functions/v1';
 import * as admin from 'firebase-admin';
 import { DocumentSnapshot } from 'firebase-functions/v1/firestore';
-import { db } from './firebase';
-import { createGeminiModel, fetchReligionContext } from './geminiUtils';
+import { db } from '@core/firebase';
+import { createGeminiModel, fetchReligionContext } from '@core/geminiUtils';
 
 // Generate a daily challenge for a user and store in Firestore
 export async function generateDailyChallengeForUser(uid: string, religionId?: string): Promise<string> {

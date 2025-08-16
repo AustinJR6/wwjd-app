@@ -1,10 +1,10 @@
 import * as functions from 'firebase-functions/v1';
 import * as admin from 'firebase-admin';
 import { Request, Response } from 'express';
-import { db } from '../../../firebase';
-import { withCors, withHandler, jsonOk, jsonError } from '../../core/http';
-import { Forbidden, NotFound } from '../../core/errors';
-import { updateStreakAndXPInternal, validateSignupProfile } from '../../utils';
+import { db } from '@core/firebase';
+import { withCors, withHandler, jsonOk, jsonError } from '@core/http';
+import { Forbidden, NotFound } from '@core/errors';
+import { updateStreakAndXPInternal, validateSignupProfile } from '@utils';
 
 export const updateStreakAndXP = functions.https.onRequest(
   withCors(
