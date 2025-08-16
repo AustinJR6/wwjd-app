@@ -127,19 +127,38 @@ export const updateUserProfileCallable = functions.https.onCall(async (data: any
   return { success: true };
 });
 
-export const completeSignupAndProfile = functions.https.onRequest(
-  withCors(
-    withHandler(async (_req: Request, res: Response, ctx) => {
-      try {
-        if (!validateSignupProfile(_req.body)) {
-          jsonError(res, new Error('Invalid profile'));
-          return;
-        }
-        await db.collection('users').doc(ctx.uid!).set(_req.body, { merge: true });
-        jsonOk(res, { message: 'Profile updated' });
-      } catch (err: any) {
-        jsonError(res, err);
-      }
-    }, { auth: 'required' })
-  )
+async function completeSignupAndProfileCore({
+  uid,
+  body,
+}: {
+  uid: string;
+  body: any;
+}) {
+  if (!validateSignupProfile(body)) {
+    throw new functions.https.HttpsError('invalid-argument', 'Invalid profile');
+  }
+  await db.collection('users').doc(uid).set(body, { merge: true });
+  return { message: 'Profile updated' };
+}
+
+export const completeSignupAndProfile = functions.https.onCall(
+  async (data: any, context: functions.https.CallableContext) => {
+    if (!context.auth?.uid) {
+      throw new functions.https.HttpsError(
+        'unauthenticated',
+        'Authentication required'
+      );
+    }
+    try {
+      return await completeSignupAndProfileCore({
+        uid: context.auth.uid,
+        body: data,
+      });
+    } catch (err: any) {
+      throw new functions.https.HttpsError(
+        'unknown',
+        err?.message || 'Failed to update profile'
+      );
+    }
+  }
 );

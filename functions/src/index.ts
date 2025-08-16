@@ -39,4 +39,4 @@ export {
 
 export { onCompletedChallengeCreate } from '../firestoreArchitecture';
 export { handleStripeWebhookV2 } from '../stripeWebhooks';
-export { cleanLegacySubscriptionFields } from '../cleanLegacySubscriptionFields';
+export { cleanLegacySubscriptionFields } from './cleanLegacySubscriptionFields';
