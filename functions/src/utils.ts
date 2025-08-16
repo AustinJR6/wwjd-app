@@ -4,6 +4,7 @@ import Stripe from 'stripe';
 import * as dotenv from 'dotenv';
 import * as logger from 'firebase-functions/logger';
 import { db } from '../firebase';
+import { env } from '@core/env';
 
 dotenv.config();
 dotenv.config({ path: '.env.functions' });
@@ -16,24 +17,19 @@ export function logTokenVerificationError(context: string, token: string | undef
   });
 }
 
-export const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || '';
-export const STRIPE_PUBLISHABLE_KEY = process.env.STRIPE_PUBLISHABLE_KEY || '';
-export const APP_BASE_URL =
-  process.env.APP_BASE_URL ||
-  process.env.FRONTEND_URL ||
-  'https://onevine.app';
-export const STRIPE_SUCCESS_URL =
-  process.env.STRIPE_SUCCESS_URL ||
-  `${APP_BASE_URL}/stripe-success?session_id={CHECKOUT_SESSION_ID}`;
-export const STRIPE_CANCEL_URL = process.env.STRIPE_CANCEL_URL || 'https://example.com/cancel';
+export const STRIPE_SECRET_KEY = env.STRIPE_SECRET_KEY;
+export const STRIPE_PUBLISHABLE_KEY = env.STRIPE_PUBLISHABLE_KEY;
+export const APP_BASE_URL = env.APP_BASE_URL;
+export const STRIPE_SUCCESS_URL = env.STRIPE_SUCCESS_URL;
+export const STRIPE_CANCEL_URL = env.STRIPE_CANCEL_URL;
 
 export function cleanPriceId(raw: string): string {
   return raw.split('#')[0].trim();
 }
 
-export const STRIPE_20_TOKEN_PRICE_ID = cleanPriceId(process.env.STRIPE_20_TOKEN_PRICE_ID || '');
-export const STRIPE_50_TOKEN_PRICE_ID = cleanPriceId(process.env.STRIPE_50_TOKEN_PRICE_ID || '');
-export const STRIPE_100_TOKEN_PRICE_ID = cleanPriceId(process.env.STRIPE_100_TOKEN_PRICE_ID || '');
+export const STRIPE_20_TOKEN_PRICE_ID = cleanPriceId(env.STRIPE_20_TOKEN_PRICE_ID || '');
+export const STRIPE_50_TOKEN_PRICE_ID = cleanPriceId(env.STRIPE_50_TOKEN_PRICE_ID || '');
+export const STRIPE_100_TOKEN_PRICE_ID = cleanPriceId(env.STRIPE_100_TOKEN_PRICE_ID || '');
 
 export function getTokensFromPriceId(priceId: string): number | null {
   if (priceId === STRIPE_20_TOKEN_PRICE_ID) return 20;
@@ -118,7 +114,7 @@ export function validateSignupProfile(profile: any): Required<Pick<any,
   return sanitized;
 }
 
-if (!process.env.STRIPE_SUB_PRICE_ID) {
+if (!env.STRIPE_SUB_PRICE_ID) {
   logger.warn('⚠️ Missing STRIPE_SUB_PRICE_ID in .env');
 }
 
