@@ -11,189 +11,222 @@ import {
   getTokensFromPriceId,
   addTokens,
   logTokenVerificationError,
-  stripe,
-  STRIPE_SECRET_KEY,
-  STRIPE_PUBLISHABLE_KEY,
   STRIPE_SUCCESS_URL,
   STRIPE_CANCEL_URL,
+} from './utils';
+import {
+  STRIPE_SECRET_KEY,
+  STRIPE_PUBLISHABLE_KEY,
+  STRIPE_SUB_PRICE_ID,
   STRIPE_20_TOKEN_PRICE_ID,
   STRIPE_50_TOKEN_PRICE_ID,
   STRIPE_100_TOKEN_PRICE_ID,
-} from './utils';
+} from '@core/secrets';
+
+const stripeSecrets = [
+  STRIPE_SECRET_KEY,
+  STRIPE_PUBLISHABLE_KEY,
+  STRIPE_SUB_PRICE_ID,
+  STRIPE_20_TOKEN_PRICE_ID,
+  STRIPE_50_TOKEN_PRICE_ID,
+  STRIPE_100_TOKEN_PRICE_ID,
+];
+
+function getStripeSecret(): string {
+  return functions.config().stripe?.secret || STRIPE_SECRET_KEY.value();
+}
+
+function getPublishableKey(): string {
+  return functions.config().stripe?.publishable || STRIPE_PUBLISHABLE_KEY.value();
+}
+
+function getTokenPriceIds() {
+  return {
+    twenty: STRIPE_20_TOKEN_PRICE_ID.value(),
+    fifty: STRIPE_50_TOKEN_PRICE_ID.value(),
+    hundred: STRIPE_100_TOKEN_PRICE_ID.value(),
+  };
+}
 
 export const startSubscriptionCheckout = functions
+  .runWith({ secrets: stripeSecrets })
   .https.onRequest(withCors(async (req: Request, res: Response) => {
-  logger.info("📦 startSubscriptionCheckout payload", req.body);
-  logger.info(
-    "🔐 Stripe Secret:",
-    STRIPE_SECRET_KEY ? "\u2713 set" : "\u2717 missing",
-  );
+    logger.info("📦 startSubscriptionCheckout payload", req.body);
+    const secret = getStripeSecret();
+    logger.info("🔐 Stripe Secret:", secret ? "\u2713 set" : "\u2717 missing");
 
-  const { uid, priceId } = req.body || {};
-  if (!uid || !priceId) {
-    logger.warn("⚠️ Missing uid or priceId", { uid, priceId });
-    res.status(400).json({ error: "Missing uid or priceId" });
-    return;
-  }
-  const cleanId = cleanPriceId(priceId);
-
-  let authData: { uid: string; token: string };
-  try {
-    authData = await verifyAuth(req);
-  } catch (err) {
-    logTokenVerificationError("startSubscriptionCheckout", undefined, err);
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
-
-  if (!STRIPE_SECRET_KEY) {
-    logger.error("❌ Stripe secret key missing");
-    res.status(500).json({ error: "Stripe secret not configured" });
-    return;
-  }
-
-  try {
-    if (authData.uid !== uid) {
-      logger.warn("⚠️ UID mismatch between token and payload");
+    const { uid, priceId } = req.body || {};
+    if (!uid || !priceId) {
+      logger.warn("⚠️ Missing uid or priceId", { uid, priceId });
+      res.status(400).json({ error: "Missing uid or priceId" });
+      return;
     }
-    const session = await stripe.checkout.sessions.create({
-      mode: "subscription",
-      payment_method_types: ["card"],
-      line_items: [
-        {
-          price: cleanId, // Replace with your actual Stripe Price ID
-          quantity: 1,
-        },
-      ],
-      success_url: STRIPE_SUCCESS_URL,
-      cancel_url: STRIPE_CANCEL_URL,
-      client_reference_id: uid,
-      metadata: { uid, type: "subscription" },
-    });
-    logger.info(`✅ Stripe session created ${session.id}`);
-    res.status(200).json({ checkoutUrl: session.url });
-  } catch (err) {
-    logTokenVerificationError('startSubscriptionCheckout', authData.token, err);
-    res
-      .status(500)
-      .json({ error: (err as any)?.message || "Failed to start checkout" });
-  }
-}));
+    const cleanId = cleanPriceId(priceId);
+
+    let authData: { uid: string; token: string };
+    try {
+      authData = await verifyAuth(req);
+    } catch (err) {
+      logTokenVerificationError("startSubscriptionCheckout", undefined, err);
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
+    if (!secret) {
+      logger.error("❌ Stripe secret key missing");
+      res.status(500).json({ error: "Stripe secret not configured" });
+      return;
+    }
+    const stripe = new Stripe(secret, { apiVersion: '2023-10-16' } as any);
+
+    try {
+      if (authData.uid !== uid) {
+        logger.warn("⚠️ UID mismatch between token and payload");
+      }
+      const session = await stripe.checkout.sessions.create({
+        mode: "subscription",
+        payment_method_types: ["card"],
+        line_items: [
+          {
+            price: cleanId, // Replace with your actual Stripe Price ID
+            quantity: 1,
+          },
+        ],
+        success_url: STRIPE_SUCCESS_URL,
+        cancel_url: STRIPE_CANCEL_URL,
+        client_reference_id: uid,
+        metadata: { uid, type: "subscription" },
+      });
+      logger.info(`✅ Stripe session created ${session.id}`);
+      res.status(200).json({ checkoutUrl: session.url });
+    } catch (err) {
+      logTokenVerificationError('startSubscriptionCheckout', authData.token, err);
+      res
+        .status(500)
+        .json({ error: (err as any)?.message || "Failed to start checkout" });
+    }
+  }));
 
 // TODO: startOneTimeTokenCheckout is unused in the current frontend. Consider
 // removing or wiring it up in a future release.
 export const startOneTimeTokenCheckout = functions
+  .runWith({ secrets: stripeSecrets })
   .https.onRequest(withCors(async (req: Request, res: Response) => {
-  logger.info("📦 startOneTimeTokenCheckout payload", req.body);
-  logger.info(
-    "🔐 Stripe Secret:",
-    STRIPE_SECRET_KEY ? "\u2713 set" : "\u2717 missing",
-  );
-  const { userId, priceId, success_url, cancel_url } = req.body || {};
-  if (!userId || !priceId || !success_url || !cancel_url) {
-    logger.warn("⚠️ Missing fields", {
-      userId,
-      priceId,
-      success_url,
-      cancel_url,
-    });
-    res.status(400).json({ error: "Missing required fields" });
-    return;
-  }
-  const cleanId = cleanPriceId(priceId);
-
-  let authData: { uid: string; token: string };
-  try {
-    authData = await verifyAuth(req);
-  } catch (err) {
-    logTokenVerificationError("startOneTimeTokenCheckout", undefined, err);
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
-
-  if (!STRIPE_SECRET_KEY) {
-    logger.error("❌ Stripe secret key missing");
-    res.status(500).json({ error: "Stripe secret not configured" });
-    return;
-  }
-
-  try {
-    if (authData.uid !== userId) {
-      logger.warn("⚠️ UID mismatch between token and payload");
+    logger.info("📦 startOneTimeTokenCheckout payload", req.body);
+    const secret = getStripeSecret();
+    logger.info("🔐 Stripe Secret:", secret ? "\u2713 set" : "\u2717 missing");
+    const { userId, priceId, success_url, cancel_url } = req.body || {};
+    if (!userId || !priceId || !success_url || !cancel_url) {
+      logger.warn("⚠️ Missing fields", {
+        userId,
+        priceId,
+        success_url,
+        cancel_url,
+      });
+      res.status(400).json({ error: "Missing required fields" });
+      return;
     }
-    const tokens = getTokensFromPriceId(cleanId);
-    const metadata: Record<string, string> = { uid: userId, type: "tokens" };
-    if (tokens) metadata.tokens = String(tokens);
-    const session = await stripe.checkout.sessions.create({
-      mode: "payment",
-      line_items: [{ price: cleanId, quantity: 1 }],
-      success_url,
-      cancel_url,
-      client_reference_id: userId,
-      metadata,
-    });
-    logger.info(`✅ Stripe session created ${session.id}`);
-    res.status(200).json({ url: session.url });
-  } catch (err) {
-    logTokenVerificationError('startOneTimeTokenCheckout', authData.token, err);
-    res
-      .status(500)
-      .json({ error: (err as any)?.message || "Failed to start checkout" });
-  }
-}));
+    const cleanId = cleanPriceId(priceId);
+
+    let authData: { uid: string; token: string };
+    try {
+      authData = await verifyAuth(req);
+    } catch (err) {
+      logTokenVerificationError("startOneTimeTokenCheckout", undefined, err);
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
+    if (!secret) {
+      logger.error("❌ Stripe secret key missing");
+      res.status(500).json({ error: "Stripe secret not configured" });
+      return;
+    }
+    const stripe = new Stripe(secret, { apiVersion: '2023-10-16' } as any);
+    const priceIds = getTokenPriceIds();
+
+    try {
+      if (authData.uid !== userId) {
+        logger.warn("⚠️ UID mismatch between token and payload");
+      }
+      const tokens = getTokensFromPriceId(cleanId, priceIds);
+      const metadata: Record<string, string> = { uid: userId, type: "tokens" };
+      if (tokens) metadata.tokens = String(tokens);
+      const session = await stripe.checkout.sessions.create({
+        mode: "payment",
+        line_items: [{ price: cleanId, quantity: 1 }],
+        success_url,
+        cancel_url,
+        client_reference_id: userId,
+        metadata,
+      });
+      logger.info(`✅ Stripe session created ${session.id}`);
+      res.status(200).json({ url: session.url });
+    } catch (err) {
+      logTokenVerificationError('startOneTimeTokenCheckout', authData.token, err);
+      res
+        .status(500)
+        .json({ error: (err as any)?.message || "Failed to start checkout" });
+    }
+  }));
 
 export const startTokenCheckout = functions
+  .runWith({ secrets: stripeSecrets })
   .https.onRequest(withCors(async (req: Request, res: Response) => {
-  logger.info("🪙 startTokenCheckout payload", req.body);
-  const { uid, priceId } = req.body || {};
-  if (!uid || !priceId) {
-    logger.warn("⚠️ Missing uid or priceId", { uid, priceId });
-    res.status(400).json({ error: "Missing uid or priceId" });
-    return;
-  }
-  const cleanId = cleanPriceId(priceId);
-
-  let authData: { uid: string; token: string };
-  try {
-    authData = await verifyAuth(req);
-  } catch (err) {
-    logTokenVerificationError("startTokenCheckout", undefined, err);
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
-
-  if (!STRIPE_SECRET_KEY) {
-    logger.error("❌ Stripe secret key missing");
-    res.status(500).json({ error: "Stripe secret not configured" });
-    return;
-  }
-
-  try {
-    if (authData.uid !== uid) {
-      logger.warn("⚠️ UID mismatch between token and payload");
+    logger.info("🪙 startTokenCheckout payload", req.body);
+    const { uid, priceId } = req.body || {};
+    if (!uid || !priceId) {
+      logger.warn("⚠️ Missing uid or priceId", { uid, priceId });
+      res.status(400).json({ error: "Missing uid or priceId" });
+      return;
     }
-    const tokens = getTokensFromPriceId(cleanId);
-    const metadata: Record<string, string> = { uid, type: "tokens" };
-    if (tokens) metadata.tokens = String(tokens);
-    const session = await stripe.checkout.sessions.create({
-      mode: "payment",
-      line_items: [{ price: cleanId, quantity: 1 }],
-      success_url: STRIPE_SUCCESS_URL,
-      cancel_url: STRIPE_CANCEL_URL,
-      client_reference_id: uid,
-      metadata,
-    });
-    logger.info(`✅ Stripe session created ${session.id}`);
-    res.status(200).json({ checkoutUrl: session.url });
-  } catch (err) {
-    logTokenVerificationError('startTokenCheckout', authData.token, err);
-    res
-      .status(500)
-      .json({ error: (err as any)?.message || "Failed to start checkout" });
-  }
-}));
+    const cleanId = cleanPriceId(priceId);
+
+    let authData: { uid: string; token: string };
+    try {
+      authData = await verifyAuth(req);
+    } catch (err) {
+      logTokenVerificationError("startTokenCheckout", undefined, err);
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
+    const secret = getStripeSecret();
+    if (!secret) {
+      logger.error("❌ Stripe secret key missing");
+      res.status(500).json({ error: "Stripe secret not configured" });
+      return;
+    }
+    const stripe = new Stripe(secret, { apiVersion: '2023-10-16' } as any);
+    const priceIds = getTokenPriceIds();
+
+    try {
+      if (authData.uid !== uid) {
+        logger.warn("⚠️ UID mismatch between token and payload");
+      }
+      const tokens = getTokensFromPriceId(cleanId, priceIds);
+      const metadata: Record<string, string> = { uid, type: "tokens" };
+      if (tokens) metadata.tokens = String(tokens);
+      const session = await stripe.checkout.sessions.create({
+        mode: "payment",
+        line_items: [{ price: cleanId, quantity: 1 }],
+        success_url: STRIPE_SUCCESS_URL,
+        cancel_url: STRIPE_CANCEL_URL,
+        client_reference_id: uid,
+        metadata,
+      });
+      logger.info(`✅ Stripe session created ${session.id}`);
+      res.status(200).json({ checkoutUrl: session.url });
+    } catch (err) {
+      logTokenVerificationError('startTokenCheckout', authData.token, err);
+      res
+        .status(500)
+        .json({ error: (err as any)?.message || "Failed to start checkout" });
+    }
+  }));
 
 export const createCheckoutSession = functions
+  .runWith({ secrets: stripeSecrets })
   .https.onRequest(withCors(async (req: Request, res: Response) => {
     logger.info('createCheckoutSession payload', req.body);
     const { uid, priceId, tokenAmount } = req.body || {};
@@ -218,7 +251,7 @@ export const createCheckoutSession = functions
       return;
     }
 
-    const stripeSecret = functions.config().stripe?.secret;
+    const stripeSecret = getStripeSecret();
     if (!stripeSecret) {
       logger.error('Stripe secret not configured');
       res.status(500).json({ error: 'Stripe not configured' });
@@ -320,6 +353,7 @@ export const createCheckoutSession = functions
   }));
 
 export const createStripeSubscriptionIntent = functions
+  .runWith({ secrets: stripeSecrets })
   .https.onRequest(withCors(async (req: Request, res: Response) => {
     logger.info('createStripeSubscriptionIntent payload', req.body);
     const { uid, priceId, tier = 'premium' } = req.body || {};
@@ -330,7 +364,7 @@ export const createStripeSubscriptionIntent = functions
       return;
     }
 
-    const stripeSecret = functions.config().stripe?.secret;
+    const stripeSecret = getStripeSecret();
     if (!stripeSecret) {
       logger.error('Stripe secret not configured');
       res.status(500).json({ error: 'Stripe not configured' });
@@ -464,206 +498,221 @@ export const createStripeSubscriptionIntent = functions
   }));
 
 export const startDonationCheckout = functions
+  .runWith({ secrets: stripeSecrets })
   .https.onRequest(withCors(async (req: Request, res: Response) => {
-  logger.info("💖 startDonationCheckout payload", req.body);
-  const { userId, amount } = req.body || {};
-  if (!userId || typeof amount !== "number" || amount <= 0) {
-    logger.warn("⚠️ Missing fields", { userId: !!userId, amount });
-    res.status(400).json({ error: "Missing required fields" });
-    return;
-  }
-
-  let authData: { uid: string; token: string };
-  try {
-    authData = await verifyAuth(req);
-  } catch (err) {
-    logTokenVerificationError("startDonationCheckout", undefined, err);
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
-
-  if (!STRIPE_SECRET_KEY) {
-    logger.error("❌ Stripe secret key missing");
-    res.status(500).json({ error: "Stripe secret not configured" });
-    return;
-  }
-
-  try {
-    if (authData.uid !== userId) {
-      logger.warn("⚠️ UID mismatch between token and payload");
+    logger.info("💖 startDonationCheckout payload", req.body);
+    const { userId, amount } = req.body || {};
+    if (!userId || typeof amount !== "number" || amount <= 0) {
+      logger.warn("⚠️ Missing fields", { userId: !!userId, amount });
+      res.status(400).json({ error: "Missing required fields" });
+      return;
     }
-    logger.info(`📨 Creating donation session for ${userId} amount $${amount}`);
-    const session = await stripe.checkout.sessions.create({
-      mode: "payment",
-      line_items: [
-        {
-          price_data: {
-            currency: "usd",
-            product_data: { name: "OneVine Donation" },
-            unit_amount: Math.round(amount * 100),
+
+    let authData: { uid: string; token: string };
+    try {
+      authData = await verifyAuth(req);
+    } catch (err) {
+      logTokenVerificationError("startDonationCheckout", undefined, err);
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
+    const secret = getStripeSecret();
+    if (!secret) {
+      logger.error("❌ Stripe secret key missing");
+      res.status(500).json({ error: "Stripe secret not configured" });
+      return;
+    }
+    const stripe = new Stripe(secret, { apiVersion: '2023-10-16' } as any);
+
+    try {
+      if (authData.uid !== userId) {
+        logger.warn("⚠️ UID mismatch between token and payload");
+      }
+      logger.info(`📨 Creating donation session for ${userId} amount $${amount}`);
+      const session = await stripe.checkout.sessions.create({
+        mode: "payment",
+        line_items: [
+          {
+            price_data: {
+              currency: "usd",
+              product_data: { name: "OneVine Donation" },
+              unit_amount: Math.round(amount * 100),
+            },
+            quantity: 1,
           },
-          quantity: 1,
-        },
-      ],
-      success_url: STRIPE_SUCCESS_URL,
-      cancel_url: STRIPE_CANCEL_URL,
-      client_reference_id: userId,
-      metadata: { uid: userId, donationAmount: amount },
-    });
-    logger.info(`✅ Donation session created ${session.id}`);
-    res.status(200).json({ url: session.url });
-  } catch (err) {
-    logTokenVerificationError('startDonationCheckout', authData.token, err);
-    res
-      .status(500)
-      .json({ error: (err as any)?.message || "Failed to start donation" });
-  }
-}));
+        ],
+        success_url: STRIPE_SUCCESS_URL,
+        cancel_url: STRIPE_CANCEL_URL,
+        client_reference_id: userId,
+        metadata: { uid: userId, donationAmount: amount },
+      });
+      logger.info(`✅ Donation session created ${session.id}`);
+      res.status(200).json({ url: session.url });
+    } catch (err) {
+      logTokenVerificationError('startDonationCheckout', authData.token, err);
+      res
+        .status(500)
+        .json({ error: (err as any)?.message || "Failed to start donation" });
+    }
+  }));
 
 export const startCheckoutSession = functions
+  .runWith({ secrets: stripeSecrets })
   .https.onRequest(withCors(async (req: Request, res: Response) => {
-  logger.info("📦 startCheckoutSession payload", req.body);
-  logger.debug("startCheckoutSession headers", req.headers);
-  logger.info(
-    "🔐 Stripe Secret:",
-    STRIPE_SECRET_KEY ? "\u2713 set" : "\u2717 missing",
-  );
-  const { userId, priceId, success_url, cancel_url, mode = "payment" } = req.body || {};
-  if (!userId || !priceId || !success_url || !cancel_url) {
-    logger.warn("⚠️ Missing fields", {
-      userId,
-      priceId,
-      success_url,
-      cancel_url,
-    });
-    res.status(400).json({ error: "Missing required fields" });
-    return;
-  }
-  const cleanId = cleanPriceId(priceId);
-
-  let authData: { uid: string; token: string };
-  try {
-    authData = await verifyAuth(req);
-  } catch (err) {
-    logTokenVerificationError("startCheckoutSession", undefined, err);
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
-
-  if (!STRIPE_SECRET_KEY) {
-    logger.error("❌ Stripe secret key missing");
-    res.status(500).json({ error: "Stripe secret not configured" });
-    return;
-  }
-
-  try {
-    if (authData.uid !== userId) {
-      logger.warn("⚠️ UID mismatch between token and payload");
+    logger.info("📦 startCheckoutSession payload", req.body);
+    logger.debug("startCheckoutSession headers", req.headers);
+    const secret = getStripeSecret();
+    logger.info("🔐 Stripe Secret:", secret ? "\u2713 set" : "\u2717 missing");
+    const { userId, priceId, success_url, cancel_url, mode = "payment" } = req.body || {};
+    if (!userId || !priceId || !success_url || !cancel_url) {
+      logger.warn("⚠️ Missing fields", {
+        userId,
+        priceId,
+        success_url,
+        cancel_url,
+      });
+      res.status(400).json({ error: "Missing required fields" });
+      return;
     }
-    const tokens = getTokensFromPriceId(cleanId);
-    const metadata: Record<string, string> = { uid: userId };
-    if (tokens) metadata.tokens = String(tokens);
-    const session = await stripe.checkout.sessions.create({
-      mode,
-      line_items: [{ price: cleanId, quantity: 1 }],
-      success_url,
-      cancel_url,
-      client_reference_id: userId,
-      metadata,
-    });
-    logger.info(`✅ Stripe session created ${session.id}`);
-    res.status(200).json({ url: session.url });
-  } catch (err) {
-    logTokenVerificationError('startCheckoutSession', authData.token, err);
-    res
-      .status(500)
-      .json({ error: (err as any)?.message || "Failed to start checkout" });
-  }
-}));
+    const cleanId = cleanPriceId(priceId);
+
+    let authData: { uid: string; token: string };
+    try {
+      authData = await verifyAuth(req);
+    } catch (err) {
+      logTokenVerificationError("startCheckoutSession", undefined, err);
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
+    if (!secret) {
+      logger.error("❌ Stripe secret key missing");
+      res.status(500).json({ error: "Stripe secret not configured" });
+      return;
+    }
+    const stripe = new Stripe(secret, { apiVersion: '2023-10-16' } as any);
+    const priceIds = getTokenPriceIds();
+
+    try {
+      if (authData.uid !== userId) {
+        logger.warn("⚠️ UID mismatch between token and payload");
+      }
+      const tokens = getTokensFromPriceId(cleanId, priceIds);
+      const metadata: Record<string, string> = { uid: userId };
+      if (tokens) metadata.tokens = String(tokens);
+      const session = await stripe.checkout.sessions.create({
+        mode,
+        line_items: [{ price: cleanId, quantity: 1 }],
+        success_url,
+        cancel_url,
+        client_reference_id: userId,
+        metadata,
+      });
+      logger.info(`✅ Stripe session created ${session.id}`);
+      res.status(200).json({ url: session.url });
+    } catch (err) {
+      logTokenVerificationError('startCheckoutSession', authData.token, err);
+      res
+        .status(500)
+        .json({ error: (err as any)?.message || "Failed to start checkout" });
+    }
+  }));
 
 export const createStripeCheckout = functions
+  .runWith({ secrets: stripeSecrets })
   .https.onRequest(withCors(async (req: Request, res: Response) => {
-  logger.info("🛒 createStripeCheckout payload", req.body);
-  const { uid, email, priceId, type, quantity, returnUrl } = req.body || {};
+    logger.info("🛒 createStripeCheckout payload", req.body);
+    const { uid, email, priceId, type, quantity, returnUrl } = req.body || {};
 
-  if (typeof uid !== "string" || !uid.trim() ||
-      typeof priceId !== "string" || !priceId.trim()) {
-    logger.warn("⚠️ Missing uid or priceId", { uid, priceId });
-    res.status(400).json({ error: "Missing uid or priceId" });
-    return;
-  }
-
-  const cleanId = cleanPriceId(priceId);
-  logger.debug("Creating Stripe session with", { uid, priceId: cleanId });
-
-  const missing: string[] = [];
-  if (!uid) missing.push("uid");
-  if (!email) missing.push("email");
-  if (!type) missing.push("type");
-  if (type === "subscription" && !priceId) missing.push("priceId");
-  if (type === "tokens" && !priceId && !quantity) missing.push("priceId or quantity");
-  if (missing.length) {
-    logger.warn("⚠️ Missing fields", { missing, body: req.body });
-    res.status(400).json({ error: `Missing required field: ${missing.join(', ')}` });
-    return;
-  }
-
-  let authData: { uid: string; token: string };
-  try {
-    authData = await verifyAuth(req);
-  } catch (err) {
-    logTokenVerificationError("createStripeCheckout", undefined, err);
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
-
-  let finalPriceId: string | undefined = cleanId;
-  if (type === "tokens" && !cleanId) {
-    if (quantity === 20) finalPriceId = STRIPE_20_TOKEN_PRICE_ID;
-    else if (quantity === 50) finalPriceId = STRIPE_50_TOKEN_PRICE_ID;
-    else if (quantity === 100) finalPriceId = STRIPE_100_TOKEN_PRICE_ID;
-  }
-
-  if (!finalPriceId) {
-    logger.warn("⚠️ Unable to resolve priceId", { type, quantity, priceId });
-    res.status(400).json({ error: "Missing required field: priceId" });
-    return;
-  }
-
-  if (!STRIPE_SECRET_KEY) {
-    logger.error("❌ Stripe secret key missing");
-    res.status(500).json({ error: "Stripe secret not configured" });
-    return;
-  }
-
-  try {
-    if (authData.uid !== uid) {
-      logger.warn("⚠️ UID mismatch between token and payload");
+    if (
+      typeof uid !== "string" || !uid.trim() ||
+      typeof priceId !== "string" || !priceId.trim()
+    ) {
+      logger.warn("⚠️ Missing uid or priceId", { uid, priceId });
+      res.status(400).json({ error: "Missing uid or priceId" });
+      return;
     }
-    const metadata: Record<string, string> = { uid, type };
-    let tokenCount: number | null = null;
-    if (type === "tokens") {
-      tokenCount = quantity ?? getTokensFromPriceId(finalPriceId!);
-      if (tokenCount) metadata.tokens = String(tokenCount);
+
+    const cleanId = cleanPriceId(priceId);
+    logger.debug("Creating Stripe session with", { uid, priceId: cleanId });
+
+    const missing: string[] = [];
+    if (!uid) missing.push("uid");
+    if (!email) missing.push("email");
+    if (!type) missing.push("type");
+    if (type === "subscription" && !priceId) missing.push("priceId");
+    if (type === "tokens" && !priceId && !quantity)
+      missing.push("priceId or quantity");
+    if (missing.length) {
+      logger.warn("⚠️ Missing fields", { missing, body: req.body });
+      res.status(400).json({ error: `Missing required field: ${missing.join(', ')}` });
+      return;
     }
-    const session = await stripe.checkout.sessions.create({
-      mode: type === "subscription" ? "subscription" : "payment",
-      line_items: [{ price: finalPriceId!, quantity: 1 }],
-      success_url: returnUrl || STRIPE_SUCCESS_URL,
-      cancel_url: STRIPE_CANCEL_URL,
-      client_reference_id: uid,
-      customer_email: email,
-      metadata,
-    });
-    logger.info(`✅ Stripe session created ${session.id}`);
-    res.status(200).json({ url: session.url });
-  } catch (err) {
-    logTokenVerificationError('createStripeCheckout', authData.token, err);
-    res.status(500).json({ error: (err as any)?.message || 'Failed to start checkout' });
-  }
-}));
-export const createStripeSetupIntent = functions.https.onRequest(
-  withCors(async (req: Request, res: Response) => {
+
+    let authData: { uid: string; token: string };
+    try {
+      authData = await verifyAuth(req);
+    } catch (err) {
+      logTokenVerificationError("createStripeCheckout", undefined, err);
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
+    const priceIds = getTokenPriceIds();
+    let finalPriceId: string | undefined = cleanId;
+    if (type === "tokens" && !cleanId) {
+      if (quantity === 20) finalPriceId = priceIds.twenty;
+      else if (quantity === 50) finalPriceId = priceIds.fifty;
+      else if (quantity === 100) finalPriceId = priceIds.hundred;
+    }
+
+    if (!finalPriceId) {
+      logger.warn("⚠️ Unable to resolve priceId", { type, quantity, priceId });
+      res.status(400).json({ error: "Missing required field: priceId" });
+      return;
+    }
+
+    const secret = getStripeSecret();
+    if (!secret) {
+      logger.error("❌ Stripe secret key missing");
+      res.status(500).json({ error: "Stripe secret not configured" });
+      return;
+    }
+    const stripe = new Stripe(secret, { apiVersion: '2023-10-16' } as any);
+
+    try {
+      if (authData.uid !== uid) {
+        logger.warn("⚠️ UID mismatch between token and payload");
+      }
+      const metadata: Record<string, string> = { uid, type };
+      let tokenCount: number | null = null;
+      if (type === "tokens") {
+        tokenCount = quantity ?? getTokensFromPriceId(finalPriceId!, priceIds);
+        if (tokenCount) metadata.tokens = String(tokenCount);
+      }
+      const session = await stripe.checkout.sessions.create({
+        mode: type === "subscription" ? "subscription" : "payment",
+        line_items: [{ price: finalPriceId!, quantity: 1 }],
+        success_url: returnUrl || STRIPE_SUCCESS_URL,
+        cancel_url: STRIPE_CANCEL_URL,
+        client_reference_id: uid,
+        customer_email: email,
+        metadata,
+      });
+      logger.info(`✅ Stripe session created ${session.id}`);
+      res.status(200).json({ url: session.url });
+    } catch (err) {
+      logTokenVerificationError('createStripeCheckout', authData.token, err);
+      res
+        .status(500)
+        .json({ error: (err as any)?.message || 'Failed to start checkout' });
+    }
+  }));
+export const createStripeSetupIntent = functions
+  .runWith({ secrets: stripeSecrets })
+  .https.onRequest(
+    withCors(async (req: Request, res: Response) => {
     logger.info('createStripeSetupIntent called', { body: req.body });
 
     logger.debug('Verifying auth token');
@@ -681,7 +730,7 @@ export const createStripeSetupIntent = functions.https.onRequest(
     const uid = authData.uid;
 
     logger.debug('Checking Stripe secret configuration');
-    const stripeSecret = functions.config().stripe?.secret;
+    const stripeSecret = getStripeSecret();
     if (!stripeSecret) {
       logger.error('Stripe secret not configured');
       res.status(500).json({ error: 'Stripe not configured' });
@@ -794,8 +843,9 @@ export const createStripeSetupIntent = functions.https.onRequest(
   })
 );
 
-export const finalizePaymentIntent = functions.https.onRequest(
-  withCors(async (req: Request, res: Response) => {
+export const finalizePaymentIntent = functions
+  .runWith({ secrets: stripeSecrets })
+  .https.onRequest(withCors(async (req: Request, res: Response) => {
     logger.info('finalizePaymentIntent called', { body: req.body });
 
     let authData: { uid: string; token: string };
@@ -824,7 +874,7 @@ export const finalizePaymentIntent = functions.https.onRequest(
       return;
     }
 
-    const stripeSecret = functions.config().stripe?.secret;
+    const stripeSecret = getStripeSecret();
     if (!stripeSecret) {
       logger.error('Stripe secret not configured');
       res.status(500).json({ error: 'Stripe not configured' });
@@ -895,8 +945,9 @@ export const finalizePaymentIntent = functions.https.onRequest(
   })
 );
 
-export const createTokenPurchaseSheet = functions.https.onCall(
-  async (data: any, context: any) => {
+export const createTokenPurchaseSheet = functions
+  .runWith({ secrets: stripeSecrets })
+  .https.onCall(async (data: any, context: any) => {
     if (!context.auth) {
       throw new functions.https.HttpsError('unauthenticated', 'Authentication required');
     }
@@ -912,13 +963,13 @@ export const createTokenPurchaseSheet = functions.https.onCall(
       throw new functions.https.HttpsError('invalid-argument', 'amount must be 5 or 20');
     }
 
-    const stripeSecret = functions.config().stripe?.secret || STRIPE_SECRET_KEY;
+    const stripeSecret = getStripeSecret();
     if (!stripeSecret) {
       throw new functions.https.HttpsError('internal', 'Stripe not configured');
     }
 
     const publishableKey =
-      functions.config().stripe?.publishable || STRIPE_PUBLISHABLE_KEY;
+      functions.config().stripe?.publishable || getPublishableKey();
 
     const stripeClient = new Stripe(stripeSecret, { apiVersion: '2023-10-16' } as any);
 
@@ -960,11 +1011,11 @@ export const createTokenPurchaseSheet = functions.https.onCall(
       customer: customerId,
       publishableKey,
     };
-  }
-);
+  });
 
-export const createSubscriptionSession = functions.https.onCall(
-  async (data: any, context: any) => {
+export const createSubscriptionSession = functions
+  .runWith({ secrets: stripeSecrets })
+  .https.onCall(async (data: any, context: any) => {
     if (!context.auth) {
       throw new functions.https.HttpsError('unauthenticated', 'Authentication required');
     }
@@ -974,13 +1025,13 @@ export const createSubscriptionSession = functions.https.onCall(
       throw new functions.https.HttpsError('permission-denied', 'UID mismatch');
     }
 
-    const stripeSecret = functions.config().stripe?.secret || STRIPE_SECRET_KEY;
+    const stripeSecret = getStripeSecret();
     if (!stripeSecret) {
       throw new functions.https.HttpsError('internal', 'Stripe not configured');
     }
 
     const subscriptionPriceId =
-      functions.config().stripe?.sub_price_id || process.env.STRIPE_SUB_PRICE_ID;
+      functions.config().stripe?.sub_price_id || STRIPE_SUB_PRICE_ID.value();
     if (!subscriptionPriceId) {
       throw new functions.https.HttpsError('internal', 'Subscription price not configured');
     }

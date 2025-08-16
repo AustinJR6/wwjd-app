@@ -1,6 +1,5 @@
 import * as functions from 'firebase-functions/v1';
 import * as admin from 'firebase-admin';
-import Stripe from 'stripe';
 import * as dotenv from 'dotenv';
 import * as logger from 'firebase-functions/logger';
 import { db } from '@core/firebase';
@@ -17,24 +16,31 @@ export function logTokenVerificationError(context: string, token: string | undef
   });
 }
 
-export const STRIPE_SECRET_KEY = env.STRIPE_SECRET_KEY;
-export const STRIPE_PUBLISHABLE_KEY = env.STRIPE_PUBLISHABLE_KEY;
-export const APP_BASE_URL = env.APP_BASE_URL;
-export const STRIPE_SUCCESS_URL = env.STRIPE_SUCCESS_URL;
-export const STRIPE_CANCEL_URL = env.STRIPE_CANCEL_URL;
+const APP_BASE_URL =
+  env.get('APP_BASE_URL') ||
+  env.get('FRONTEND_URL') ||
+  'https://onevine.app';
+
+export const STRIPE_SUCCESS_URL = env.get(
+  'STRIPE_SUCCESS_URL',
+  `${APP_BASE_URL}/stripe-success?session_id={CHECKOUT_SESSION_ID}`,
+);
+export const STRIPE_CANCEL_URL = env.get(
+  'STRIPE_CANCEL_URL',
+  'https://example.com/cancel',
+);
 
 export function cleanPriceId(raw: string): string {
   return raw.split('#')[0].trim();
 }
 
-export const STRIPE_20_TOKEN_PRICE_ID = cleanPriceId(env.STRIPE_20_TOKEN_PRICE_ID || '');
-export const STRIPE_50_TOKEN_PRICE_ID = cleanPriceId(env.STRIPE_50_TOKEN_PRICE_ID || '');
-export const STRIPE_100_TOKEN_PRICE_ID = cleanPriceId(env.STRIPE_100_TOKEN_PRICE_ID || '');
-
-export function getTokensFromPriceId(priceId: string): number | null {
-  if (priceId === STRIPE_20_TOKEN_PRICE_ID) return 20;
-  if (priceId === STRIPE_50_TOKEN_PRICE_ID) return 50;
-  if (priceId === STRIPE_100_TOKEN_PRICE_ID) return 100;
+export function getTokensFromPriceId(
+  priceId: string,
+  ids: { twenty: string; fifty: string; hundred: string },
+): number | null {
+  if (priceId === ids.twenty) return 20;
+  if (priceId === ids.fifty) return 50;
+  if (priceId === ids.hundred) return 100;
   return null;
 }
 
@@ -114,19 +120,6 @@ export function validateSignupProfile(profile: any): Required<Pick<any,
   return sanitized;
 }
 
-if (!env.STRIPE_SUB_PRICE_ID) {
-  logger.warn('⚠️ Missing STRIPE_SUB_PRICE_ID in .env');
-}
-
-if (!STRIPE_SECRET_KEY) {
-  logger.error('❌ STRIPE_SECRET_KEY missing. Set this in your environment.');
-} else {
-  logger.info('✅ Stripe key loaded');
-}
-
-export const stripe = new Stripe(STRIPE_SECRET_KEY, {
-  apiVersion: '2023-10-16',
-} as any);
 
 export async function addTokens(uid: string, amount: number): Promise<void> {
   const userRef = db.collection('users').doc(uid);
