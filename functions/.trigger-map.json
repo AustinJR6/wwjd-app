@@ -1,0 +1,8 @@
+{
+  "backfillUserProfiles": "onCall",
+  "cleanLegacySubscriptionFields": "onCall",
+  "completeSignupAndProfile": "onCall",
+  "createSubscriptionSession": "onCall",
+  "createTokenPurchaseSheet": "onCall",
+  "updateUserProfileCallable": "onCall"
+}

@@ -5,11 +5,12 @@
   "scripts": {
     "clean": "rimraf lib",
     "build": "npm run clean && tsc",
-    "deploy": "npm run clean && npm run build && firebase deploy --only functions --runtime=nodejs18",
-    "start": "npm run clean && npm run build && firebase emulators:start --only functions"
+    "deploy": "npm run clean && npm run build && firebase deploy --only functions --runtime=nodejs20",
+    "start": "npm run clean && npm run build && firebase emulators:start --only functions",
+    "verify:triggers": "node scripts/verify-triggers.mjs"
   },
   "engines": {
-    "node": "18"
+    "node": "20"
   },
   "dependencies": {
     "@google-cloud/secret-manager": "^4.0.0",
