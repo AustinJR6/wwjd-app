@@ -1,6 +1,8 @@
 import * as functions from 'firebase-functions/v1';
 import * as admin from 'firebase-admin';
 import Stripe from 'stripe';
+import { env } from '@core/env';
+import { STRIPE_SECRET_KEY } from '@core/secrets';
 
 // Initialize Firebase Admin if not already initialized
 if (!admin.apps.length) {
@@ -9,10 +11,6 @@ if (!admin.apps.length) {
 
 const firestore = admin.firestore();
 
-// Initialize Stripe
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2023-10-16',
-} as any);
 
 const tsFromUnix = (n?: number) =>
   n ? admin.firestore.Timestamp.fromMillis(n * 1000) : null;
@@ -104,26 +102,30 @@ async function handleTokenPurchase(intent: Stripe.PaymentIntent) {
 }
 
 // Webhook handler
-export const handleStripeWebhookV2 = functions.https.onRequest(async (req, res) => {
-  const sig = req.headers['stripe-signature'];
-  if (typeof sig !== 'string') {
-    console.error('Missing stripe-signature header');
-    res.status(400).send('Missing stripe-signature header');
-    return;
-  }
+export const handleStripeWebhookV2 = functions
+  .runWith({ secrets: [STRIPE_SECRET_KEY] })
+  .https.onRequest(async (req, res) => {
+    const sig = req.headers['stripe-signature'];
+    if (typeof sig !== 'string') {
+      console.error('Missing stripe-signature header');
+      res.status(400).send('Missing stripe-signature header');
+      return;
+    }
 
-  let event: Stripe.Event;
-  try {
-    event = stripe.webhooks.constructEvent(
-      (req as any).rawBody,
-      sig,
-      process.env.STRIPE_WEBHOOK_SECRET || ''
-    );
-  } catch (err: any) {
-    console.error('Webhook signature verification failed.', err.message);
-    res.status(400).send(`Webhook Error: ${err.message}`);
-    return;
-  }
+    const stripe = new Stripe(STRIPE_SECRET_KEY.value(), { apiVersion: '2023-10-16' } as any);
+
+    let event: Stripe.Event;
+    try {
+      event = stripe.webhooks.constructEvent(
+        (req as any).rawBody,
+        sig,
+        env.get('STRIPE_WEBHOOK_SECRET')
+      );
+    } catch (err: any) {
+      console.error('Webhook signature verification failed.', err.message);
+      res.status(400).send(`Webhook Error: ${err.message}`);
+      return;
+    }
 
   switch (event.type) {
     case 'checkout.session.completed': {
@@ -189,5 +191,5 @@ export const handleStripeWebhookV2 = functions.https.onRequest(async (req, res) 
       res.sendStatus(200);
       return;
   }
-});
+  });
 
