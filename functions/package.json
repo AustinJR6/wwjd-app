@@ -7,7 +7,8 @@
     "build": "npm run clean && tsc",
     "deploy": "npm run clean && npm run build && firebase deploy --only functions --runtime=nodejs20",
     "start": "npm run clean && npm run build && firebase emulators:start --only functions",
-    "verify:triggers": "node scripts/verify-triggers.mjs"
+    "verify:triggers": "node scripts/verify-triggers.mjs",
+    "test": "jest --passWithNoTests"
   },
   "engines": {
     "node": "20"
@@ -25,7 +26,8 @@
   "devDependencies": {
     "@types/node": "^24.0.4",
     "rimraf": "^6.0.1",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "jest": "^30.0.4"
   },
   "private": true
 }
