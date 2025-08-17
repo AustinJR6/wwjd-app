@@ -301,8 +301,8 @@ export const createCheckoutSession = functions
         customer: customerId,
         metadata: {
           uid,
-          purchaseType: 'token',
-          tokenAmount: String(tokenAmount),
+          purchaseType: 'tokens',
+          tokens: String(tokenAmount),
         },
         automatic_payment_methods: { enabled: true },
       });
@@ -1005,8 +1005,8 @@ export const createTokenPurchaseSheet = functions
       customer: customerId,
       metadata: {
         uid,
-        tokens: amount,
-        type: 'token',
+        purchaseType: 'tokens',
+        tokens: String(amount),
       },
       automatic_payment_methods: { enabled: true },
     });

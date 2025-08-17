@@ -1,9 +1,9 @@
 import { useStripe } from '@stripe/stripe-react-native';
-import { Alert } from 'react-native';
+import { Alert, ToastAndroid } from 'react-native';
 import { useUserProfileStore } from '@/state/userProfile';
 import { getIdToken } from '@/utils/authUtils';
 import { ONEVINE_PLUS_PRICE_ID } from '@/config/stripeConfig';
-import { createCheckoutSession, finalizePaymentIntent } from '@/services/apiService';
+import { createCheckoutSession } from '@/services/apiService';
 import { endpoints } from '@/services/endpoints';
 
 export function useStripeCheckout() {
@@ -30,6 +30,8 @@ export function useStripeCheckout() {
         return false;
       }
 
+      const prevTokens = useUserProfileStore.getState().profile?.tokens ?? 0;
+
       const { error } = await presentPaymentSheet();
       if (error) {
         if (error.code !== 'Canceled') {
@@ -37,9 +39,20 @@ export function useStripeCheckout() {
         }
         return false;
       }
-      const paymentIntentId = clientSecret.split('_secret')[0];
-      await finalizePaymentIntent(paymentIntentId, 'payment', tokenAmount);
-      await refreshProfile();
+
+      for (let i = 0; i < 5; i++) {
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        await refreshProfile();
+        const currentTokens =
+          useUserProfileStore.getState().profile?.tokens ?? prevTokens;
+        if (currentTokens > prevTokens) {
+          ToastAndroid.show(
+            `✅ Purchase successful! ${tokenAmount} tokens have been added to your wallet.`,
+            ToastAndroid.LONG,
+          );
+          break;
+        }
+      }
       return true;
     } catch (err: any) {
       Alert.alert('Checkout Error', err?.message || 'Unable to start checkout');
