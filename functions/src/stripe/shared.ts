@@ -58,7 +58,6 @@ export function getTokensFromPriceId(
 const Stripe = require('stripe');
 export const stripe = new Stripe(getStripeSecret(), {
   apiVersion: '2024-06-20',
-  typescript: true,
 });
 
 export async function ensureStripeCustomer(uid: string): Promise<string> {
