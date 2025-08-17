@@ -6,7 +6,6 @@ import { verifyAuth } from '@core/helpers';
 import { db } from '@core/firebase';
 import {
   stripe,
-  stripeSecrets,
   cleanPriceId,
   ensureStripeCustomer,
   createEphemeralKey,
@@ -15,9 +14,7 @@ import { logTokenVerificationError } from '@utils/index';
 import * as admin from 'firebase-admin';
 import Stripe from 'stripe';
 
-export const createStripeSubscriptionIntent = functions
-  .runWith({ secrets: stripeSecrets })
-  .https.onRequest(
+export const createStripeSubscriptionIntent = functions.https.onRequest(
     withCors(async (req: Request, res: Response) => {
       logger.info('createStripeSubscriptionIntent payload', req.body);
       const { uid, priceId, tier = 'premium' } = req.body || {};

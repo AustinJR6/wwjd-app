@@ -5,7 +5,6 @@ import { withCors } from '@core/http';
 import { verifyAuth } from '@core/helpers';
 import {
   stripe,
-  stripeSecrets,
   cleanPriceId,
   getTokenPriceIds,
   getTokensFromPriceId,
@@ -20,9 +19,7 @@ import {
 // Subscription checkout (hosted checkout for subs)
 // -----------------------------------------------------------------------------
 
-export const startSubscriptionCheckout = functions
-  .runWith({ secrets: stripeSecrets })
-  .https.onRequest(
+export const startSubscriptionCheckout = functions.https.onRequest(
     withCors(async (req: Request, res: Response) => {
       logger.info('📦 startSubscriptionCheckout payload', req.body);
       const { uid, priceId } = req.body || {};
@@ -68,9 +65,7 @@ export const startSubscriptionCheckout = functions
 // Token checkout (hosted)
 // -----------------------------------------------------------------------------
 
-export const startTokenCheckout = functions
-  .runWith({ secrets: stripeSecrets })
-  .https.onRequest(
+export const startTokenCheckout = functions.https.onRequest(
     withCors(async (req: Request, res: Response) => {
       logger.info('🪙 startTokenCheckout payload', req.body);
       const { uid, priceId } = req.body || {};
@@ -122,9 +117,7 @@ export const startTokenCheckout = functions
 // Donations via Checkout
 // -----------------------------------------------------------------------------
 
-export const startDonationCheckout = functions
-  .runWith({ secrets: stripeSecrets })
-  .https.onRequest(
+export const startDonationCheckout = functions.https.onRequest(
     withCors(async (req: Request, res: Response) => {
       logger.info('💖 startDonationCheckout payload', req.body);
       const { userId, amount } = req.body || {};
@@ -186,9 +179,7 @@ export const startDonationCheckout = functions
 // Generic startCheckoutSession (supports tokens or arbitrary price)
 // -----------------------------------------------------------------------------
 
-export const startCheckoutSession = functions
-  .runWith({ secrets: stripeSecrets })
-  .https.onRequest(
+export const startCheckoutSession = functions.https.onRequest(
     withCors(async (req: Request, res: Response) => {
       logger.info('📦 startCheckoutSession payload', req.body);
       logger.debug('startCheckoutSession headers', req.headers);
