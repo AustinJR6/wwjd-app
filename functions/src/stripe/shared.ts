@@ -1,5 +1,4 @@
 import * as functions from 'firebase-functions/v1';
-import Stripe from 'stripe';
 import * as admin from 'firebase-admin';
 import { auth, db } from '@core/firebase';
 import {
@@ -56,8 +55,10 @@ export function getTokensFromPriceId(
   return baseGetTokensFromPriceId(priceId, ids) as 20 | 50 | 100 | null;
 }
 
-export const stripe = new Stripe(STRIPE_SECRET, {
-  apiVersion: '2023-10-16' as any,
+const stripeModule = require('stripe');
+const StripeCtor = stripeModule?.Stripe ?? stripeModule?.default ?? stripeModule;
+export const stripe = new StripeCtor(getStripeSecret(), {
+  apiVersion: '2023-10-16',
   typescript: true,
 });
 

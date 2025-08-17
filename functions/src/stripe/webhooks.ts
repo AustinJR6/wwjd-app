@@ -1,6 +1,6 @@
 import * as functions from 'firebase-functions/v1';
 import * as admin from 'firebase-admin';
-import Stripe from 'stripe';
+import type Stripe from 'stripe';
 import { env } from '@core/env';
 import { stripe } from '@stripe/shared';
 
