@@ -22,7 +22,12 @@ export {
   updateUserProfileCallable,
   completeSignupAndProfile,
 } from './features/users';
-export * from './stripe';
+export * from '@stripe/checkoutHosted';
+export * from '@stripe/paymentSheetTokens';
+export * from '@stripe/paymentSheetSubs';
+export * from '@stripe/setupIntent';
+export * from '@stripe/finalize';
+export * from '@stripe/webhooks';
 
 export { onCompletedChallengeCreate } from './firestoreArchitecture';
 export { cleanLegacySubscriptionFields } from './cleanLegacySubscriptionFields';

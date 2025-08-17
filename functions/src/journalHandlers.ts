@@ -4,7 +4,7 @@ import * as logger from 'firebase-functions/logger';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { auth, db } from '@core/firebase';
 import { createGeminiModel, fetchReligionContext } from '@core/geminiUtils';
-import { logTokenVerificationError } from './utils';
+import { logTokenVerificationError } from '@utils/index';
 
 export const askGeminiSimple = functions
   .https.onRequest(async (req: Request, res: Response) => {

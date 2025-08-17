@@ -4,8 +4,8 @@ import * as logger from 'firebase-functions/logger';
 import { withCors } from '@core/http';
 import { verifyAuth, extractAuthToken } from '@core/helpers';
 import { db } from '@core/firebase';
-import { stripe, stripeSecrets, serverTS } from './shared';
-import { addTokens, logTokenVerificationError } from '@utils';
+import { stripe, stripeSecrets, serverTS } from '@stripe/shared';
+import { addTokens, logTokenVerificationError } from '@utils/index';
 
 export const finalizePaymentIntent = functions
   .runWith({ secrets: stripeSecrets })

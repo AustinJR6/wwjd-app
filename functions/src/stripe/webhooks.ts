@@ -2,7 +2,7 @@ import * as functions from 'firebase-functions/v1';
 import * as admin from 'firebase-admin';
 import Stripe from 'stripe';
 import { env } from '@core/env';
-import { stripe, stripeSecrets } from './shared';
+import { stripe, stripeSecrets } from '@stripe/shared';
 
 const firestore = admin.firestore();
 

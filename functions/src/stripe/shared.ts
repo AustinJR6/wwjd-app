@@ -9,7 +9,10 @@ import {
   STRIPE_50_TOKEN_PRICE_ID,
   STRIPE_100_TOKEN_PRICE_ID,
 } from '@core/secrets';
-import { cleanPriceId, getTokensFromPriceId as baseGetTokensFromPriceId } from '@utils';
+import {
+  cleanPriceId,
+  getTokensFromPriceId as baseGetTokensFromPriceId,
+} from '@utils/index';
 
 if (!admin.apps.length) {
   admin.initializeApp();
