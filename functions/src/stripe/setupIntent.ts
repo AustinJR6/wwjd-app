@@ -9,8 +9,8 @@ import {
   stripeSecrets,
   ensureStripeCustomer,
   createEphemeralKey,
-} from './shared';
-import { logTokenVerificationError } from '@utils';
+} from '@stripe/shared';
+import { logTokenVerificationError } from '@utils/index';
 
 export const createStripeSetupIntent = functions
   .runWith({ secrets: stripeSecrets })

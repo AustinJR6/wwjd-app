@@ -4,7 +4,10 @@ import { Request, Response } from 'express';
 import { db } from '@core/firebase';
 import { withCors, withHandler, jsonOk, jsonError } from '@core/http';
 import { Forbidden, NotFound } from '@core/errors';
-import { updateStreakAndXPInternal, validateSignupProfile } from '@utils';
+import {
+  updateStreakAndXPInternal,
+  validateSignupProfile,
+} from '@utils/index';
 
 export const updateStreakAndXP = functions.https.onRequest(
   withCors(

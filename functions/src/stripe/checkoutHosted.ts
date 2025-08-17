@@ -9,12 +9,12 @@ import {
   cleanPriceId,
   getTokenPriceIds,
   getTokensFromPriceId,
-} from './shared';
+} from '@stripe/shared';
 import {
   logTokenVerificationError,
   STRIPE_SUCCESS_URL,
   STRIPE_CANCEL_URL,
-} from '@utils';
+} from '@utils/index';
 
 // -----------------------------------------------------------------------------
 // Subscription checkout (hosted checkout for subs)

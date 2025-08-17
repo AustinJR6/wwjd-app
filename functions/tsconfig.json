@@ -1,21 +1,18 @@
 {
   "compilerOptions": {
-    "rootDir": "./src",
-    "outDir": "lib",
-    "baseUrl": ".",
-    "paths": {
-      "@core/*": ["src/core/*"],
-      "@data/*": ["src/data/*"],
-      "@features/*": ["src/features/*"],
-      "@utils": ["src/utils"],
-      "@utils/*": ["src/utils/*"]
-    },
-    "target": "ES2020",
     "module": "commonjs",
+    "target": "ES2020",
+    "baseUrl": "src",
+    "paths": {
+      "@core/*": ["core/*"],
+      "@utils/*": ["utils/*"],
+      "@stripe/*": ["stripe/*"]
+    },
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "moduleResolution": "node",
-    "resolveJsonModule": true,
+    "outDir": "lib",
+    "sourceMap": true,
     "strict": true
   },
   "include": ["src"]

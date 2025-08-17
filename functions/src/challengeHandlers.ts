@@ -4,7 +4,10 @@ import * as admin from 'firebase-admin';
 import * as logger from 'firebase-functions/logger';
 import { auth, db } from '@core/firebase';
 import { createGeminiModel, fetchReligionContext } from '@core/geminiUtils';
-import { updateStreakAndXPInternal, logTokenVerificationError } from './utils';
+import {
+  updateStreakAndXPInternal,
+  logTokenVerificationError,
+} from '@utils/index';
 
 export const completeChallenge = functions
   .https.onRequest(async (req: Request, res: Response) => {

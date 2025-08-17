@@ -10,8 +10,8 @@ import {
   cleanPriceId,
   ensureStripeCustomer,
   createEphemeralKey,
-} from './shared';
-import { logTokenVerificationError } from '@utils';
+} from '@stripe/shared';
+import { logTokenVerificationError } from '@utils/index';
 import * as admin from 'firebase-admin';
 
 export const createCheckoutSession = functions
