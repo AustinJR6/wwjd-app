@@ -6,15 +6,12 @@ import { verifyAuth, extractAuthToken } from '@core/helpers';
 import Stripe from 'stripe';
 import {
   stripe,
-  stripeSecrets,
   ensureStripeCustomer,
   createEphemeralKey,
 } from '@stripe/shared';
 import { logTokenVerificationError } from '@utils/index';
 
-export const createStripeSetupIntent = functions
-  .runWith({ secrets: stripeSecrets })
-  .https.onRequest(
+export const createStripeSetupIntent = functions.https.onRequest(
     withCors(async (req: Request, res: Response) => {
       logger.info('createStripeSetupIntent called', { body: req.body });
 

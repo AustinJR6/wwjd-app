@@ -6,7 +6,6 @@ import { verifyAuth } from '@core/helpers';
 import { db } from '@core/firebase';
 import {
   stripe,
-  stripeSecrets,
   cleanPriceId,
   ensureStripeCustomer,
   createEphemeralKey,
@@ -14,9 +13,7 @@ import {
 import { logTokenVerificationError } from '@utils/index';
 import * as admin from 'firebase-admin';
 
-export const createCheckoutSession = functions
-  .runWith({ secrets: stripeSecrets })
-  .https.onRequest(
+export const createCheckoutSession = functions.https.onRequest(
     withCors(async (req: Request, res: Response) => {
       logger.info('createCheckoutSession payload', req.body);
       const { uid, priceId, tokenAmount } = req.body || {};

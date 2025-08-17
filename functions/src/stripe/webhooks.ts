@@ -2,7 +2,7 @@ import * as functions from 'firebase-functions/v1';
 import * as admin from 'firebase-admin';
 import Stripe from 'stripe';
 import { env } from '@core/env';
-import { stripe, stripeSecrets } from '@stripe/shared';
+import { stripe } from '@stripe/shared';
 
 const firestore = admin.firestore();
 
@@ -95,9 +95,7 @@ async function handleTokenPurchase(intent: Stripe.PaymentIntent) {
   console.log('Token handler: credited tokens', { uid, tokenAmount });
 }
 
-export const handleStripeWebhookV2 = functions
-  .runWith({ secrets: stripeSecrets })
-  .https.onRequest(async (req, res) => {
+export const handleStripeWebhookV2 = functions.https.onRequest(async (req, res) => {
     const sig = req.headers['stripe-signature'];
     if (typeof sig !== 'string') {
       console.error('Missing stripe-signature header');
