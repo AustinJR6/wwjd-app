@@ -4,7 +4,7 @@
   "main": "lib/index.js",
   "scripts": {
     "clean": "rimraf lib",
-    "build": "npm run clean && tsc && tsc-alias",
+    "build": "npm run clean && tsc --outDir lib",
     "build:watch": "concurrently \"tsc -w\" \"tsc-alias -w\"",
     "predeploy": "npm run build",
     "deploy": "npm run build && firebase deploy --only functions --runtime=nodejs20",
@@ -23,7 +23,7 @@
     "dotenv": "^16.5.0",
     "firebase-admin": "^11.10.1",
     "firebase-functions": "^4.9.0",
-    "stripe": "^16.12.0"
+    "stripe": "^16"
   },
   "devDependencies": {
     "@types/node": "^24.0.4",
