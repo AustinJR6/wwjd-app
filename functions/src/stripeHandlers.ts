@@ -56,12 +56,18 @@ export const startSubscriptionCheckout = functions
     logger.info("🔐 Stripe Secret:", secret ? "\u2713 set" : "\u2717 missing");
 
     const { uid, priceId } = req.body || {};
-    if (!uid || !priceId) {
-      logger.warn("⚠️ Missing uid or priceId", { uid, priceId });
-      res.status(400).json({ error: "Missing uid or priceId" });
+    if (!uid) {
+      logger.warn("⚠️ Missing uid", { uid });
+      res.status(400).json({ error: "Missing uid" });
       return;
     }
-    const cleanId = cleanPriceId(priceId);
+    const resolvedPriceId = priceId || STRIPE_SUB_PRICE_ID.value();
+    if (!resolvedPriceId) {
+      logger.error("❌ Subscription price not configured");
+      res.status(500).json({ error: "Subscription price not configured" });
+      return;
+    }
+    const cleanId = cleanPriceId(resolvedPriceId);
 
     let authData: { uid: string; token: string };
     try {
@@ -97,8 +103,8 @@ export const startSubscriptionCheckout = functions
         client_reference_id: uid,
         metadata: { uid, type: "subscription" },
       });
-      logger.info(`✅ Stripe session created ${session.id}`);
-      res.status(200).json({ checkoutUrl: session.url });
+      logger.info(`[startSubscriptionCheckout] created session ${session.id} url=${session.url}`);
+      res.status(200).json({ url: session.url });
     } catch (err) {
       logTokenVerificationError('startSubscriptionCheckout', authData.token, err);
       res
@@ -160,7 +166,7 @@ export const startOneTimeTokenCheckout = functions
         client_reference_id: userId,
         metadata,
       });
-      logger.info(`✅ Stripe session created ${session.id}`);
+      logger.info('[startCheckoutSession] created session', { id: session.id, url: session.url });
       res.status(200).json({ url: session.url });
     } catch (err) {
       logTokenVerificationError('startOneTimeTokenCheckout', authData.token, err);
@@ -215,8 +221,8 @@ export const startTokenCheckout = functions
         client_reference_id: uid,
         metadata,
       });
-      logger.info(`✅ Stripe session created ${session.id}`);
-      res.status(200).json({ checkoutUrl: session.url });
+      logger.info(`[startTokenCheckout] created session ${session.id} url=${session.url}`);
+      res.status(200).json({ url: session.url });
     } catch (err) {
       logTokenVerificationError('startTokenCheckout', authData.token, err);
       res
@@ -547,7 +553,7 @@ export const startDonationCheckout = functions
         client_reference_id: userId,
         metadata: { uid: userId, donationAmount: amount },
       });
-      logger.info(`✅ Donation session created ${session.id}`);
+      logger.info('[startDonationCheckout] created session', { id: session.id, url: session.url });
       res.status(200).json({ url: session.url });
     } catch (err) {
       logTokenVerificationError('startDonationCheckout', authData.token, err);
@@ -609,7 +615,7 @@ export const startCheckoutSession = functions
         client_reference_id: userId,
         metadata,
       });
-      logger.info(`✅ Stripe session created ${session.id}`);
+        logger.info('[startCheckoutSession] created session', { id: session.id, url: session.url });
       res.status(200).json({ url: session.url });
     } catch (err) {
       logTokenVerificationError('startCheckoutSession', authData.token, err);
@@ -700,7 +706,7 @@ export const createStripeCheckout = functions
         customer_email: email,
         metadata,
       });
-      logger.info(`✅ Stripe session created ${session.id}`);
+      logger.info('[createStripeCheckout] created session', { id: session.id, url: session.url });
       res.status(200).json({ url: session.url });
     } catch (err) {
       logTokenVerificationError('createStripeCheckout', authData.token, err);

@@ -1,19 +1,18 @@
 import React, { useState } from 'react';
 import CustomText from '@/components/CustomText';
-import { View, StyleSheet, Alert } from 'react-native';
+import { View, StyleSheet, Alert, Linking } from 'react-native';
 import Button from '@/components/common/Button';
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { useTheme } from "@/components/theme/theme";
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from "@/navigation/RootStackParamList";
 import { getCurrentUserId } from '@/utils/authUtils';
-import useStripeCheckout from '@/hooks/useStripeCheckout';
+import { startSubscriptionCheckout } from '@/services/apiService';
 
 type Props = { navigation: NativeStackNavigationProp<RootStackParamList, 'MainTabs'> };
 
 export default function UpgradeScreen({ navigation }: Props) {
   const theme = useTheme();
-  const { startOneVinePlusCheckout } = useStripeCheckout();
   const styles = React.useMemo(
     () =>
       StyleSheet.create({
@@ -46,7 +45,6 @@ export default function UpgradeScreen({ navigation }: Props) {
   );
 
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
 
   const handleUpgrade = async () => {
     setLoading(true);
@@ -54,17 +52,18 @@ export default function UpgradeScreen({ navigation }: Props) {
       const uid = await getCurrentUserId();
       if (!uid) {
         Alert.alert('Authentication Required', 'Please sign in again.');
-        setLoading(false);
         return;
       }
-      const ok = await startOneVinePlusCheckout(uid);
-      if (ok) {
-        setSuccess(true);
-        Alert.alert('Success', 'You are now a OneVine+ member 🌿');
+      const url = await startSubscriptionCheckout(uid);
+      console.log('[upgrade] response', url);
+      if (!url) {
+        Alert.alert('Upgrade Failed', 'Missing payment parameters');
+        return;
       }
-
+      await Linking.openURL(url);
     } catch (err) {
-      Alert.alert('Payment Error', typeof err === 'object' && err !== null && 'message' in err ? String((err as any).message) : String(err) || 'Something went wrong.');
+      console.log('[upgrade] error', err);
+      Alert.alert('Upgrade failed');
     } finally {
       setLoading(false);
     }
@@ -88,12 +87,6 @@ export default function UpgradeScreen({ navigation }: Props) {
         <View style={styles.buttonWrap}>
           <Button title="Subscribe to OneVine+" onPress={handleUpgrade} disabled={loading} loading={loading} />
         </View>
-
-        {success && (
-          <CustomText style={styles.subtitle}>
-            You are now a OneVine+ member 🌿
-          </CustomText>
-        )}
 
         <View style={styles.buttonWrap}>
           <Button title="Back to Home" onPress={() => navigation.navigate('MainTabs', { screen: 'HomeScreen' })} />
