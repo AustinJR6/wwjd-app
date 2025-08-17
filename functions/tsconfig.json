@@ -8,7 +8,9 @@
       "@data/*": ["data/*"],
       "@features/*": ["features/*"],
       "@utils": ["utils"],
-      "@utils/*": ["utils/*"]
+      "@utils/*": ["utils/*"],
+      "stripe": ["../node_modules/stripe"],
+      "stripe/*": ["../node_modules/stripe/*"]
     },
     "target": "ES2020",
     "module": "commonjs",
