@@ -115,9 +115,8 @@ export async function startTokenCheckout(uid: string, priceId: string): Promise<
       throw new Error('Unable to start checkout.');
     }
     const data: StripeCheckoutResponse = JSON.parse(text);
-    const url = (data as any).checkoutUrl || data.url;
-    console.log('🔗 Redirect URL received', url);
-    return url;
+    console.log('🔗 Redirect URL received', data.url);
+    return data.url || '';
   } catch (err: any) {
     console.warn('❌ Firestore REST error on startTokenCheckout:', err?.message || err);
     throw new Error(err?.message || 'Unable to start checkout.');
@@ -173,12 +172,12 @@ export async function createCheckoutSession(
   }
 }
 
-export async function startSubscriptionCheckout(uid: string, priceId: string): Promise<string> {
-  if (typeof uid !== 'string' || !uid.trim() || typeof priceId !== 'string' || !priceId.trim()) {
-    console.warn('🚫 Stripe Checkout failed — missing uid or priceId', { uid, priceId });
+export async function startSubscriptionCheckout(uid: string, priceId?: string): Promise<string> {
+  if (typeof uid !== 'string' || !uid.trim()) {
+    console.warn('🚫 Stripe Checkout failed — missing uid', { uid });
     return '';
   }
-  const cleanId = cleanPriceId(priceId);
+  const cleanId = priceId ? cleanPriceId(priceId) : undefined;
   console.log('📦 Starting OneVine+ subscription...', { uid, priceId: cleanId });
 
   let headers;
@@ -190,7 +189,8 @@ export async function startSubscriptionCheckout(uid: string, priceId: string): P
   }
 
   try {
-    const payload = { uid, priceId: cleanId };
+    const payload: Record<string, any> = { uid };
+    if (cleanId) payload.priceId = cleanId;
     const res = await sendRequestWithGusBugLogging(() =>
       fetch(endpoints.startSubscriptionCheckout, {
         method: 'POST',
@@ -209,9 +209,8 @@ export async function startSubscriptionCheckout(uid: string, priceId: string): P
       throw new Error('Unable to start checkout.');
     }
     const data: StripeCheckoutResponse = JSON.parse(text);
-    const url = (data as any).checkoutUrl || data.url;
-    console.log('🔗 Redirecting to:', url);
-    return url;
+    console.log('🔗 Redirecting to:', data.url);
+    return data.url || '';
   } catch (err: any) {
     console.warn('❌ Firestore REST error on startSubscriptionCheckout:', err?.message || err);
     throw new Error(err?.message || 'Unable to start checkout.');
