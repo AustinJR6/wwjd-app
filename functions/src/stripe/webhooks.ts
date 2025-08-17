@@ -2,15 +2,9 @@ import * as functions from 'firebase-functions/v1';
 import * as admin from 'firebase-admin';
 import Stripe from 'stripe';
 import { env } from '@core/env';
-import { STRIPE_SECRET_KEY } from '@core/secrets';
-
-// Initialize Firebase Admin if not already initialized
-if (!admin.apps.length) {
-  admin.initializeApp();
-}
+import { stripe, stripeSecrets } from './shared';
 
 const firestore = admin.firestore();
-
 
 const tsFromUnix = (n?: number) =>
   n ? admin.firestore.Timestamp.fromMillis(n * 1000) : null;
@@ -41,7 +35,7 @@ const upsertSubscriptionFromStripe = async (sub: Stripe.Subscription) => {
       isSubscribed: isActive,
       lastActive: admin.firestore.FieldValue.serverTimestamp(),
     },
-    { merge: true }
+    { merge: true },
   );
 };
 
@@ -94,16 +88,15 @@ async function handleTokenPurchase(intent: Stripe.PaymentIntent) {
         currency: intent.currency || 'usd',
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
       },
-      { merge: true }
+      { merge: true },
     );
   });
 
   console.log('Token handler: credited tokens', { uid, tokenAmount });
 }
 
-// Webhook handler
 export const handleStripeWebhookV2 = functions
-  .runWith({ secrets: [STRIPE_SECRET_KEY] })
+  .runWith({ secrets: stripeSecrets })
   .https.onRequest(async (req, res) => {
     const sig = req.headers['stripe-signature'];
     if (typeof sig !== 'string') {
@@ -112,14 +105,12 @@ export const handleStripeWebhookV2 = functions
       return;
     }
 
-    const stripe = new Stripe(STRIPE_SECRET_KEY.value(), { apiVersion: '2023-10-16' } as any);
-
     let event: Stripe.Event;
     try {
       event = stripe.webhooks.constructEvent(
         (req as any).rawBody,
         sig,
-        env.get('STRIPE_WEBHOOK_SECRET')
+        env.get('STRIPE_WEBHOOK_SECRET'),
       );
     } catch (err: any) {
       console.error('Webhook signature verification failed.', err.message);
@@ -127,69 +118,71 @@ export const handleStripeWebhookV2 = functions
       return;
     }
 
-  switch (event.type) {
-    case 'checkout.session.completed': {
-      try {
-        const session = event.data.object as Stripe.Checkout.Session;
-        const uid = session.metadata?.uid;
-        if (!uid) {
-          console.warn('Missing uid for checkout.session.completed', {
-            eventType: event.type,
-            sessionId: session.id,
-          });
+    switch (event.type) {
+      case 'checkout.session.completed': {
+        try {
+          const session = event.data.object as Stripe.Checkout.Session;
+          const uid = session.metadata?.uid;
+          if (!uid) {
+            console.warn('Missing uid for checkout.session.completed', {
+              eventType: event.type,
+              sessionId: session.id,
+            });
+            res.sendStatus(200);
+            return;
+          }
+          const now = admin.firestore.FieldValue.serverTimestamp();
+          await firestore.doc(`subscriptions/${uid}`).set(
+            {
+              status: 'active',
+              sessionId: session.id,
+              subscribedAt: now,
+              updatedAt: now,
+            },
+            { merge: true },
+          );
+          await firestore.doc(`users/${uid}`).set(
+            { isSubscribed: true, lastActive: now },
+            { merge: true },
+          );
           res.sendStatus(200);
-          return;
+        } catch (err) {
+          console.error('Error in checkout.session.completed', {
+            error: err,
+            eventType: event.type,
+            sessionId: (event.data.object as any)?.id,
+          });
+          res.sendStatus(400);
         }
-        const now = admin.firestore.FieldValue.serverTimestamp();
-        await firestore.doc(`subscriptions/${uid}`).set(
-          {
-            status: 'active',
-            sessionId: session.id,
-            subscribedAt: now,
-            updatedAt: now,
-          },
-          { merge: true }
-        );
-        await firestore.doc(`users/${uid}`).set(
-          { isSubscribed: true, lastActive: now },
-          { merge: true }
-        );
-        res.sendStatus(200);
-      } catch (err) {
-        console.error('Error in checkout.session.completed', {
-          error: err,
-          eventType: event.type,
-          sessionId: (event.data.object as any)?.id,
-        });
-        res.sendStatus(400);
+        return;
       }
-      return;
-    }
-    case 'customer.subscription.created':
-    case 'customer.subscription.updated':
-    case 'customer.subscription.deleted': {
-      try {
-        const sub = event.data.object as Stripe.Subscription;
-        await upsertSubscriptionFromStripe(sub);
-        res.sendStatus(200);
-      } catch (err) {
-        console.error('Error in subscription event', {
-          error: err,
-          eventType: event.type,
-          subscriptionId: (event.data.object as any)?.id,
-        });
-        res.sendStatus(400);
+      case 'customer.subscription.created':
+      case 'customer.subscription.updated':
+      case 'customer.subscription.deleted': {
+        try {
+          const sub = event.data.object as Stripe.Subscription;
+          await upsertSubscriptionFromStripe(sub);
+          res.sendStatus(200);
+        } catch (err) {
+          console.error('Error in subscription event', {
+            error: err,
+            eventType: event.type,
+            subscriptionId: (event.data.object as any)?.id,
+          });
+          res.sendStatus(400);
+        }
+        return;
       }
-      return;
+      case 'payment_intent.succeeded': {
+        const intent = event.data.object as Stripe.PaymentIntent;
+        console.log('PI succeeded metadata', { id: intent.id, metadata: intent.metadata });
+        await handleTokenPurchase(intent);
+        res.sendStatus(200);
+        return;
+      }
+      default:
+        console.log(`Unhandled event type: ${event.type}`);
+        res.sendStatus(200);
+        return;
     }
-    case 'payment_intent.succeeded':
-      await handleTokenPurchase(event.data.object as Stripe.PaymentIntent);
-      res.sendStatus(200);
-      return;
-    default:
-      console.log(`Unhandled event type: ${event.type}`);
-      res.sendStatus(200);
-      return;
-  }
   });
-
