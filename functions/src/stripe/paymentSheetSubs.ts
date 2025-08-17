@@ -47,6 +47,11 @@ export const createStripeSubscriptionIntent = functions.https.onRequest(
           metadata: { uid, tier },
         });
 
+        const latestInvoice =
+          (subscriptionRes.latest_invoice as any) || null;
+        const clientSecret =
+          latestInvoice?.payment_intent?.client_secret as string | undefined;
+
         type SubWithPeriod = Stripe.Subscription & {
           current_period_start?: number;
           current_period_end?: number;
@@ -57,12 +62,8 @@ export const createStripeSubscriptionIntent = functions.https.onRequest(
           status,
           current_period_start,
           current_period_end,
-          latest_invoice,
         } = subscription;
 
-        const latestInvoice = latest_invoice as Stripe.Invoice | null;
-        const clientSecret =
-          (latestInvoice as any)?.payment_intent?.client_secret as string | undefined;
         const invoiceId = latestInvoice?.id;
         const amount =
           typeof latestInvoice?.amount_due === 'number' ? latestInvoice.amount_due : 0;

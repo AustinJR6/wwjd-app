@@ -112,6 +112,7 @@ export const createCheckoutSession = functions.https.onRequest(
         logger.info(`✅ PaymentIntent created ${intent.id}`);
         res.status(200).json({
           clientSecret,
+          paymentIntent: clientSecret,
           ephemeralKey: ephSecret,
           customerId,
         });

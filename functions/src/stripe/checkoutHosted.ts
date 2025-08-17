@@ -91,9 +91,12 @@ export const startTokenCheckout = functions.https.onRequest(
         if (authData.uid !== uid) {
           logger.warn('⚠️ UID mismatch between token and payload');
         }
-        const tokens = getTokensFromPriceId(cleanId, priceIds);
-        const metadata: Record<string, string> = { uid, type: 'tokens' };
-        if (tokens) metadata.tokens = String(tokens);
+        const tokenCount = getTokensFromPriceId(cleanId, priceIds);
+        const metadata: Record<string, string> = {
+          uid,
+          type: 'tokens',
+          tokens: String(tokenCount),
+        };
 
         const session = await stripe.checkout.sessions.create({
           mode: 'payment',
@@ -207,12 +210,10 @@ export const startCheckoutSession = functions.https.onRequest(
         if (authData.uid !== userId) {
           logger.warn('⚠️ UID mismatch between token and payload');
         }
-        const tokens = getTokensFromPriceId(cleanId, priceIds);
-        const metadata: Record<string, string> = { uid: userId };
-        if (tokens) {
-          metadata.type = 'tokens';
-          metadata.tokens = String(tokens);
-        }
+        const tokenCount = getTokensFromPriceId(cleanId, priceIds);
+        const metadata: Record<string, string> = tokenCount
+          ? { uid: userId, type: 'tokens', tokens: String(tokenCount) }
+          : { uid: userId };
 
         const session = await stripe.checkout.sessions.create({
           mode,
@@ -221,7 +222,7 @@ export const startCheckoutSession = functions.https.onRequest(
           cancel_url,
           client_reference_id: userId,
           metadata,
-          payment_intent_data: tokens ? { metadata } : undefined,
+          payment_intent_data: tokenCount ? { metadata } : undefined,
         });
         logger.info(`✅ Stripe session created ${session.id}`);
         res.status(200).json({ url: session.url });
