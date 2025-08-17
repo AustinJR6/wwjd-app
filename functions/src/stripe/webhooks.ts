@@ -40,16 +40,6 @@ const upsertSubscriptionFromStripe = async (sub: Stripe.Subscription) => {
 };
 
 async function handleTokenPurchase(intent: Stripe.PaymentIntent) {
-  const purchaseType =
-    (intent.metadata?.purchaseType || intent.metadata?.type || '').toLowerCase();
-  if (purchaseType !== 'token' && purchaseType !== 'tokens') {
-    console.log('Token handler: ignoring non-token intent', {
-      type: purchaseType,
-      id: intent.id,
-    });
-    return;
-  }
-
   const uid = intent.metadata?.uid;
   if (!uid) {
     console.warn('Token handler: missing uid', { id: intent.id });
