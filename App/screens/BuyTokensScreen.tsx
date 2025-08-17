@@ -89,29 +89,18 @@ export default function BuyTokensScreen({ navigation }: Props) {
         return;
       }
 
-      const prevTokens =
-        useUserProfileStore.getState().profile?.tokens ?? 0;
-
       const { error } = await presentPaymentSheet();
-      if (error) {
+      if (!error) {
+        ToastAndroid.show(
+          'Tokens added to your account!',
+          ToastAndroid.SHORT,
+        );
+        await refreshProfile();
+      } else {
         if (error.code !== 'Canceled') {
           Alert.alert('Payment Error', error.message);
         }
         return;
-      }
-
-      for (let i = 0; i < 5; i++) {
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-        await refreshProfile();
-        const currentTokens =
-          useUserProfileStore.getState().profile?.tokens ?? prevTokens;
-        if (currentTokens > prevTokens) {
-          ToastAndroid.show(
-            `✅ Purchase successful! ${tokenAmount} tokens have been added to your wallet.`,
-            ToastAndroid.LONG,
-          );
-          break;
-        }
       }
     } catch (err: any) {
       Alert.alert('Checkout Error', err?.message || 'Unable to start checkout');

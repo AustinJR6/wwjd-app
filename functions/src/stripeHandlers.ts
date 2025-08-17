@@ -11,8 +11,6 @@ import {
   getTokensFromPriceId,
   addTokens,
   logTokenVerificationError,
-  STRIPE_SUCCESS_URL,
-  STRIPE_CANCEL_URL,
 } from './utils';
 import {
   STRIPE_SECRET_KEY,
@@ -55,7 +53,7 @@ export const startSubscriptionCheckout = functions
     const secret = getStripeSecret();
     logger.info("🔐 Stripe Secret:", secret ? "\u2713 set" : "\u2717 missing");
 
-    const { uid, priceId } = req.body || {};
+    const { uid, priceId, cancelUrl } = req.body || {};
     if (!uid) {
       logger.warn("⚠️ Missing uid", { uid });
       res.status(400).json({ error: "Missing uid" });
@@ -89,27 +87,55 @@ export const startSubscriptionCheckout = functions
       if (authData.uid !== uid) {
         logger.warn("⚠️ UID mismatch between token and payload");
       }
+
+      const userRef = db.collection('users').doc(uid);
+      const snap = await userRef.get();
+      let customerId = (snap.data() as any)?.stripeCustomerId as string | undefined;
+      if (!customerId) {
+        const userRecord = await auth.getUser(uid);
+        const customer = await stripe.customers.create({
+          email: userRecord.email ?? undefined,
+          metadata: { userId: uid },
+        });
+        customerId = customer.id;
+        await userRef.set({ stripeCustomerId: customerId }, { merge: true });
+      }
+
+      const successUrlWithParams =
+        `onevine://home?status=success&sid={CHECKOUT_SESSION_ID}`;
+
       const session = await stripe.checkout.sessions.create({
-        mode: "subscription",
-        payment_method_types: ["card"],
-        line_items: [
-          {
-            price: cleanId, // Replace with your actual Stripe Price ID
-            quantity: 1,
-          },
-        ],
-        success_url: STRIPE_SUCCESS_URL,
-        cancel_url: STRIPE_CANCEL_URL,
+        mode: 'subscription',
+        customer: customerId,
+        line_items: [{ price: cleanId, quantity: 1 }],
+        success_url: successUrlWithParams,
+        cancel_url: cancelUrl || 'onevine://home?status=cancel',
         client_reference_id: uid,
-        metadata: { uid, type: "subscription" },
+        metadata: { userId: uid, type: 'subscription' },
+        allow_promotion_codes: true,
       });
-      logger.info(`[startSubscriptionCheckout] created session ${session.id} url=${session.url}`);
+
+      await userRef
+        .collection('transactions')
+        .doc(session.id)
+        .set(
+          {
+            type: 'subscription',
+            status: 'pending',
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          },
+          { merge: true }
+        );
+
+      logger.info(
+        `[startSubscriptionCheckout] created session ${session.id} url=${session.url}`
+      );
       res.status(200).json({ url: session.url });
     } catch (err) {
       logTokenVerificationError('startSubscriptionCheckout', authData.token, err);
       res
         .status(500)
-        .json({ error: (err as any)?.message || "Failed to start checkout" });
+        .json({ error: (err as any)?.message || 'Failed to start checkout' });
     }
   }));
 

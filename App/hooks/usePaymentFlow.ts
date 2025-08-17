@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { Alert, Linking } from 'react-native';
 import { useStripe } from '@stripe/stripe-react-native';
+import { useNavigation } from '@react-navigation/native';
 import { useUserProfileStore } from '@/state/userProfile';
 import { logTransaction } from '@/utils/transactionLogger';
 import { getIdToken, getCurrentUserId } from '@/utils/authUtils';
@@ -15,11 +16,20 @@ export type PaymentFlowParams = {
 
 export function usePaymentFlow() {
   const { initPaymentSheet, presentPaymentSheet, handleURLCallback } = useStripe();
+  const navigation = useNavigation<any>();
 
   useEffect(() => {
-    const sub = Linking.addEventListener('url', (e) => handleURLCallback(e.url));
+    const sub = Linking.addEventListener('url', ({ url }) => {
+      handleURLCallback(url);
+      try {
+        const parsed = new URL(url);
+        if (parsed.protocol === 'onevine:' && parsed.hostname === 'home') {
+          navigation.reset({ index: 0, routes: [{ name: 'HomeScreen' }] });
+        }
+      } catch {}
+    });
     return () => sub.remove();
-  }, [handleURLCallback]);
+  }, [handleURLCallback, navigation]);
 
 
   // ...existing code...
