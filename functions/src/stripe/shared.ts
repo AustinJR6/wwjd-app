@@ -55,7 +55,8 @@ export function getTokensFromPriceId(
   return baseGetTokensFromPriceId(priceId, ids) as 20 | 50 | 100 | null;
 }
 
-const Stripe = require('stripe');
+const stripeModule = require('stripe');
+const Stripe = stripeModule.default || stripeModule;
 export const stripe = new Stripe(getStripeSecret(), {
   apiVersion: '2024-06-20',
   typescript: true,
