@@ -1,3 +1,4 @@
+// src/hooks/useStripeCheckout.ts
 import { useStripe } from '@stripe/stripe-react-native';
 import { Alert } from 'react-native';
 import { useUserProfileStore } from '@/state/userProfile';
@@ -10,12 +11,23 @@ export function useStripeCheckout() {
   const { initPaymentSheet, presentPaymentSheet } = useStripe();
   const refreshProfile = useUserProfileStore((s) => s.refreshUserProfile);
 
+  /**
+   * PaymentSheet for one-time token purchases.
+   * Server should return: { clientSecret | paymentIntent, ephemeralKey, customerId }
+   */
   async function purchaseTokens(uid: string, priceId: string, tokenAmount: number) {
     try {
       const session = await createCheckoutSession(uid, priceId, tokenAmount);
-      const clientSecret = session.clientSecret || session.paymentIntent;
+
+      // Accept multiple possible keys from server for robustness
+      const clientSecret: string =
+        session.paymentIntent ||
+        session.clientSecret ||
+        session.clientSecret ||
+        (() => { throw new Error('Missing clientSecret'); })();
+
       if (!clientSecret || !session.ephemeralKey || !session.customerId) {
-        throw new Error('Missing payment sheet parameters');
+        throw new Error('Missing payment sheet parameters (tokens)');
       }
 
       const { error: initError } = await initPaymentSheet({
@@ -24,6 +36,7 @@ export function useStripeCheckout() {
         paymentIntentClientSecret: clientSecret,
         merchantDisplayName: 'OneVine',
         returnURL: 'onevine://payment-return',
+        allowsDelayedPaymentMethods: false,
       });
       if (initError) {
         Alert.alert('Payment Error', initError.message);
@@ -37,16 +50,23 @@ export function useStripeCheckout() {
         }
         return false;
       }
+
+      // Derive PI id from the client secret for finalize call
       const paymentIntentId = clientSecret.split('_secret')[0];
       await finalizePaymentIntent(paymentIntentId, 'payment', tokenAmount);
       await refreshProfile();
       return true;
     } catch (err: any) {
-      Alert.alert('Checkout Error', err?.message || 'Unable to start checkout');
+      Alert.alert('Checkout Error', err?.message || 'Unable to start token checkout');
       return false;
     }
   }
 
+  /**
+   * PaymentSheet for subscription (OneVine+).
+   * Server returns: { paymentIntentClientSecret, ephemeralKey, customerId }.
+   * We also accept older aliases (clientSecret / client_secret) to be safe.
+   */
   async function startOneVinePlusCheckout(uid: string) {
     try {
       const token = await getIdToken(true);
@@ -58,18 +78,35 @@ export function useStripeCheckout() {
         },
         body: JSON.stringify({ uid, priceId: ONEVINE_PLUS_PRICE_ID }),
       });
+
+      // Surface HTTP errors with body text to make debugging easier
+      if (!res.ok) {
+        const text = await res.text().catch(() => '');
+        throw new Error(text || `HTTP ${res.status}`);
+      }
+
       const data = await res.json();
-      const clientSecret = data.clientSecret || data.client_secret;
-      if (!clientSecret || !data.ephemeralKey || !data.customerId) {
-        throw new Error('Missing payment sheet parameters');
+
+      // 👇 The key fix: prefer paymentIntentClientSecret for PaymentSheet
+      const clientSecret: string =
+        data.paymentIntentClientSecret ||
+        data.clientSecret ||
+        data.client_secret;
+
+      const ephemeralKey: string = data.ephemeralKey;
+      const customerId: string = data.customerId;
+
+      if (!clientSecret || !ephemeralKey || !customerId) {
+        throw new Error('Missing payment sheet parameters (subscription)');
       }
 
       const { error: initError } = await initPaymentSheet({
-        customerId: data.customerId,
-        customerEphemeralKeySecret: data.ephemeralKey,
+        customerId,
+        customerEphemeralKeySecret: ephemeralKey,
         paymentIntentClientSecret: clientSecret,
         merchantDisplayName: 'OneVine',
         returnURL: 'onevine://payment-return',
+        allowsDelayedPaymentMethods: false,
       });
       if (initError) {
         Alert.alert('Payment Error', initError.message);
@@ -87,7 +124,7 @@ export function useStripeCheckout() {
       await refreshProfile();
       return true;
     } catch (err: any) {
-      Alert.alert('Subscription Error', err?.message || 'Unable to start checkout');
+      Alert.alert('Subscription Error', err?.message || 'Unable to start subscription checkout');
       return false;
     }
   }
