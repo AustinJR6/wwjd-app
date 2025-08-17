@@ -3,7 +3,7 @@ import { Request, Response } from 'express';
 import * as logger from 'firebase-functions/logger';
 import { withCors } from '@core/http';
 import { verifyAuth, extractAuthToken } from '@core/helpers';
-import Stripe from 'stripe';
+import type Stripe from 'stripe';
 import {
   stripe,
   ensureStripeCustomer,

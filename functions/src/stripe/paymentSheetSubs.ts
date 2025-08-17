@@ -12,7 +12,7 @@ import {
 } from '@stripe/shared';
 import { logTokenVerificationError } from '@utils/index';
 import * as admin from 'firebase-admin';
-import Stripe from 'stripe';
+import type Stripe from 'stripe';
 
 export const createStripeSubscriptionIntent = functions.https.onRequest(
     withCors(async (req: Request, res: Response) => {
