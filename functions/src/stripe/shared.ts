@@ -1,3 +1,4 @@
+import Stripe from 'stripe';
 import * as functions from 'firebase-functions/v1';
 import * as admin from 'firebase-admin';
 import { auth, db } from '@core/firebase';
@@ -25,16 +26,11 @@ export const stripeSecrets = [
   STRIPE_100_TOKEN_PRICE_ID,
 ];
 
-const STRIPE_SECRET =
-  functions.config().stripe?.secret_key || process.env.STRIPE_SECRET_KEY;
-
-if (!STRIPE_SECRET) {
-  throw new Error('Missing Stripe secret key');
-}
-
-export function getStripeSecret(): string {
-  return STRIPE_SECRET;
-}
+const key =
+  process.env.STRIPE_SECRET_KEY || functions.config().stripe?.secret_key || '';
+if (!key) throw new Error('Missing Stripe secret key');
+export const stripe = new Stripe(key, { apiVersion: '2024-06-20' });
+export type { Stripe };
 
 export function getPublishableKey(): string {
   return functions.config().stripe?.publishable || STRIPE_PUBLISHABLE_KEY.value();
@@ -54,11 +50,6 @@ export function getTokensFromPriceId(
 ): 20 | 50 | 100 | null {
   return baseGetTokensFromPriceId(priceId, ids) as 20 | 50 | 100 | null;
 }
-
-const Stripe = require('stripe');
-export const stripe = new Stripe(getStripeSecret(), {
-  apiVersion: '2024-06-20',
-});
 
 export async function ensureStripeCustomer(uid: string): Promise<string> {
   const userRef = db.collection('users').doc(uid);
