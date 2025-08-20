@@ -9,7 +9,6 @@ import { auth, db } from '@core/firebase';
 import {
   cleanPriceId,
   getTokensFromPriceId,
-  addTokens,
   logTokenVerificationError,
   STRIPE_SUCCESS_URL,
   STRIPE_CANCEL_URL,
@@ -95,7 +94,7 @@ export const startSubscriptionCheckout = functions
         success_url: STRIPE_SUCCESS_URL,
         cancel_url: STRIPE_CANCEL_URL,
         client_reference_id: uid,
-        metadata: { uid, type: "subscription" },
+        metadata: { uid, purpose: 'subscription' },
       });
       logger.info(`✅ Stripe session created ${session.id}`);
       res.status(200).json({ checkoutUrl: session.url });
@@ -150,8 +149,8 @@ export const startOneTimeTokenCheckout = functions
         logger.warn("⚠️ UID mismatch between token and payload");
       }
       const tokens = getTokensFromPriceId(cleanId, priceIds);
-      const metadata: Record<string, string> = { uid: userId, type: "tokens" };
-      if (tokens) metadata.tokens = String(tokens);
+      const metadata: Record<string, string> = { uid: userId, purpose: 'tokens' };
+      if (tokens) metadata.tokenAmount = String(tokens);
       const session = await stripe.checkout.sessions.create({
         mode: "payment",
         line_items: [{ price: cleanId, quantity: 1 }],
@@ -205,8 +204,8 @@ export const startTokenCheckout = functions
         logger.warn("⚠️ UID mismatch between token and payload");
       }
       const tokens = getTokensFromPriceId(cleanId, priceIds);
-      const metadata: Record<string, string> = { uid, type: "tokens" };
-      if (tokens) metadata.tokens = String(tokens);
+      const metadata: Record<string, string> = { uid, purpose: 'tokens' };
+      if (tokens) metadata.tokenAmount = String(tokens);
       const session = await stripe.checkout.sessions.create({
         mode: "payment",
         line_items: [{ price: cleanId, quantity: 1 }],
@@ -295,7 +294,7 @@ export const createCheckoutSession = functions
         customer: customerId,
         metadata: {
           uid,
-          purchaseType: 'token',
+          purpose: 'tokens',
           tokenAmount: String(tokenAmount),
         },
         automatic_payment_methods: { enabled: true },
@@ -312,32 +311,6 @@ export const createCheckoutSession = functions
         });
         res.status(500).json({ error: 'Failed to create checkout' });
         return;
-      }
-
-      try {
-        await db
-          .collection('users')
-          .doc(uid)
-          .collection('transactions')
-          .doc(intent.id)
-          .set(
-            {
-              type: 'token',
-              tokenAmount,
-              amount,
-              currency: price.currency,
-              paymentIntentId: intent.id,
-              status: intent.status,
-              createdAt: admin.firestore.FieldValue.serverTimestamp(),
-            },
-            { merge: true }
-          );
-      } catch (fireErr) {
-        logger.error('Failed to log token transaction', {
-          uid,
-          paymentIntentId: intent.id,
-          error: fireErr,
-        });
       }
 
       logger.info(`✅ PaymentIntent created ${intent.id}`);
@@ -421,69 +394,15 @@ export const createStripeSubscriptionIntent = functions
       const clientSecret = (latestInvoice as any)?.payment_intent?.client_secret as
         | string
         | undefined;
-      const invoiceId = latestInvoice?.id;
-      const amount =
-        typeof latestInvoice?.amount_due === 'number' ? latestInvoice.amount_due : 0;
-      const currency = latestInvoice?.currency ?? 'usd';
 
-      if (!clientSecret || !invoiceId || !ephemeralKey.secret) {
+      if (!clientSecret || !ephemeralKey.secret) {
         logger.error('Failed to obtain subscription details', {
           subscriptionId,
           hasClientSecret: !!clientSecret,
-          invoiceId,
           hasEphKey: !!ephemeralKey.secret,
         });
         res.status(500).json({ error: 'Failed to obtain client secret' });
         return;
-      }
-
-      try {
-        await db
-          .collection('subscriptions')
-          .doc(uid)
-          .set(
-            {
-              active: {
-                subscriptionId,
-                status,
-                tier,
-                invoiceId,
-                createdAt: admin.firestore.FieldValue.serverTimestamp(),
-                currentPeriodStart: current_period_start
-                  ? admin.firestore.Timestamp.fromMillis(current_period_start * 1000)
-                  : undefined,
-                currentPeriodEnd: current_period_end
-                  ? admin.firestore.Timestamp.fromMillis(current_period_end * 1000)
-                  : undefined,
-              },
-            },
-            { merge: true },
-          );
-
-        await userRef.set({ isSubscribed: true }, { merge: true });
-
-        await userRef
-          .collection('transactions')
-          .doc(invoiceId)
-          .set(
-            {
-              type: 'subscription',
-              tier,
-              subscriptionId,
-              invoiceId,
-              amount,
-              currency,
-              status,
-              createdAt: admin.firestore.FieldValue.serverTimestamp(),
-            },
-            { merge: true },
-          );
-      } catch (fireErr) {
-        logger.error('Failed to persist subscription data', {
-          uid,
-          invoiceId,
-          error: fireErr,
-        });
       }
 
       res.status(200).json({
@@ -600,7 +519,12 @@ export const startCheckoutSession = functions
       }
       const tokens = getTokensFromPriceId(cleanId, priceIds);
       const metadata: Record<string, string> = { uid: userId };
-      if (tokens) metadata.tokens = String(tokens);
+      if (mode === 'payment' && tokens) {
+        metadata.purpose = 'tokens';
+        metadata.tokenAmount = String(tokens);
+      } else if (mode) {
+        metadata.purpose = mode;
+      }
       const session = await stripe.checkout.sessions.create({
         mode,
         line_items: [{ price: cleanId, quantity: 1 }],
@@ -685,11 +609,14 @@ export const createStripeCheckout = functions
       if (authData.uid !== uid) {
         logger.warn("⚠️ UID mismatch between token and payload");
       }
-      const metadata: Record<string, string> = { uid, type };
+      const metadata: Record<string, string> = { uid };
       let tokenCount: number | null = null;
-      if (type === "tokens") {
+      if (type === 'tokens') {
         tokenCount = quantity ?? getTokensFromPriceId(finalPriceId!, priceIds);
-        if (tokenCount) metadata.tokens = String(tokenCount);
+        metadata.purpose = 'tokens';
+        if (tokenCount) metadata.tokenAmount = String(tokenCount);
+      } else if (type) {
+        metadata.purpose = type;
       }
       const session = await stripe.checkout.sessions.create({
         mode: type === "subscription" ? "subscription" : "payment",
@@ -790,12 +717,13 @@ export const createStripeSetupIntent = functions
           return;
         }
         const eventType = data.eventType || data.type || mode;
-        const metadata: Record<string, string> = {
-          uid,
-          eventType,
-          type: eventType,
-          ...(data.tokenAmount ? { tokenAmount: String(data.tokenAmount) } : {}),
-        };
+        const metadata: Record<string, string> = { uid };
+        if (eventType) {
+          metadata.purpose = eventType;
+        }
+        if (eventType === 'token' && data.tokenAmount) {
+          metadata.tokenAmount = String(data.tokenAmount);
+        }
         intent = await stripeClient.paymentIntents.create({
           amount,
           currency,
@@ -814,8 +742,7 @@ export const createStripeSetupIntent = functions
         const eventType = data.eventType || data.type;
         const metadata: Record<string, string> = { uid };
         if (eventType) {
-          metadata.eventType = eventType;
-          metadata.type = eventType; // backward compatibility
+          metadata.purpose = eventType;
           if (eventType === 'token' && data.tokenAmount) {
             metadata.tokenAmount = String(data.tokenAmount);
           }
@@ -857,7 +784,7 @@ export const finalizePaymentIntent = functions
       return;
     }
 
-    const { paymentIntentId, mode, tokenAmount } = req.body || {};
+    const { paymentIntentId, mode } = req.body || {};
 
     if (typeof paymentIntentId !== 'string' || !paymentIntentId.trim()) {
       res.status(400).json({ error: 'paymentIntentId required' });
@@ -869,10 +796,6 @@ export const finalizePaymentIntent = functions
       return;
     }
 
-    if (mode === 'payment' && (typeof tokenAmount !== 'number' || tokenAmount <= 0)) {
-      res.status(400).json({ error: 'tokenAmount required for payment mode' });
-      return;
-    }
 
     const stripeSecret = getStripeSecret();
     if (!stripeSecret) {
@@ -891,52 +814,7 @@ export const finalizePaymentIntent = functions
       }
 
       const uid = authData.uid;
-
-      if (mode === 'subscription') {
-        await db.doc(`users/${uid}`).set(
-          {
-            isSubscribed: true,
-            subscribedAt: admin.firestore.FieldValue.serverTimestamp(),
-            lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
-          },
-          { merge: true },
-        );
-        console.log(`User ${uid} subscribed`);
-        await db.doc(`users/${uid}/transactions/${paymentIntentId}`).set(
-          {
-            amount: intent.amount,
-            currency: intent.currency,
-            stripePaymentIntentId: paymentIntentId,
-            paymentMethod: intent.payment_method_types?.[0] || 'unknown',
-            status: intent.status,
-            type: 'subscription',
-            createdAt: admin.firestore.FieldValue.serverTimestamp(),
-          },
-          { merge: true },
-        );
-        console.log('Transaction logged');
-      } else if (mode === 'payment') {
-        await addTokens(uid, tokenAmount);
-        console.log(`Added ${tokenAmount} tokens to ${uid}`);
-      } else if (mode === 'donation') {
-        await db.doc(`users/${uid}/donations/${paymentIntentId}`).set({
-          amount: intent.amount,
-          currency: intent.currency,
-          created: admin.firestore.FieldValue.serverTimestamp(),
-        });
-        console.log(`Donation logged for ${uid}`);
-      }
-
-      await db.doc(`users/${uid}/payments/${paymentIntentId}`).set(
-        {
-          mode,
-          status: 'completed',
-          created: admin.firestore.FieldValue.serverTimestamp(),
-          amount: intent.amount,
-        },
-        { merge: true }
-      );
-
+      console.log('Payment intent verified', { uid, paymentIntentId, mode });
       res.status(200).json({ success: true });
     } catch (err: any) {
       logger.error('finalizePaymentIntent failed', err);
@@ -999,8 +877,8 @@ export const createTokenPurchaseSheet = functions
       customer: customerId,
       metadata: {
         uid,
-        tokens: amount,
-        type: 'token',
+        purpose: 'tokens',
+        tokenAmount: String(amount),
       },
       automatic_payment_methods: { enabled: true },
     });
@@ -1059,7 +937,7 @@ export const createSubscriptionSession = functions
       cancel_url: STRIPE_CANCEL_URL,
       client_reference_id: uid,
       customer: customerId,
-      metadata: { uid, type: 'subscription' },
+      metadata: { uid, purpose: 'subscription' },
     });
 
     return { sessionId: session.id, url: session.url };
