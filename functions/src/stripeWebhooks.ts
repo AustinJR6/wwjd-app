@@ -1,11 +1,17 @@
-import * as functions from 'firebase-functions/v1';
+import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
+import express, { Request, Response } from 'express';
 import Stripe from 'stripe';
 
-if (!admin.apps.length) admin.initializeApp();
-const firestore = admin.firestore();
+if (!admin.apps.length) {
+  admin.initializeApp();
+}
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', { apiVersion: '2023-10-16' } as any);
+const firestore = admin.firestore();
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  apiVersion: '2024-06-20' as any,
+});
+const WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET!;
 
 async function lookupUidByCustomerId(customerId: string): Promise<string | null> {
   const snap = await firestore.doc(`stripeCustomers/${customerId}`).get();
@@ -15,9 +21,9 @@ async function lookupUidByCustomerId(customerId: string): Promise<string | null>
 async function handleTokenPurchase(session: Stripe.Checkout.Session) {
   const uid = session.metadata?.uid;
   const tokenAmount = Number(session.metadata?.tokenAmount);
-  console.log('handleTokenPurchase', { uid, tokenAmount, sessionId: session.id });
+  console.log('[stripe] handleTokenPurchase', { uid, tokenAmount, sessionId: session.id });
   if (!uid || !Number.isFinite(tokenAmount)) {
-    console.error('handleTokenPurchase missing data', { uid, tokenAmount });
+    console.error('[stripe] handleTokenPurchase missing data', { uid, tokenAmount });
     return;
   }
 
@@ -51,7 +57,7 @@ async function upsertSubscriptionFromStripe(
   const customerId = (sub.customer as string) || '';
   const uid = sub.metadata?.uid || (await lookupUidByCustomerId(customerId));
   if (!uid) {
-    console.error('upsertSubscriptionFromStripe missing uid', {
+    console.error('[stripe] upsertSubscriptionFromStripe missing uid', {
       subscriptionId: sub.id,
       customerId,
     });
@@ -90,52 +96,45 @@ async function upsertSubscriptionFromStripe(
     );
   });
 
-  console.log('upsertSubscriptionFromStripe', {
+  console.log('[stripe] upsertSubscriptionFromStripe', {
     uid,
     status,
     subscriptionId: sub.id,
   });
 }
 
-export const handleStripeWebhookV2 = functions.https.onRequest(async (req, res) => {
-  const sig = req.headers['stripe-signature'];
-  if (!sig) {
-    console.error('Missing stripe-signature header');
-    res.status(400).send('Missing stripe-signature header');
-    return;
-  }
+async function alreadyProcessed(eventId: string): Promise<boolean> {
+  const ref = firestore.collection('webhookEvents').doc(eventId);
+  const doc = await ref.get();
+  return doc.exists;
+}
+
+async function markProcessed(eventId: string): Promise<void> {
+  const ref = firestore.collection('webhookEvents').doc(eventId);
+  await ref.set({ processedAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });
+}
+
+const app = express();
+app.use(express.raw({ type: 'application/json' }));
+app.get('/', (_req, res) => res.status(200).send('ok'));
+
+app.post('/', async (req: Request, res: Response) => {
+  const sig = req.headers['stripe-signature'] as string;
 
   let event: Stripe.Event;
   try {
-    event = stripe.webhooks.constructEvent(
-      req.rawBody,
-      sig as string,
-      process.env.STRIPE_WEBHOOK_SECRET || ''
-    );
+    event = stripe.webhooks.constructEvent(req.body, sig, WEBHOOK_SECRET);
   } catch (err: any) {
-    console.error('Webhook signature verification failed', err.message);
-    res.status(400).send(`Webhook Error: ${err.message}`);
-    return;
+    console.error('[stripe] signature verification failed:', err?.message);
+    return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
-  console.log('Webhook event received', { type: event.type, id: event.id });
-
-  const idRef = firestore.doc(`webhookEvents/${event.id}`);
-  let alreadyProcessed = false;
-  await firestore.runTransaction(async (tx) => {
-    const snap = await tx.get(idRef);
-    if (snap.exists) alreadyProcessed = true;
-    else
-      tx.set(idRef, {
-        receivedAt: admin.firestore.FieldValue.serverTimestamp(),
-        type: event.type,
-      });
-  });
-
-  if (alreadyProcessed) {
-    console.log('Idempotency hit', { eventId: event.id });
-    res.status(200).send('[ok] duplicate');
-    return;
+  try {
+    if (await alreadyProcessed(event.id)) {
+      return res.status(200).send('[OK-duplicate]');
+    }
+  } catch (e) {
+    console.error('[stripe] idempotency check failed', e);
   }
 
   try {
@@ -149,25 +148,89 @@ export const handleStripeWebhookV2 = functions.https.onRequest(async (req, res) 
             id: session.subscription as string,
             customer: session.customer as string,
           });
+          const uid =
+            session.metadata?.uid || (await lookupUidByCustomerId(session.customer as string));
+          if (uid) {
+            await firestore.doc(`users/${uid}`).set(
+              {
+                stripeSubscriptionId: String(session.subscription ?? ''),
+                subscriptionStartedAt: admin.firestore.FieldValue.serverTimestamp(),
+              },
+              { merge: true }
+            );
+          }
         }
         break;
       }
-      case 'customer.subscription.created':
-      case 'customer.subscription.updated':
+
+      case 'invoice.payment_succeeded': {
+        const invoice = event.data.object as Stripe.Invoice;
+        const uid =
+          invoice.metadata?.uid || (await lookupUidByCustomerId(invoice.customer as string));
+        if (uid) {
+          await firestore.doc(`users/${uid}`).set(
+            {
+              isSubscribed: true,
+              lastInvoiceId: invoice.id,
+              lastInvoicePaidAt: admin.firestore.FieldValue.serverTimestamp(),
+            },
+            { merge: true }
+          );
+        }
+        const subscriptionId = (invoice as any).subscription as string | undefined;
+        if (subscriptionId) {
+          await upsertSubscriptionFromStripe({
+            id: subscriptionId,
+            customer: invoice.customer as string,
+          });
+        }
+        break;
+      }
+
       case 'customer.subscription.deleted': {
         const sub = event.data.object as Stripe.Subscription;
         await upsertSubscriptionFromStripe(sub);
+        const uid = sub.metadata?.uid || (await lookupUidByCustomerId(sub.customer as string));
+        if (uid) {
+          await firestore.doc(`users/${uid}`).set(
+            {
+              isSubscribed: false,
+              subscriptionEndedAt: admin.firestore.FieldValue.serverTimestamp(),
+            },
+            { merge: true }
+          );
+        }
         break;
       }
+
+      case 'payment_intent.succeeded': {
+        const pi = event.data.object as Stripe.PaymentIntent;
+        const uid = pi.metadata?.uid;
+        const tokenAmount = Number(pi.metadata?.tokenAmount);
+        if (uid && Number.isFinite(tokenAmount) && tokenAmount > 0) {
+          await firestore.doc(`users/${uid}`).set(
+            {
+              tokens: admin.firestore.FieldValue.increment(tokenAmount),
+              tokensLastUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            },
+            { merge: true }
+          );
+        }
+        break;
+      }
+
       default:
-        console.log('Unhandled event type', event.type);
+        break;
     }
 
-    res.status(200).send('[ok]');
+    await markProcessed(event.id);
+    return res.status(200).send('[OK]');
   } catch (err) {
-    console.error('Error processing webhook', { error: err, type: event.type, id: event.id });
-    res.status(500).send('Webhook handler failed');
+    console.error('[stripe] handler error', err);
+    return res.status(500).send('Internal');
   }
 });
 
-export const handleStripeWebhook = handleStripeWebhookV2;
+export const handleStripeWebhookV2 = functions
+  .region('us-central1')
+  .https.onRequest(app);
