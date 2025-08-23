@@ -40,3 +40,6 @@ export {
 export { onCompletedChallengeCreate } from './firestoreArchitecture';
 export { handleStripeWebhookV2 } from './stripeWebhooks';
 export { cleanLegacySubscriptionFields } from './cleanLegacySubscriptionFields';
+export { createTokenPaymentIntent } from './stripe/tokens';
+export { createSubscriptionSetup, activateSubscription } from './stripe/subscriptions';
+export { handleStripeWebhookV1 } from './stripe/webhook';
