@@ -6,14 +6,13 @@ import ScreenContainer from "@/components/theme/ScreenContainer";
 import { useTheme } from "@/components/theme/theme";
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from "@/navigation/RootStackParamList";
-import { getCurrentUserId } from '@/utils/authUtils';
-import useStripeCheckout from '@/hooks/useStripeCheckout';
+import { usePaymentFlow } from '@/hooks/usePaymentFlow';
 
 type Props = { navigation: NativeStackNavigationProp<RootStackParamList, 'MainTabs'> };
 
 export default function UpgradeScreen({ navigation }: Props) {
   const theme = useTheme();
-  const { startOneVinePlusCheckout } = useStripeCheckout();
+  const { startSubscription } = usePaymentFlow();
   const styles = React.useMemo(
     () =>
       StyleSheet.create({
@@ -51,18 +50,11 @@ export default function UpgradeScreen({ navigation }: Props) {
   const handleUpgrade = async () => {
     setLoading(true);
     try {
-      const uid = await getCurrentUserId();
-      if (!uid) {
-        Alert.alert('Authentication Required', 'Please sign in again.');
-        setLoading(false);
-        return;
-      }
-      const ok = await startOneVinePlusCheckout(uid);
+      const ok = await startSubscription({ priceId: 'price_1RFjFaGLKcFWSqCIrIiOVfwM' });
       if (ok) {
         setSuccess(true);
         Alert.alert('Success', 'You are now a OneVine+ member 🌿');
       }
-
     } catch (err) {
       Alert.alert('Payment Error', typeof err === 'object' && err !== null && 'message' in err ? String((err as any).message) : String(err) || 'Something went wrong.');
     } finally {
@@ -102,3 +94,4 @@ export default function UpgradeScreen({ navigation }: Props) {
     </ScreenContainer>
   );
 }
+
