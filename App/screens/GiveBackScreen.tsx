@@ -15,7 +15,7 @@ type Props = { navigation: NativeStackNavigationProp<RootStackParamList, 'MainTa
 
 export default function GiveBackScreen({ navigation }: Props) {
   const theme = useTheme();
-  const { startSubscriptionCheckoutFlow: startPaymentFlow } = usePaymentFlow();
+  const { buyTokens } = usePaymentFlow();
   const styles = React.useMemo(
     () =>
       StyleSheet.create({
@@ -46,10 +46,10 @@ export default function GiveBackScreen({ navigation }: Props) {
           shadowOffset: { width: 0, height: 2 },
           shadowRadius: 6,
           elevation: 2,
-        }, // ✅ added missing 'section' style
-        buttonGroup: { flexDirection: 'row', justifyContent: 'space-around', marginVertical: 16 }, // ✅ added missing 'buttonGroup' style
-        note: { fontSize: 14, textAlign: 'center', marginTop: 16, color: theme.colors.text }, // ✅ added missing 'note' style
-        backWrap: { marginTop: 32, alignItems: 'center' }, // ✅ added missing 'backWrap' style
+        },
+        buttonGroup: { flexDirection: 'row', justifyContent: 'space-around', marginVertical: 16 },
+        note: { fontSize: 14, textAlign: 'center', marginTop: 16, color: theme.colors.text },
+        backWrap: { marginTop: 32, alignItems: 'center' },
       }),
     [theme],
   );
@@ -58,7 +58,7 @@ export default function GiveBackScreen({ navigation }: Props) {
   const handleDonation = async (amount: number) => {
     setDonating(amount);
     try {
-      const success = await startPaymentFlow({ mode: 'payment', amount });
+      const success = await buyTokens({ tokenAmount: 0, amountUsd: amount / 100 });
       if (success) {
         Alert.alert('Thank you', 'Thank you for your donation \uD83D\uDE4F');
         await logTransaction('donation', amount);
@@ -100,5 +100,4 @@ export default function GiveBackScreen({ navigation }: Props) {
     </AuthGate>
   );
 }
-
 

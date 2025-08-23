@@ -1,249 +1,28 @@
-import axios from 'axios';
-import { endpoints } from './endpoints';
-import { STRIPE_SUCCESS_URL } from '@/config/stripeConfig';
-import { getAuthHeaders } from '@/utils/authUtils';
-import { sendRequestWithGusBugLogging } from '@/utils/gusBugLogger';
-import { logTokenIssue } from '@/shared/tokenLogger';
-import { showPermissionDenied } from '@/utils/gracefulError';
+// app/services/apiService.ts
+const BASE_FN_URL = process.env.EXPO_PUBLIC_FN_BASE_URL || ""; // e.g., https://us-central1-<project>.cloudfunctions.net
 
-function cleanPriceId(raw: string): string {
-  return raw.split('#')[0].trim();
+async function postJSON<T>(path: string, body: any): Promise<T> {
+  const res = await fetch(`${BASE_FN_URL}/${path}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json() as Promise<T>;
 }
 
-type StripeCheckoutResponse = {
-  url?: string;
-  clientSecret?: string;
-  paymentIntent?: string;
-  ephemeralKey?: string;
-  customerId?: string;
-};
-
-
-export async function createStripeCheckout(
-  uid: string,
-  email: string,
-  options: {
-    type: 'subscription' | 'tokens';
-    priceId: string;
-    quantity?: number;
-    returnUrl?: string;
-  }
-): Promise<string> {
-  if (
-    typeof uid !== 'string' || !uid.trim() ||
-    typeof options.priceId !== 'string' || !options.priceId.trim()
-  ) {
-    console.warn('Missing uid or priceId for createStripeCheckout', {
-      uid,
-      priceId: options.priceId,
-    });
-    throw new Error('Missing uid or priceId');
-  }
-
-  const cleanId = cleanPriceId(options.priceId);
-  console.log('Creating Stripe session with:', { uid, priceId: cleanId });
-
-  let headers;
-  try {
-    headers = await getAuthHeaders();
-  } catch {
-    logTokenIssue('createStripeCheckout');
-    throw new Error('Missing auth token');
-  }
-  try {
-    const payload = {
-      uid,
-      email,
-      priceId: cleanId,
-      type: options.type,
-      quantity: options.quantity,
-      returnUrl: options.returnUrl ?? STRIPE_SUCCESS_URL,
-    };
-    const res = await sendRequestWithGusBugLogging(() =>
-      axios.post<StripeCheckoutResponse>(endpoints.createStripeCheckout, payload, {
-        headers,
-      }) as unknown as Promise<Axios.AxiosXHR<StripeCheckoutResponse>>
-    );
-    if (!res.data.url) {
-      throw new Error('Checkout URL is undefined');
-    }
-    return res.data.url;
-  } catch (err: any) {
-    console.warn('❌ Firestore REST error on createStripeCheckout:', err.response?.data || err.message);
-    if (err.response?.status === 403) {
-      console.warn('Firestore 403 – not a session issue', err);
-      showPermissionDenied();
-      throw new Error('Permission denied');
-    }
-    throw new Error(err.response?.data?.error || 'Unable to start checkout.');
-  }
+export function createTokenPaymentIntent(payload: { userId: string; tokenAmount: number; amountUsd: number; customerId?: string }) {
+  return postJSON<{ clientSecret: string }>("createTokenPaymentIntent", payload);
 }
 
-export async function startTokenCheckout(uid: string, priceId: string): Promise<string> {
-  if (typeof uid !== 'string' || !uid.trim() || typeof priceId !== 'string' || !priceId.trim()) {
-    console.warn('🚫 Stripe Checkout failed — missing uid or priceId', { uid, priceId });
-    return '';
-  }
-  const cleanId = cleanPriceId(priceId);
-  console.log('🪙 Starting Stripe checkout', { uid, priceId: cleanId });
-
-  let headers;
-  try {
-    headers = await getAuthHeaders();
-  } catch {
-    logTokenIssue('startTokenCheckout');
-    throw new Error('Missing auth token');
-  }
-
-  try {
-    const payload = { uid, priceId: cleanId };
-    const res = await sendRequestWithGusBugLogging(() =>
-      fetch(endpoints.startTokenCheckout, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(payload),
-      })
-    );
-    const text = await res.text();
-    if (!res.ok) {
-      console.warn('❌ Firestore REST error on startTokenCheckout:', text);
-      if (res.status === 403) {
-        console.warn('Firestore 403 – not a session issue');
-        showPermissionDenied();
-        throw new Error('Permission denied');
-      }
-      throw new Error('Unable to start checkout.');
-    }
-    const data: StripeCheckoutResponse = JSON.parse(text);
-    const url = (data as any).checkoutUrl || data.url;
-    console.log('🔗 Redirect URL received', url);
-    return url;
-  } catch (err: any) {
-    console.warn('❌ Firestore REST error on startTokenCheckout:', err?.message || err);
-    throw new Error(err?.message || 'Unable to start checkout.');
-  }
+export function createSubscriptionSetup(payload: { customerId: string }) {
+  return postJSON<{ setupClientSecret: string; ephemeralKeySecret: string }>("createSubscriptionSetup", payload);
 }
 
-export async function createCheckoutSession(
-  uid: string,
-  priceId: string,
-  tokenAmount: number,
-): Promise<StripeCheckoutResponse> {
-  if (
-    typeof uid !== 'string' || !uid.trim() ||
-    typeof priceId !== 'string' || !priceId.trim() ||
-    typeof tokenAmount !== 'number' || tokenAmount <= 0
-  ) {
-    console.warn('Missing fields for createCheckoutSession', { uid, priceId, tokenAmount });
-    throw new Error('Invalid input');
-  }
-
-  let headers;
-  try {
-    headers = await getAuthHeaders();
-  } catch {
-    logTokenIssue('createCheckoutSession');
-    throw new Error('Missing auth token');
-  }
-
-  try {
-    const cleanId = cleanPriceId(priceId);
-    const payload = { uid, priceId: cleanId, tokenAmount, mode: 'payment', type: 'token_purchase' };
-    const res = await sendRequestWithGusBugLogging(() =>
-      fetch(endpoints.createCheckoutSession, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(payload),
-      })
-    );
-    const text = await res.text();
-    if (!res.ok) {
-      console.warn('❌ createCheckoutSession error:', text);
-      if (res.status === 403) {
-        showPermissionDenied();
-        throw new Error('Permission denied');
-      }
-      throw new Error('Unable to start checkout.');
-    }
-    const data: StripeCheckoutResponse = JSON.parse(text);
-    return data;
-  } catch (err: any) {
-    console.warn('❌ createCheckoutSession failed:', err?.message || err);
-    throw new Error(err?.message || 'Unable to start checkout.');
-  }
+export function activateSubscription(payload: { customerId: string; setupClientSecret: string; priceId: string; userId: string }) {
+  return postJSON<{ status: "requires_confirmation" | "active_or_processing"; paymentIntentClientSecret?: string; subscriptionId: string }>(
+    "activateSubscription",
+    payload
+  );
 }
 
-export async function startSubscriptionCheckout(uid: string, priceId: string): Promise<string> {
-  if (typeof uid !== 'string' || !uid.trim() || typeof priceId !== 'string' || !priceId.trim()) {
-    console.warn('🚫 Stripe Checkout failed — missing uid or priceId', { uid, priceId });
-    return '';
-  }
-  const cleanId = cleanPriceId(priceId);
-  console.log('📦 Starting OneVine+ subscription...', { uid, priceId: cleanId });
-
-  let headers;
-  try {
-    headers = await getAuthHeaders();
-  } catch {
-    logTokenIssue('startSubscriptionCheckout');
-    throw new Error('Missing auth token');
-  }
-
-  try {
-    const payload = { uid, priceId: cleanId };
-    const res = await sendRequestWithGusBugLogging(() =>
-      fetch(endpoints.startSubscriptionCheckout, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(payload),
-      })
-    );
-    const text = await res.text();
-    if (!res.ok) {
-      console.warn('❌ Firestore REST error on startSubscriptionCheckout:', text);
-      if (res.status === 403) {
-        console.warn('Firestore 403 – not a session issue');
-        showPermissionDenied();
-        throw new Error('Permission denied');
-      }
-      throw new Error('Unable to start checkout.');
-    }
-    const data: StripeCheckoutResponse = JSON.parse(text);
-    const url = (data as any).checkoutUrl || data.url;
-    console.log('🔗 Redirecting to:', url);
-    return url;
-  } catch (err: any) {
-    console.warn('❌ Firestore REST error on startSubscriptionCheckout:', err?.message || err);
-    throw new Error(err?.message || 'Unable to start checkout.');
-  }
-}
-
-
-
-export async function finalizePaymentIntent(
-  paymentIntentId: string,
-  mode: 'payment' | 'subscription' | 'donation',
-  tokenAmount?: number,
-): Promise<void> {
-  let headers;
-  try {
-    headers = await getAuthHeaders();
-  } catch {
-    logTokenIssue('finalizePaymentIntent');
-    throw new Error('Missing auth token');
-  }
-  try {
-    const payload: any = { paymentIntentId, mode };
-    if (mode === 'payment') payload.tokenAmount = tokenAmount;
-    await sendRequestWithGusBugLogging(() =>
-      fetch(endpoints.finalizePaymentIntent, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(payload),
-      }),
-    );
-  } catch (err: any) {
-    console.warn('❌ finalizePaymentIntent failed:', err?.message || err);
-    throw err;
-  }
-}
