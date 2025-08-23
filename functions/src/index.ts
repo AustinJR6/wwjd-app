@@ -1,3 +1,3 @@
-export { createTokenPaymentIntent } from "./stripe/tokens";
-export { createSubscriptionSetup, activateSubscription } from "./stripe/subscriptions";
-export { handleStripeWebhookV1 as handleStripeWebhook } from "./stripe/webhook";
+export { createTokenPaymentIntent } from "./stripefolder/tokens";
+export { createSubscriptionSetup, activateSubscription } from "./stripefolder/subscriptions";
+export { handleStripeWebhookV1 as handleStripeWebhook } from "./stripefolder/webhook";
