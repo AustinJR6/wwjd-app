@@ -5,6 +5,7 @@ import type { UserProfile } from '../../types';
 import { logProfileSync } from '@/lib/logProfileSync';
 
 interface ProfileStore {
+  refetch: any;
   profile: UserProfile | null;
   setUserProfile: (profile: UserProfile) => void;
   refreshUserProfile: () => Promise<void>;
@@ -13,6 +14,9 @@ interface ProfileStore {
 
 export const useUserProfileStore = create<ProfileStore>((set, get) => ({
   profile: null,
+  refetch: async () => {
+    await get().refreshUserProfile();
+  },
   setUserProfile: (profile) => {
     logProfileSync('set', profile);
     set({ profile });

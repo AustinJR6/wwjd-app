@@ -9,7 +9,7 @@ export const LOGGING_MODE =
   Constants.expoConfig?.extra?.EXPO_PUBLIC_LOGGING_MODE || 'gusbug';
 
 export async function sendRequestWithGusBugLogging<T>(
-  requestFn: () => Promise<T>,
+p0: string, p1: { err: string; }, requestFn: () => Promise<T>,
 ): Promise<T> {
   try {
     const res: any = await requestFn();
