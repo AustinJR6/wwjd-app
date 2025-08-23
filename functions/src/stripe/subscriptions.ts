@@ -4,10 +4,17 @@ import Stripe from "stripe";
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2025-03-31.basil" as any });
 
 export const createSubscriptionSetup = functions.https.onRequest(async (req, res) => {
-  if (req.method !== "POST") { res.set("Allow", "POST"); return res.status(405).send("Method Not Allowed"); }
+  if (req.method !== "POST") { 
+    res.set("Allow", "POST"); 
+    res.status(405).send("Method Not Allowed"); 
+    return;
+  }
   try {
     const { customerId } = req.body || {};
-    if (!customerId) return res.status(400).send("Missing customerId");
+    if (!customerId) {
+      res.status(400).send("Missing customerId");
+      return;
+    }
 
     const setupIntent = await stripe.setupIntents.create({
       customer: customerId,
@@ -17,27 +24,37 @@ export const createSubscriptionSetup = functions.https.onRequest(async (req, res
 
     const ephKey = await stripe.ephemeralKeys.create({ customer: customerId }, { apiVersion: "2025-03-31.basil" as any });
 
-    return res.status(200).send({
+    res.status(200).send({
       setupClientSecret: setupIntent.client_secret,
       ephemeralKeySecret: ephKey.secret,
     });
   } catch (err: any) {
     console.error("[createSubscriptionSetup] error", err);
-    return res.status(500).send(err?.message || "Server error");
+    res.status(500).send(err?.message || "Server error");
   }
 });
 
 export const activateSubscription = functions.https.onRequest(async (req, res) => {
-  if (req.method !== "POST") { res.set("Allow", "POST"); return res.status(405).send("Method Not Allowed"); }
+  if (req.method !== "POST") { 
+    res.set("Allow", "POST"); 
+    res.status(405).send("Method Not Allowed"); 
+    return; 
+  }
   try {
     const { customerId, setupClientSecret, priceId, userId } = req.body || {};
-    if (!customerId || !setupClientSecret || !priceId || !userId) return res.status(400).send("Missing params");
+    if (!customerId || !setupClientSecret || !priceId || !userId) {
+      res.status(400).send("Missing params");
+      return;
+    }
 
     const siId = String(setupClientSecret).split("_secret_")[0];
     const si = await stripe.setupIntents.retrieve(siId);
 
     const paymentMethodId = typeof si.payment_method === "string" ? si.payment_method : si.payment_method?.id;
-    if (!paymentMethodId) return res.status(400).send("No payment method on SetupIntent");
+    if (!paymentMethodId) {
+      res.status(400).send("No payment method on SetupIntent");
+      return;
+    }
 
     await stripe.paymentMethods.attach(paymentMethodId, { customer: customerId });
     await stripe.customers.update(customerId, { invoice_settings: { default_payment_method: paymentMethodId } });
@@ -54,17 +71,18 @@ export const activateSubscription = functions.https.onRequest(async (req, res) =
     const pi = latestInvoice?.payment_intent as Stripe.PaymentIntent | undefined;
 
     if (pi && (pi.status === "requires_action" || pi.status === "requires_confirmation")) {
-      return res.status(200).send({
+      res.status(200).send({
         status: "requires_confirmation",
         paymentIntentClientSecret: pi.client_secret,
         subscriptionId: sub.id,
       });
+      return;
     }
 
-    return res.status(200).send({ status: "active_or_processing", subscriptionId: sub.id });
+    res.status(200).send({ status: "active_or_processing", subscriptionId: sub.id });
   } catch (err: any) {
     console.error("[activateSubscription] error", err);
-    return res.status(500).send(err?.message || "Server error");
+    res.status(500).send(err?.message || "Server error");
   }
 });
 

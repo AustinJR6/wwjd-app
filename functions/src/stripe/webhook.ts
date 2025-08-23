@@ -6,17 +6,17 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2025-03
 const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET!;
 
 export const handleStripeWebhookV1 = functions.https.onRequest(async (req, res) => {
-  if (req.method !== "POST") { res.set("Allow", "POST"); return res.status(405).send("Method Not Allowed"); }
+  if (req.method !== "POST") { res.set("Allow", "POST"); res.status(405).send("Method Not Allowed"); return; }
 
   const sig = req.headers["stripe-signature"] as string | undefined;
-  if (!sig) return res.status(400).send("Missing Stripe signature");
+  if (!sig) { res.status(400).send("Missing Stripe signature"); return; }
 
   let event: Stripe.Event;
   try {
     event = stripe.webhooks.constructEvent(req.rawBody, sig, endpointSecret);
   } catch (err: any) {
     console.error("[webhook] signature verify failed:", err?.message);
-    return res.status(400).send(`Webhook Error: ${err.message}`);
+    res.status(400).send(`Webhook Error: ${err.message}`); return;
   }
 
   try {
@@ -58,10 +58,10 @@ export const handleStripeWebhookV1 = functions.https.onRequest(async (req, res) 
       default: break;
     }
 
-    return res.status(200).send("ok");
+    res.status(200).send("ok"); return;
   } catch (err) {
     console.error("[webhook] handler error:", err);
-    return res.status(500).send("Webhook handler error");
+    res.status(500).send("Webhook handler error"); return;
   }
 });
 
