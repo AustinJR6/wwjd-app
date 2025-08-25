@@ -26,10 +26,10 @@ export {
 /**
  * Stripe (PaymentSheet) — new endpoints
  * - Tokens: PaymentIntent
- * - Subs: SetupIntent -> activate
+ * - Subs: PaymentIntent via subscription
  */
 export { createTokenPaymentIntent } from './stripefolder/tokens';
-export { createSubscriptionSetup, activateSubscription } from './stripefolder/subscriptions';
+export { createSubscriptionPayment } from './stripefolder/subscriptions';
 
 /** ✅ Keep your existing webhook export/name exactly the same */
 export { handleStripeWebhookV1 } from './stripefolder/webhook';

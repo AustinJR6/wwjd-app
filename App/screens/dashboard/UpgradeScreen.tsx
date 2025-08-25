@@ -50,7 +50,7 @@ export default function UpgradeScreen({ navigation }: Props) {
   const handleUpgrade = async () => {
     setLoading(true);
     try {
-      const ok = await startSubscription({ priceId: 'price_1RFjFaGLKcFWSqCIrIiOVfwM' });
+      const ok = await startSubscription();
       if (ok) {
         setSuccess(true);
         Alert.alert('Success', 'You are now a OneVine+ member 🌿');

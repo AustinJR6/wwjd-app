@@ -1,7 +1,7 @@
 import * as functions from "firebase-functions";
 import Stripe from "stripe";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2025-03-31.basil" as any });
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2024-06-20" as any });
 
 export const createTokenPaymentIntent = functions.https.onRequest(async (req, res) => {
   if (req.method !== "POST") {
@@ -23,9 +23,9 @@ export const createTokenPaymentIntent = functions.https.onRequest(async (req, re
       customer: customerId,
       automatic_payment_methods: { enabled: true },
       metadata: {
-        type: "token_pack",
-        userId: String(userId),
-        tokenAmount: String(tokenAmount),
+        type: "tokens",
+        uid: String(userId),
+        quantity: String(tokenAmount),
         amountUsd: String(amountUsd),
       },
     });
