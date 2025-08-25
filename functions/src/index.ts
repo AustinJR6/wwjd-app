@@ -24,14 +24,15 @@ export {
 } from './features/users';
 
 /**
- * ✅ Stripe (PaymentSheet-first) exports
- * - Token packs: createTokenPaymentIntent (PaymentIntent)
- * - Subscriptions: createSubscriptionSetup (SetupIntent) + activateSubscription
- * - Webhook: handleStripeWebhook (raw-body signature verification)
+ * Stripe (PaymentSheet) — new endpoints
+ * - Tokens: PaymentIntent
+ * - Subs: SetupIntent -> activate
  */
 export { createTokenPaymentIntent } from './stripefolder/tokens';
 export { createSubscriptionSetup, activateSubscription } from './stripefolder/subscriptions';
-export { handleStripeWebhookV1 as handleStripeWebhook } from './stripefolder/webhook';
+
+/** ✅ Keep your existing webhook export/name exactly the same */
+export { handleStripeWebhookV1 } from './stripefolder/webhook';
 
 export { onCompletedChallengeCreate } from './firestoreArchitecture';
 export { cleanLegacySubscriptionFields } from './cleanLegacySubscriptionFields';
