@@ -1,6 +1,4 @@
-import axios from 'axios';
 import { endpoints } from './endpoints';
-import { STRIPE_SUCCESS_URL } from '@/config/stripeConfig';
 import { getAuthHeaders } from '@/utils/authUtils';
 import { sendRequestWithGusBugLogging } from '@/utils/gusBugLogger';
 import { logTokenIssue } from '@/shared/tokenLogger';
@@ -19,6 +17,7 @@ type StripeCheckoutResponse = {
 };
 
 
+/*
 export async function createStripeCheckout(
   uid: string,
   email: string,
@@ -217,6 +216,7 @@ export async function startSubscriptionCheckout(uid: string, priceId: string): P
     throw new Error(err?.message || 'Unable to start checkout.');
   }
 }
+*/
 
 
 

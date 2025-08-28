@@ -55,7 +55,7 @@ export const startSubscriptionCheckout = functions
     logger.info("🔐 Stripe Secret:", secret ? "\u2713 set" : "\u2717 missing");
 
     const { uid, priceId } = req.body || {};
-    if (!uid || !priceId) {
+    if (!uid) {
       logger.warn("⚠️ Missing uid or priceId", { uid, priceId });
       res.status(400).json({ error: "Missing uid or priceId" });
       return;
@@ -369,9 +369,21 @@ export const createStripeSubscriptionIntent = functions
         { apiVersion: '2023-10-16' }
       );
 
+      // Determine the subscription price to use (client-provided or server-configured)
+      const resolvedPrice = cleanPriceId(
+        (typeof priceId === 'string' && priceId.trim())
+          ? priceId
+          : (functions.config().stripe?.sub_price_id || STRIPE_SUB_PRICE_ID.value() || '')
+      );
+      if (!resolvedPrice) {
+        logger.error('Subscription price not configured');
+        res.status(500).json({ error: 'Subscription price not configured' });
+        return;
+      }
+
       const subscriptionRes = await stripeClient.subscriptions.create({
         customer: customerId,
-        items: [{ price: cleanPriceId(priceId) }],
+        items: [{ price: resolvedPrice }],
         payment_behavior: 'default_incomplete',
         expand: ['latest_invoice.payment_intent'],
         metadata: { uid, tier },

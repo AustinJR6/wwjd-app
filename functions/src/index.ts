@@ -23,18 +23,11 @@ export {
   completeSignupAndProfile,
 } from './features/users';
 export {
-  startSubscriptionCheckout,
-  startOneTimeTokenCheckout,
-  startTokenCheckout,
   createCheckoutSession,
   createStripeSubscriptionIntent,
-  startDonationCheckout,
-  startCheckoutSession,
-  createStripeCheckout,
   createStripeSetupIntent,
   finalizePaymentIntent,
   createTokenPurchaseSheet,
-  createSubscriptionSession,
 } from './stripeHandlers';
 
 export { onCompletedChallengeCreate } from './firestoreArchitecture';

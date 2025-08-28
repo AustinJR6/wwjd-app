@@ -50,15 +50,22 @@ export function useStripeCheckout() {
   async function startOneVinePlusCheckout(uid: string) {
     try {
       const token = await getIdToken(true);
+      // If client-side price is missing, fallback to known price id
+      const fallbackPriceId = 'price_1RFjFaGLKcFWSqCIrIiOVfwM';
+      const body: any = { uid, priceId: ONEVINE_PLUS_PRICE_ID || fallbackPriceId };
       const res = await fetch(endpoints.createStripeSubscriptionIntent, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ uid, priceId: ONEVINE_PLUS_PRICE_ID }),
+        body: JSON.stringify(body),
       });
       const data = await res.json();
+      if (!res.ok) {
+        const msg = (data && (data.error || data.message)) || 'Failed to create subscription';
+        throw new Error(msg);
+      }
       const clientSecret = data.clientSecret || data.client_secret;
       if (!clientSecret || !data.ephemeralKey || !data.customerId) {
         throw new Error('Missing payment sheet parameters');
