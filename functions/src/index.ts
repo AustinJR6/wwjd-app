@@ -28,6 +28,7 @@ export {
   createStripeSetupIntent,
   finalizePaymentIntent,
   createTokenPurchaseSheet,
+  startTokenCheckout,
 } from './stripeHandlers';
 
 export { onCompletedChallengeCreate } from './firestoreArchitecture';

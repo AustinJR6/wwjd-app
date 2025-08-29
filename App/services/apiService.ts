@@ -216,6 +216,31 @@ export async function startSubscriptionCheckout(uid: string, priceId: string): P
     throw new Error(err?.message || 'Unable to start checkout.');
   }
 }
+
+// New token checkout helper using Payment Sheet
+export async function startTokenCheckout(uid: string, tokens: 20 | 50 | 100) {
+  if (!uid || !tokens) throw new Error('uid and tokens required');
+  let headers: any;
+  try {
+    headers = await getAuthHeaders();
+  } catch {
+    logTokenIssue('startTokenCheckout');
+    throw new Error('Missing auth token');
+  }
+  const payload = { uid, tokens } as const;
+  const res = await sendRequestWithGusBugLogging(() =>
+    fetch(endpoints.startTokenCheckout, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(payload),
+    })
+  );
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text || 'startTokenCheckout failed');
+  }
+  return res.json();
+}
 */
 
 

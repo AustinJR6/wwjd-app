@@ -21,6 +21,7 @@ export const endpoints = {
   createStripeSubscriptionIntent: `${BASE}/createStripeSubscriptionIntent`,
   createStripeSetupIntent: `${BASE}/createStripeSetupIntent`,
   finalizePaymentIntent: `${BASE}/finalizePaymentIntent`,
+  startTokenCheckout: `${BASE}/startTokenCheckout`,
   createTokenPurchaseSheet: `${BASE}/createTokenPurchaseSheet`,
   onCompletedChallengeCreate: `${BASE}/onCompletedChallengeCreate`,
   handleStripeWebhookV2: `${BASE}/handleStripeWebhookV2`,

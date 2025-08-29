@@ -3,8 +3,7 @@ import CustomText from '@/components/CustomText';
 import { View, StyleSheet, Alert } from 'react-native';
 import Button from '@/components/common/Button';
 import { logTransaction } from '@/utils/transactionLogger';
-import { createCheckoutSession } from '@/services/apiService';
-import { PRICE_IDS } from '@/config/stripeConfig';
+import { startTokenCheckout } from '@/services/apiService';
 import { getCurrentUserId, getIdToken } from '@/utils/authUtils';
 import ScreenContainer from "@/components/theme/ScreenContainer";
 import { useTheme } from "@/components/theme/theme";
@@ -66,21 +65,21 @@ export default function BuyTokensScreen({ navigation }: Props) {
   const refreshProfile = useUserProfileStore((s) => s.refreshUserProfile);
   const [loading, setLoading] = React.useState<number | null>(null);
 
-  const purchase = async (priceId: string, tokenAmount: number) => {
+  const purchase = async (tokenAmount: 20 | 50 | 100) => {
     setLoading(tokenAmount);
     try {
       const uid = await getCurrentUserId();
       if (!uid) throw new Error('Not signed in');
 
-      const result = await createCheckoutSession(uid, priceId, tokenAmount);
-      const clientSecret = result.clientSecret || result.paymentIntent;
-      if (!clientSecret || !result.ephemeralKey || !result.customerId) {
-        throw new Error('Missing payment details');
-      }
+      const r = await startTokenCheckout(uid, tokenAmount);
+      const customerId = r?.customerId;
+      const eph = r?.ephemeralKeySecret;
+      const clientSecret = r?.paymentIntentClientSecret;
+      if (!customerId || !eph || !clientSecret) throw new Error('Token checkout init failed: missing client secrets');
 
       const { error: initError } = await initPaymentSheet({
-        customerId: result.customerId,
-        customerEphemeralKeySecret: result.ephemeralKey,
+        customerId,
+        customerEphemeralKeySecret: eph,
         paymentIntentClientSecret: clientSecret,
         merchantDisplayName: 'OneVine',
         returnURL: 'onevine://payment-return',
@@ -119,21 +118,21 @@ export default function BuyTokensScreen({ navigation }: Props) {
           <CustomText style={styles.amount}>
             20 Tokens — <CustomText style={styles.price}>$5</CustomText>
           </CustomText>
-          <Button title="Buy 20 Tokens" onPress={() => purchase(PRICE_IDS.TOKENS_20, 20)} loading={loading === 20} />
+          <Button title="Buy 20 Tokens" onPress={() => purchase(20)} loading={loading === 20} />
         </View>
 
         <View style={styles.pack}>
           <CustomText style={styles.amount}>
             50 Tokens — <CustomText style={styles.price}>$10</CustomText>
           </CustomText>
-          <Button title="Buy 50 Tokens" onPress={() => purchase(PRICE_IDS.TOKENS_50, 50)} loading={loading === 50} />
+          <Button title="Buy 50 Tokens" onPress={() => purchase(50)} loading={loading === 50} />
         </View>
 
         <View style={styles.pack}>
           <CustomText style={styles.amount}>
             100 Tokens — <CustomText style={styles.price}>$20</CustomText>
           </CustomText>
-          <Button title="Buy 100 Tokens" onPress={() => purchase(PRICE_IDS.TOKENS_100, 100)} loading={loading === 100} />
+          <Button title="Buy 100 Tokens" onPress={() => purchase(100)} loading={loading === 100} />
         </View>
 
         <View style={styles.buttonWrap}>

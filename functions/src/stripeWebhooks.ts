@@ -29,21 +29,17 @@ async function handleTokenPurchase(session: Stripe.Checkout.Session) {
 
   await firestore.runTransaction(async (tx) => {
     const userRef = firestore.doc(`users/${uid}`);
-    tx.update(userRef, { tokens: admin.firestore.FieldValue.increment(tokenAmount) });
-    const purchaseRef = firestore.doc(`transactions/${uid}/purchases/${session.id}`);
-    tx.set(
-      purchaseRef,
-      {
-        type: 'tokens',
-        amount: tokenAmount,
-        total: session.amount_total ?? null,
-        currency: session.currency ?? null,
-        sessionId: session.id,
-        paymentIntentId: session.payment_intent ?? null,
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      },
-      { merge: true }
-    );
+    tx.set(userRef, { tokens: admin.firestore.FieldValue.increment(tokenAmount) }, { merge: true });
+    const purchaseRef = firestore.doc(`users/${uid}/transactions/${session.id}`);
+    tx.set(purchaseRef, {
+      type: 'tokens',
+      tokens: tokenAmount,
+      total: session.amount_total ?? null,
+      currency: session.currency ?? null,
+      sessionId: session.id,
+      paymentIntentId: session.payment_intent ?? null,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    }, { merge: true });
   });
 }
 
@@ -123,7 +119,9 @@ app.post('/', async (req: Request, res: Response) => {
 
   let event: Stripe.Event;
   try {
-    event = stripe.webhooks.constructEvent(req.body, sig, WEBHOOK_SECRET);
+    // Use the rawBody provided by Firebase Functions to verify signature
+    const raw = (req as any).rawBody || req.body;
+    event = stripe.webhooks.constructEvent(raw, sig, WEBHOOK_SECRET);
   } catch (err: any) {
     console.error('[stripe] signature verification failed:', err?.message);
     return res.status(400).send(`Webhook Error: ${err.message}`);
@@ -148,16 +146,43 @@ app.post('/', async (req: Request, res: Response) => {
             id: session.subscription as string,
             customer: session.customer as string,
           });
-          const uid =
-            session.metadata?.uid || (await lookupUidByCustomerId(session.customer as string));
+          const customerId = session.customer as string;
+          // Resolve uid from metadata or customer metadata
+          let uid = session.metadata?.uid as string | undefined;
+          if (!uid) {
+            const cust = await stripe.customers.retrieve(customerId) as any;
+            uid = cust?.metadata?.uid as string | undefined;
+          }
           if (uid) {
+            const subscriptionId = String(session.subscription ?? '');
+            const sub = await stripe.subscriptions.retrieve(subscriptionId);
             await firestore.doc(`users/${uid}`).set(
               {
-                stripeSubscriptionId: String(session.subscription ?? ''),
+                isSubscribed: true,
+                subscription: {
+                  id: sub.id,
+                  status: sub.status,
+                  current_period_end: sub.current_period_end ? sub.current_period_end * 1000 : null,
+                  customerId,
+                },
+                stripeSubscriptionId: subscriptionId,
                 subscriptionStartedAt: admin.firestore.FieldValue.serverTimestamp(),
               },
               { merge: true }
             );
+            // Log subscription transaction under users/{uid}/transactions
+            await firestore.doc(`users/${uid}/transactions/${subscriptionId}`).set({
+              type: 'subscription',
+              subscriptionId: sub.id,
+              status: sub.status,
+              amount_total: session.amount_total ?? null,
+              currency: session.currency ?? null,
+              current_period_start: sub.current_period_start ? sub.current_period_start * 1000 : null,
+              current_period_end: sub.current_period_end ? sub.current_period_end * 1000 : null,
+              customerId,
+              createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            }, { merge: true });
+            console.log(`Subscription set for ${uid}: ${sub.id}`);
           }
         }
         break;
@@ -203,8 +228,64 @@ app.post('/', async (req: Request, res: Response) => {
         break;
       }
 
+      // Optional: keep customer.subscription.updated to refresh status on renewals/cancels
+      case 'customer.subscription.updated': {
+        const sub = event.data.object as Stripe.Subscription;
+        const customerId = sub.customer as string;
+        const customer = await stripe.customers.retrieve(customerId) as any;
+        const uid = customer?.metadata?.uid as string | undefined;
+        if (uid) {
+          await firestore.doc(`users/${uid}`).set({
+            isSubscribed: sub.status === 'active' || sub.status === 'trialing',
+            subscription: {
+              id: sub.id,
+              status: sub.status,
+              current_period_end: sub.current_period_end ? sub.current_period_end * 1000 : null,
+              customerId,
+            },
+          }, { merge: true });
+          console.log(`Subscription updated for ${uid}: ${sub.status}`);
+        }
+        break;
+      }
+
       case 'payment_intent.succeeded': {
         const pi = event.data.object as Stripe.PaymentIntent;
+        // New flow: tokens purchased via PaymentIntent metadata
+        if ((pi.metadata?.type || '') === 'tokens') {
+          const uid = pi.metadata?.uid as string | undefined;
+          const tokens = parseInt(pi.metadata?.tokensPurchased || '0', 10) || 0;
+          if (uid && tokens > 0) {
+            await firestore.doc(`users/${uid}`).set({
+              tokens: admin.firestore.FieldValue.increment(tokens),
+            }, { merge: true });
+            // Log transaction under users/{uid}/transactions
+            await firestore.doc(`users/${uid}/transactions/${pi.id}`).set({
+              type: 'tokens',
+              tokens,
+              amount: pi.amount_received ?? pi.amount ?? null,
+              currency: pi.currency ?? null,
+              paymentIntentId: pi.id,
+              createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            }, { merge: true });
+            console.log(`Awarded ${tokens} tokens to ${uid}`);
+          }
+        }
+        // Donations via PaymentIntent metadata
+        if ((pi.metadata?.purpose || pi.metadata?.type) === 'donation') {
+          const uid = pi.metadata?.uid as string | undefined;
+          if (uid) {
+            await firestore.doc(`users/${uid}/transactions/${pi.id}`).set({
+              type: 'donation',
+              amount: pi.amount_received ?? pi.amount ?? null,
+              currency: pi.currency ?? null,
+              paymentIntentId: pi.id,
+              createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            }, { merge: true });
+            console.log(`[stripe] logged donation for ${uid}: ${pi.id}`);
+          }
+        }
+        // Backward-compat: previous tokenAmount metadata
         const uid = pi.metadata?.uid;
         const tokenAmount = Number(pi.metadata?.tokenAmount);
         if (uid && Number.isFinite(tokenAmount) && tokenAmount > 0) {

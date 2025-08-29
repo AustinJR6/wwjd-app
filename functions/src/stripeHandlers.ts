@@ -47,6 +47,61 @@ function getTokenPriceIds() {
   };
 }
 
+// --- START: startTokenCheckout ---
+export const startTokenCheckout = functions
+  .runWith({ secrets: stripeSecrets })
+  .https.onRequest(withCors(async (req: Request, res: Response) => {
+    try {
+      const secret = getStripeSecret();
+      if (!secret) {
+        res.status(500).json({ error: 'Stripe not configured' });
+        return;
+      }
+      const stripe = new Stripe(secret, { apiVersion: '2024-06-20' } as any);
+
+      const body = (typeof req.body === 'string' ? JSON.parse(req.body) : req.body) || {};
+      const { uid, tokens } = body;
+      if (!uid || !tokens) return res.status(400).json({ error: 'uid and tokens required' });
+
+      const priceByPack: Record<number, number> = { 20: 500, 50: 1200, 100: 2000 };
+      const amount = priceByPack[Number(tokens)];
+      if (!amount) return res.status(400).json({ error: 'invalid token pack' });
+
+      const userRef = admin.firestore().doc(`users/${uid}`);
+      const snap = await userRef.get();
+      let customerId = (snap.data() as any)?.stripeCustomerId as string | undefined;
+      if (!customerId) {
+        const customer = await stripe.customers.create({ metadata: { uid } });
+        customerId = customer.id;
+        await userRef.set({ stripeCustomerId: customerId }, { merge: true });
+      }
+
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount,
+        currency: 'usd',
+        customer: customerId!,
+        automatic_payment_methods: { enabled: true },
+        metadata: { uid, tokensPurchased: String(tokens), type: 'tokens' },
+      });
+
+      const ephemeralKey = await stripe.ephemeralKeys.create(
+        { customer: customerId! },
+        { apiVersion: '2024-06-20' }
+      );
+
+      return res.json({
+        customerId,
+        ephemeralKeySecret: ephemeralKey.secret,
+        paymentIntentClientSecret: paymentIntent.client_secret,
+        tokensPurchased: Number(tokens),
+      });
+    } catch (e: any) {
+      console.error('startTokenCheckout error', e);
+      return res.status(500).json({ error: e?.message ?? 'startTokenCheckout failed' });
+    }
+  }))
+// --- END: startTokenCheckout ---
+
 export const startSubscriptionCheckout = functions
   .runWith({ secrets: stripeSecrets })
   .https.onRequest(withCors(async (req: Request, res: Response) => {
@@ -169,10 +224,10 @@ export const startOneTimeTokenCheckout = functions
     }
   }));
 
-export const startTokenCheckout = functions
+export const startTokenCheckoutLegacy = functions
   .runWith({ secrets: stripeSecrets })
   .https.onRequest(withCors(async (req: Request, res: Response) => {
-    logger.info("🪙 startTokenCheckout payload", req.body);
+    logger.info("🪙 startTokenCheckoutLegacy payload", req.body);
     const { uid, priceId } = req.body || {};
     if (!uid || !priceId) {
       logger.warn("⚠️ Missing uid or priceId", { uid, priceId });
@@ -955,3 +1010,4 @@ export const createSubscriptionSession = functions
     return { sessionId: session.id, url: session.url };
   }
 );
+
