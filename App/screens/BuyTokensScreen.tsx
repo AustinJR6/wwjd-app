@@ -1,11 +1,13 @@
 import React from 'react';
 import CustomText from '@/components/CustomText';
-import { View, StyleSheet, Alert } from 'react-native';
-import Button from '@/components/common/Button';
+import { View, StyleSheet, Alert, Text } from 'react-native';
+import Screen from '@/components/ui/Screen';
+import Card from '@/components/ui/Card';
+import PrimaryButton from '@/components/ui/PrimaryButton';
+import GradientHeader from '@/components/ui/GradientHeader';
 import { logTransaction } from '@/utils/transactionLogger';
 import { startTokenCheckout } from '@/services/apiService';
 import { getCurrentUserId, getIdToken } from '@/utils/authUtils';
-import ScreenContainer from "@/components/theme/ScreenContainer";
 import { useTheme } from "@/components/theme/theme";
 import AuthGate from '@/components/AuthGate';
 import { useStripe } from '@stripe/stripe-react-native';
@@ -18,49 +20,9 @@ type Props = { navigation: NativeStackNavigationProp<RootStackParamList, 'MainTa
 
 export default function BuyTokensScreen({ navigation }: Props) {
   const theme = useTheme();
-  const styles = React.useMemo(
-    () =>
-      StyleSheet.create({
-        content: {
-          flex: 1,
-          justifyContent: 'center',
-        },
-        title: {
-          fontSize: 26,
-          fontWeight: 'bold',
-          textAlign: 'center',
-          marginBottom: 8,
-          color: theme.colors.primary,
-        },
-        subtitle: {
-          fontSize: 16,
-          textAlign: 'center',
-          color: theme.colors.text,
-          marginBottom: 32,
-        },
-        pack: {
-          marginBottom: 24,
-          padding: 16,
-          backgroundColor: theme.colors.surface,
-          borderRadius: 10,
-        },
-        amount: {
-          fontSize: 18,
-          marginBottom: 8,
-          textAlign: 'center',
-          color: theme.colors.text,
-        },
-        price: {
-          color: theme.colors.accent,
-          fontWeight: '600',
-        },
-        buttonWrap: {
-          marginTop: 32,
-          alignItems: 'center',
-        },
-      }),
-    [theme],
-  );
+  const styles = React.useMemo(() => StyleSheet.create({
+    list: { gap: theme.spacing.md },
+  }), [theme]);
   const { initPaymentSheet, presentPaymentSheet } = useStripe();
   const refreshProfile = useUserProfileStore((s) => s.refreshUserProfile);
   const [loading, setLoading] = React.useState<number | null>(null);
@@ -109,37 +71,32 @@ export default function BuyTokensScreen({ navigation }: Props) {
 
   return (
     <AuthGate>
-    <ScreenContainer>
-      <View style={styles.content}>
-        <CustomText style={styles.title}>Buy Grace Tokens</CustomText>
-        <CustomText style={styles.subtitle}>Use tokens for extra asks and confessions</CustomText>
-
-        <View style={styles.pack}>
-          <CustomText style={styles.amount}>
-            20 Tokens — <CustomText style={styles.price}>$5</CustomText>
-          </CustomText>
-          <Button title="Buy 20 Tokens" onPress={() => purchase(20)} loading={loading === 20} />
+      <Screen>
+        <GradientHeader title="Buy Grace Tokens" subtitle="Use tokens for extra asks and confessions" />
+        <View style={styles.list}>
+          <Card>
+            <Text style={{ ...(theme.typography?.h2 || {}), color: theme.colors.text, marginBottom: theme.spacing.sm }}>
+              20 Tokens — $5
+            </Text>
+            <PrimaryButton title="Buy 20 Tokens" onPress={() => purchase(20)} loading={loading === 20} />
+          </Card>
+          <Card>
+            <Text style={{ ...(theme.typography?.h2 || {}), color: theme.colors.text, marginBottom: theme.spacing.sm }}>
+              50 Tokens — $12
+            </Text>
+            <PrimaryButton title="Buy 50 Tokens" onPress={() => purchase(50)} loading={loading === 50} />
+          </Card>
+          <Card>
+            <Text style={{ ...(theme.typography?.h2 || {}), color: theme.colors.text, marginBottom: theme.spacing.sm }}>
+              100 Tokens — $20
+            </Text>
+            <PrimaryButton title="Buy 100 Tokens" onPress={() => purchase(100)} loading={loading === 100} />
+          </Card>
+          <View style={{ alignItems: 'center', marginTop: theme.spacing.md }}>
+            <Text style={[theme.typography?.caption || {}, { color: theme.colors.subtext }]}>Your support grows OneVine. Thank you ❤️</Text>
+          </View>
         </View>
-
-        <View style={styles.pack}>
-          <CustomText style={styles.amount}>
-            50 Tokens — <CustomText style={styles.price}>$10</CustomText>
-          </CustomText>
-          <Button title="Buy 50 Tokens" onPress={() => purchase(50)} loading={loading === 50} />
-        </View>
-
-        <View style={styles.pack}>
-          <CustomText style={styles.amount}>
-            100 Tokens — <CustomText style={styles.price}>$20</CustomText>
-          </CustomText>
-          <Button title="Buy 100 Tokens" onPress={() => purchase(100)} loading={loading === 100} />
-        </View>
-
-        <View style={styles.buttonWrap}>
-          <Button title="Back to Home" onPress={() => navigation.navigate('MainTabs', { screen: 'HomeScreen' })} />
-        </View>
-      </View>
-    </ScreenContainer>
+      </Screen>
     </AuthGate>
   );
 }

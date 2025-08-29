@@ -6,6 +6,7 @@ import { StripeProvider } from '@stripe/stripe-react-native';
 import { useFonts, Poppins_600SemiBold } from '@expo-google-fonts/poppins';
 import { Merriweather_400Regular } from '@expo-google-fonts/merriweather';
 import AuthGate from './App/navigation/AuthGate';
+import ThemeSyncProvider from './App/components/theme/ThemeSyncProvider';
 import StartupAnimation from './App/components/common/StartupAnimation';
 import Constants from 'expo-constants';
 import { useTheme } from './App/components/theme/theme';
@@ -52,8 +53,10 @@ export default function App() {
       merchantIdentifier="merchant.com.onevine.app"
     >
       <ErrorBoundary>
-        <AuthGate />
-        {showAnim && <StartupAnimation onDone={() => setShowAnim(false)} />}
+        <ThemeSyncProvider>
+          <AuthGate />
+          {showAnim && <StartupAnimation onDone={() => setShowAnim(false)} />}
+        </ThemeSyncProvider>
       </ErrorBoundary>
     </StripeProvider>
   );

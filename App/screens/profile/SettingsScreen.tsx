@@ -14,6 +14,8 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { MainTabsParamList } from '@/navigation/MainTabsParamList';
 import { RootStackParamList } from '@/navigation/RootStackParamList';
 import { useSettingsStore } from "@/state/settingsStore";
+import { setDocument } from '@/services/firestoreService';
+import { getCurrentUserId } from '@/utils/authUtils';
 import { useUserProfileStore } from "@/state/userProfile";
 import { useTheme } from "@/components/theme/theme";
 import { scheduleReflectionReminder, cancelReflectionReminder } from '@/utils/reminderNotification';
@@ -27,9 +29,17 @@ export default function SettingsScreen() {
   const setReminderEnabled = useSettingsStore((s) => s.setReminderEnabled);
   const setReminderTime = useSettingsStore((s) => s.setReminderTime);
   const toggleNightMode = useSettingsStore((s) => s.toggleNightMode);
-  const toggleNight = () => {
+  const setNightMode = useSettingsStore((s) => s.setNightMode);
+  const toggleNight = async () => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    toggleNightMode();
+    const next = !nightMode;
+    setNightMode(next); // optimistic
+    try {
+      const uid = await getCurrentUserId();
+      if (uid) await setDocument(`users/${uid}`, { isDarkMode: next });
+    } catch (e) {
+      console.warn('Persist isDarkMode failed', e);
+    }
   };
   const [changing, setChanging] = useState(false);
   const setUserProfile = useUserProfileStore((s) => s.setUserProfile);
