@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import { StatusBar, useColorScheme } from 'react-native';
+import { StatusBar, useColorScheme, LayoutAnimation } from 'react-native';
 import { Dawn, Midnight, Palette } from './colors';
 import { getCurrentUserId } from '@/utils/authUtils';
 import { loadUserProfile, updateUserProfile } from '@/utils/userProfile';
@@ -44,6 +44,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, []);
 
   const setMode = async (m: 'light' | 'dark') => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setModeState(m);
     try {
       const uid = await getCurrentUserId();
@@ -72,4 +73,3 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     </ThemeContext.Provider>
   );
 };
-

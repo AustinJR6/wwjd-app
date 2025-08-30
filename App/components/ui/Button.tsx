@@ -19,9 +19,13 @@ export const Button: React.FC<{
   const base: ViewStyle = {
     paddingVertical: space.md,
     paddingHorizontal: space.xl,
-    borderRadius: radius.xl,
+    borderRadius: 999, // pill style
     alignItems: 'center',
     justifyContent: 'center',
+    shadowOpacity: 0.16,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 4,
   };
   const bgColor = color && variant === 'primary' ? color : palette.primary;
   const stylesBy: ViewStyle =
@@ -34,7 +38,17 @@ export const Button: React.FC<{
   const textColor = variant === 'primary' ? '#FFFFFF' : (color || palette.text);
 
   return (
-    <Pressable onPress={onPress} style={[base, stylesBy, style, (disabled || loading) ? { opacity: 0.6 } : null]} disabled={!!(loading || disabled)}>
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [
+        base,
+        stylesBy,
+        style,
+        (disabled || loading) ? { opacity: 0.55 } : null,
+        pressed && !disabled ? { transform: [{ scale: 0.98 }], shadowOpacity: 0.12 } : null,
+      ]}
+      disabled={!!(loading || disabled)}
+    >
       {loading ? (
         <ActivityIndicator color={textColor} />
       ) : (
