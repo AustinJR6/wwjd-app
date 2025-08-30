@@ -30,6 +30,7 @@ export default function BuyTokensScreen({}: Props) {
   );
   const { initPaymentSheet, presentPaymentSheet } = useStripe();
   const refreshProfile = useUserProfileStore((s) => s.refreshUserProfile);
+  const refreshProfileForce = useUserProfileStore((s) => s.refreshUserProfileForce);
   const [loading, setLoading] = React.useState<number | null>(null);
 
   const purchase = async (tokenAmount: 20 | 50 | 100) => {
@@ -69,18 +70,16 @@ export default function BuyTokensScreen({}: Props) {
 
       try {
         const start = Date.now();
-        const timeoutMs = 8000;
+        const timeoutMs = 12000; // allow a bit more time for webhook
         const baselineTokens = (useUserProfileStore.getState().profile?.tokens ?? 0) as number;
-        const uidNow = await getCurrentUserId();
         while (Date.now() - start < timeoutMs) {
-          const fresh = uidNow ? await loadFreshUserProfile(uidNow) : null;
-          if (fresh) useUserProfileStore.getState().setUserProfile(fresh as any);
+          await refreshProfileForce();
           const updatedTokens = (useUserProfileStore.getState().profile?.tokens ?? 0) as number;
           if (updatedTokens > baselineTokens) {
             showToast('Tokens added', 'Your balance is up to date.');
             break;
           }
-          await new Promise((r) => setTimeout(r, 1000));
+          await new Promise((r) => setTimeout(r, 1200));
         }
       } catch {}
 

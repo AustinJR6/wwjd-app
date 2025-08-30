@@ -13,9 +13,10 @@ export const Screen: React.FC<{ children: React.ReactNode; padded?: boolean }>
         colors={palette.gradientPrimary}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        style={{ height: 120, opacity: 0.22 }}
+        style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 120, opacity: 0.22 }}
+        pointerEvents="none"
       />
-      <ScrollView contentContainerStyle={{ padding: padded ? space.xl : 0 }}>
+      <ScrollView contentContainerStyle={{ padding: padded ? space.xl : 0, flexGrow: 1 }}>
         {children}
       </ScrollView>
     </View>

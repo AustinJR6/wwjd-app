@@ -8,6 +8,7 @@ interface ProfileStore {
   profile: UserProfile | null;
   setUserProfile: (profile: UserProfile) => void;
   refreshUserProfile: () => Promise<void>;
+  refreshUserProfileForce: () => Promise<void>;
   validateProfileFields: () => Promise<void>;
 }
 
@@ -23,6 +24,15 @@ export const useUserProfileStore = create<ProfileStore>((set, get) => ({
     const data = await loadUserProfile(uid);
     if (data) {
       logProfileSync('refresh', data);
+      set({ profile: data });
+    }
+  },
+  refreshUserProfileForce: async () => {
+    const uid = await ensureAuth();
+    if (!uid) return;
+    const data = await loadUserProfile(uid, true);
+    if (data) {
+      logProfileSync('refresh:force', data);
       set({ profile: data });
     }
   },
