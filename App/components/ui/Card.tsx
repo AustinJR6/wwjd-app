@@ -1,19 +1,27 @@
-import React, { PropsWithChildren } from 'react';
-import { View, StyleSheet, ViewStyle } from 'react-native';
-import { useTheme } from '@/components/theme/theme';
+import React from 'react';
+import { View, ViewStyle } from 'react-native';
+import { useThemeX } from '@/theme/ThemeProvider';
+import { radius, shadow, space } from '@/theme/spacing';
 
-export default function Card({ children, style }: PropsWithChildren<{ style?: ViewStyle }>) {
-  const theme = useTheme();
-  return <View style={[styles(theme).card, (theme as any).shadowStyle, style]}>{children}</View>;
-}
+export const Card: React.FC<{ style?: ViewStyle; children: React.ReactNode }> = ({ style, children }) => {
+  const { palette } = useThemeX();
+  return (
+    <View
+      style={[
+        {
+          backgroundColor: palette.card,
+          borderRadius: radius['2xl'],
+          padding: space.lg,
+          borderWidth: 1,
+          borderColor: palette.border,
+          ...shadow.card,
+        },
+        style,
+      ]}
+    >
+      {children}
+    </View>
+  );
+};
 
-const styles = (t:any) => StyleSheet.create({
-  card: {
-    backgroundColor: t.colors.surface,
-    borderRadius: t.radii.lg,
-    padding: t.spacing.lg,
-    borderWidth: 1,
-    borderColor: t.colors.border,
-  },
-});
-
+export default Card;

@@ -1,20 +1,25 @@
-import React, { PropsWithChildren } from 'react';
-import { View, StyleSheet, StatusBar } from 'react-native';
-import { useTheme } from '@/components/theme/theme';
+import React from 'react';
+import { View, ScrollView } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useThemeX } from '@/theme/ThemeProvider';
+import { space } from '@/theme/spacing';
 
-export default function Screen({ children }: PropsWithChildren) {
-  const theme = useTheme();
-  const isDark = theme.colors.text === '#F5F7FA' || (theme.colors.bg || '').toLowerCase() === '#0f1115';
-  const s = styles(theme);
+export const Screen: React.FC<{ children: React.ReactNode; padded?: boolean }>
+  = ({ children, padded = true }) => {
+  const { palette } = useThemeX();
   return (
-    <View style={s.container}>
-      <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
-      {children}
+    <View style={{ flex: 1, backgroundColor: palette.background }}>
+      <LinearGradient
+        colors={palette.gradientPrimary}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={{ height: 120, opacity: 0.22 }}
+      />
+      <ScrollView contentContainerStyle={{ padding: padded ? space.xl : 0 }}>
+        {children}
+      </ScrollView>
     </View>
   );
-}
+};
 
-const styles = (t:any) => StyleSheet.create({
-  container: { flex: 1, backgroundColor: t.colors.bg, paddingHorizontal: t.spacing.lg, paddingTop: t.spacing.lg },
-});
-
+export default Screen;

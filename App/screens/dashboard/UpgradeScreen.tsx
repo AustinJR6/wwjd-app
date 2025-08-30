@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import CustomText from '@/components/CustomText';
 import { View, StyleSheet, Alert } from 'react-native';
-import Button from '@/components/common/Button';
-import ScreenContainer from "@/components/theme/ScreenContainer";
+import { Button } from '@/components/ui/Button';
+import { Screen } from "@/components/ui/Screen";
 import { useTheme } from "@/components/theme/theme";
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from "@/navigation/RootStackParamList";
@@ -71,7 +71,7 @@ export default function UpgradeScreen({ navigation }: Props) {
   };
 
   return (
-    <ScreenContainer>
+    <Screen>
       <View style={styles.content}>
         <CustomText style={styles.title}>OneVine+ Membership</CustomText>
         <CustomText style={styles.subtitle}>Experience the full blessing</CustomText>
@@ -99,6 +99,6 @@ export default function UpgradeScreen({ navigation }: Props) {
           <Button title="Back to Home" onPress={() => navigation.navigate('MainTabs', { screen: 'HomeScreen' })} />
         </View>
       </View>
-    </ScreenContainer>
+    </Screen>
   );
 }

@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import CustomText from '@/components/CustomText';
 import { View, StyleSheet, Alert, ActivityIndicator } from 'react-native';
-import ScreenContainer from '@/components/theme/ScreenContainer';
+import { Screen } from '@/components/ui/Screen';
 import TextField from '@/components/TextField';
-import Button from '@/components/common/Button';
+import { Button } from '@/components/ui/Button';
 import { Picker } from '@react-native-picker/picker';
 import { useUser } from '@/hooks/useUser';
 import { useUserProfileStore } from '@/state/userProfile';
@@ -154,15 +154,15 @@ export default function ProfileScreen() {
 
   if (listsLoading) {
     return (
-      <ScreenContainer>
+      <Screen>
         <ActivityIndicator size="large" color={theme.colors.primary} />
-      </ScreenContainer>
+      </Screen>
     );
   }
 
   return (
     <AuthGate>
-    <ScreenContainer>
+    <Screen>
       <View style={styles.container}>
         <TextField label="Username" value={username} onChangeText={setUsername} />
         <CustomText style={styles.label}>Region</CustomText>
@@ -202,7 +202,7 @@ export default function ProfileScreen() {
         <Button title="Save Changes" onPress={handleSave} loading={saving} />
         <Button title="Change Password" onPress={() => navigation.navigate('ChangePassword')} />
       </View>
-    </ScreenContainer>
+    </Screen>
     </AuthGate>
   );
 }

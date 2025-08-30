@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import CustomText from '@/components/CustomText';
 import { View, StyleSheet, ScrollView } from 'react-native';
-import Button from '@/components/common/Button';
+import { Button } from '@/components/ui/Button';
 import * as SecureStore from 'expo-secure-store';
-import ScreenContainer from "@/components/theme/ScreenContainer";
+import { Screen } from "@/components/ui/Screen";
 import { useTheme } from "@/components/theme/theme";
 import { getTokenCount } from "@/utils/TokenManager";
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -82,7 +82,7 @@ export default function HomeScreen({ navigation }: Props) {
 
   return (
     <AuthGate>
-    <ScreenContainer>
+    <Screen>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <CustomText style={styles.title}>Welcome to OneVine</CustomText>
         <CustomText style={styles.subtitle}>Grow in Faith Daily</CustomText>
@@ -109,7 +109,7 @@ export default function HomeScreen({ navigation }: Props) {
           <Button title="Leaderboards" onPress={() => navigation.navigate('Leaderboards')} />
         </View>
       </ScrollView>
-    </ScreenContainer>
+    </Screen>
     </AuthGate>
   );
 }

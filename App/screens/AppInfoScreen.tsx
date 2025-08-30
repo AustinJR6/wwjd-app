@@ -1,9 +1,9 @@
 import React from 'react';
 import CustomText from '@/components/CustomText';
 import { View, StyleSheet } from 'react-native';
-import ScreenContainer from '@/components/theme/ScreenContainer';
+import { Screen } from '@/components/ui/Screen';
 import { useTheme } from '@/components/theme/theme';
-import Button from '@/components/common/Button';
+import { Button } from '@/components/ui/Button';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/navigation/RootStackParamList';
@@ -23,13 +23,13 @@ export default function AppInfoScreen() {
   );
   return (
     <AuthGate>
-    <ScreenContainer>
+    <Screen>
       <View style={styles.content}>
         <CustomText style={styles.title}>OneVine</CustomText>
         <CustomText>Version {Constants.expoConfig?.version}</CustomText>
         <Button title="Back" onPress={() => navigation.goBack()} />
       </View>
-    </ScreenContainer>
+    </Screen>
     </AuthGate>
   );
 }

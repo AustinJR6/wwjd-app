@@ -10,6 +10,7 @@ export default ({ config }) => ({
   icon: "./assets/icon.png",
   runtimeVersion: "1.0.0",
   plugins: [
+    "expo-font",
     ["expo-build-properties", {
       android: {
         compileSdkVersion: 35,

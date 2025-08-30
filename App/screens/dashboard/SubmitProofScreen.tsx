@@ -2,18 +2,19 @@ import React, { useState, useEffect } from 'react';
 import CustomText from '@/components/CustomText';
 import {
   View,
-  TextInput,
+  
   
   StyleSheet,
   Alert
 } from 'react-native';
-import Button from '@/components/common/Button';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
 import * as ImagePicker from 'expo-image-picker';
 import { uploadImage } from '@/services/storageService';
 import { addDocument } from '@/services/firestoreService';
 import { useUser } from "@/hooks/useUser";
 import { getAuthHeaders } from '@/utils/TokenManager';
-import ScreenContainer from "@/components/theme/ScreenContainer";
+import { Screen } from "@/components/ui/Screen";
 import { useTheme } from "@/components/theme/theme";
 import { ensureAuth } from '@/utils/authGuard';
 import { useNavigation } from '@react-navigation/native';
@@ -117,15 +118,10 @@ export default function SubmitProofScreen() {
   };
 
   return (
-    <ScreenContainer>
+    <Screen>
       <CustomText style={styles.title}>Submit Challenge Proof</CustomText>
 
-      <TextInput
-        style={styles.input}
-        placeholder="Caption / description"
-        value={caption}
-        onChangeText={setCaption}
-      />
+      <Input placeholder="Caption / description" value={caption} onChangeText={setCaption} />
 
       <Button title="Pick Image" onPress={pickImage} />
 
@@ -142,7 +138,7 @@ export default function SubmitProofScreen() {
           disabled={uploading}
         />
       </View>
-    </ScreenContainer>
+    </Screen>
   );
 }
 

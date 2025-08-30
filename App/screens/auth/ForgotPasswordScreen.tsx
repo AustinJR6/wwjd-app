@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import CustomText from '@/components/CustomText';
 import { View, StyleSheet, Alert } from 'react-native';
-import ScreenContainer from '@/components/theme/ScreenContainer';
+import { Screen } from '@/components/ui/Screen';
 import TextField from '@/components/TextField';
-import Button from '@/components/common/Button';
+import { Button } from '@/components/ui/Button';
 import { resetPassword } from '@/services/authService';
 import { useTheme } from '@/components/theme/theme';
 
@@ -41,11 +41,11 @@ export default function ForgotPasswordScreen() {
   };
 
   return (
-    <ScreenContainer>
+    <Screen>
       <CustomText style={styles.title}>Reset Password</CustomText>
       <TextField label="Email" value={email} onChangeText={setEmail} placeholder="you@example.com" />
       <Button title="Send Reset Link" onPress={handleReset} loading={loading} />
-    </ScreenContainer>
+    </Screen>
   );
 }
 

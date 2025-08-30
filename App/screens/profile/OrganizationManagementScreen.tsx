@@ -6,12 +6,12 @@ import {
   StyleSheet,
   Alert,
   ActivityIndicator} from 'react-native';
-import Button from '@/components/common/Button';
+import { Button } from '@/components/ui/Button';
 import { getDocument, setDocument } from '@/services/firestoreService';
 import { loadUserProfile } from '@/utils/userProfile';
 import { useUser } from '@/hooks/useUser';
 import { getAuthHeaders } from '@/utils/TokenManager';
-import ScreenContainer from '@/components/theme/ScreenContainer';
+import { Screen } from '@/components/ui/Screen';
 import { useTheme } from '@/components/theme/theme';
 import { ensureAuth } from '@/utils/authGuard';
 import * as SecureStore from 'expo-secure-store';
@@ -142,23 +142,23 @@ export default function OrganizationManagementScreen() {
 
   if (loading) {
     return (
-      <ScreenContainer>
+      <Screen>
         <ActivityIndicator size="large" color={theme.colors.primary} />
-      </ScreenContainer>
+      </Screen>
     );
   }
 
   if (!org) {
     return (
-      <ScreenContainer>
+      <Screen>
         <CustomText style={styles.title}>No organization found</CustomText>
-      </ScreenContainer>
+      </Screen>
     );
   }
 
   return (
     <AuthGate>
-    <ScreenContainer>
+    <Screen>
       <CustomText style={styles.title}>{org.name}</CustomText>
       <CustomText style={styles.subtitle}>Tier: {org.tier}</CustomText>
       <CustomText style={styles.subtitle}>
@@ -176,7 +176,7 @@ export default function OrganizationManagementScreen() {
           </View>
         )}
       />
-    </ScreenContainer>
+    </Screen>
     </AuthGate>
   );
 }

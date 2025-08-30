@@ -5,13 +5,14 @@ import {
   StyleSheet,
   Alert,
   ScrollView,
-  TextInput,
+  
   TouchableOpacity,
   ActivityIndicator,
   Modal,
   Pressable} from 'react-native';
-import Button from '@/components/common/Button';
-import ScreenContainer from "@/components/theme/ScreenContainer";
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { Screen } from "@/components/ui/Screen";
 import { useTheme } from "@/components/theme/theme";
 import { showGracefulError } from '@/utils/gracefulError';
 import * as LocalAuthentication from 'expo-local-authentication';
@@ -319,7 +320,7 @@ export default function JournalScreen() {
 
   return (
     <AuthGate>
-    <ScreenContainer>
+    <Screen>
       <ScrollView contentContainerStyle={styles.container}>
         {!guidedMode ? (
           <>
@@ -337,25 +338,20 @@ export default function JournalScreen() {
             <CustomText style={styles.prompt}>Today’s Prompt:</CustomText>
             <CustomText style={styles.promptBold}>What’s on your heart this morning?</CustomText>
 
-            <TextInput
-              style={styles.input}
-              multiline
+            <Input
               placeholder="Write your reflection here…"
-              placeholderTextColor={theme.colors.fadedText}
               value={entry}
               onChangeText={setEntry}
+              multiline
+              inputStyle={{ minHeight: 120, textAlignVertical: 'top' }}
             />
-            <TextInput
-              style={styles.input}
+            <Input
               placeholder="Emotion (optional)"
-              placeholderTextColor={theme.colors.fadedText}
               value={emotion}
               onChangeText={setEmotion}
             />
-            <TextInput
-              style={styles.input}
+            <Input
               placeholder="Tags (comma separated)"
-              placeholderTextColor={theme.colors.fadedText}
               value={tags}
               onChangeText={setTags}
             />
@@ -372,13 +368,12 @@ export default function JournalScreen() {
             {aiResponse ? (
               <CustomText style={styles.prompt}>{aiResponse}</CustomText>
             ) : null}
-            <TextInput
-              style={styles.input}
-              multiline
+            <Input
               placeholder="Write your reflection…"
-              placeholderTextColor={theme.colors.fadedText}
               value={entry}
               onChangeText={setEntry}
+              multiline
+              inputStyle={{ minHeight: 120, textAlignVertical: 'top' }}
             />
             <Button
               title={saving ? 'Saving…' : 'Save Entry'}
@@ -433,7 +428,7 @@ export default function JournalScreen() {
           </View>
         </View>
       </Modal>
-    </ScreenContainer>
+    </Screen>
     </AuthGate>
   );
 }

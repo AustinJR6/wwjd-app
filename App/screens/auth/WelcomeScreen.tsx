@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import CustomText from '@/components/CustomText';
 import { View, StyleSheet, Animated } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import Button from '@/components/common/Button';
+import { Button } from '@/components/ui/Button';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/navigation/RootStackParamList';

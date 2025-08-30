@@ -9,7 +9,7 @@ import {
   Alert
 } from 'react-native';
 import { useTheme } from "@/components/theme/theme";
-import ScreenContainer from "@/components/theme/ScreenContainer";
+import { Screen } from "@/components/ui/Screen";
 import { useUser } from "@/hooks/useUser";
 import { setDocument } from '@/services/firestoreService';
 import { loadUserProfile, updateUserProfile } from '@/utils/userProfile';
@@ -83,7 +83,7 @@ export default function SelectReligionScreen({ navigation }: Props) {
   };
 
   return (
-    <ScreenContainer>
+    <Screen>
       <CustomText style={styles.title}>Select Your Faith</CustomText>
       <FlatList
         data={RELIGIONS}
@@ -111,7 +111,7 @@ export default function SelectReligionScreen({ navigation }: Props) {
       <View style={styles.buttonWrap}>
         <Button title="Continue" onPress={handleContinue} />
       </View>
-    </ScreenContainer>
+    </Screen>
   );
 }
 

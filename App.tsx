@@ -3,8 +3,11 @@ import { View, ActivityIndicator } from 'react-native';
 import * as Sentry from '@sentry/react-native';
 import ErrorBoundary from './App/components/common/ErrorBoundary';
 import { StripeProvider } from '@stripe/stripe-react-native';
-import { useFonts, Poppins_600SemiBold } from '@expo-google-fonts/poppins';
+import { useFonts, Poppins_700Bold, Poppins_600SemiBold } from '@expo-google-fonts/poppins';
 import { Merriweather_400Regular } from '@expo-google-fonts/merriweather';
+import { Inter_400Regular, Inter_600SemiBold } from '@expo-google-fonts/inter';
+import { ThemeProvider } from '@/theme/ThemeProvider';
+import { StatusBar } from 'react-native';
 import AuthGate from './App/navigation/AuthGate';
 import ThemeSyncProvider from './App/components/theme/ThemeSyncProvider';
 import StartupAnimation from './App/components/common/StartupAnimation';
@@ -23,8 +26,11 @@ const isExpoGo = Constants.appOwnership === 'expo';
 export default function App() {
   const theme = useTheme();
   const [fontsLoaded] = useFonts({
+    Poppins_700Bold,
     Poppins_600SemiBold,
     Merriweather_400Regular,
+    Inter_400Regular,
+    Inter_600SemiBold,
   });
   const [showAnim, setShowAnim] = useState(true);
 
@@ -46,7 +52,7 @@ export default function App() {
     );
   }
 
-  return (
+  const AppTree = (
     <StripeProvider
       publishableKey={Constants.expoConfig?.extra?.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY || ''}
       urlScheme="onevine"
@@ -59,5 +65,11 @@ export default function App() {
         </ThemeSyncProvider>
       </ErrorBoundary>
     </StripeProvider>
+  );
+
+  return (
+    <ThemeProvider>
+      {AppTree}
+    </ThemeProvider>
   );
 }

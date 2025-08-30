@@ -273,16 +273,78 @@ export async function finalizePaymentIntent(
   }
 }
 
-// Callable-based token checkout for Stripe PaymentSheet
+// REST-based token checkout for Stripe PaymentSheet (no Firebase SDK on client)
 export async function startTokenCheckoutClient(packageId: 'small' | 'medium' | 'large') {
-  const { httpsCallable } = await import('firebase/functions');
-  const { functions } = await import('@/services/firebase');
-  const fn = httpsCallable(functions, 'startTokenCheckout');
-  const res: any = await fn({ packageId });
-  return res.data as {
+  let headers: any;
+  try {
+    headers = await getAuthHeaders();
+  } catch {
+    logTokenIssue('startTokenCheckoutClient');
+    throw new Error('Missing auth token');
+  }
+  const res = await sendRequestWithGusBugLogging(() =>
+    fetch(endpoints.startTokenCheckout, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ packageId }),
+    })
+  );
+  const text = await res.text();
+  if (!res.ok) {
+    if (res.status === 403) {
+      showPermissionDenied();
+    }
+    throw new Error(text || 'Unable to start token checkout');
+  }
+  return JSON.parse(text) as {
     publishableKey: string;
     paymentIntentClientSecret: string;
     customerId: string;
     ephemeralKeySecret: string;
   };
+}
+
+// Exposed token checkout session creator for PaymentSheet (used by useStripeCheckout)
+export async function createCheckoutSession(
+  uid: string,
+  priceId: string,
+  tokenAmount: number,
+): Promise<StripeCheckoutResponse> {
+  if (
+    typeof uid !== 'string' || !uid.trim() ||
+    typeof priceId !== 'string' || !priceId.trim() ||
+    typeof tokenAmount !== 'number' || tokenAmount <= 0
+  ) {
+    console.warn('Missing fields for createCheckoutSession', { uid, priceId, tokenAmount });
+    throw new Error('Invalid input');
+  }
+
+  let headers;
+  try {
+    headers = await getAuthHeaders();
+  } catch {
+    logTokenIssue('createCheckoutSession');
+    throw new Error('Missing auth token');
+  }
+
+  try {
+    const cleanId = cleanPriceId(priceId);
+    const payload = { uid, priceId: cleanId, tokenAmount, mode: 'payment', type: 'token_purchase' } as const;
+    const res = await sendRequestWithGusBugLogging(() =>
+      fetch(endpoints.createCheckoutSession, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(payload),
+      })
+    );
+    const text = await res.text();
+    if (!res.ok) {
+      if (res.status === 403) showPermissionDenied();
+      throw new Error(text || 'Unable to start checkout.');
+    }
+    return JSON.parse(text) as StripeCheckoutResponse;
+  } catch (err: any) {
+    console.warn('createCheckoutSession failed:', err?.message || err);
+    throw new Error(err?.message || 'Unable to start checkout.');
+  }
 }

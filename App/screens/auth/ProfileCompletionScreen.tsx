@@ -7,9 +7,9 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
-import ScreenContainer from '@/components/theme/ScreenContainer';
+import { Screen } from '@/components/ui/Screen';
 import TextField from '@/components/TextField';
-import Button from '@/components/common/Button';
+import { Button } from '@/components/ui/Button';
 import { Picker } from '@react-native-picker/picker';
 import { useLookupLists } from '@/hooks/useLookupLists';
 import { getDocument, updateDocument } from '@/services/firestoreService';
@@ -132,14 +132,14 @@ export default function ProfileCompletionScreen() {
 
   if (loading) {
     return (
-      <ScreenContainer>
+      <Screen>
         <ActivityIndicator size="large" color={theme.colors.primary} />
-      </ScreenContainer>
+      </Screen>
     );
   }
 
   return (
-    <ScreenContainer>
+    <Screen>
       <ScrollView contentContainerStyle={{ paddingBottom: theme.spacing.lg }}>
         <CustomText style={styles.title}>Complete Your Profile</CustomText>
         <TextField
@@ -195,6 +195,6 @@ export default function ProfileCompletionScreen() {
           />
         </View>
       </ScrollView>
-    </ScreenContainer>
+    </Screen>
   );
 }

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import CustomText from '@/components/CustomText';
 import {
   View,
-  TextInput,
+  
 
   ActivityIndicator,
   StyleSheet,
@@ -10,8 +10,8 @@ import {
   ScrollView,
   ToastAndroid,
 } from 'react-native';
-import ScreenContainer from "@/components/theme/ScreenContainer";
-import Button from '@/components/common/Button';
+import { Screen } from "@/components/ui/Screen";
+import { Button } from '@/components/ui/Button';
 import { useTheme } from "@/components/theme/theme";
 import { loadUserProfile } from '@/utils/userProfile';
 import { ensureAuth } from '@/utils/authGuard';
@@ -161,15 +161,15 @@ export default function ConfessionalScreen() {
 
   return (
     <AuthGate>
-    <ScreenContainer>
+    <Screen>
       <ScrollView contentContainerStyle={styles.container}>
         <CustomText style={styles.title}>Confessional</CustomText>
-        <TextInput
-          style={styles.input}
+        <Input
           placeholder="What's on your heart?"
           value={text}
           onChangeText={setText}
           multiline
+          inputStyle={{ minHeight: 100, textAlignVertical: 'top' }}
         />
         <CustomText style={styles.systemMsg}>Your confessions are stored securely.</CustomText>
         <View style={styles.buttonWrap}>
@@ -183,9 +183,10 @@ export default function ConfessionalScreen() {
           <CustomText key={m.id} style={styles.response}>{m.role === 'user' ? 'You: ' : ''}{m.text}</CustomText>
         ))}
       </ScrollView>
-    </ScreenContainer>
+    </Screen>
     </AuthGate>
   );
 }
 
 
+import { Input } from '@/components/ui/Input';

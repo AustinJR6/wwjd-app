@@ -9,8 +9,8 @@ import {
   ToastAndroid,
   Platform,
 } from 'react-native';
-import Button from '@/components/common/Button';
-import ScreenContainer from "@/components/theme/ScreenContainer";
+import { Button } from '@/components/ui/Button';
+import { Screen } from "@/components/ui/Screen";
 import { useTheme } from "@/components/theme/theme";
 import { showGracefulError } from '@/utils/gracefulError';
 import { endpoints } from '@/services/endpoints';
@@ -404,7 +404,7 @@ export default function ChallengeScreen() {
 
   return (
     <AuthGate>
-    <ScreenContainer>
+    <Screen>
       <ScrollView contentContainerStyle={styles.container}>
         <CustomText style={styles.title}>Daily Challenge</CustomText>
         <CustomText style={styles.streak}>Streak: {streakCount} days</CustomText>
@@ -443,7 +443,7 @@ export default function ChallengeScreen() {
           )}
         </View>
       </ScrollView>
-    </ScreenContainer>
+    </Screen>
     </AuthGate>
   );
 }

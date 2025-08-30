@@ -3,8 +3,11 @@ import CustomText from '@/components/CustomText';
 import { View, StyleSheet, Switch, Alert, LayoutAnimation } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import Constants from 'expo-constants';
-import ScreenContainer from "@/components/theme/ScreenContainer";
-import Button from "@/components/common/Button";
+import { Screen } from '@/components/ui/Screen';
+import { Card } from '@/components/ui/Card';
+import { Header } from '@/components/ui/Header';
+import { Button } from '@/components/ui/Button';
+import { useThemeX } from '@/theme/ThemeProvider';
 import { logout, changePassword } from "@/services/authService";
 import { resetToLogin } from "@/navigation/navigationRef";
 import { useNavigation } from '@react-navigation/native';
@@ -23,6 +26,7 @@ import AuthGate from '@/components/AuthGate';
 
 export default function SettingsScreen() {
   const theme = useTheme();
+  const { mode, setMode, palette } = useThemeX();
   const nightMode = useSettingsStore((s) => s.nightMode);
   const reminderEnabled = useSettingsStore((s) => s.reminderEnabled);
   const reminderTime = useSettingsStore((s) => s.reminderTime);
@@ -37,6 +41,7 @@ export default function SettingsScreen() {
     try {
       const uid = await getCurrentUserId();
       if (uid) await setDocument(`users/${uid}`, { isDarkMode: next });
+      await setMode(next ? 'dark' : 'light');
     } catch (e) {
       console.warn('Persist isDarkMode failed', e);
     }
@@ -100,58 +105,69 @@ export default function SettingsScreen() {
 
   return (
     <AuthGate>
-    <ScreenContainer>
-      <View style={styles.center}>
-        <View style={styles.row}>
-          <CustomText style={styles.text}>Night Mode</CustomText>
-          <Switch value={nightMode} onValueChange={toggleNight} />
-        </View>
-        <View style={styles.row}>
-          <CustomText style={styles.text}>Enable Reflection Reminder</CustomText>
-          <Switch
-            value={reminderEnabled}
-            onValueChange={async (v) => {
-              setReminderEnabled(v);
-              if (v) {
-                await scheduleReflectionReminder(reminderTime);
-              } else {
-                await cancelReflectionReminder();
-              }
-            }}
-          />
-        </View>
-        {reminderEnabled && (
+      <Screen>
+        <Header title="Settings" subtitle="Personalize your experience" />
+        <Card>
           <View style={styles.row}>
-            <CustomText style={styles.text}>Time of Reminder</CustomText>
-            <DateTimePicker
-              value={new Date(`1970-01-01T${reminderTime}:00`)}
-              mode="time"
-              display="spinner"
-              onChange={(_, date) => {
-                if (date) {
-                  const h = date.getHours().toString().padStart(2, '0');
-                  const m = date.getMinutes().toString().padStart(2, '0');
-                  const t = `${h}:${m}`;
-                  setReminderTime(t);
-                  scheduleReflectionReminder(t);
+            <CustomText style={styles.text}>Night Mode</CustomText>
+            <Switch value={nightMode} onValueChange={toggleNight} />
+          </View>
+          <View style={styles.row}>
+            <CustomText style={styles.text}>Enable Reflection Reminder</CustomText>
+            <Switch
+              value={reminderEnabled}
+              onValueChange={async (v) => {
+                setReminderEnabled(v);
+                if (v) {
+                  await scheduleReflectionReminder(reminderTime);
+                } else {
+                  await cancelReflectionReminder();
                 }
               }}
             />
           </View>
-        )}
-        <>
+          {reminderEnabled && (
+            <View style={styles.row}>
+              <CustomText style={styles.text}>Time of Reminder</CustomText>
+              <DateTimePicker
+                value={new Date(`1970-01-01T${reminderTime}:00`)}
+                mode="time"
+                display="spinner"
+                onChange={(_, date) => {
+                  if (date) {
+                    const h = date.getHours().toString().padStart(2, '0');
+                    const m = date.getMinutes().toString().padStart(2, '0');
+                    const t = `${h}:${m}`;
+                    setReminderTime(t);
+                    scheduleReflectionReminder(t);
+                  }
+                }}
+              />
+            </View>
+          )}
+        </Card>
+        <View style={{ height: 20 }} />
+        <Card>
           <Button title="Profile" onPress={() => navigation.navigate('Profile')} />
+          <View style={{ height: 10 }} />
           <Button title="Upgrade" onPress={() => navigation.navigate('Upgrade')} />
+          <View style={{ height: 10 }} />
           <Button title="Buy Tokens" onPress={() => navigation.navigate('BuyTokens')} />
+          <View style={{ height: 10 }} />
           <Button title="Give Back" onPress={() => navigation.navigate('GiveBack')} />
+          <View style={{ height: 10 }} />
           <Button title="Join Organization" onPress={() => navigation.navigate('JoinOrganization')} />
+          <View style={{ height: 10 }} />
           <Button title="App Info" onPress={() => navigation.navigate('AppInfo')} />
+          <View style={{ height: 10 }} />
           <Button title="Change Password" onPress={handleChangePassword} loading={changing} />
+          <View style={{ height: 10 }} />
           <Button title="Sign Out" onPress={handleLogout} />
-        </>
-        <CustomText style={styles.version}>v{Constants.expoConfig?.version}</CustomText>
-      </View>
-    </ScreenContainer>
+        </Card>
+        <CustomText style={{ marginTop: 16, textAlign: 'center', color: theme.colors.fadedText }}>
+          v{Constants.expoConfig?.version}
+        </CustomText>
+      </Screen>
     </AuthGate>
   );
 }

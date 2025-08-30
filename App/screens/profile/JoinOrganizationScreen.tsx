@@ -2,14 +2,15 @@ import React, { useState, useEffect } from 'react';
 import CustomText from '@/components/CustomText';
 import {
   View,
-  TextInput,
+  
   FlatList,
   StyleSheet,
   Alert
 } from 'react-native';
-import Button from '@/components/common/Button';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
 import { useUser } from '@/hooks/useUser';
-import ScreenContainer from '@/components/theme/ScreenContainer';
+import { Screen } from '@/components/ui/Screen';
 import { useTheme } from '@/components/theme/theme';
 import { queryCollection, setDocument, getDocument } from '@/services/firestoreService';
 import { loadUserProfile, updateUserProfile } from '@/utils/userProfile';
@@ -197,14 +198,9 @@ export default function JoinOrganizationScreen() {
 
   return (
     <AuthGate>
-    <ScreenContainer>
+    <Screen>
       <CustomText style={styles.title}>Join an Organization</CustomText>
-      <TextInput
-        style={styles.input}
-        placeholder="Search by name"
-        value={query}
-        onChangeText={handleSearch}
-      />
+      <Input placeholder="Search by name" value={query} onChangeText={handleSearch} />
 
       <FlatList
       data={filtered}
@@ -225,7 +221,7 @@ export default function JoinOrganizationScreen() {
       onEndReachedThreshold={0.5}
       ListFooterComponent={loadingMore ? <CustomText>Loading...</CustomText> : null}
     />
-    </ScreenContainer>
+    </Screen>
     </AuthGate>
   );
 }

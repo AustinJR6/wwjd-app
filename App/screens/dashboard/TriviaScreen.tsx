@@ -2,17 +2,18 @@ import React, { useEffect, useState } from 'react';
 import CustomText from '@/components/CustomText';
 import {
   View,
-  TextInput,
+  
   
   StyleSheet,
   Alert,
   ActivityIndicator,
   ScrollView
 } from 'react-native';
-import Button from '@/components/common/Button';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
 import { useUser } from '@/hooks/useUser';
 import { sendGeminiPrompt } from '@/services/geminiService';
-import ScreenContainer from '@/components/theme/ScreenContainer';
+import { Screen } from '@/components/ui/Screen';
 import { useTheme } from '@/components/theme/theme';
 import { endpoints } from '@/services/endpoints';
 import { setDocument } from '@/services/firestoreService';
@@ -170,7 +171,7 @@ export default function TriviaScreen() {
 
   return (
     <AuthGate>
-    <ScreenContainer>
+    <Screen>
       <ScrollView contentContainerStyle={styles.container}>
         <CustomText style={styles.title}>Trivia Challenge</CustomText>
 
@@ -182,23 +183,13 @@ export default function TriviaScreen() {
 
         {!loading && (
           <>
-            <TextInput
-              style={styles.input}
-              placeholder="Guess the religion"
-              value={answer}
-              onChangeText={setAnswer}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Guess the exact story"
-              value={storyGuess}
-              onChangeText={setStoryGuess}
-            />
+            <Input placeholder="Guess the religion" value={answer} onChangeText={setAnswer} />
+            <Input placeholder="Guess the exact story" value={storyGuess} onChangeText={setStoryGuess} />
             <Button title="Submit Guess" onPress={submitAnswer} />
           </>
         )}
       </ScrollView>
-    </ScreenContainer>
+    </Screen>
     </AuthGate>
   );
 }

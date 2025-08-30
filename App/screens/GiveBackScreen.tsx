@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import CustomText from '@/components/CustomText';
 import { View, StyleSheet, Alert } from 'react-native';
-import Button from '@/components/common/Button';
+import { Button } from '@/components/ui/Button';
 import { usePaymentFlow } from '@/utils';
 import { logTransaction } from '@/utils/transactionLogger';
-import ScreenContainer from "@/components/theme/ScreenContainer";
+import { Screen } from "@/components/ui/Screen";
 import { useTheme } from "@/components/theme/theme";
 import AuthGate from '@/components/AuthGate';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -70,7 +70,7 @@ export default function GiveBackScreen({ navigation }: Props) {
 
   return (
     <AuthGate>
-    <ScreenContainer>
+    <Screen>
       <View style={styles.content}>
         <CustomText style={styles.title}>Give Back</CustomText>
         <CustomText style={styles.subtitle}>
@@ -96,7 +96,7 @@ export default function GiveBackScreen({ navigation }: Props) {
           <Button title="Back to Home" onPress={() => navigation.navigate('MainTabs', { screen: 'HomeScreen' })} />
         </View>
       </View>
-    </ScreenContainer>
+    </Screen>
     </AuthGate>
   );
 }

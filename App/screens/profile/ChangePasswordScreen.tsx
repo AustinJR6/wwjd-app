@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import CustomText from '@/components/CustomText';
-import ScreenContainer from '@/components/theme/ScreenContainer';
+import { Screen } from '@/components/ui/Screen';
 import TextField from '@/components/TextField';
-import Button from '@/components/common/Button';
+import { Button } from '@/components/ui/Button';
 import { View, StyleSheet, Alert } from 'react-native';
 import { useTheme } from '@/components/theme/theme';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -53,7 +53,7 @@ export default function ChangePasswordScreen() {
   };
 
   return (
-    <ScreenContainer>
+    <Screen>
       <View style={styles.container}>
         <CustomText style={styles.title}>Change Password</CustomText>
         <TextField
@@ -70,6 +70,6 @@ export default function ChangePasswordScreen() {
         />
         <Button title="Update Password" onPress={handleChange} loading={loading} />
       </View>
-    </ScreenContainer>
+    </Screen>
   );
 }

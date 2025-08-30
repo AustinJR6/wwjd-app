@@ -2,9 +2,9 @@ import React, { useState } from "react";
 import CustomText from "@/components/CustomText";
 import { View, StyleSheet, Alert, ActivityIndicator } from "react-native";
 import { showGracefulError } from "@/utils/gracefulError";
-import ScreenContainer from "@/components/theme/ScreenContainer";
+import { Screen } from "@/components/ui/Screen";
 import TextField from "@/components/TextField";
-import Button from "@/components/common/Button";
+import { Button } from "@/components/ui/Button";
 import { login, resetPassword } from "@/services/authService";
 import { loadFreshUserProfile } from "@/utils";
 import { useUserProfileStore } from "@/state/userProfile";
@@ -84,7 +84,7 @@ export default function LoginScreen() {
   );
 
   return (
-    <ScreenContainer>
+    <Screen>
       {loading && (
         <ActivityIndicator
           style={styles.spinner}
@@ -127,7 +127,7 @@ export default function LoginScreen() {
       >
         Want to register your organization? Click here
       </CustomText>
-    </ScreenContainer>
+    </Screen>
   );
 }
 

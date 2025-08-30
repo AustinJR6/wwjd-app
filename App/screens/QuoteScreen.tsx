@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import CustomText from '@/components/CustomText';
 import { View, StyleSheet, ActivityIndicator } from 'react-native';
-import Button from '@/components/common/Button';
-import ScreenContainer from "@/components/theme/ScreenContainer";
+import { Button } from '@/components/ui/Button';
+import { Screen } from "@/components/ui/Screen";
 import { useTheme } from "@/components/theme/theme";
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from "@/navigation/RootStackParamList";
@@ -77,16 +77,16 @@ export default function QuoteScreen({ navigation }: Props) {
 
   if (loading) {
     return (
-      <ScreenContainer>
+      <Screen>
         <View style={styles.center}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
         </View>
-      </ScreenContainer>
+      </Screen>
     );
   }
 
   return (
-    <ScreenContainer>
+    <Screen>
       <View style={styles.content}>
         <CustomText style={styles.quote}>“{quote.text}”</CustomText>
         <CustomText style={styles.reference}>— {quote.reference}</CustomText>
@@ -94,7 +94,7 @@ export default function QuoteScreen({ navigation }: Props) {
           <Button title="Continue" onPress={() => navigation.replace('MainTabs')} />
         </View>
       </View>
-    </ScreenContainer>
+    </Screen>
   );
 }
 

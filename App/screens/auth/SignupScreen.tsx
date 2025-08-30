@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 import CustomText from "@/components/CustomText";
 import { StyleSheet, Alert, ScrollView } from "react-native";
-import ScreenContainer from "@/components/theme/ScreenContainer";
+import { Screen } from "@/components/ui/Screen";
 import TextField from "@/components/TextField";
-import Button from "@/components/common/Button";
+import { Button } from "@/components/ui/Button";
 import { signup } from "@/services/authService";
 import { updateUserProfile } from "@/utils/userProfile";
 import { useNavigation } from "@react-navigation/native";
@@ -118,7 +118,7 @@ export default function SignupScreen() {
   );
 
   return (
-    <ScreenContainer>
+    <Screen>
       <ScrollView contentContainerStyle={{ paddingBottom: theme.spacing.lg }}>
         <CustomText style={styles.title}>Create an Account</CustomText>
 
@@ -163,7 +163,7 @@ export default function SignupScreen() {
           Want to register your organization? Click here
         </CustomText>
       </ScrollView>
-    </ScreenContainer>
+    </Screen>
   );
 }
 

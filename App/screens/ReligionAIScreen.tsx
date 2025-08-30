@@ -12,8 +12,8 @@ import {
   Platform,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Button from '@/components/common/Button';
-import ScreenContainer from "@/components/theme/ScreenContainer";
+import { Button } from '@/components/ui/Button';
+import { Screen } from "@/components/ui/Screen";
 import { useTheme } from "@/components/theme/theme";
 import { getTokenCount, setTokenCount } from "@/utils/TokenManager";
 import { showGracefulError } from '@/utils/gracefulError';
@@ -309,7 +309,7 @@ export default function ReligionAIScreen() {
 
   return (
     <AuthGate>
-    <ScreenContainer>
+    <Screen>
       <KeyboardAvoidingView
         style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -365,7 +365,7 @@ export default function ReligionAIScreen() {
           </CustomText>
         )}
       </KeyboardAvoidingView>
-    </ScreenContainer>
+    </Screen>
     </AuthGate>
   );
 }

@@ -11,7 +11,7 @@ import { fetchTopUsersByPoints } from '@/services/firestoreService';
 import { logFirestoreError } from '@/lib/logging';
 import Constants from 'expo-constants';
 import { showGracefulError } from '@/utils/gracefulError';
-import ScreenContainer from "@/components/theme/ScreenContainer";
+import { Screen } from "@/components/ui/Screen";
 import { useTheme } from "@/components/theme/theme";
 import { ensureAuth } from '@/utils/authGuard';
 import AuthGate from '@/components/AuthGate';
@@ -204,7 +204,7 @@ export default function LeaderboardScreen() {
 
   return (
     <AuthGate>
-    <ScreenContainer>
+    <Screen>
       <ScrollView contentContainerStyle={styles.container}>
         <CustomText style={styles.title}>Leaderboards</CustomText>
         {loading ? (
@@ -219,7 +219,7 @@ export default function LeaderboardScreen() {
           </>
         )}
       </ScrollView>
-    </ScreenContainer>
+    </Screen>
     </AuthGate>
   );
 }

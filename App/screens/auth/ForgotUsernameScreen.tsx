@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import CustomText from '@/components/CustomText';
 import { View, StyleSheet, Alert } from 'react-native';
-import ScreenContainer from '@/components/theme/ScreenContainer';
+import { Screen } from '@/components/ui/Screen';
 import TextField from '@/components/TextField';
-import Button from '@/components/common/Button';
+import { Button } from '@/components/ui/Button';
 import { queryCollection } from '@/services/firestoreService';
 import { loadUserProfile } from '@/utils/userProfile';
 import { ensureAuth } from '@/utils/authGuard';
@@ -96,7 +96,7 @@ export default function ForgotUsernameScreen() {
   };
 
   return (
-    <ScreenContainer>
+    <Screen>
       <CustomText style={styles.title}>Find Your Email</CustomText>
       <TextField label="Name" value={name} onChangeText={setName} placeholder="Your name" />
       <CustomText style={styles.label}>Region</CustomText>
@@ -113,7 +113,7 @@ export default function ForgotUsernameScreen() {
       </View>
       <Button title="Lookup" onPress={handleLookup} loading={loading} />
       {email && <CustomText style={styles.result}>Email: {email}</CustomText>}
-    </ScreenContainer>
+    </Screen>
   );
 }
 

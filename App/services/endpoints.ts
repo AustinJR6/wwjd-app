@@ -27,3 +27,5 @@ export const endpoints = {
   handleStripeWebhookV2: `${BASE}/handleStripeWebhookV2`,
   cleanLegacySubscriptionFields: `${BASE}/cleanLegacySubscriptionFields`,
 } as const;
+
+export type EndpointName = keyof typeof endpoints;

@@ -2,13 +2,14 @@ import React, { useState } from 'react';
 import CustomText from '@/components/CustomText';
 import {
   View,
-  TextInput,
+  
   Button,
   StyleSheet,
   Alert
 } from 'react-native';
 import { addDocument } from '@/services/firestoreService';
-import ScreenContainer from "@/components/theme/ScreenContainer";
+import { Input } from '@/components/ui/Input';
+import { Screen } from "@/components/ui/Screen";
 import { useTheme } from "@/components/theme/theme";
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from "@/navigation/RootStackParamList";
@@ -87,15 +88,10 @@ export default function OrganizationSignupScreen({ navigation }: Props) {
   };
 
   return (
-    <ScreenContainer>
+    <Screen>
       <CustomText style={styles.title}>Create Organization</CustomText>
 
-      <TextInput
-        style={styles.input}
-        placeholder="Organization Name"
-        value={name}
-        onChangeText={setName}
-      />
+      <Input placeholder="Organization Name" value={name} onChangeText={setName} />
 
       <CustomText style={styles.label}>Select Plan:</CustomText>
       <View style={styles.buttonGroup}>
@@ -114,7 +110,7 @@ export default function OrganizationSignupScreen({ navigation }: Props) {
       <View style={styles.submitWrap}>
         <Button title="Create" onPress={handleSignup} disabled={submitting} />
       </View>
-    </ScreenContainer>
+    </Screen>
   );
 }
 

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, ActivityIndicator, StyleSheet, Text, Alert } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import ScreenContainer from '@/components/theme/ScreenContainer';
+import { Screen } from '@/components/ui/Screen';
 import { useTheme } from '@/components/theme/theme';
 import { useUserProfileStore } from '@/state/userProfile';
 import { handlePostSubscription } from '@/utils/profileRefresh';
@@ -78,12 +78,12 @@ export default function StripeSuccessScreen() {
 
   if (loading) {
     return (
-      <ScreenContainer>
+      <Screen>
         <View style={styles.center}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
           <Text style={styles.msg}>Finishing up your purchase...</Text>
         </View>
-      </ScreenContainer>
+      </Screen>
     );
   }
 
