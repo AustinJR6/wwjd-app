@@ -47,59 +47,76 @@ function getTokenPriceIds() {
   };
 }
 
-// --- START: startTokenCheckout ---
+// --- START: startTokenCheckout (callable for PaymentSheet token purchase) ---
+type TokenPackage = { amountCents: number; tokenAmount: number; description: string };
+const TOKEN_PACKAGES: Record<string, TokenPackage> = {
+  small:  { amountCents: 499,  tokenAmount: 500,  description: 'Small token pack' },
+  medium: { amountCents: 999,  tokenAmount: 1100, description: 'Medium token pack' },
+  large:  { amountCents: 1999, tokenAmount: 2400, description: 'Large token pack' },
+};
+
 export const startTokenCheckout = functions
   .runWith({ secrets: stripeSecrets })
-  .https.onRequest(withCors(async (req: Request, res: Response) => {
-    try {
-      const secret = getStripeSecret();
-      if (!secret) {
-        res.status(500).json({ error: 'Stripe not configured' });
-        return;
-      }
-      const stripe = new Stripe(secret, { apiVersion: '2024-06-20' } as any);
-
-      const body = (typeof req.body === 'string' ? JSON.parse(req.body) : req.body) || {};
-      const { uid, tokens } = body;
-      if (!uid || !tokens) return res.status(400).json({ error: 'uid and tokens required' });
-
-      const priceByPack: Record<number, number> = { 20: 500, 50: 1200, 100: 2000 };
-      const amount = priceByPack[Number(tokens)];
-      if (!amount) return res.status(400).json({ error: 'invalid token pack' });
-
-      const userRef = admin.firestore().doc(`users/${uid}`);
-      const snap = await userRef.get();
-      let customerId = (snap.data() as any)?.stripeCustomerId as string | undefined;
-      if (!customerId) {
-        const customer = await stripe.customers.create({ metadata: { uid } });
-        customerId = customer.id;
-        await userRef.set({ stripeCustomerId: customerId }, { merge: true });
-      }
-
-      const paymentIntent = await stripe.paymentIntents.create({
-        amount,
-        currency: 'usd',
-        customer: customerId!,
-        automatic_payment_methods: { enabled: true },
-        metadata: { uid, tokensPurchased: String(tokens), type: 'tokens' },
-      });
-
-      const ephemeralKey = await stripe.ephemeralKeys.create(
-        { customer: customerId! },
-        { apiVersion: '2024-06-20' }
-      );
-
-      return res.json({
-        customerId,
-        ephemeralKeySecret: ephemeralKey.secret,
-        paymentIntentClientSecret: paymentIntent.client_secret,
-        tokensPurchased: Number(tokens),
-      });
-    } catch (e: any) {
-      console.error('startTokenCheckout error', e);
-      return res.status(500).json({ error: e?.message ?? 'startTokenCheckout failed' });
+  .https.onCall(async (data: any, context: any) => {
+    if (!context.auth?.uid) {
+      throw new functions.https.HttpsError('unauthenticated', 'Sign in required.');
     }
-  }))
+    const uid = context.auth.uid as string;
+    const packageId = (data?.packageId as string | undefined)?.trim();
+    if (!packageId) {
+      throw new functions.https.HttpsError('invalid-argument', 'packageId required');
+    }
+    const pack = TOKEN_PACKAGES[packageId];
+    if (!pack) {
+      throw new functions.https.HttpsError('invalid-argument', 'Invalid package.');
+    }
+
+    const stripeSecret = getStripeSecret();
+    if (!stripeSecret) {
+      throw new functions.https.HttpsError('internal', 'Stripe not configured');
+    }
+    const publishableKey = functions.config().stripe?.publishable || getPublishableKey();
+
+    const stripeClient = new Stripe(stripeSecret, { apiVersion: '2024-06-20' } as any);
+
+    // Get or create Stripe customer id for this user
+    const userRef = admin.firestore().collection('users').doc(uid);
+    const userSnap = await userRef.get();
+    let customerId = (userSnap.data() as any)?.stripeCustomerId as string | undefined;
+    if (!customerId) {
+      const customer = await stripeClient.customers.create({ metadata: { uid } });
+      customerId = customer.id;
+      await userRef.set({ stripeCustomerId: customerId }, { merge: true });
+    }
+
+    // Create PaymentIntent with metadata for webhook to award tokens
+    const intent = await stripeClient.paymentIntents.create({
+      amount: pack.amountCents,
+      currency: 'usd',
+      customer: customerId,
+      description: pack.description,
+      automatic_payment_methods: { enabled: true },
+      metadata: {
+        type: 'token_purchase',
+        userId: uid,
+        tokenAmount: String(pack.tokenAmount),
+        packageId,
+      },
+    });
+
+    // Ephemeral key for PaymentSheet
+    const ephemeralKey = await stripeClient.ephemeralKeys.create(
+      { customer: customerId },
+      { apiVersion: '2024-06-20' }
+    );
+
+    return {
+      publishableKey,
+      paymentIntentClientSecret: intent.client_secret,
+      customerId,
+      ephemeralKeySecret: (ephemeralKey as any).secret,
+    };
+  });
 // --- END: startTokenCheckout ---
 
 export const startSubscriptionCheckout = functions

@@ -6,7 +6,7 @@ import Card from '@/components/ui/Card';
 import PrimaryButton from '@/components/ui/PrimaryButton';
 import GradientHeader from '@/components/ui/GradientHeader';
 import { logTransaction } from '@/utils/transactionLogger';
-import { startTokenCheckout } from '@/services/apiService';
+import { startTokenCheckoutClient } from '@/services/apiService';
 import { getCurrentUserId, getIdToken } from '@/utils/authUtils';
 import { useTheme } from "@/components/theme/theme";
 import AuthGate from '@/components/AuthGate';
@@ -27,16 +27,17 @@ export default function BuyTokensScreen({ navigation }: Props) {
   const refreshProfile = useUserProfileStore((s) => s.refreshUserProfile);
   const [loading, setLoading] = React.useState<number | null>(null);
 
-  const purchase = async (tokenAmount: 20 | 50 | 100) => {
-    setLoading(tokenAmount);
+  const purchase = async (pack: 'small' | 'medium' | 'large') => {
+    const loadingKey = pack === 'small' ? 1 : pack === 'medium' ? 2 : 3;
+    setLoading(loadingKey);
     try {
       const uid = await getCurrentUserId();
       if (!uid) throw new Error('Not signed in');
 
-      const r = await startTokenCheckout(uid, tokenAmount);
-      const customerId = r?.customerId;
-      const eph = r?.ephemeralKeySecret;
-      const clientSecret = r?.paymentIntentClientSecret;
+      const r = await startTokenCheckoutClient(pack);
+      const customerId = r.customerId;
+      const eph = r.ephemeralKeySecret;
+      const clientSecret = r.paymentIntentClientSecret;
       if (!customerId || !eph || !clientSecret) throw new Error('Token checkout init failed: missing client secrets');
 
       const { error: initError } = await initPaymentSheet({
@@ -61,7 +62,8 @@ export default function BuyTokensScreen({ navigation }: Props) {
 
       await getIdToken(true);
       await refreshProfile();
-      await logTransaction('tokens', tokenAmount);
+      // Webhook will increment tokens; optionally log client-side
+      await logTransaction('tokens', pack);
     } catch (err: any) {
       Alert.alert('Checkout Error', err?.message || 'Unable to start checkout');
     } finally {
@@ -76,21 +78,21 @@ export default function BuyTokensScreen({ navigation }: Props) {
         <View style={styles.list}>
           <Card>
             <Text style={{ ...(theme.typography?.h2 || {}), color: theme.colors.text, marginBottom: theme.spacing.sm }}>
-              20 Tokens — $5
+              Small Pack (500) – $4.99
             </Text>
-            <PrimaryButton title="Buy 20 Tokens" onPress={() => purchase(20)} loading={loading === 20} />
+            <PrimaryButton title="Buy Small Pack" onPress={() => purchase('small')} loading={loading === 1} />
           </Card>
           <Card>
             <Text style={{ ...(theme.typography?.h2 || {}), color: theme.colors.text, marginBottom: theme.spacing.sm }}>
-              50 Tokens — $12
+              Medium Pack (1100) – $9.99
             </Text>
-            <PrimaryButton title="Buy 50 Tokens" onPress={() => purchase(50)} loading={loading === 50} />
+            <PrimaryButton title="Buy Medium Pack" onPress={() => purchase('medium')} loading={loading === 2} />
           </Card>
           <Card>
             <Text style={{ ...(theme.typography?.h2 || {}), color: theme.colors.text, marginBottom: theme.spacing.sm }}>
-              100 Tokens — $20
+              Large Pack (2400) – $19.99
             </Text>
-            <PrimaryButton title="Buy 100 Tokens" onPress={() => purchase(100)} loading={loading === 100} />
+            <PrimaryButton title="Buy Large Pack" onPress={() => purchase('large')} loading={loading === 3} />
           </Card>
           <View style={{ alignItems: 'center', marginTop: theme.spacing.md }}>
             <Text style={[theme.typography?.caption || {}, { color: theme.colors.subtext }]}>Your support grows OneVine. Thank you ❤️</Text>

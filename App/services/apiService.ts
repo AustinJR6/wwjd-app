@@ -272,3 +272,17 @@ export async function finalizePaymentIntent(
     throw err;
   }
 }
+
+// Callable-based token checkout for Stripe PaymentSheet
+export async function startTokenCheckoutClient(packageId: 'small' | 'medium' | 'large') {
+  const { httpsCallable } = await import('firebase/functions');
+  const { functions } = await import('@/services/firebase');
+  const fn = httpsCallable(functions, 'startTokenCheckout');
+  const res: any = await fn({ packageId });
+  return res.data as {
+    publishableKey: string;
+    paymentIntentClientSecret: string;
+    customerId: string;
+    ephemeralKeySecret: string;
+  };
+}

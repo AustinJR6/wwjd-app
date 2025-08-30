@@ -251,6 +251,26 @@ app.post('/', async (req: Request, res: Response) => {
 
       case 'payment_intent.succeeded': {
         const pi = event.data.object as Stripe.PaymentIntent;
+        // New flow: tokens purchased via PaymentSheet callable
+        if ((pi.metadata?.type || '') === 'token_purchase') {
+          const uid = (pi.metadata as any)?.userId as string | undefined;
+          const tokenAmount = parseInt((pi.metadata as any)?.tokenAmount || '0', 10) || 0;
+          if (uid && tokenAmount > 0) {
+            await firestore.doc(`users/${uid}`).set({
+              tokens: admin.firestore.FieldValue.increment(tokenAmount),
+            }, { merge: true });
+            // Log transaction under users/{uid}/transactions
+            await firestore.doc(`users/${uid}/transactions/${pi.id}`).set({
+              type: 'tokens',
+              tokens: tokenAmount,
+              amount: pi.amount_received ?? pi.amount ?? null,
+              currency: pi.currency ?? null,
+              paymentIntentId: pi.id,
+              createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            }, { merge: true });
+            console.log(`[stripe] token_purchase: awarded ${tokenAmount} tokens to ${uid}`);
+          }
+        }
         // New flow: tokens purchased via PaymentIntent metadata
         if ((pi.metadata?.type || '') === 'tokens') {
           const uid = pi.metadata?.uid as string | undefined;
