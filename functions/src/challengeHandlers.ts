@@ -186,6 +186,7 @@ export const completeChallengeDay = functions
 
       t.update(userRef, {
         individualPoints: admin.firestore.FieldValue.increment(points),
+        points: admin.firestore.FieldValue.increment(points),
       });
       if (relRef) {
         const rs = await t.get(relRef);

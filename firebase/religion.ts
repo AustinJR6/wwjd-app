@@ -1,6 +1,6 @@
 import axios from 'axios';
-import { getDocument } from '@/services/firestoreService';
 import { getIdToken } from '../authRest';
+import Constants from 'expo-constants';
 
 export interface ReligionItem {
   id: string;
@@ -15,45 +15,39 @@ let religionsCache: ReligionItem[] = [];
 
 export async function getReligions(forceRefresh = false): Promise<ReligionItem[]> {
   if (!forceRefresh && religionsCache.length) return religionsCache;
-
-  const RELIGION_IDS = [
-    'SpiritGuide',
-    'Christianity',
-    'Islam',
-    'Judaism',
-    'Hinduism',
-    'Buddhism',
-    'Atheist',
-    'Agnostic',
-    'Pagan',
-  ];
-
   try {
-    const snaps = await Promise.all(
-      RELIGION_IDS.map((id) => getDocument(`religion/${id}`)),
-    );
-    religionsCache = snaps.map((data, idx) => ({
-      id: RELIGION_IDS[idx],
-      name: data?.name ?? RELIGION_IDS[idx],
-      aiVoice: data?.aiVoice ?? '',
-      defaultChallenges: Array.isArray(data?.defaultChallenges)
-        ? data.defaultChallenges
-        : [],
-      totalPoints: Number(data?.totalPoints ?? 0),
-      language: data?.language ?? '',
-    } as ReligionItem));
-
-    console.log('📖 Religions fetched:', religionsCache.map((r) => r.name));
+    const token = await getIdToken();
+    const projectId = Constants.expoConfig?.extra?.EXPO_PUBLIC_FIREBASE_PROJECT_ID || '';
+    const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/religion`;
+    const res = await axios.get(url, { headers: { Authorization: `Bearer ${token}` } });
+    const docs = (res.data?.documents || []) as any[];
+    religionsCache = docs.map((d: any) => {
+      const fields = d.fields || {};
+      const name = fields?.name?.stringValue || '';
+      const path = (d.name as string) || '';
+      const id = path.split('/').pop() || name || '';
+      return {
+        id,
+        name: name || id,
+        aiVoice: fields?.aiVoice?.stringValue || '',
+        defaultChallenges: Array.isArray(fields?.defaultChallenges?.arrayValue?.values)
+          ? fields.defaultChallenges.arrayValue.values.map((v: any) => v.stringValue).filter(Boolean)
+          : [],
+        totalPoints: parseInt(fields?.totalPoints?.integerValue || '0', 10) || 0,
+        language: fields?.language?.stringValue || '',
+      } as ReligionItem;
+    });
     return religionsCache;
   } catch (err: any) {
-    console.error('🔥 Failed to fetch religions:', err);
+    console.error('Failed to fetch religions:', err?.response?.data || err);
     return [];
   }
 }
 
 export async function updateReligionPoints(religionId: string, pointsToAdd: number) {
   const token = await getIdToken();
-  const docPath = `projects/wwjd-app/databases/(default)/documents/religion/${religionId}`;
+  const projectId = Constants.expoConfig?.extra?.EXPO_PUBLIC_FIREBASE_PROJECT_ID || '';
+  const docPath = `projects/${projectId}/databases/(default)/documents/religion/${religionId}`;
 
   const current = religionsCache?.find((r) => r.id === religionId)?.totalPoints ?? 0;
   const newTotal = current + pointsToAdd;
@@ -69,10 +63,10 @@ export async function updateReligionPoints(religionId: string, pointsToAdd: numb
       { headers: { Authorization: `Bearer ${token}` } }
     );
 
-    console.log(`✅ Religion ${religionId} updated with totalPoints = ${newTotal}`);
     return true;
   } catch (err: any) {
-    console.error('🔥 Failed to update religion points:', err.response?.data || err);
+    console.error('Failed to update religion points:', err?.response?.data || err);
     return false;
   }
 }
+

@@ -90,6 +90,9 @@ async function fetchTopOrganizations(idToken: string) {
 export default function LeaderboardScreen() {
   const theme = useTheme();
   const { authReady, uid, idToken } = useAuth();
+  const isDark = theme.colors.bg === '#0F1115' || theme.colors.text === '#F5F7FA';
+  const cardBg = '#FBBF24';
+  const cardText = isDark ? '#FFFFFF' : '#000000';
   const styles = React.useMemo(
     () =>
       StyleSheet.create({
@@ -111,19 +114,19 @@ export default function LeaderboardScreen() {
         section: {
           marginBottom: 24,
           padding: 16,
-          backgroundColor: '#fff',
+          backgroundColor: cardBg,
           borderRadius: 12,
           shadowColor: '#000',
-          shadowOpacity: 0.05,
-          shadowOffset: { width: 0, height: 2 },
-          shadowRadius: 6,
-          elevation: 2,
+          shadowOpacity: 0.15,
+          shadowOffset: { width: 0, height: 4 },
+          shadowRadius: 8,
+          elevation: 4,
         }, // ✅ added missing 'section' style
         sectionTitle: {
           fontSize: 18,
           fontWeight: '600',
           marginBottom: 8,
-          color: theme.colors.text,
+          color: cardText,
         }, // ✅ added missing 'sectionTitle' style
         row: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 }, // ✅ added missing 'row' style
         rank: { width: 30, color: theme.colors.text, fontWeight: 'bold' }, // ✅ added missing 'rank' style
