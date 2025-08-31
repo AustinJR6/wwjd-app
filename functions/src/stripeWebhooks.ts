@@ -196,6 +196,7 @@ app.post('/', async (req: Request, res: Response) => {
   }
 
   try {
+    console.log('➡️ Event received:', event.type);
     if (await alreadyProcessed(event.id)) {
       return res.status(200).send('[OK-duplicate]');
     }
@@ -215,6 +216,28 @@ app.post('/', async (req: Request, res: Response) => {
           const subId = session.subscription as string;
           const sub = await stripe.subscriptions.retrieve(subId, { expand: ['items.data.price'] });
           await writeSubscriptionTransaction(uid, session, sub);
+        }
+        break;
+      }
+
+      case 'invoice.paid': {
+        const invoice = event.data.object as Stripe.Invoice;
+        if (invoice.subscription && invoice.customer) {
+          try {
+            const sub = await stripe.subscriptions.retrieve(String(invoice.subscription), { expand: ['items.data.price'] });
+            const snap = await db
+              .collection('users')
+              .where('subscription.customerId', '==', String(invoice.customer))
+              .limit(1)
+              .get();
+            const uid = snap.empty ? null : snap.docs[0].id;
+            if (uid) {
+              const sessionShell = { id: `inv:${invoice.id}` } as unknown as Stripe.Checkout.Session;
+              await writeSubscriptionTransaction(uid, sessionShell, sub);
+            }
+          } catch (e) {
+            console.error('invoice.paid handling failed', e);
+          }
         }
         break;
       }

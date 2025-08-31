@@ -91,6 +91,18 @@ export function useStripeCheckout() {
         return false;
       }
 
+      // Briefly poll for subscription status to avoid manual reload race
+      try {
+        const start = Date.now();
+        const timeoutMs = 12000;
+        while (Date.now() - start < timeoutMs) {
+          await useUserProfileStore.getState().refreshUserProfileForce();
+          const isSub = !!useUserProfileStore.getState().profile?.isSubscribed;
+          if (isSub) break;
+          await new Promise((r) => setTimeout(r, 800));
+        }
+      } catch {}
+
       await refreshProfile();
       return true;
     } catch (err: any) {
