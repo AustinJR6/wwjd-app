@@ -156,6 +156,39 @@ app.post('/', async (req: Request, res: Response) => {
           if (uid) {
             const subscriptionId = String(session.subscription ?? '');
             const sub = await stripe.subscriptions.retrieve(subscriptionId);
+            const price = sub.items?.data?.[0]?.price;
+            const planInterval = price?.recurring?.interval; // 'month' | 'year' | undefined
+            const planNickname = price?.nickname || undefined;
+            const plan = 'plus';
+
+            // Derive subscription period dates from Stripe
+            const periodStart = sub.current_period_start ? new Date(sub.current_period_start * 1000) : null;
+            const periodEnd = sub.current_period_end ? new Date(sub.current_period_end * 1000) : null;
+
+            // Try to resolve an initial PaymentIntent from the invoice for logging
+            let paymentIntentId: string | null = null;
+            let amountInCents: number | null = null;
+            let currency: string | null = null;
+            try {
+              const latestInvoiceId = (sub.latest_invoice as string) || (session.invoice as string) || '';
+              if (latestInvoiceId) {
+                const invoice = await stripe.invoices.retrieve(latestInvoiceId);
+                paymentIntentId = typeof invoice.payment_intent === 'string'
+                  ? invoice.payment_intent
+                  : (invoice.payment_intent as any)?.id || null;
+                amountInCents = (invoice.amount_paid ?? invoice.amount_due ?? null) as any;
+                currency = invoice.currency ?? (session.currency as string | undefined) ?? null;
+              } else {
+                paymentIntentId = (session.payment_intent as string | undefined) ?? null;
+                amountInCents = (session.amount_total as number | null) ?? null;
+                currency = (session.currency as string | undefined) ?? null;
+              }
+            } catch (e) {
+              // Fallback to session values if invoice lookup fails
+              paymentIntentId = (session.payment_intent as string | undefined) ?? null;
+              amountInCents = (session.amount_total as number | null) ?? null;
+              currency = (session.currency as string | undefined) ?? null;
+            }
             await firestore.doc(`users/${uid}`).set(
               {
                 isSubscribed: true,
@@ -167,16 +200,23 @@ app.post('/', async (req: Request, res: Response) => {
                 },
                 stripeSubscriptionId: subscriptionId,
                 subscriptionStartedAt: admin.firestore.FieldValue.serverTimestamp(),
+                // New: explicit start/expiration on the user profile
+                subscriptionStartDate: periodStart ?? admin.firestore.FieldValue.serverTimestamp(),
+                subscriptionExpirationDate: periodEnd ?? null,
               },
               { merge: true }
             );
-            // Log subscription transaction under users/{uid}/transactions
+            // Log subscription transaction under users/{uid}/transactions with standardized fields
             await firestore.doc(`users/${uid}/transactions/${subscriptionId}`).set({
               type: 'subscription',
+              plan,
+              planNickname: planNickname || null,
+              interval: planInterval || null,
+              amount: amountInCents,
+              currency: currency,
+              paymentIntentId: paymentIntentId,
               subscriptionId: sub.id,
               status: sub.status,
-              amount_total: session.amount_total ?? null,
-              currency: session.currency ?? null,
               current_period_start: sub.current_period_start ? sub.current_period_start * 1000 : null,
               current_period_end: sub.current_period_end ? sub.current_period_end * 1000 : null,
               customerId,
