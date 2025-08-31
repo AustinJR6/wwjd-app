@@ -195,7 +195,9 @@ export default function ProfileScreen() {
         )}
 
         <CustomText style={styles.info}>Points: {points}</CustomText>
-        <CustomText style={styles.info}>Subscribed: {user?.isSubscribed ? 'Yes' : 'No'}</CustomText>
+        <CustomText style={styles.info}>
+          Subscribed: {user?.isSubscribed === true ? 'Yes' : user?.isSubscribed === false ? 'No' : '...'}
+        </CustomText>
         <CustomText style={styles.info}>Tokens: {tokens}</CustomText>
         <CustomText style={styles.info}>Organization: {organization || 'None'}</CustomText>
 

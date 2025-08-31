@@ -8,6 +8,7 @@ if (!admin.apps.length) {
 }
 
 const firestore = admin.firestore();
+const db = firestore;
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2024-06-20' as any,
 });
@@ -40,6 +41,73 @@ async function handleTokenPurchase(session: Stripe.Checkout.Session) {
       paymentIntentId: session.payment_intent ?? null,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
     }, { merge: true });
+  });
+}
+
+// Resolve uid from a Checkout Session: prefer metadata.uid, then find by stored customerId
+async function resolveUidFromSession(session: Stripe.Checkout.Session): Promise<string | null> {
+  if (session.metadata?.uid) return session.metadata.uid as string;
+  if (session.customer) {
+    const customerId = typeof session.customer === 'string' ? session.customer : session.customer.id;
+    const snap = await db
+      .collection('users')
+      .where('subscription.customerId', '==', customerId)
+      .limit(1)
+      .get();
+    return snap.empty ? null : snap.docs[0].id;
+  }
+  return null;
+}
+
+async function writeSubscriptionTransaction(
+  uid: string,
+  session: Stripe.Checkout.Session,
+  sub: Stripe.Subscription,
+) {
+  const ref = db.collection('users').doc(uid);
+  const txRef = ref.collection('transactions').doc(session.id);
+  const endSec = sub.current_period_end ?? null;
+  const startSec = sub.current_period_start ?? null;
+  const current_period_end = endSec ? admin.firestore.Timestamp.fromMillis(endSec * 1000) : null;
+  const current_period_start = startSec ? admin.firestore.Timestamp.fromMillis(startSec * 1000) : null;
+
+  const price = sub.items?.data?.[0]?.price;
+
+  const txPayload = {
+    type: 'subscription' as const,
+    mode: 'subscription' as const,
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    checkoutSessionId: session.id,
+    customerId: sub.customer,
+    subscriptionId: sub.id,
+    status: sub.status,
+    priceId: price?.id ?? null,
+    quantity: sub.items?.data?.[0]?.quantity ?? 1,
+    current_period_end,
+    current_period_start,
+    cancel_at_period_end: sub.cancel_at_period_end ?? false,
+    latest_invoice: sub.latest_invoice ?? null,
+  };
+
+  await db.runTransaction(async (t) => {
+    t.set(txRef, txPayload, { merge: true });
+    t.set(
+      ref,
+      {
+        isSubscribed:
+          sub.status === 'active' || sub.status === 'trialing' || sub.status === 'past_due',
+        subscription: {
+          id: sub.id,
+          status: sub.status,
+          customerId: sub.customer,
+          priceId: price?.id ?? null,
+          current_period_end,
+          current_period_start,
+          cancel_at_period_end: sub.cancel_at_period_end ?? false,
+        },
+      },
+      { merge: true },
+    );
   });
 }
 
@@ -142,88 +210,11 @@ app.post('/', async (req: Request, res: Response) => {
         if (session.mode === 'payment' && session.metadata?.purpose === 'tokens') {
           await handleTokenPurchase(session);
         } else if (session.mode === 'subscription') {
-          await upsertSubscriptionFromStripe({
-            id: session.subscription as string,
-            customer: session.customer as string,
-          });
-          const customerId = session.customer as string;
-          // Resolve uid from metadata or customer metadata
-          let uid = session.metadata?.uid as string | undefined;
-          if (!uid) {
-            const cust = await stripe.customers.retrieve(customerId) as any;
-            uid = cust?.metadata?.uid as string | undefined;
-          }
-          if (uid) {
-            const subscriptionId = String(session.subscription ?? '');
-            const sub = await stripe.subscriptions.retrieve(subscriptionId);
-            const price = sub.items?.data?.[0]?.price;
-            const planInterval = price?.recurring?.interval; // 'month' | 'year' | undefined
-            const planNickname = price?.nickname || undefined;
-            const plan = 'plus';
-
-            // Derive subscription period dates from Stripe
-            const periodStart = sub.current_period_start ? new Date(sub.current_period_start * 1000) : null;
-            const periodEnd = sub.current_period_end ? new Date(sub.current_period_end * 1000) : null;
-
-            // Try to resolve an initial PaymentIntent from the invoice for logging
-            let paymentIntentId: string | null = null;
-            let amountInCents: number | null = null;
-            let currency: string | null = null;
-            try {
-              const latestInvoiceId = (sub.latest_invoice as string) || (session.invoice as string) || '';
-              if (latestInvoiceId) {
-                const invoice = await stripe.invoices.retrieve(latestInvoiceId);
-                paymentIntentId = typeof invoice.payment_intent === 'string'
-                  ? invoice.payment_intent
-                  : (invoice.payment_intent as any)?.id || null;
-                amountInCents = (invoice.amount_paid ?? invoice.amount_due ?? null) as any;
-                currency = invoice.currency ?? (session.currency as string | undefined) ?? null;
-              } else {
-                paymentIntentId = (session.payment_intent as string | undefined) ?? null;
-                amountInCents = (session.amount_total as number | null) ?? null;
-                currency = (session.currency as string | undefined) ?? null;
-              }
-            } catch (e) {
-              // Fallback to session values if invoice lookup fails
-              paymentIntentId = (session.payment_intent as string | undefined) ?? null;
-              amountInCents = (session.amount_total as number | null) ?? null;
-              currency = (session.currency as string | undefined) ?? null;
-            }
-            await firestore.doc(`users/${uid}`).set(
-              {
-                isSubscribed: true,
-                subscription: {
-                  id: sub.id,
-                  status: sub.status,
-                  current_period_end: sub.current_period_end ? sub.current_period_end * 1000 : null,
-                  customerId,
-                },
-                stripeSubscriptionId: subscriptionId,
-                subscriptionStartedAt: admin.firestore.FieldValue.serverTimestamp(),
-                // New: explicit start/expiration on the user profile
-                subscriptionStartDate: periodStart ?? admin.firestore.FieldValue.serverTimestamp(),
-                subscriptionExpirationDate: periodEnd ?? null,
-              },
-              { merge: true }
-            );
-            // Log subscription transaction under users/{uid}/transactions with standardized fields
-            await firestore.doc(`users/${uid}/transactions/${subscriptionId}`).set({
-              type: 'subscription',
-              plan,
-              planNickname: planNickname || null,
-              interval: planInterval || null,
-              amount: amountInCents,
-              currency: currency,
-              paymentIntentId: paymentIntentId,
-              subscriptionId: sub.id,
-              status: sub.status,
-              current_period_start: sub.current_period_start ? sub.current_period_start * 1000 : null,
-              current_period_end: sub.current_period_end ? sub.current_period_end * 1000 : null,
-              customerId,
-              createdAt: admin.firestore.FieldValue.serverTimestamp(),
-            }, { merge: true });
-            console.log(`Subscription set for ${uid}: ${sub.id}`);
-          }
+          const uid = await resolveUidFromSession(session);
+          if (!uid) break;
+          const subId = session.subscription as string;
+          const sub = await stripe.subscriptions.retrieve(subId, { expand: ['items.data.price'] });
+          await writeSubscriptionTransaction(uid, session, sub);
         }
         break;
       }
@@ -268,23 +259,19 @@ app.post('/', async (req: Request, res: Response) => {
         break;
       }
 
-      // Optional: keep customer.subscription.updated to refresh status on renewals/cancels
+      // Keep subscription lifecycle in sync (upgrade, cancel, renew)
+      case 'customer.subscription.created':
       case 'customer.subscription.updated': {
         const sub = event.data.object as Stripe.Subscription;
-        const customerId = sub.customer as string;
-        const customer = await stripe.customers.retrieve(customerId) as any;
-        const uid = customer?.metadata?.uid as string | undefined;
-        if (uid) {
-          await firestore.doc(`users/${uid}`).set({
-            isSubscribed: sub.status === 'active' || sub.status === 'trialing',
-            subscription: {
-              id: sub.id,
-              status: sub.status,
-              current_period_end: sub.current_period_end ? sub.current_period_end * 1000 : null,
-              customerId,
-            },
-          }, { merge: true });
-          console.log(`Subscription updated for ${uid}: ${sub.status}`);
+        const snap = await db
+          .collection('users')
+          .where('subscription.customerId', '==', sub.customer)
+          .limit(1)
+          .get();
+        if (!snap.empty) {
+          const uid = snap.docs[0].id;
+          const sessionShell = { id: `evt:${event.id}` } as unknown as Stripe.Checkout.Session;
+          await writeSubscriptionTransaction(uid, sessionShell, sub);
         }
         break;
       }

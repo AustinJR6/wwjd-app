@@ -11,7 +11,7 @@ export interface User {
   religion: string;
   region: string;
   organizationId?: string;
-  isSubscribed: boolean;
+  isSubscribed?: boolean;
   onboardingComplete: boolean;
   profileComplete: boolean;
   profileSchemaVersion?: number;
