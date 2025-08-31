@@ -49,11 +49,13 @@ async function resolveUidFromSession(session: Stripe.Checkout.Session): Promise<
   if (session.metadata?.uid) return session.metadata.uid as string;
   if (session.customer) {
     const customerId = typeof session.customer === 'string' ? session.customer : session.customer.id;
-    const snap = await db
-      .collection('users')
-      .where('subscription.customerId', '==', customerId)
-      .limit(1)
-      .get();
+    // mapping first
+    try {
+      const mapSnap = await db.doc(`stripeCustomers/${customerId}`).get();
+      const mapped = mapSnap.exists ? (mapSnap.data() as any)?.uid : null;
+      if (mapped) return mapped as string;
+    } catch {}
+    const snap = await db.collection('users').where('subscription.customerId', '==', customerId).limit(1).get();
     return snap.empty ? null : snap.docs[0].id;
   }
   return null;
@@ -109,6 +111,29 @@ async function writeSubscriptionTransaction(
       { merge: true },
     );
   });
+}
+
+// Resolve UID by customerId using mapping collection and users query
+async function resolveUidFromCustomer(customerId?: string | null): Promise<string | null> {
+  if (!customerId) return null;
+  try {
+    const mapSnap = await db.doc(`stripeCustomers/${customerId}`).get();
+    const mapped = mapSnap.exists ? (mapSnap.data() as any)?.uid : null;
+    if (mapped) return mapped as string;
+  } catch {}
+  const q = await db.collection('users').where('subscription.customerId', '==', customerId).limit(1).get();
+  return q.empty ? null : q.docs[0].id;
+}
+
+async function writeOrphan(kind: string, id: string, payload: any) {
+  try {
+    await db.doc(`stripeOrphans/${kind}_${id}`).set(
+      { createdAt: admin.firestore.FieldValue.serverTimestamp(), payload },
+      { merge: true },
+    );
+  } catch (e) {
+    console.warn('Failed to write orphan record', kind, id, e);
+  }
 }
 
 async function upsertSubscriptionFromStripe(

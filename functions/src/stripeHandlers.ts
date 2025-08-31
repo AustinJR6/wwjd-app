@@ -90,7 +90,8 @@ export const startTokenCheckout = functions
       if (!customerId) {
         const customer = await stripeClient.customers.create({ metadata: { uid } });
         customerId = customer.id;
-        await userRef.set({ stripeCustomerId: customerId }, { merge: true });
+        await userRef.set({ stripeCustomerId: customerId, subscription: { customerId } }, { merge: true });
+        await admin.firestore().doc(`stripeCustomers/${customerId}`).set({ uid }, { merge: true });
       }
 
       // Create PaymentIntent
@@ -437,7 +438,8 @@ export const createStripeSubscriptionIntent = functions
           metadata: { uid, tier },
         });
         customerId = customer.id;
-        await userRef.set({ stripeCustomerId: customerId }, { merge: true });
+        await userRef.set({ stripeCustomerId: customerId, subscription: { customerId } }, { merge: true });
+        await admin.firestore().doc(`stripeCustomers/${customerId}`).set({ uid }, { merge: true });
         logger.info('Stripe customer created', { uid, customerId });
       } else {
         await stripeClient.customers.update(customerId, { metadata: { uid, tier } });
@@ -955,7 +957,8 @@ export const createTokenPurchaseSheet = functions
         metadata: { uid },
       });
       customerId = customer.id;
-      await userRef.set({ stripeCustomerId: customerId }, { merge: true });
+      await userRef.set({ stripeCustomerId: customerId, subscription: { customerId } }, { merge: true });
+      await admin.firestore().doc(`stripeCustomers/${customerId}`).set({ uid }, { merge: true });
     }
 
     const ephemeralKey = await stripeClient.ephemeralKeys.create(
@@ -1019,7 +1022,8 @@ export const createSubscriptionSession = functions
         metadata: { uid },
       });
       customerId = customer.id;
-      await userRef.set({ stripeCustomerId: customerId }, { merge: true });
+      await userRef.set({ stripeCustomerId: customerId, subscription: { customerId } }, { merge: true });
+      await admin.firestore().doc(`stripeCustomers/${customerId}`).set({ uid }, { merge: true });
     }
 
     const session = await stripeClient.checkout.sessions.create({
