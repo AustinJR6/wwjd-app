@@ -61,6 +61,33 @@ async function resolveUidFromSession(session: Stripe.Checkout.Session): Promise<
   return null;
 }
 
+// Timestamp helper from seconds
+function tsFromSec(sec?: number | null) {
+  return sec ? admin.firestore.Timestamp.fromMillis(sec * 1000) : null;
+}
+
+// Add interval to a start time (ms) based on Stripe price cadence
+function addInterval(startMs: number, interval: 'day'|'week'|'month'|'year', count = 1) {
+  const d = new Date(startMs);
+  if (interval === 'day')   d.setUTCDate(d.getUTCDate() + count);
+  if (interval === 'week')  d.setUTCDate(d.getUTCDate() + 7 * count);
+  if (interval === 'month') d.setUTCMonth(d.getUTCMonth() + count);
+  if (interval === 'year')  d.setUTCFullYear(d.getUTCFullYear() + count);
+  return d.getTime();
+}
+
+function derivePeriodFromPrice(opts: {
+  startSec?: number | null,
+  price?: Stripe.Price | null,
+  eventCreatedSec?: number,
+}) {
+  const start = opts.startSec ?? opts.eventCreatedSec ?? Math.floor(Date.now()/1000);
+  const rec = opts.price?.recurring;
+  if (!rec) return { startTs: tsFromSec(start), endTs: null as admin.firestore.Timestamp | null };
+  const endMs = addInterval(start * 1000, rec.interval as any, rec.interval_count ?? 1);
+  return { startTs: tsFromSec(start), endTs: admin.firestore.Timestamp.fromMillis(endMs) };
+}
+
 async function writeSubscriptionTransaction(
   uid: string,
   session: Stripe.Checkout.Session,
@@ -134,6 +161,68 @@ async function writeOrphan(kind: string, id: string, payload: any) {
   } catch (e) {
     console.warn('Failed to write orphan record', kind, id, e);
   }
+}
+
+// New: unified writer with period override + cadence, with source labeling
+async function writeSubState(
+  uid: string,
+  sub: Stripe.Subscription,
+  txnId: string,
+  sourceLabel: string,
+  sessionId?: string | null,
+  periodOverride?: { startTs: admin.firestore.Timestamp | null; endTs: admin.firestore.Timestamp | null },
+) {
+  const userRef = db.collection('users').doc(uid);
+  const txRef = userRef.collection('transactions').doc(txnId);
+
+  const price = sub.items.data?.[0]?.price;
+  const start = periodOverride?.startTs ?? tsFromSec(sub.current_period_start ?? null);
+  const end   = periodOverride?.endTs   ?? tsFromSec(sub.current_period_end   ?? null);
+
+  const payload = {
+    type: 'subscription' as const,
+    source: sourceLabel,
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    checkoutSessionId: sessionId ?? null,
+    customerId: sub.customer,
+    subscriptionId: sub.id,
+    status: sub.status,
+    priceId: price?.id ?? null,
+    priceCadence: {
+      interval: price?.recurring?.interval ?? null,
+      interval_count: price?.recurring?.interval_count ?? null,
+    },
+    quantity: sub.items.data?.[0]?.quantity ?? 1,
+    current_period_start: start,
+    current_period_end:   end,
+    cancel_at_period_end: sub.cancel_at_period_end ?? false,
+    latest_invoice: typeof sub.latest_invoice === 'string' ? sub.latest_invoice : (sub.latest_invoice as any)?.id ?? null,
+  };
+
+  const isActive = ['active','trialing','past_due'].includes(sub.status);
+
+  console.log(`📝 Writing subscription state for uid=${uid} txn=${txnId} start=${start?.toDate?.()?.toISOString?.()}`);
+  await db.runTransaction(async (t) => {
+    t.set(txRef, payload, { merge: true });
+    t.set(
+      userRef,
+      {
+        isSubscribed: isActive,
+        subscription: {
+          id: sub.id,
+          status: sub.status,
+          customerId: sub.customer,
+          priceId: price?.id ?? null,
+          priceCadence: payload.priceCadence,
+          current_period_start: start,
+          current_period_end:   end,
+          cancel_at_period_end: sub.cancel_at_period_end ?? false,
+        },
+      },
+      { merge: true },
+    );
+  });
+  console.log(`✅ Wrote subscription for uid=${uid} txn=${txnId}`);
 }
 
 async function upsertSubscriptionFromStripe(
@@ -311,15 +400,64 @@ app.post('/', async (req: Request, res: Response) => {
       case 'customer.subscription.created':
       case 'customer.subscription.updated': {
         const sub = event.data.object as Stripe.Subscription;
-        const snap = await db
-          .collection('users')
-          .where('subscription.customerId', '==', sub.customer)
-          .limit(1)
-          .get();
-        if (!snap.empty) {
-          const uid = snap.docs[0].id;
-          const sessionShell = { id: `evt:${event.id}` } as unknown as Stripe.Checkout.Session;
-          await writeSubscriptionTransaction(uid, sessionShell, sub);
+        const customerId = String(sub.customer);
+        const uid = await resolveUidFromCustomer(customerId);
+        if (!uid) {
+          console.warn('⚠️ lifecycle: no uid for customer', customerId);
+          await writeOrphan('lifecycle_no_uid', sub.id, sub);
+          break;
+        }
+        const price = sub.items.data?.[0]?.price ?? null;
+        let startTs = tsFromSec(sub.current_period_start ?? null);
+        let endTs   = tsFromSec(sub.current_period_end   ?? null);
+        if (!startTs || !endTs) {
+          const derived = derivePeriodFromPrice({
+            startSec: sub.current_period_start ?? event.created,
+            price,
+            eventCreatedSec: event.created,
+          });
+          startTs = startTs ?? derived.startTs;
+          endTs   = endTs   ?? derived.endTs;
+        }
+        await writeSubState(uid, sub, `evt:${event.id}`, event.type, null, { startTs, endTs });
+        break;
+      }
+
+      // Renewal/paid invoices path
+      case 'invoice.paid': {
+        const inv = event.data.object as Stripe.Invoice;
+        if (inv.subscription && inv.customer) {
+          try {
+            const invoice = (inv as any)?.lines?.data?.length
+              ? inv
+              : await stripe.invoices.retrieve(inv.id, { expand: ['lines.data.price'] });
+            const line = (invoice as any)?.lines?.data?.[0];
+            let startTs = line?.period?.start ? tsFromSec(line.period.start) : null;
+            let endTs   = line?.period?.end   ? tsFromSec(line.period.end)   : null;
+
+            const sub = await stripe.subscriptions.retrieve(String(inv.subscription), { expand: ['items.data.price'] });
+            const price = sub.items.data?.[0]?.price ?? null;
+
+            if (!startTs || !endTs) {
+              const derived = derivePeriodFromPrice({
+                startSec: sub.current_period_start ?? inv.created,
+                price,
+                eventCreatedSec: inv.created,
+              });
+              startTs = startTs ?? derived.startTs;
+              endTs   = endTs   ?? derived.endTs;
+            }
+
+            const uid = await resolveUidFromCustomer(String(inv.customer));
+            if (!uid) {
+              console.warn('⚠️ invoice.paid: no uid for customer', inv.customer);
+              await writeOrphan('invoice_no_uid', inv.id, inv);
+              break;
+            }
+            await writeSubState(uid, sub, `inv:${inv.id}`, 'invoice.paid', null, { startTs, endTs });
+          } catch (e) {
+            console.error('invoice.paid handling failed', e);
+          }
         }
         break;
       }
