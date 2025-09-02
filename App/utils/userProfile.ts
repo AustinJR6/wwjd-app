@@ -1,6 +1,6 @@
 import apiClient from '@/utils/apiClient';
-import { FIRESTORE_BASE } from '../../firebaseRest';
-import { getAuthHeaders, getCurrentUserId } from '@/utils/authUtils';
+import { FIRESTORE_BASE, generateDefaultUserData, createUserDocument } from '../../firebaseRest';
+import { getAuthHeaders, getCurrentUserId, getIdToken } from '@/utils/authUtils';
 // API_URL no longer needed for direct Firestore PATCH
 import { logFirestoreError } from '@/lib/logging';
 import type { CachedProfile, ReligionDocument, UserProfile } from '../../types/profile';

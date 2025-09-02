@@ -12,7 +12,7 @@ import TextField from '@/components/TextField';
 import { Button } from '@/components/ui/Button';
 import { Picker } from '@react-native-picker/picker';
 import { useLookupLists } from '@/hooks/useLookupLists';
-import { getDocument, updateDocument } from '@/services/firestoreService';
+import { getDocument, updateDocument, setDocument } from '@/services/firestoreService';
 import { updateUserProfile, loadUserProfile } from '@/utils/userProfile';
 import { useUserProfileStore } from '@/state/userProfile';
 import { useNavigation } from '@react-navigation/native';
@@ -94,10 +94,13 @@ export default function ProfileCompletionScreen() {
       const regionCount = regionDoc?.userCount ?? 0;
       const religionCount = religionDoc?.userCount ?? 0;
 
+      // Ensure the user document exists and is updated with profile fields
+      await setDocument(`users/${uid}`, { uid, ...payload });
+
+      // Update related aggregate counts
       await Promise.all([
         updateDocument(regionPath, { userCount: regionCount + 1 }),
         updateDocument(religionPath, { userCount: religionCount + 1 }),
-        updateUserProfile(payload, uid),
       ]);
       await profileStore.refreshUserProfile();
 
