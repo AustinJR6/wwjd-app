@@ -26,6 +26,7 @@ import { endpoints } from '@/services/endpoints';
 import { ensureAuth } from '@/utils/authGuard';
 import { getToken, getCurrentUserId } from '@/utils/TokenManager';
 import { sendGeminiPrompt } from '@/services/geminiService';
+import { enqueueMemoryExtraction } from '@/services/chatService';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -265,6 +266,15 @@ export default function JournalScreen() {
         userEntry: entry,
         timestamp: new Date().toISOString(),
       });
+      try {
+        await enqueueMemoryExtraction(
+          uid,
+          `${entry}\n${aiResponse ? 'Assistant: ' + aiResponse : ''}`,
+          'journal',
+        );
+      } catch (e) {
+        if (__DEV__) console.warn('Memory extraction enqueue failed', e);
+      }
       console.log('✅ Journal entry saved');
 
       await incrementUserPoints(2, uid);

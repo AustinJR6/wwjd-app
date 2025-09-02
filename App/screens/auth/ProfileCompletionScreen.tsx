@@ -16,6 +16,7 @@ import { getDocument, updateDocument } from '@/services/firestoreService';
 import { updateUserProfile, loadUserProfile } from '@/utils/userProfile';
 import { useUserProfileStore } from '@/state/userProfile';
 import { useNavigation } from '@react-navigation/native';
+import { generateUsernameFromDisplayName } from '../../../firebaseRest';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/navigation/RootStackParamList';
 import { useTheme } from '@/components/theme/theme';
@@ -53,22 +54,29 @@ export default function ProfileCompletionScreen() {
     if (isLoading) return;
     if (!uid) return;
     const existing = profileStore.profile;
-    const hasDisplay = existing?.displayName && existing.displayName.trim();
-    const hasUsername = existing?.username && existing.username.trim();
+    const hasDisplay = !!(existing?.displayName && existing.displayName.trim());
+    const hasUsername = !!(existing?.username && existing.username.trim());
     if (!region || !religion) {
       Alert.alert('Missing Info', 'Please select a region and religion.');
       return;
     }
-    if (!hasDisplay || !hasUsername || !preferredName.trim()) {
+    if (!preferredName.trim()) {
       Alert.alert('Missing Info', 'Preferred name is required.');
       return;
     }
     setIsLoading(true);
     try {
+      const display = hasDisplay ? existing!.displayName!.trim() : preferredName.trim();
+      const username = hasUsername
+        ? existing!.username!.trim()
+        : generateUsernameFromDisplayName(preferredName.trim());
+
       const payload: Record<string, any> = {
         region,
         religion,
         preferredName: preferredName.trim(),
+        displayName: display,
+        username,
         onboardingComplete: true,
         profileComplete: true,
       };

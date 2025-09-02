@@ -32,6 +32,11 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/navigation/RootStackParamList';
 import AuthGate from '@/components/AuthGate';
 import { sendGeminiPrompt, type GeminiMessage } from '@/services/geminiService';
+import { prepareUserContext, reinforceMemories } from '@/services/chatService';
+import { PERSONAL_ASSISTANT_SYSTEM } from '@/prompts/memoryClient';
+import { enqueueMemoryExtraction } from '@/services/chatService';
+import { useSettingsStore } from '@/state/settingsStore';
+import { showToast } from '@/utils/toast';
 import { useAuthStore } from '@/state/authStore';
 import { useAuth } from '@/hooks/useAuth';
 import {
@@ -112,6 +117,9 @@ export default function ReligionAIScreen() {
   const { isPlus: isSubscribed, refresh: refreshSubscription } = useSubscriptionStatus(uid);
   const [messageCount, setMessageCount] = useState(0);
   const [showMemoryClearedBanner, setShowMemoryClearedBanner] = useState(false);
+  const [lastSelectedMemoryIds, setLastSelectedMemoryIds] = useState<string[]>([]);
+  const [lastSelectedMemories, setLastSelectedMemories] = useState<string[]>([]);
+  const showMemoryDebug = useSettingsStore((s) => s.showMemoryDebug) || false;
   const { user } = useUser();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
@@ -234,8 +242,17 @@ export default function ReligionAIScreen() {
         text: entry.text,
       }));
 
+      // Personalized context
+      let systemPreface = '';
+      try {
+        const ctx = await prepareUserContext(uid, question);
+        systemPreface = PERSONAL_ASSISTANT_SYSTEM(ctx) + '\n\nFollow the guidance faithfully.';
+        setLastSelectedMemoryIds(ctx.selectedMemoryIds ?? []);
+        setLastSelectedMemories(ctx.memories ?? []);
+      } catch {}
+
       const prompt =
-        `${basePrompt || `You are a ${promptRole} of the ${religion} faith. Answer the user using teachings from that tradition and cite any relevant scriptures.`}\n${question}`;
+        `${systemPreface}\n\n${basePrompt || `You are a ${promptRole} of the ${religion} faith. Answer the user using teachings from that tradition and cite any relevant scriptures.`}\n${question}`;
       console.log('📡 Sending Gemini prompt:', prompt);
       console.log('👤 Role:', promptRole);
 
@@ -260,6 +277,8 @@ export default function ReligionAIScreen() {
 
       await saveMessage(uid, 'user', question, isSubscribed);
       await saveMessage(uid, 'assistant', answer, isSubscribed);
+      // Fire-and-forget: enqueue memory extraction with both sides
+      enqueueMemoryExtraction(uid, `${question}\nAssistant: ${answer}`, 'chat');
       setMessages((prev) => [
         ...prev,
         { role: 'user', text: question },
@@ -324,6 +343,16 @@ export default function ReligionAIScreen() {
           </View>
         )}
 
+        {showMemoryDebug && lastSelectedMemories?.length > 0 && (
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginHorizontal: 12, marginBottom: 8 }}>
+            {lastSelectedMemories.slice(0, 3).map((m, i) => (
+              <CustomText key={i} style={{ paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12, backgroundColor: '#eee', color: theme.colors.text }}>
+                {m.length > 60 ? m.slice(0, 57) + '…' : m}
+              </CustomText>
+            ))}
+          </View>
+        )}
+
         <FlatList
           data={messages}
           style={{ flex: 1 }}
@@ -336,6 +365,20 @@ export default function ReligionAIScreen() {
           )}
           keyExtractor={(_, i) => i.toString()}
         />
+
+        {!!lastSelectedMemoryIds.length && (
+          <View style={{ alignItems: 'center', marginTop: -4, marginBottom: 8 }}>
+            <Button
+              title="That helped 👍"
+              onPress={async () => {
+                try {
+                  await reinforceMemories(lastSelectedMemoryIds);
+                  showToast('Thanks! I\'ll remember that.');
+                } catch {}
+              }}
+            />
+          </View>
+        )}
 
         <View style={styles.ctaButton}>
           <Button title="Clear Conversation" onPress={handleClear} color={theme.colors.accent} />

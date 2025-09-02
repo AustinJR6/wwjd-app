@@ -8,6 +8,8 @@ export interface SettingsState {
   reminderTime: string
   setReminderEnabled: (val: boolean) => void
   setReminderTime: (time: string) => void
+  showMemoryDebug?: boolean
+  setShowMemoryDebug?: (v: boolean) => void
 }
 
 export const useSettingsStore = create<SettingsState>((set) => ({
@@ -18,4 +20,6 @@ export const useSettingsStore = create<SettingsState>((set) => ({
   reminderTime: '19:00',
   setReminderEnabled: (val: boolean) => set({ reminderEnabled: val }),
   setReminderTime: (time: string) => set({ reminderTime: time }),
+  showMemoryDebug: false,
+  setShowMemoryDebug: (v: boolean) => set({ showMemoryDebug: v }),
 }))

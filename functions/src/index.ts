@@ -34,3 +34,9 @@ export {
 export { onCompletedChallengeCreate } from './firestoreArchitecture';
 export { handleStripeWebhookV2 } from './stripeWebhooks';
 export { cleanLegacySubscriptionFields } from './cleanLegacySubscriptionFields';
+export { vectorCheck } from './vector';
+export { addMemoriesFromText } from './memory/extract';
+export { prepareUserContext } from './memory/retrieve';
+export { summarizeRecentSessions, decayMemories } from './memory/schedule';
+export { reinforceMemories, setPinnedMemories } from './memory/reinforce';
+export { exportMemories, resetSessionSummaries, eraseLongTermMemories } from './memory/export';

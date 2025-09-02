@@ -26,6 +26,15 @@ export const endpoints = {
   onCompletedChallengeCreate: `${BASE}/onCompletedChallengeCreate`,
   handleStripeWebhookV2: `${BASE}/handleStripeWebhookV2`,
   cleanLegacySubscriptionFields: `${BASE}/cleanLegacySubscriptionFields`,
+  // Vector + Memory endpoints
+  vectorCheck: `${BASE}/vectorCheck`,
+  addMemoriesFromText: `${BASE}/addMemoriesFromText`,
+  prepareUserContext: `${BASE}/prepareUserContext`,
+  reinforceMemories: `${BASE}/reinforceMemories`,
+  exportMemories: `${BASE}/exportMemories`,
+  resetSessionSummaries: `${BASE}/resetSessionSummaries`,
+  eraseLongTermMemories: `${BASE}/eraseLongTermMemories`,
+  setPinnedMemories: `${BASE}/setPinnedMemories`,
 } as const;
 
 export type EndpointName = keyof typeof endpoints;
