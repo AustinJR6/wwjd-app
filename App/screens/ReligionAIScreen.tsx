@@ -40,7 +40,6 @@ import { showToast } from '@/utils/toast';
 import { useAuthStore } from '@/state/authStore';
 import { useAuth } from '@/hooks/useAuth';
 import {
-  saveMessage,
   fetchHistory,
   clearHistory,
   clearTempReligionChat,
@@ -49,6 +48,9 @@ import {
 import { useSubscriptionStatus } from '@/hooks/useSubscriptionStatus';
 import { showInterstitialAd } from '@/services/adService';
 import { getPersonaPrompt } from '@/utils/religionPersona';
+import { createDoc } from '@/lib/firestoreService';
+import { useSessionContext } from '@/hooks/useSessionContext';
+import SaveConversationButton from '@/components/SaveConversationButton';
 
 export default function ReligionAIScreen() {
   const theme = useTheme();
@@ -122,6 +124,17 @@ export default function ReligionAIScreen() {
   const showMemoryDebug = useSettingsStore((s) => s.showMemoryDebug) || false;
   const { user } = useUser();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const sessionCtx = useSessionContext();
+
+  async function logMessage(role: 'user' | 'assistant', content: string) {
+    sessionCtx.append({ role, content });
+    const payload = { role, content, ts: Date.now() };
+    if (!uid) return;
+    await createDoc(`users/${uid}/religionChats/messages`, payload);
+    try {
+      await createDoc(`religionChats/${uid}/messages`, payload);
+    } catch {}
+  }
 
   useEffect(() => {
     if (!authReady || !uid) return;
@@ -137,6 +150,7 @@ export default function ReligionAIScreen() {
         await refreshSubscription();
         const hist = await fetchHistory(uid, isSubscribed);
         setMessages(hist);
+        hist.forEach((m) => sessionCtx.append({ role: m.role, content: m.text }));
       } catch (err) {
         console.error('Failed to load ReligionAI history', err);
       }
@@ -236,11 +250,11 @@ export default function ReligionAIScreen() {
       }
 
 
-      const history = await fetchHistory(uid, isSubscribed);
-      const formattedHistory: GeminiMessage[] = history.map((entry) => ({
+      const formattedHistory: GeminiMessage[] = sessionCtx.all().map((entry) => ({
         role: entry.role === 'user' ? 'user' : 'assistant',
-        text: entry.text,
+        text: entry.content,
       }));
+      await logMessage('user', question);
 
       // Personalized context
       let systemPreface = '';
@@ -275,8 +289,7 @@ export default function ReligionAIScreen() {
       console.log('📖 ReligionAI input:', question);
       console.log('🙏 ReligionAI reply:', answer);
 
-      await saveMessage(uid, 'user', question, isSubscribed);
-      await saveMessage(uid, 'assistant', answer, isSubscribed);
+      await logMessage('assistant', answer);
       // Fire-and-forget: enqueue memory extraction with both sides
       enqueueMemoryExtraction(uid, `${question}\nAssistant: ${answer}`, 'chat');
       setMessages((prev) => [
@@ -309,6 +322,7 @@ export default function ReligionAIScreen() {
         text: 'Clear',
         onPress: async () => {
           setMessages([]);
+          sessionCtx.clear();
           const uidVal = await ensureAuth(await getCurrentUserId());
           try {
             if (isSubscribed) {
@@ -383,6 +397,8 @@ export default function ReligionAIScreen() {
         <View style={styles.ctaButton}>
           <Button title="Clear Conversation" onPress={handleClear} color={theme.colors.accent} />
         </View>
+
+        <SaveConversationButton disabled={!isSubscribed} getBuffer={sessionCtx.all} />
 
         {loading && <ActivityIndicator size="large" color={theme.colors.primary} />}
 

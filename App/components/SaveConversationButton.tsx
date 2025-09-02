@@ -1,0 +1,48 @@
+import React from 'react';
+import { Pressable, Text, ActivityIndicator } from 'react-native';
+import { createDoc } from '@/lib/firestoreService';
+import { getAuth } from 'firebase/auth';
+import type { SessionMessage } from '@/hooks/useSessionContext';
+
+type Props = { disabled?: boolean; getBuffer: () => SessionMessage[]; onSaved?: (id: string) => void };
+
+export default function SaveConversationButton({ disabled, getBuffer, onSaved }: Props) {
+  const [busy, setBusy] = React.useState(false);
+
+  const onPress = async () => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      const uid = getAuth().currentUser?.uid!;
+      const convoId = `conv_${Date.now()}`;
+      await createDoc(`users/${uid}/conversations`, {
+        title: `Conversation ${new Date().toLocaleString()}`,
+        createdAt: Date.now(),
+        messageCount: getBuffer().length,
+      }, convoId);
+
+      const msgs = getBuffer();
+      for (let i = 0; i < msgs.length; i++) {
+        await createDoc(`users/${uid}/conversations/${convoId}/messages`, msgs[i]);
+      }
+
+      onSaved?.(convoId);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={disabled || busy}
+      style={{ padding: 10, borderRadius: 10, backgroundColor: '#6b4bff', marginTop: 10 }}
+    >
+      {busy ? (
+        <ActivityIndicator color="white" />
+      ) : (
+        <Text style={{ color: 'white', fontWeight: '600' }}>Save Conversation</Text>
+      )}
+    </Pressable>
+  );
+}
