@@ -5,7 +5,7 @@ import { useTheme } from "@/components/theme/theme";
 
 // Screens
 import HomeScreen from "@/screens/dashboard/HomeScreen";
-import ReligionAIScreen from "@/screens/ReligionAIScreen";
+import ReligionChatScreen from "@/screens/ReligionChatScreen";
 import JournalScreen from "@/screens/JournalScreen";
 import ChallengeScreen from "@/screens/dashboard/ChallengeScreen";
 import ConfessionalScreen from "@/screens/ConfessionalScreen";
@@ -59,7 +59,7 @@ export default function MainTabNavigator() {
       })}
     >
       <Tab.Screen name="HomeScreen" component={HomeScreen as React.ComponentType<any>} />
-      <Tab.Screen name="ReligionAI" component={ReligionAIScreen as React.ComponentType<any>} />
+        <Tab.Screen name="ReligionAI" component={ReligionChatScreen as React.ComponentType<any>} />
       <Tab.Screen name="Journal" component={JournalScreen as React.ComponentType<any>} />
       <Tab.Screen name="Challenge" component={ChallengeScreen as React.ComponentType<any>} />
       <Tab.Screen name="Confessional" component={ConfessionalScreen as React.ComponentType<any>} />

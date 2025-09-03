@@ -11,6 +11,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Text,
+  ToastAndroid,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Button } from '@/components/ui/Button';
@@ -44,16 +45,15 @@ import {
   clearTempReligionChat,
   ChatMessage as HistoryMessage,
 } from '@/services/chatHistoryService';
-import { useSubscriptionStatus } from '@/hooks/useSubscriptionStatus';
 import { showInterstitialAd } from '@/services/adService';
 import { getPersonaPrompt } from '@/utils/religionPersona';
 import { listUserReligionChats } from '@/lib/firestoreService';
 import { useSessionContext } from '@/hooks/useSessionContext';
-import SaveConversationButton from '@/components/SaveConversationButton';
-import { createThread, appendMessage, markMemoriesUsed, type ChatMessage as DbChatMessage } from '@/lib/db';
+import { createThread, appendMessage, markThreadSaved } from '@/lib/db';
 import { loadActiveGoals, loadRelevantMemories, loadRecentContext } from '@/lib/context';
+import { doc, getDoc, getFirestore } from 'firebase/firestore';
 
-export default function ReligionAIScreen() {
+export default function ReligionChatScreen() {
   const theme = useTheme();
   const styles = React.useMemo(
     () =>
@@ -117,7 +117,7 @@ export default function ReligionAIScreen() {
   const [messages, setMessages] = useState<HistoryMessage[]>([]);
   const [loading, setLoading] = useState(false);
   const { authReady, uid } = useAuth();
-  const { isPlus: isSubscribed, refresh: refreshSubscription } = useSubscriptionStatus(uid);
+  const [profile, setProfile] = useState<any>(null);
   const [messageCount, setMessageCount] = useState(0);
   const [threadId, setThreadId] = useState<string | null>(null);
   const [showMemoryClearedBanner, setShowMemoryClearedBanner] = useState(false);
@@ -127,16 +127,18 @@ export default function ReligionAIScreen() {
   const { user } = useUser();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const sessionCtx = useSessionContext();
+  const db = getFirestore();
 
-  async function logMessage(
-    role: 'user' | 'assistant',
-    text: string,
-    extra: Partial<DbChatMessage> = {},
-  ) {
-    sessionCtx.append({ role, content: text });
-    if (!uid || !threadId) return;
-    await appendMessage(uid, threadId, { role, text, ...extra, createdAt: null } as any);
-  }
+  useEffect(() => {
+    if (!uid) return;
+    (async () => {
+      const snap = await getDoc(doc(db, 'users', uid));
+      if (snap.exists()) setProfile(snap.data());
+    })();
+  }, [uid]);
+
+  const isSubscribed = !!profile?.isSubscribed;
+
 
   useEffect(() => {
     if (!authReady || !uid) return;
@@ -149,7 +151,6 @@ export default function ReligionAIScreen() {
       try {
         const userData: UserProfile | null = await loadUserProfile(uid);
         const profile = userData ?? ({} as UserProfile);
-        await refreshSubscription();
         if (isSubscribed) {
           const loaded = await listUserReligionChats(uid, 200);
           const hist: ChatMessage[] = loaded.map((m) => ({
@@ -216,16 +217,15 @@ export default function ReligionAIScreen() {
       const uid = await ensureAuth(firebaseUid ?? undefined);
 
       const userData: UserProfile | null = await loadUserProfile(uid);
-      const profile = userData ?? ({} as UserProfile);
-      const lastAsk = profile.lastFreeAsk?.toDate?.();
+      const profileData = userData ?? ({} as UserProfile);
+      const lastAsk = profileData.lastFreeAsk?.toDate?.();
       const now = new Date();
       const oneDay = 24 * 60 * 60 * 1000;
       const canAskFree = !lastAsk || now.getTime() - lastAsk.getTime() > oneDay;
       const cost = 5;
-      await refreshSubscription();
       console.log('💎 OneVine+ Status:', isSubscribed);
 
-      const religion = profile?.religion;
+      const religion = profileData?.religion;
       if (!uid || !religion) {
         console.warn('⚠️ askGemini blocked — missing uid or religion', { uid, religion });
         setLoading(false);
@@ -269,9 +269,13 @@ export default function ReligionAIScreen() {
 
       let tid = threadId;
       if (!tid) {
-        tid = await createThread(uid, question, {});
+        const created = await createThread(uid, question, { model: 'gemini-1.5', systemPromptVersion: 'v1' });
+        tid = created.threadId;
         setThreadId(tid);
       }
+      sessionCtx.append({ role: 'user', content: question });
+      await appendMessage(uid, tid, { role: 'user', text: question });
+
       const [goals, memories, recent] = await Promise.all([
         loadActiveGoals(uid),
         loadRelevantMemories(uid, 15),
@@ -281,29 +285,27 @@ export default function ReligionAIScreen() {
       setLastSelectedMemories(memories.map((m) => m.text));
       const goalIds = goals.map((g) => g.id);
       const memoryIds = memories.map((m) => m.id);
-      const userProfile = {
-        username: user?.username,
-        displayName: user?.displayName,
-        region: user?.region,
-        religion,
-      };
-      const envelope = [
-        '[USER PROFILE]',
-        JSON.stringify(userProfile),
-        '[GOALS]',
-        ...goals.map((g) => `- ${g.detail ? `${g.title} (${g.detail})` : g.title}`),
-        '[RELEVANT MEMORIES]',
-        ...memories.map((m) => `- ${m.text}`),
-        '[RECENT CONTEXT]',
-        ...recent.map((m) => `${m.role === 'assistant' ? 'ASSISTANT' : 'USER'}: ${m.text}`),
-        '[PERSONALIZATION RULES]',
-        '- Prefer an encouraging tone',
-        '- Include gentle reminders at preferred times when relevant',
-        '- Keep answers concise and practical',
-        basePrompt || `You are a ${promptRole} of the ${religion} faith. Answer the user using teachings from that tradition and cite any relevant scriptures.`,
-      ].join('\n');
-      await logMessage('user', question);
-      const prompt = `${envelope}\n${question}`;
+      const promptEnvelope = `
+[USER PROFILE]
+${JSON.stringify({ username: profile?.username, displayName: profile?.displayName, region: profile?.region, religion: profile?.religion })}
+
+[GOALS]
+${goals.length ? goals.map(g => `• ${g.title || g.name}${g.detail ? ` — ${g.detail}`:''}`).join('\n') : 'None'}
+
+[RELEVANT MEMORIES]
+${memories.length ? memories.map(m => `• ${m.text}`).join('\n') : 'None'}
+
+[RECENT CONTEXT]
+${recent.length ? recent.map((m:any) => `${m.role?.toUpperCase() || 'USER'}: ${m.text}`).join('\n') : 'None'}
+
+[PERSONALIZATION RULES]
+• Prefer an encouraging tone
+• Include gentle reminders at preferred times when relevant
+• Keep answers concise and practical
+
+Speak with a contemplative, symbolic tone that emphasizes inner knowledge ("gnosis"), compassion, and humility. Encourage users to seek the light within...
+`.trim();
+      const prompt = `${promptEnvelope}\n${question}`;
       console.log('📡 Sending Gemini prompt:', prompt);
       console.log('👤 Role:', promptRole);
 
@@ -325,10 +327,12 @@ export default function ReligionAIScreen() {
       console.log('📖 ReligionAI input:', question);
       console.log('🙏 ReligionAI reply:', answer);
 
-      await logMessage('assistant', answer, {
+      sessionCtx.append({ role: 'assistant', content: answer });
+      await appendMessage(uid, tid, {
+        role: 'assistant',
+        text: answer,
         ctxSnapshotRefs: { memories: memoryIds, goals: goalIds },
       });
-      await markMemoriesUsed(uid, memoryIds);
       if (isSubscribed) {
         enqueueMemoryExtraction(uid, `${question}\nAssistant: ${answer}`, 'chat');
       } else {
@@ -383,6 +387,23 @@ export default function ReligionAIScreen() {
       },
     ]);
   };
+
+  async function onSaveConversation() {
+    const isSubscribed = !!profile?.isSubscribed;
+    if (!isSubscribed) {
+      if (Platform.OS === 'android') ToastAndroid.show('Subscribe to OneVine+ to save chats.', ToastAndroid.SHORT);
+      Alert.alert('OneVine+', 'Saving conversations is a OneVine+ feature.', [
+        { text: 'Not now' },
+        { text: 'Subscribe', onPress: () => navigation.navigate('Subscribe') },
+      ]);
+      return;
+    }
+    const summary = (messages?.[0]?.text || 'Conversation')?.slice(0, 200);
+    if (uid && threadId) {
+      await markThreadSaved(uid, threadId, summary);
+      if (Platform.OS === 'android') ToastAndroid.show('Conversation saved', ToastAndroid.SHORT);
+    }
+  }
 
   return (
     <AuthGate>
@@ -440,13 +461,7 @@ export default function ReligionAIScreen() {
 
         <View style={{ flexDirection: 'row', gap: 8, padding: 8 }}>
           <View style={{ flex: 1 }}>
-            <SaveConversationButton
-              uid={uid!}
-              threadId={threadId}
-              isSubscribed={isSubscribed}
-              summary={messages.map((m) => m.text).join(' ').slice(0, 200)}
-              disabled={loading}
-            />
+            <Button title="Save Conversation" onPress={onSaveConversation} disabled={loading} />
           </View>
           <View style={{ flex: 1 }}>
             <SmallClearButton onPress={handleClear} disabled={loading} />
