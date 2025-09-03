@@ -238,33 +238,37 @@ export async function queryCollection(
   const segments = collectionPath.split('/').filter(Boolean);
   const collectionId = segments.pop();
   const parentPath = segments.join('/');
-  const parent = parentPath
-    ? `projects/${PROJECT_ID}/databases/(default)/documents/${parentPath}`
-    : `projects/${PROJECT_ID}/databases/(default)/documents`;
-  const query: any = { parent, from: [{ collectionId }] };
+  const structuredQuery: any = { from: [{ collectionId }] };
   if (options?.orderByField) {
-    query.orderBy = [
+    structuredQuery.orderBy = [
       {
         field: { fieldPath: options.orderByField },
         direction: options.direction || 'ASCENDING',
       },
     ];
   }
-  if (options?.limit) query.limit = options.limit;
+  if (options?.limit) structuredQuery.limit = options.limit;
   if (options?.startAfter) {
-    query.startAt = {
+    structuredQuery.startAt = {
       values: [{ stringValue: options.startAfter }],
       before: false,
     };
   }
-  return runStructuredQuery(query);
+  return runStructuredQuery(structuredQuery, parentPath);
 }
 
-export async function runStructuredQuery(query: any): Promise<any[]> {
+const PARENT = `projects/${PROJECT_ID}/databases/(default)/documents`;
+
+export async function runStructuredQuery(
+  structuredQuery: any,
+  parentPath = '',
+): Promise<any[]> {
   const url = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents:runQuery`;
+  const body: any = { structuredQuery };
+  body.parent = parentPath ? `${PARENT}/${parentPath}` : PARENT;
   try {
-    console.log('➡️ Firestore RUNQUERY', JSON.stringify(query));
-    const res = await apiClient.post(url, { structuredQuery: query }, {
+    console.log('➡️ Firestore RUNQUERY', JSON.stringify(body));
+    const res = await apiClient.post(url, body, {
       headers: await authHeaders(),
     });
     const docs = Array.isArray(res.data) ? (res.data as any[]) : [];
@@ -324,34 +328,43 @@ export async function fetchTopOrganizations(limit = 10): Promise<any[]> {
   return runStructuredQuery(query);
 }
 
-export async function querySubcollection(
+export async function runSubcollectionQuery(
   parentPath: string,
   collectionName: string,
-  orderByField?: string,
-  direction: 'ASCENDING' | 'DESCENDING' = 'ASCENDING',
-  limit?: number,
-  startAfter?: string,
+  options?: {
+    orderByField?: string;
+    direction?: 'ASCENDING' | 'DESCENDING';
+    limit?: number;
+    startAfter?: string;
+  },
 ): Promise<any[]> {
   const collectionPath = `${parentPath}/${collectionName}`;
   console.warn('📄 Structured subquery path:', collectionPath);
-  if (!orderByField) {
-    return queryCollection(collectionPath, { limit, startAfter });
+  const structuredQuery: any = { from: [{ collectionId: collectionName }] };
+  if (options?.orderByField) {
+    structuredQuery.orderBy = [
+      {
+        field: { fieldPath: options.orderByField },
+        direction: options.direction || 'ASCENDING',
+      },
+    ];
   }
-  const query: any = {
-    parent: `projects/${PROJECT_ID}/databases/(default)/documents/${parentPath}`,
-    from: [{ collectionId: collectionName }],
-    orderBy: [{ field: { fieldPath: orderByField }, direction }],
-  };
-  if (limit) query.limit = limit;
-  if (startAfter) {
-    query.startAt = { values: [{ stringValue: startAfter }], before: false };
+  if (options?.limit) structuredQuery.limit = options.limit;
+  if (options?.startAfter) {
+    structuredQuery.startAt = {
+      values: [{ stringValue: options.startAfter }],
+      before: false,
+    };
   }
   console.warn('🔍 Structured query filters:', {
-    orderBy: query.orderBy,
-    limit,
+    orderBy: structuredQuery.orderBy,
+    limit: options?.limit,
   });
-  return runStructuredQuery(query);
+  return runStructuredQuery(structuredQuery, parentPath);
 }
+
+// Backwards compatibility
+export { runSubcollectionQuery as querySubcollection };
 
 // -------------------
 // Active Challenge

@@ -1,6 +1,6 @@
 import {
   addDocument,
-  querySubcollection,
+  runSubcollectionQuery,
   getDocument,
   deleteDocument,
 } from '@/services/firestoreService';
@@ -45,16 +45,19 @@ export async function saveMessage(
   if (!storedUid) return;
   const usePersistent =
     typeof persistent === 'boolean' ? persistent : await isSubscribed(storedUid);
-  const basePath = usePersistent
-    ? `religionChats/${storedUid}`
-    : `tempReligionChat/${storedUid}`;
-  console.warn('🔥 Attempting Firestore access:', `${basePath}/messages`);
-  console.warn('👤 Using UID:', storedUid);
-  await addDocument(`${basePath}/messages`, {
-    role,
-    text,
-    timestamp: new Date().toISOString(),
-  });
+  const payload = { role, content: text, timestamp: Date.now() };
+  if (usePersistent) {
+    console.warn('🔥 Attempting Firestore access:', `users/${storedUid}/religionChats`);
+    console.warn('👤 Using UID:', storedUid);
+    await addDocument(`users/${storedUid}/religionChats`, payload);
+    try {
+      await addDocument(`religionChats/${storedUid}/messages`, payload);
+    } catch {}
+  } else {
+    console.warn('🔥 Attempting Firestore access:', `tempReligionChat/${storedUid}/messages`);
+    console.warn('👤 Using UID:', storedUid);
+    await addDocument(`tempReligionChat/${storedUid}/messages`, payload);
+  }
 }
 
 export async function fetchHistory(
@@ -65,27 +68,48 @@ export async function fetchHistory(
   if (!storedUid) return [];
   const usePersistent =
     typeof persistent === 'boolean' ? persistent : await isSubscribed(storedUid);
-  const basePath = usePersistent
-    ? `religionChats/${storedUid}`
-    : `tempReligionChat/${storedUid}`;
-  console.warn('🔥 Attempting Firestore access:', `${basePath}/messages`);
-  console.warn('👤 Using UID:', storedUid);
-  return await querySubcollection(
-    basePath,
-    'messages',
-    'timestamp',
-    'ASCENDING',
-  );
+  if (usePersistent) {
+    console.warn('🔥 Attempting Firestore access:', `users/${storedUid}/religionChats`);
+    console.warn('👤 Using UID:', storedUid);
+    const docs = await runSubcollectionQuery(
+      `users/${storedUid}`,
+      'religionChats',
+      { orderByField: 'timestamp' },
+    );
+    return docs.map((d: any) => ({
+      id: d.id,
+      role: d.role,
+      text: d.text ?? d.content,
+      timestamp: d.timestamp,
+    }));
+  } else {
+    console.warn('🔥 Attempting Firestore access:', `tempReligionChat/${storedUid}/messages`);
+    console.warn('👤 Using UID:', storedUid);
+    const docs = await runSubcollectionQuery(
+      `tempReligionChat/${storedUid}`,
+      'messages',
+      { orderByField: 'timestamp' },
+    );
+    return docs.map((d: any) => ({
+      id: d.id,
+      role: d.role,
+      text: d.text ?? d.content,
+      timestamp: d.timestamp,
+    }));
+  }
 }
 
 export async function clearHistory(uid: string): Promise<void> {
   const storedUid = await ensureAuth(uid);
   if (!storedUid) return;
-  console.warn('🔥 Attempting Firestore access:', `religionChats/${storedUid}/messages`);
+  console.warn('🔥 Attempting Firestore access:', `users/${storedUid}/religionChats`);
   console.warn('👤 Using UID:', storedUid);
-  const docs = await querySubcollection(`religionChats/${storedUid}`, 'messages');
+  const docs = await runSubcollectionQuery(
+    `users/${storedUid}`,
+    'religionChats',
+  );
   for (const msg of docs) {
-    await deleteDocument(`religionChats/${storedUid}/messages/${msg.id}`);
+    await deleteDocument(`users/${storedUid}/religionChats/${msg.id}`);
   }
 }
 
@@ -94,7 +118,10 @@ export async function clearTempReligionChat(uid: string): Promise<void> {
   if (!storedUid) return;
   console.warn('🔥 Attempting Firestore access:', `tempReligionChat/${storedUid}/messages`);
   console.warn('👤 Using UID:', storedUid);
-  const docs = await querySubcollection(`tempReligionChat/${storedUid}`, 'messages');
+  const docs = await runSubcollectionQuery(
+    `tempReligionChat/${storedUid}`,
+    'messages',
+  );
   for (const msg of docs) {
     await deleteDocument(`tempReligionChat/${storedUid}/messages/${msg.id}`);
   }
@@ -103,17 +130,16 @@ export async function clearTempReligionChat(uid: string): Promise<void> {
 export async function trimHistory(uid: string, limit: number): Promise<void> {
   const storedUid = await ensureAuth(uid);
   if (!storedUid) return;
-  console.warn('🔥 Attempting Firestore access:', `religionChats/${storedUid}/messages`);
+  console.warn('🔥 Attempting Firestore access:', `users/${storedUid}/religionChats`);
   console.warn('👤 Using UID:', storedUid);
-  const docs = await querySubcollection(
-    `religionChats/${storedUid}`,
-    'messages',
-    'timestamp',
-    'ASCENDING',
+  const docs = await runSubcollectionQuery(
+    `users/${storedUid}`,
+    'religionChats',
+    { orderByField: 'timestamp' },
   );
   if (docs.length <= limit) return;
   const excess = docs.length - limit;
   for (let i = 0; i < excess; i++) {
-    await deleteDocument(`religionChats/${storedUid}/messages/${docs[i].id}`);
+    await deleteDocument(`users/${storedUid}/religionChats/${docs[i].id}`);
   }
 }

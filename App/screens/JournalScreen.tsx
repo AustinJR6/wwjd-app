@@ -16,7 +16,7 @@ import { Screen } from "@/components/ui/Screen";
 import { useTheme } from "@/components/theme/theme";
 import { showGracefulError } from '@/utils/gracefulError';
 import * as LocalAuthentication from 'expo-local-authentication';
-import { querySubcollection, addDocument, getDocument, setDocument } from '@/services/firestoreService';
+import { runSubcollectionQuery, addDocument, getDocument, setDocument } from '@/services/firestoreService';
 
 import { loadUserProfile, incrementUserPoints, getUserAIPrompt } from '@/utils/userProfile';
 import type { UserProfile } from '../../types/profile';
@@ -187,13 +187,15 @@ export default function JournalScreen() {
     }
     if (!hasMore && !reset) return;
     setLoadingMore(true);
-    const page = await querySubcollection(
+    const page = await runSubcollectionQuery(
       `journalEntries/${storedUid}`,
       'entries',
-      'timestamp',
-      'DESCENDING',
-      20,
-      reset ? undefined : lastTimestamp || undefined,
+      {
+        orderByField: 'timestamp',
+        direction: 'DESCENDING',
+        limit: 20,
+        startAfter: reset ? undefined : lastTimestamp || undefined,
+      },
     );
     const newEntries = reset ? page : [...entries, ...page];
     setEntries(newEntries);

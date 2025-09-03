@@ -5,7 +5,7 @@ import { Screen } from '@/components/ui/Screen';
 import { useTheme } from '@/components/theme/theme';
 import { ensureAuth } from '@/utils/authGuard';
 import { getCurrentUserId } from '@/utils/authUtils';
-import { querySubcollection } from '@/services/firestoreService';
+import { runSubcollectionQuery } from '@/services/firestoreService';
 import { Button } from '@/components/ui/Button';
 import { endpoints } from '@/services/endpoints';
 import { getAuthHeaders } from '@/utils/authUtils';
@@ -32,7 +32,10 @@ export default function ManageMemories() {
     (async () => {
       const uid = await ensureAuth(await getCurrentUserId());
       if (!uid) return;
-      const docs = await querySubcollection(`users/${uid}`, 'memories', 'updatedAt', 'DESCENDING');
+      const docs = await runSubcollectionQuery(`users/${uid}`, 'memories', {
+        orderByField: 'updatedAt',
+        direction: 'DESCENDING',
+      });
       setItems(docs as Memory[]);
     })();
   }, []);
