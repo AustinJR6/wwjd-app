@@ -1,4 +1,4 @@
-import { addDocument, querySubcollection } from '@/services/firestoreService';
+import { addDocument, runSubcollectionQuery } from '@/services/firestoreService';
 import { ensureAuth } from '@/utils/authGuard';
 
 export interface ConfessionalMessage {
@@ -36,11 +36,10 @@ export async function fetchConfessionalHistory(uid: string): Promise<Confessiona
   console.warn('🔥 Attempting Firestore access:', `confessionalChats/${storedUid}/messages`);
   console.warn('👤 Using UID:', storedUid);
   try {
-    return await querySubcollection(
+    return await runSubcollectionQuery(
       `confessionalChats/${storedUid}`,
       'messages',
-      'createdAt',
-      'ASCENDING',
+      { orderByField: 'createdAt', direction: 'ASCENDING' },
     );
   } catch (error: any) {
     console.warn('💬 Confessional Error', error.response?.status, error.message);

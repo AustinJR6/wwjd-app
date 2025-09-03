@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Button } from '@/components/ui/Button';
-import { Screen } from "@/components/ui/Screen";
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from "@/components/theme/theme";
 import { getTokenCount, setTokenCount } from "@/utils/TokenManager";
 import { showGracefulError } from '@/utils/gracefulError';
@@ -128,9 +128,9 @@ export default function ReligionAIScreen() {
 
   async function logMessage(role: 'user' | 'assistant', content: string) {
     sessionCtx.append({ role, content });
-    const payload = { role, content, ts: Date.now() };
     if (!uid) return;
-    await createDoc(`users/${uid}/religionChats/messages`, payload);
+    const payload = { role, content, timestamp: Date.now() };
+    await createDoc(`users/${uid}/religionChats`, payload);
     try {
       await createDoc(`religionChats/${uid}/messages`, payload);
     } catch {}
@@ -342,7 +342,7 @@ export default function ReligionAIScreen() {
 
   return (
     <AuthGate>
-    <Screen>
+    <SafeAreaView style={{ flex: 1 }}>
       <KeyboardAvoidingView
         style={styles.container}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -424,7 +424,7 @@ export default function ReligionAIScreen() {
           </CustomText>
         )}
       </KeyboardAvoidingView>
-    </Screen>
+    </SafeAreaView>
     </AuthGate>
   );
 }

@@ -1,6 +1,6 @@
 import {
   addDocument,
-  querySubcollection,
+  runSubcollectionQuery,
   deleteDocument,
 } from '@/services/firestoreService';
 import { ensureAuth } from '@/utils/authGuard';
@@ -40,11 +40,10 @@ export async function fetchTempSession(uid: string): Promise<TempMessage[]> {
   console.warn('🔥 Attempting Firestore access:', `tempConfessionalSessions/${storedUid}/messages`);
   console.warn('👤 Using UID:', storedUid);
   try {
-    return await querySubcollection(
+    return await runSubcollectionQuery(
       `tempConfessionalSessions/${storedUid}`,
       'messages',
-      'timestamp',
-      'ASCENDING',
+      { orderByField: 'timestamp', direction: 'ASCENDING' },
     );
   } catch (error: any) {
     console.warn('💬 Confessional Error', error.response?.status, error.message);
@@ -58,7 +57,7 @@ export async function clearConfessionalSession(uid: string): Promise<void> {
   console.warn('🔥 Attempting Firestore access:', `tempConfessionalSessions/${storedUid}/messages`);
   console.warn('👤 Using UID:', storedUid);
   try {
-    const docs = await querySubcollection(`tempConfessionalSessions/${storedUid}`, 'messages');
+    const docs = await runSubcollectionQuery(`tempConfessionalSessions/${storedUid}`, 'messages');
     for (const msg of docs) {
       await deleteDocument(`tempConfessionalSessions/${storedUid}/messages/${msg.id}`);
     }
