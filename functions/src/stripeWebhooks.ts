@@ -95,8 +95,9 @@ async function writeSubscriptionTransaction(
 ) {
   const ref = db.collection('users').doc(uid);
   const txRef = ref.collection('transactions').doc(session.id);
-  const endSec = sub.current_period_end ?? null;
-  const startSec = sub.current_period_start ?? null;
+  const item = sub.items.data?.[0];
+  const endSec = item?.current_period_end ?? null;
+  const startSec = item?.current_period_start ?? null;
   const current_period_end = endSec ? admin.firestore.Timestamp.fromMillis(endSec * 1000) : null;
   const current_period_start = startSec ? admin.firestore.Timestamp.fromMillis(startSec * 1000) : null;
 
@@ -175,9 +176,10 @@ async function writeSubState(
   const userRef = db.collection('users').doc(uid);
   const txRef = userRef.collection('transactions').doc(txnId);
 
-  const price = sub.items.data?.[0]?.price;
-  const start = periodOverride?.startTs ?? tsFromSec(sub.current_period_start ?? null);
-  const end   = periodOverride?.endTs   ?? tsFromSec(sub.current_period_end   ?? null);
+  const item = sub.items.data?.[0];
+  const price = item?.price;
+  const start = periodOverride?.startTs ?? tsFromSec(item?.current_period_start ?? null);
+  const end   = periodOverride?.endTs   ?? tsFromSec(item?.current_period_end   ?? null);
 
   const payload = {
     type: 'subscription' as const,
@@ -255,11 +257,11 @@ async function upsertSubscriptionFromStripe(
         status,
         priceId: price?.id ?? null,
         planNickname: price?.nickname ?? null,
-        current_period_start: (sub as any).current_period_start
-          ? new Date((sub as any).current_period_start * 1000).toISOString()
+        current_period_start: sub.items.data?.[0]?.current_period_start
+          ? new Date(sub.items.data[0].current_period_start * 1000).toISOString()
           : null,
-        current_period_end: (sub as any).current_period_end
-          ? new Date((sub as any).current_period_end * 1000).toISOString()
+        current_period_end: sub.items.data?.[0]?.current_period_end
+          ? new Date(sub.items.data[0].current_period_end * 1000).toISOString()
           : null,
         cancel_at_period_end: sub.cancel_at_period_end ?? false,
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -336,9 +338,10 @@ app.post('/', async (req: Request, res: Response) => {
 
       case 'invoice.paid': {
         const invoice = event.data.object as Stripe.Invoice;
-        if (invoice.subscription && invoice.customer) {
+        const subId = invoice.parent?.subscription_details?.subscription;
+        if (subId && invoice.customer) {
           try {
-            const sub = await stripe.subscriptions.retrieve(String(invoice.subscription), { expand: ['items.data.price'] });
+            const sub = await stripe.subscriptions.retrieve(String(subId), { expand: ['items.data.price'] });
             const snap = await db
               .collection('users')
               .where('subscription.customerId', '==', String(invoice.customer))
@@ -346,7 +349,7 @@ app.post('/', async (req: Request, res: Response) => {
               .get();
             const uid = snap.empty ? null : snap.docs[0].id;
             if (uid) {
-              const sessionShell = { id: `inv:${invoice.id}` } as unknown as Stripe.Checkout.Session;
+              const sessionShell = { id: `inv:${invoice.id ?? 'unknown'}` } as unknown as Stripe.Checkout.Session;
               await writeSubscriptionTransaction(uid, sessionShell, sub);
             }
           } catch (e) {
@@ -370,7 +373,7 @@ app.post('/', async (req: Request, res: Response) => {
             { merge: true }
           );
         }
-        const subscriptionId = (invoice as any).subscription as string | undefined;
+        const subscriptionId = invoice.parent?.subscription_details?.subscription as string | undefined;
         if (subscriptionId) {
           await upsertSubscriptionFromStripe({
             id: subscriptionId,
@@ -407,12 +410,13 @@ app.post('/', async (req: Request, res: Response) => {
           await writeOrphan('lifecycle_no_uid', sub.id, sub);
           break;
         }
-        const price = sub.items.data?.[0]?.price ?? null;
-        let startTs = tsFromSec(sub.current_period_start ?? null);
-        let endTs   = tsFromSec(sub.current_period_end   ?? null);
+        const item = sub.items.data?.[0];
+        const price = item?.price ?? null;
+        let startTs = tsFromSec(item?.current_period_start ?? null);
+        let endTs   = tsFromSec(item?.current_period_end   ?? null);
         if (!startTs || !endTs) {
           const derived = derivePeriodFromPrice({
-            startSec: sub.current_period_start ?? event.created,
+            startSec: item?.current_period_start ?? event.created,
             price,
             eventCreatedSec: event.created,
           });
@@ -426,21 +430,23 @@ app.post('/', async (req: Request, res: Response) => {
       // Renewal/paid invoices path
       case 'invoice.paid': {
         const inv = event.data.object as Stripe.Invoice;
-        if (inv.subscription && inv.customer) {
+        const subId = inv.parent?.subscription_details?.subscription;
+        if (subId && inv.customer) {
           try {
             const invoice = (inv as any)?.lines?.data?.length
               ? inv
-              : await stripe.invoices.retrieve(inv.id, { expand: ['lines.data.price'] });
+              : await stripe.invoices.retrieve(inv.id!, { expand: ['lines.data.price'] });
             const line = (invoice as any)?.lines?.data?.[0];
             let startTs = line?.period?.start ? tsFromSec(line.period.start) : null;
             let endTs   = line?.period?.end   ? tsFromSec(line.period.end)   : null;
 
-            const sub = await stripe.subscriptions.retrieve(String(inv.subscription), { expand: ['items.data.price'] });
-            const price = sub.items.data?.[0]?.price ?? null;
+            const sub = await stripe.subscriptions.retrieve(String(subId), { expand: ['items.data.price'] });
+            const item = sub.items.data?.[0];
+            const price = item?.price ?? null;
 
             if (!startTs || !endTs) {
               const derived = derivePeriodFromPrice({
-                startSec: sub.current_period_start ?? inv.created,
+                startSec: item?.current_period_start ?? inv.created,
                 price,
                 eventCreatedSec: inv.created,
               });
@@ -451,10 +457,10 @@ app.post('/', async (req: Request, res: Response) => {
             const uid = await resolveUidFromCustomer(String(inv.customer));
             if (!uid) {
               console.warn('⚠️ invoice.paid: no uid for customer', inv.customer);
-              await writeOrphan('invoice_no_uid', inv.id, inv);
+              await writeOrphan('invoice_no_uid', inv.id ?? 'unknown', inv);
               break;
             }
-            await writeSubState(uid, sub, `inv:${inv.id}`, 'invoice.paid', null, { startTs, endTs });
+            await writeSubState(uid, sub, `inv:${inv.id ?? 'unknown'}`, 'invoice.paid', null, { startTs, endTs });
           } catch (e) {
             console.error('invoice.paid handling failed', e);
           }
