@@ -11,3 +11,13 @@ export function showToast(title: string, message?: string) {
   }
 }
 
+// Tiny convenience helper used across the app
+// Shows a short toast on Android and an alert on iOS
+export function toast(msg: string) {
+  if (Platform.OS === 'android') {
+    ToastAndroid.show(msg, ToastAndroid.SHORT);
+  } else {
+    Alert.alert('', msg);
+  }
+}
+

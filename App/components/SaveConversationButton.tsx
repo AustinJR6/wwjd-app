@@ -3,6 +3,7 @@ import { Pressable, Text, ActivityIndicator } from 'react-native';
 import { createDoc } from '@/lib/firestoreService';
 import { getAuth } from 'firebase/auth';
 import type { SessionMessage } from '@/hooks/useSessionContext';
+import { toast } from '@/utils/toast';
 
 type Props = { disabled?: boolean; getBuffer: () => SessionMessage[]; onSaved?: (id: string) => void };
 
@@ -25,7 +26,7 @@ export default function SaveConversationButton({ disabled, getBuffer, onSaved }:
       for (let i = 0; i < msgs.length; i++) {
         await createDoc(`users/${uid}/conversations/${convoId}/messages`, msgs[i]);
       }
-
+      toast('Conversation saved ✅');
       onSaved?.(convoId);
     } finally {
       setBusy(false);

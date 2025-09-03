@@ -10,6 +10,7 @@ import {
   FlatList,
   KeyboardAvoidingView,
   Platform,
+  Text,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Button } from '@/components/ui/Button';
@@ -36,7 +37,7 @@ import { prepareUserContext, reinforceMemories } from '@/services/chatService';
 import { PERSONAL_ASSISTANT_SYSTEM } from '@/prompts/memoryClient';
 import { enqueueMemoryExtraction } from '@/services/chatService';
 import { useSettingsStore } from '@/state/settingsStore';
-import { showToast } from '@/utils/toast';
+import { showToast, toast } from '@/utils/toast';
 import { useAuthStore } from '@/state/authStore';
 import { useAuth } from '@/hooks/useAuth';
 import {
@@ -48,7 +49,7 @@ import {
 import { useSubscriptionStatus } from '@/hooks/useSubscriptionStatus';
 import { showInterstitialAd } from '@/services/adService';
 import { getPersonaPrompt } from '@/utils/religionPersona';
-import { createDoc } from '@/lib/firestoreService';
+import { createDoc, listUserReligionChats } from '@/lib/firestoreService';
 import { useSessionContext } from '@/hooks/useSessionContext';
 import SaveConversationButton from '@/components/SaveConversationButton';
 
@@ -148,9 +149,24 @@ export default function ReligionAIScreen() {
         const userData: UserProfile | null = await loadUserProfile(uid);
         const profile = userData ?? ({} as UserProfile);
         await refreshSubscription();
-        const hist = await fetchHistory(uid, isSubscribed);
-        setMessages(hist);
-        hist.forEach((m) => sessionCtx.append({ role: m.role, content: m.text }));
+        if (isSubscribed) {
+          const loaded = await listUserReligionChats(uid, 200);
+          const hist: ChatMessage[] = loaded.map((m) => ({
+            role: m.role as 'user' | 'assistant',
+            text: m.content,
+            timestamp: String(m.ts),
+          }));
+          setMessages(hist);
+          loaded.forEach((m) =>
+            sessionCtx.append({ role: m.role as any, content: m.content }),
+          );
+        } else {
+          const hist = await fetchHistory(uid, false);
+          setMessages(hist);
+          hist.forEach((m) =>
+            sessionCtx.append({ role: m.role, content: m.text }),
+          );
+        }
       } catch (err) {
         console.error('Failed to load ReligionAI history', err);
       }
@@ -310,6 +326,7 @@ export default function ReligionAIScreen() {
     } catch (err: any) {
       console.error('🔥 API Error:', err?.response?.data || err.message);
       showGracefulError();
+      toast('Could not send message.');
     } finally {
       setLoading(false);
     }
@@ -323,6 +340,7 @@ export default function ReligionAIScreen() {
         onPress: async () => {
           setMessages([]);
           sessionCtx.clear();
+          toast('Conversation cleared');
           const uidVal = await ensureAuth(await getCurrentUserId());
           try {
             if (isSubscribed) {
@@ -394,11 +412,17 @@ export default function ReligionAIScreen() {
           </View>
         )}
 
-        <View style={styles.ctaButton}>
-          <Button title="Clear Conversation" onPress={handleClear} color={theme.colors.accent} />
+        <View style={{ flexDirection: 'row', gap: 8, padding: 8 }}>
+          <View style={{ flex: 1 }}>
+            <SaveConversationButton
+              disabled={!isSubscribed || loading}
+              getBuffer={sessionCtx.all}
+            />
+          </View>
+          <View style={{ flex: 1 }}>
+            <SmallClearButton onPress={handleClear} disabled={loading} />
+          </View>
         </View>
-
-        <SaveConversationButton disabled={!isSubscribed} getBuffer={sessionCtx.all} />
 
         {loading && <ActivityIndicator size="large" color={theme.colors.primary} />}
 
@@ -426,5 +450,25 @@ export default function ReligionAIScreen() {
       </KeyboardAvoidingView>
     </SafeAreaView>
     </AuthGate>
+  );
+}
+
+function SmallClearButton({ onPress, disabled }: { onPress: () => void; disabled?: boolean }) {
+  return (
+    <View style={{ borderRadius: 10, overflow: 'hidden' }}>
+      <View
+        style={{
+          backgroundColor: '#999',
+          paddingVertical: 10,
+          alignItems: 'center',
+          opacity: disabled ? 0.5 : 1,
+        }}
+        // @ts-ignore
+        onStartShouldSetResponder={() => !disabled}
+        onResponderRelease={() => !disabled && onPress()}
+      >
+        <Text style={{ color: 'white', fontWeight: '600' }}>Clear</Text>
+      </View>
+    </View>
   );
 }

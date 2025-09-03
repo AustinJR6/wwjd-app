@@ -113,5 +113,37 @@ export async function createDoc(collectionPath: string, fields: Record<string, a
   return res.json();
 }
 
+export async function listUserReligionChats(uid: string, limit = 200) {
+  const structuredQuery: any = {
+    from: [{ collectionId: 'religionChats' }],
+    orderBy: [{ field: { fieldPath: 'timestamp' }, direction: 'ASCENDING' }],
+    limit,
+  };
+  const res = await authedFetch(
+    `https://firestore.googleapis.com/v1/${PARENT}/users/${uid}:runQuery`,
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        parent: `${PARENT}/users/${uid}`,
+        structuredQuery,
+      }),
+    },
+  );
+  if (!res.ok) throw new Error(await res.text());
+  const rows = await res.json();
+  const docs = rows
+    .filter((r: any) => r.document?.fields)
+    .map((r: any) => r.document.fields);
+  return docs.map((f: any) => ({
+    role: f.role?.stringValue ?? 'user',
+    content: f.content?.stringValue ?? '',
+    ts: Number(
+      f.timestamp?.integerValue ??
+      f.timestamp?.doubleValue ??
+      Date.now(),
+    ),
+  }));
+}
+
 export { authedFetch, toValue };
 
