@@ -1,6 +1,6 @@
 import { initializeApp, applicationDefault } from 'firebase-admin/app';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
-import { ulid } from 'ulid';
+import { v4 as uuidv4 } from 'uuid';
 import { makeTitle } from '../functions/src/chatUtils';
 
 initializeApp({ credential: applicationDefault() });
@@ -17,7 +17,7 @@ const db = getFirestore();
       const prompt = data.prompt || data.content || '';
       const response = data.response || '';
       const createdAt = data.createdAt || FieldValue.serverTimestamp();
-      const threadId = ulid();
+        const threadId = uuidv4();
       const threadRef = db.doc(`users/${uid}/chats/threads/${threadId}`);
       await threadRef.set({
         title: makeTitle(prompt || 'Conversation'),
@@ -25,12 +25,12 @@ const db = getFirestore();
         lastMessageAt: createdAt,
         messageCount: 2,
       }, { merge: true });
-      await db.doc(`users/${uid}/chats/threads/${threadId}/messages/${ulid()}`).set({
+        await db.doc(`users/${uid}/chats/threads/${threadId}/messages/${uuidv4()}`).set({
         role: 'user',
         text: prompt,
         createdAt,
       });
-      await db.doc(`users/${uid}/chats/threads/${threadId}/messages/${ulid()}`).set({
+        await db.doc(`users/${uid}/chats/threads/${threadId}/messages/${uuidv4()}`).set({
         role: 'assistant',
         text: response,
         createdAt,

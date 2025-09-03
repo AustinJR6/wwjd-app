@@ -1,65 +1,32 @@
-import {
-  getFirestore,
-  collection,
-  getDocs,
-  query,
-  where,
-  orderBy,
-  limit as fsLimit,
-} from 'firebase/firestore';
-import type { ChatMessage } from './db';
+import { collection, getDocs, limit, orderBy, query, where } from 'firebase/firestore';
+import { getFirestore } from 'firebase/firestore';
 
 const db = getFirestore();
 
-export async function loadActiveGoals(uid: string) {
-  const q = query(
-    collection(db, 'users', uid, 'goals'),
-    where('status', '==', 'active'),
-    fsLimit(10),
-  );
+export async function loadActiveGoals(uid: string, max = 10) {
+  const q = query(collection(db, 'users', uid, 'goals'), where('status', 'in', ['active', 'Active']), limit(max));
   const snap = await getDocs(q);
-  return snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) }));
+  return snap.docs.map(d => ({ id: d.id, ...d.data() })) as any[];
 }
 
-export async function loadRelevantMemories(
-  uid: string,
-  limit = 15,
-  tags?: string[],
-) {
-  let q = query(
+export async function loadRelevantMemories(uid: string, max = 15) {
+  const q = query(
     collection(db, 'users', uid, 'memories'),
     orderBy('lastUsedAt', 'desc'),
-    orderBy('importance', 'desc'),
-    orderBy('createdAt', 'desc'),
-    fsLimit(limit),
+    limit(max)
   );
-  if (tags && tags.length) {
-    q = query(
-      collection(db, 'users', uid, 'memories'),
-      where('tags', 'array-contains-any', tags),
-      orderBy('lastUsedAt', 'desc'),
-      orderBy('importance', 'desc'),
-      orderBy('createdAt', 'desc'),
-      fsLimit(limit),
-    );
-  }
   const snap = await getDocs(q);
-  return snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) }));
+  return snap.docs.map(d => ({ id: d.id, ...d.data() })) as any[];
 }
 
-export async function loadRecentContext(
-  uid: string,
-  threadId: string,
-  limit = 8,
-): Promise<ChatMessage[]> {
+export async function loadRecentContext(uid: string, threadId: string, max = 8) {
   const q = query(
     collection(db, 'users', uid, 'chats', 'threads', threadId, 'messages'),
     orderBy('createdAt', 'desc'),
-    fsLimit(limit),
+    limit(max)
   );
   const snap = await getDocs(q);
-  const msgs = snap.docs.map((d) => ({ id: d.id, ...(d.data() as any) })) as ChatMessage[];
-  return msgs
-    .filter((m) => m.role !== 'system')
-    .reverse();
+  // return newest->oldest reversed to oldest->newest
+  return snap.docs.map(d => d.data()).reverse() as any[];
 }
+
