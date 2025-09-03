@@ -32,10 +32,8 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/navigation/RootStackParamList';
 import AuthGate from '@/components/AuthGate';
-import { sendGeminiPrompt, type GeminiMessage } from '@/services/geminiService';
-import { prepareUserContext, reinforceMemories } from '@/services/chatService';
-import { PERSONAL_ASSISTANT_SYSTEM } from '@/prompts/memoryClient';
-import { enqueueMemoryExtraction } from '@/services/chatService';
+import { sendGeminiPrompt } from '@/services/geminiService';
+import { enqueueMemoryExtraction, reinforceMemories } from '@/services/chatService';
 import { useSettingsStore } from '@/state/settingsStore';
 import { showToast, toast } from '@/utils/toast';
 import { useAuthStore } from '@/state/authStore';
@@ -44,14 +42,16 @@ import {
   fetchHistory,
   clearHistory,
   clearTempReligionChat,
-  ChatMessage,
+  ChatMessage as HistoryMessage,
 } from '@/services/chatHistoryService';
 import { useSubscriptionStatus } from '@/hooks/useSubscriptionStatus';
 import { showInterstitialAd } from '@/services/adService';
 import { getPersonaPrompt } from '@/utils/religionPersona';
-import { createDoc, listUserReligionChats } from '@/lib/firestoreService';
+import { listUserReligionChats } from '@/lib/firestoreService';
 import { useSessionContext } from '@/hooks/useSessionContext';
 import SaveConversationButton from '@/components/SaveConversationButton';
+import { createThread, appendMessage, markMemoriesUsed, type ChatMessage as DbChatMessage } from '@/lib/db';
+import { loadActiveGoals, loadRelevantMemories, loadRecentContext } from '@/lib/context';
 
 export default function ReligionAIScreen() {
   const theme = useTheme();
@@ -114,11 +114,12 @@ export default function ReligionAIScreen() {
     [theme],
   );
   const [question, setQuestion] = useState('');
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [messages, setMessages] = useState<HistoryMessage[]>([]);
   const [loading, setLoading] = useState(false);
   const { authReady, uid } = useAuth();
   const { isPlus: isSubscribed, refresh: refreshSubscription } = useSubscriptionStatus(uid);
   const [messageCount, setMessageCount] = useState(0);
+  const [threadId, setThreadId] = useState<string | null>(null);
   const [showMemoryClearedBanner, setShowMemoryClearedBanner] = useState(false);
   const [lastSelectedMemoryIds, setLastSelectedMemoryIds] = useState<string[]>([]);
   const [lastSelectedMemories, setLastSelectedMemories] = useState<string[]>([]);
@@ -127,14 +128,14 @@ export default function ReligionAIScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const sessionCtx = useSessionContext();
 
-  async function logMessage(role: 'user' | 'assistant', content: string) {
-    sessionCtx.append({ role, content });
-    if (!uid) return;
-    const payload = { role, content, timestamp: Date.now() };
-    await createDoc(`users/${uid}/religionChats`, payload);
-    try {
-      await createDoc(`religionChats/${uid}/messages`, payload);
-    } catch {}
+  async function logMessage(
+    role: 'user' | 'assistant',
+    text: string,
+    extra: Partial<DbChatMessage> = {},
+  ) {
+    sessionCtx.append({ role, content: text });
+    if (!uid || !threadId) return;
+    await appendMessage(uid, threadId, { role, text, ...extra, createdAt: null } as any);
   }
 
   useEffect(() => {
@@ -266,23 +267,43 @@ export default function ReligionAIScreen() {
       }
 
 
-      const formattedHistory: GeminiMessage[] = sessionCtx.all().map((entry) => ({
-        role: entry.role === 'user' ? 'user' : 'assistant',
-        text: entry.content,
-      }));
+      let tid = threadId;
+      if (!tid) {
+        tid = await createThread(uid, question, {});
+        setThreadId(tid);
+      }
+      const [goals, memories, recent] = await Promise.all([
+        loadActiveGoals(uid),
+        loadRelevantMemories(uid, 15),
+        loadRecentContext(uid, tid, 8),
+      ]);
+      setLastSelectedMemoryIds(memories.map((m) => m.id));
+      setLastSelectedMemories(memories.map((m) => m.text));
+      const goalIds = goals.map((g) => g.id);
+      const memoryIds = memories.map((m) => m.id);
+      const userProfile = {
+        username: user?.username,
+        displayName: user?.displayName,
+        region: user?.region,
+        religion,
+      };
+      const envelope = [
+        '[USER PROFILE]',
+        JSON.stringify(userProfile),
+        '[GOALS]',
+        ...goals.map((g) => `- ${g.detail ? `${g.title} (${g.detail})` : g.title}`),
+        '[RELEVANT MEMORIES]',
+        ...memories.map((m) => `- ${m.text}`),
+        '[RECENT CONTEXT]',
+        ...recent.map((m) => `${m.role === 'assistant' ? 'ASSISTANT' : 'USER'}: ${m.text}`),
+        '[PERSONALIZATION RULES]',
+        '- Prefer an encouraging tone',
+        '- Include gentle reminders at preferred times when relevant',
+        '- Keep answers concise and practical',
+        basePrompt || `You are a ${promptRole} of the ${religion} faith. Answer the user using teachings from that tradition and cite any relevant scriptures.`,
+      ].join('\n');
       await logMessage('user', question);
-
-      // Personalized context
-      let systemPreface = '';
-      try {
-        const ctx = await prepareUserContext(uid, question);
-        systemPreface = PERSONAL_ASSISTANT_SYSTEM(ctx) + '\n\nFollow the guidance faithfully.';
-        setLastSelectedMemoryIds(ctx.selectedMemoryIds ?? []);
-        setLastSelectedMemories(ctx.memories ?? []);
-      } catch {}
-
-      const prompt =
-        `${systemPreface}\n\n${basePrompt || `You are a ${promptRole} of the ${religion} faith. Answer the user using teachings from that tradition and cite any relevant scriptures.`}\n${question}`;
+      const prompt = `${envelope}\n${question}`;
       console.log('📡 Sending Gemini prompt:', prompt);
       console.log('👤 Role:', promptRole);
 
@@ -294,7 +315,6 @@ export default function ReligionAIScreen() {
       const answer = await sendGeminiPrompt({
         url: endpoints.askGeminiV2,
         prompt: `${prefix} ${prompt}`.trim(),
-        history: formattedHistory,
         token: debugToken || undefined,
         religion,
       });
@@ -305,9 +325,15 @@ export default function ReligionAIScreen() {
       console.log('📖 ReligionAI input:', question);
       console.log('🙏 ReligionAI reply:', answer);
 
-      await logMessage('assistant', answer);
-      // Fire-and-forget: enqueue memory extraction with both sides
-      enqueueMemoryExtraction(uid, `${question}\nAssistant: ${answer}`, 'chat');
+      await logMessage('assistant', answer, {
+        ctxSnapshotRefs: { memories: memoryIds, goals: goalIds },
+      });
+      await markMemoriesUsed(uid, memoryIds);
+      if (isSubscribed) {
+        enqueueMemoryExtraction(uid, `${question}\nAssistant: ${answer}`, 'chat');
+      } else {
+        navigation.navigate('Upgrade');
+      }
       setMessages((prev) => [
         ...prev,
         { role: 'user', text: question },
@@ -415,8 +441,11 @@ export default function ReligionAIScreen() {
         <View style={{ flexDirection: 'row', gap: 8, padding: 8 }}>
           <View style={{ flex: 1 }}>
             <SaveConversationButton
-              disabled={!isSubscribed || loading}
-              getBuffer={sessionCtx.all}
+              uid={uid!}
+              threadId={threadId}
+              isSubscribed={isSubscribed}
+              summary={messages.map((m) => m.text).join(' ').slice(0, 200)}
+              disabled={loading}
             />
           </View>
           <View style={{ flex: 1 }}>

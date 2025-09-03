@@ -1,33 +1,49 @@
 import React from 'react';
-import { Pressable, Text, ActivityIndicator } from 'react-native';
-import { createDoc } from '@/lib/firestoreService';
-import { getAuth } from 'firebase/auth';
-import type { SessionMessage } from '@/hooks/useSessionContext';
+import { Pressable, Text, ActivityIndicator, Alert } from 'react-native';
+import { exportThread } from '@/lib/db';
 import { toast } from '@/utils/toast';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '@/navigation/RootStackParamList';
 
-type Props = { disabled?: boolean; getBuffer: () => SessionMessage[]; onSaved?: (id: string) => void };
+type Props = {
+  uid: string;
+  threadId: string | null;
+  isSubscribed: boolean;
+  summary: string;
+  disabled?: boolean;
+  onSaved?: () => void;
+};
 
-export default function SaveConversationButton({ disabled, getBuffer, onSaved }: Props) {
+export default function SaveConversationButton({
+  uid,
+  threadId,
+  isSubscribed,
+  summary,
+  disabled,
+  onSaved,
+}: Props) {
   const [busy, setBusy] = React.useState(false);
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   const onPress = async () => {
-    if (busy) return;
+    if (busy || !threadId) return;
+    if (!isSubscribed) {
+      Alert.alert(
+        'OneVine+ required',
+        'Saving conversations is a premium feature.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Upgrade', onPress: () => navigation.navigate('Upgrade') },
+        ],
+      );
+      return;
+    }
     setBusy(true);
     try {
-      const uid = getAuth().currentUser?.uid!;
-      const convoId = `conv_${Date.now()}`;
-      await createDoc(`users/${uid}/conversations`, {
-        title: `Conversation ${new Date().toLocaleString()}`,
-        createdAt: Date.now(),
-        messageCount: getBuffer().length,
-      }, convoId);
-
-      const msgs = getBuffer();
-      for (let i = 0; i < msgs.length; i++) {
-        await createDoc(`users/${uid}/conversations/${convoId}/messages`, msgs[i]);
-      }
+      await exportThread(uid, threadId, summary);
       toast('Conversation saved ✅');
-      onSaved?.(convoId);
+      onSaved?.();
     } finally {
       setBusy(false);
     }
@@ -36,7 +52,7 @@ export default function SaveConversationButton({ disabled, getBuffer, onSaved }:
   return (
     <Pressable
       onPress={onPress}
-      disabled={disabled || busy}
+      disabled={disabled || busy || !threadId}
       style={{ padding: 10, borderRadius: 10, backgroundColor: '#6b4bff', marginTop: 10 }}
     >
       {busy ? (
