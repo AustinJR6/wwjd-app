@@ -1,6 +1,6 @@
 import React from 'react';
 import { Pressable, Text, ActivityIndicator } from 'react-native';
-import { createDoc } from '@/lib/firestoreService';
+import { setDocument, addDocument } from '@/services/firestoreService';
 import { getAuth } from 'firebase/auth';
 import type { SessionMessage } from '@/hooks/useSessionContext';
 import { toast } from '@/utils/toast';
@@ -16,15 +16,15 @@ export default function SaveConversationButton({ disabled, getBuffer, onSaved }:
     try {
       const uid = getAuth().currentUser?.uid!;
       const convoId = `conv_${Date.now()}`;
-      await createDoc(`users/${uid}/conversations`, {
+      await setDocument(`users/${uid}/conversations/${convoId}`, {
         title: `Conversation ${new Date().toLocaleString()}`,
         createdAt: Date.now(),
         messageCount: getBuffer().length,
-      }, convoId);
+      });
 
       const msgs = getBuffer();
       for (let i = 0; i < msgs.length; i++) {
-        await createDoc(`users/${uid}/conversations/${convoId}/messages`, msgs[i]);
+        await addDocument(`users/${uid}/conversations/${convoId}/messages`, msgs[i]);
       }
       toast('Conversation saved ✅');
       onSaved?.(convoId);

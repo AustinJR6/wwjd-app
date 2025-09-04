@@ -207,6 +207,7 @@ export async function incrementUserPoints(points: number, uid?: string): Promise
     console.log('➡️ Sending Firestore request to:', url);
     const res = await apiClient.get<any>(url, { headers });
     const current = Number((res.data as any)?.fields?.individualPoints?.integerValue ?? 0);
+    const currentReligion = (res.data as any)?.fields?.religion?.stringValue as string | undefined;
     const newTotal = current + points;
     const body = { fields: toFirestoreFields({ individualPoints: newTotal }) };
     const patchUrl = `${url}?updateMask.fieldPaths=individualPoints`;
@@ -237,3 +238,4 @@ export function getUserAIPrompt(): string {
     'Respond with empathy, logic, and gentle spirituality.'
   );
 }
+
