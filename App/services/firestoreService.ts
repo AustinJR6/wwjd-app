@@ -264,6 +264,13 @@ export async function queryCollection(
     );
     return parseRunQueryRows(rows);
   }
+  if (!parentPath) {
+    const rows = await runStructuredQuerySafe(
+      { kind: 'root', collectionId: collectionId! },
+      structuredQuery,
+    );
+    return parseRunQueryRows(rows);
+  }
   return runStructuredQuery(structuredQuery, parentPath);
 }
 
@@ -509,6 +516,13 @@ export async function runSubcollectionQuery(
     const uid = m[1];
     const rows = await runStructuredQuerySafe(
       { kind: 'userSub', uid, collectionId: collectionName },
+      structuredQuery,
+    );
+    return parseRunQueryRows(rows);
+  }
+  if (!parentPath) {
+    const rows = await runStructuredQuerySafe(
+      { kind: 'root', collectionId: collectionName },
       structuredQuery,
     );
     return parseRunQueryRows(rows);
