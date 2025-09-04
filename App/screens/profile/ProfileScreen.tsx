@@ -23,12 +23,15 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '@/navigation/RootStackParamList';
 import AuthGate from '@/components/AuthGate';
 import { useAuth } from '@/hooks/useAuth';
+import { useSubscriptionStatus } from '@/hooks/useSubscriptionStatus';
+import ProfileExtendedForm from '@/components/ProfileExtendedForm';
 
 export default function ProfileScreen() {
   const { user } = useUser();
   const setProfile = useUserProfileStore((s) => s.setUserProfile);
   const theme = useTheme();
   const { authReady, uid } = useAuth();
+  const { isPlus: isSubscribedAccurate, loading: subLoading, refresh: refreshSub } = useSubscriptionStatus(uid);
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [username, setUsername] = useState(
     user?.username || user?.displayName || ''
@@ -40,6 +43,8 @@ export default function ProfileScreen() {
   const [points, setPoints] = useState(0);
   const [organization, setOrganization] = useState<string>('');
   const [saving, setSaving] = useState(false);
+  const [extDirty, setExtDirty] = useState(false);
+  const [extSaveTick, setExtSaveTick] = useState(0);
   const [religionUpdating, setReligionUpdating] = useState(false);
 
   const styles = React.useMemo(
@@ -78,6 +83,8 @@ export default function ProfileScreen() {
       const profile: UserProfile | null = loaded;
       setTokens(tokenCount);
       if (profile) {
+        // Keep global store in sync so other components (e.g., extended form) see accurate isSubscribed
+        setProfile(profile as any);
         setPoints(profile.individualPoints || 0);
         setUsername(profile.username || profile.displayName || '');
         setRegion(profile.region || '');
@@ -152,6 +159,11 @@ export default function ProfileScreen() {
     }
   };
 
+  const saveAll = async () => {
+    await handleSave();
+    setExtSaveTick((t) => t + 1);
+  };
+
   if (listsLoading) {
     return (
       <Screen>
@@ -196,13 +208,21 @@ export default function ProfileScreen() {
 
         <CustomText style={styles.info}>Points: {points}</CustomText>
         <CustomText style={styles.info}>
-          Subscribed: {user?.isSubscribed === true ? 'Yes' : user?.isSubscribed === false ? 'No' : '...'}
+          Subscribed: {subLoading ? '...' : isSubscribedAccurate ? 'Yes' : 'No'}
         </CustomText>
         <CustomText style={styles.info}>Tokens: {tokens}</CustomText>
         <CustomText style={styles.info}>Organization: {organization || 'None'}</CustomText>
 
-        <Button title="Save Changes" onPress={handleSave} loading={saving} />
-        <Button title="Change Password" onPress={() => navigation.navigate('ChangePassword')} />
+        {/* OneVine+ Extended Profile */}
+        <ProfileExtendedForm showActions={false} autoSave={false} onDirtyChange={setExtDirty} saveTick={extSaveTick} />
+      </View>
+      <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, padding: 12, flexDirection: 'row', gap: 12, backgroundColor: '#0b0b0bcc', borderTopWidth: 1, borderTopColor: '#222' }}>
+        <View>
+          <Button title="Change Password" onPress={() => navigation.navigate('ChangePassword')} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Button title={saving ? 'Saving…' : 'Save Changes'} onPress={saveAll} loading={saving} />
+        </View>
       </View>
     </Screen>
     </AuthGate>

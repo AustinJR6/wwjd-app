@@ -20,7 +20,7 @@ export async function getReligions(forceRefresh = false): Promise<ReligionItem[]
     const projectId = Constants.expoConfig?.extra?.EXPO_PUBLIC_FIREBASE_PROJECT_ID || '';
     const url = `https://firestore.googleapis.com/v1/projects/${projectId}/databases/(default)/documents/religion`;
     const res = await axios.get(url, { headers: { Authorization: `Bearer ${token}` } });
-    const docs = (res.data?.documents || []) as any[];
+    const docs = ((res.data as { documents?: any[] })?.documents || []) as any[];
     religionsCache = docs.map((d: any) => {
       const fields = d.fields || {};
       const name = fields?.name?.stringValue || '';

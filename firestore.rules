@@ -1,6 +1,14 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    function isSubscribed(userId) {
+      return isOwner(userId) &&
+        get(/databases/$(database)/documents/users/$(userId)).data.isSubscribed == true;
+    }
 
     function isSignedIn() {
       return request.auth != null;
@@ -59,7 +67,7 @@ service cloud.firestore {
 
       // ✅ New: religion chat messages directly under the user
       match /religionChats/{msgId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
+        allow read, write: if isSubscribed(userId);
       }
     }
 
@@ -76,7 +84,7 @@ service cloud.firestore {
 
     // 🕊️ Religion chat history
     match /religionChats/{userId}/messages/{messageId} {
-      allow read, write: if isSignedIn() && request.auth.uid == userId;
+      allow read, write: if isSubscribed(userId);
     }
 
     // 🕊️ Temporary religion chat history
@@ -137,6 +145,16 @@ service cloud.firestore {
     // 🏆 Leaderboards
     match /leaderboards/{docId} {
       allow read: if true;
+    }
+
+    // Extended profile (subcollection)
+    match /users/{userId}/profileExtended/{docId} {
+      allow read, write: if isOwner(userId);
+    }
+
+    // Religion memories (subs only)
+    match /users/{userId}/religionChats/{chatId} {
+      allow read, write: if isSubscribed(userId);
     }
 
   }

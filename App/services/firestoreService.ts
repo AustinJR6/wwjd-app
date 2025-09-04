@@ -1,4 +1,5 @@
 import apiClient from '@/utils/apiClient';
+import axios from 'axios';
 import { getIdToken, getCurrentUserId } from '@/utils/authUtils';
 import { showPermissionDeniedForPath } from '@/utils/gracefulError';
 import { logFirestoreError } from '@/lib/logging';
@@ -284,6 +285,137 @@ export async function runStructuredQuery(
     }
     return [];
   }
+}
+
+// =========================
+// Safer runQuery wrappers
+// =========================
+
+export type RootSpec = { kind: 'root'; collectionId: string };
+export type UserSubSpec = { kind: 'userSub'; uid: string; collectionId: string };
+export type PathSpec = RootSpec | UserSubSpec;
+
+const RUNQUERY_URL = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents:runQuery`;
+
+function buildParentAndFrom(spec: PathSpec): { parent: string; from: any[]; debugTarget: string } {
+  if (spec.kind === 'root') {
+    return {
+      parent: `projects/${PROJECT_ID}/databases/(default)/documents`,
+      from: [{ collectionId: spec.collectionId }],
+      debugTarget: `/${spec.collectionId} (root)`,
+    };
+  }
+  if (spec.kind === 'userSub') {
+    return {
+      parent: `projects/${PROJECT_ID}/databases/(default)/documents/users/${spec.uid}`,
+      from: [{ collectionId: spec.collectionId }],
+      debugTarget: `/users/${spec.uid}/${spec.collectionId} (sub)`,
+    };
+  }
+  const _exhaustive: never = spec;
+  throw new Error('Unsupported PathSpec');
+}
+
+export async function runStructuredQuerySafe(spec: PathSpec, structuredQuery: Omit<any, 'from'>) {
+  const { parent, from, debugTarget } = buildParentAndFrom(spec);
+  const body = { parent, structuredQuery: { from, ...structuredQuery } };
+  try {
+    const res = await axios.post(RUNQUERY_URL, body, { headers: await authHeaders(), timeout: 15000 });
+    return Array.isArray(res.data) ? res.data : [res.data];
+  } catch (err: any) {
+    const status = err?.response?.status;
+    const msg = err?.response?.data?.error?.message || err?.message || String(err);
+    console.error(
+      `🔥 Firestore QUERY failed on runQuery`,
+      JSON.stringify({ status, message: msg, target: debugTarget, body }, null, 2),
+    );
+    if (status === 403) {
+      if ((spec as any).kind === 'userSub') {
+        const c = (spec as UserSubSpec).collectionId;
+        console.warn(
+          `[Rules hint] To allow reads on ${debugTarget}, add an owner rule like:\n` +
+            `match /databases/{db}/documents {\n` +
+            `  function isOwner(uid) { return request.auth != null && request.auth.uid == uid; }\n` +
+            `  match /users/{userId}/${c}/{docId} {\n` +
+            `    allow read: if isOwner(userId);\n` +
+            `  }\n` +
+            `}`,
+        );
+      } else {
+        const c = (spec as RootSpec).collectionId;
+        console.warn(
+          `[Rules hint] To allow reads on ${debugTarget}, add a root rule like:\n` +
+            `match /databases/{db}/documents {\n` +
+            `  match /${c}/{docId} {\n` +
+            `    allow read: if request.auth != null;\n` +
+            `  }\n` +
+            `}`,
+        );
+      }
+    }
+    throw err;
+  }
+}
+
+export async function queryUserSub(
+  uid: string,
+  collectionId: string,
+  opts: { orderBy?: { fieldPath: string; direction?: 'ASCENDING' | 'DESCENDING' }[]; limit?: number; where?: any } = {},
+) {
+  const spec: UserSubSpec = { kind: 'userSub', uid, collectionId };
+  const q: any = {};
+  if (opts.where) q.where = opts.where;
+  if (opts.orderBy) q.orderBy = opts.orderBy;
+  if (opts.limit) q.limit = opts.limit;
+  return runStructuredQuerySafe(spec, q);
+}
+
+export async function queryRoot(
+  collectionId: string,
+  opts: { orderBy?: { fieldPath: string; direction?: 'ASCENDING' | 'DESCENDING' }[]; limit?: number; where?: any } = {},
+) {
+  const spec: RootSpec = { kind: 'root', collectionId };
+  const q: any = {};
+  if (opts.where) q.where = opts.where;
+  if (opts.orderBy) q.orderBy = opts.orderBy;
+  if (opts.limit) q.limit = opts.limit;
+  return runStructuredQuerySafe(spec, q);
+}
+
+export function parseRunQueryRows(rows: any[]): any[] {
+  return rows
+    .map((r: any) => r.document)
+    .filter(Boolean)
+    .map((doc: any) => {
+      const id = doc.name?.split('/').pop();
+      const fields = doc.fields ?? {};
+      const out: any = { id };
+      for (const [k, v] of Object.entries<any>(fields)) {
+        if (v.stringValue !== undefined) out[k] = v.stringValue;
+        else if (v.integerValue !== undefined) out[k] = Number(v.integerValue);
+        else if (v.doubleValue !== undefined) out[k] = v.doubleValue;
+        else if (v.booleanValue !== undefined) out[k] = v.booleanValue;
+        else if (v.arrayValue !== undefined) out[k] = (v.arrayValue.values ?? []).map(valToJs);
+        else if (v.mapValue !== undefined) out[k] = mapToJs(v.mapValue);
+        else if (v.timestampValue !== undefined) out[k] = v.timestampValue;
+      }
+      return out;
+    });
+}
+function valToJs(v: any): any {
+  if (v.stringValue !== undefined) return v.stringValue;
+  if (v.integerValue !== undefined) return Number(v.integerValue);
+  if (v.doubleValue !== undefined) return v.doubleValue;
+  if (v.booleanValue !== undefined) return v.booleanValue;
+  if (v.arrayValue !== undefined) return (v.arrayValue.values ?? []).map(valToJs);
+  if (v.mapValue !== undefined) return mapToJs(v.mapValue);
+  if (v.timestampValue !== undefined) return v.timestampValue;
+  return v;
+}
+function mapToJs(mv: any): any {
+  const out: any = {};
+  for (const [k, v] of Object.entries<any>(mv.fields ?? {})) out[k] = valToJs(v);
+  return out;
 }
 
 export async function fetchTopUsersByPoints(limit = 10): Promise<any[]> {
