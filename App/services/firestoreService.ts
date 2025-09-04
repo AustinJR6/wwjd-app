@@ -255,6 +255,15 @@ export async function queryCollection(
       before: false,
     };
   }
+  const m = parentPath.match(/^users\/([^/]+)$/);
+  if (m) {
+    const uid = m[1];
+    const rows = await runStructuredQuerySafe(
+      { kind: 'userSub', uid, collectionId: collectionId! },
+      structuredQuery,
+    );
+    return parseRunQueryRows(rows);
+  }
   return runStructuredQuery(structuredQuery, parentPath);
 }
 
@@ -429,7 +438,8 @@ export async function fetchTopUsersByPoints(limit = 10): Promise<any[]> {
     orderBy: query.orderBy,
     limit,
   });
-  return runStructuredQuery(query);
+  const rows = await runStructuredQuerySafe({ kind: 'root', collectionId: 'users' }, { orderBy: [{ field: { fieldPath: 'individualPoints' }, direction: 'DESCENDING' }], limit });
+  return parseRunQueryRows(rows);
 }
 
 export async function fetchTopReligions(limit = 10): Promise<any[]> {
@@ -443,7 +453,8 @@ export async function fetchTopReligions(limit = 10): Promise<any[]> {
     orderBy: query.orderBy,
     limit,
   });
-  return runStructuredQuery(query);
+  const rows = await runStructuredQuerySafe({ kind: 'root', collectionId: 'users' }, { orderBy: [{ field: { fieldPath: 'individualPoints' }, direction: 'DESCENDING' }], limit });
+  return parseRunQueryRows(rows);
 }
 
 export async function fetchTopOrganizations(limit = 10): Promise<any[]> {
@@ -457,7 +468,8 @@ export async function fetchTopOrganizations(limit = 10): Promise<any[]> {
     orderBy: query.orderBy,
     limit,
   });
-  return runStructuredQuery(query);
+  const rows = await runStructuredQuerySafe({ kind: 'root', collectionId: 'users' }, { orderBy: [{ field: { fieldPath: 'individualPoints' }, direction: 'DESCENDING' }], limit });
+  return parseRunQueryRows(rows);
 }
 
 export async function runSubcollectionQuery(
@@ -492,6 +504,15 @@ export async function runSubcollectionQuery(
     orderBy: structuredQuery.orderBy,
     limit: options?.limit,
   });
+  const m = parentPath.match(/^users\/([^/]+)$/);
+  if (m) {
+    const uid = m[1];
+    const rows = await runStructuredQuerySafe(
+      { kind: 'userSub', uid, collectionId: collectionName },
+      structuredQuery,
+    );
+    return parseRunQueryRows(rows);
+  }
   return runStructuredQuery(structuredQuery, parentPath);
 }
 
@@ -541,3 +562,15 @@ export async function updateActiveChallenge(
   if (Object.keys(clean).length === 0) return;
   await setDocument(path, clean, { requireExists: true });
 }
+
+
+
+
+
+
+
+
+
+
+
+

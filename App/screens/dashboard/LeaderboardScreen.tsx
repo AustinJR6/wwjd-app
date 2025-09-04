@@ -6,10 +6,8 @@ import {
   ActivityIndicator,
   ScrollView
 } from 'react-native';
-import axios from 'axios';
-import { fetchTopUsersByPoints } from '@/services/firestoreService';
+import { fetchTopUsersByPoints, fetchTopReligions, fetchTopOrganizations } from '@/services/firestoreService';
 import { logFirestoreError } from '@/lib/logging';
-import Constants from 'expo-constants';
 import { showGracefulError } from '@/utils/gracefulError';
 import { Screen } from "@/components/ui/Screen";
 import { useTheme } from "@/components/theme/theme";
@@ -17,79 +15,11 @@ import { ensureAuth } from '@/utils/authGuard';
 import AuthGate from '@/components/AuthGate';
 import { useAuth } from '@/hooks/useAuth';
 
-const PROJECT_ID =
-  Constants.expoConfig?.extra?.EXPO_PUBLIC_FIREBASE_PROJECT_ID || '';
-if (!PROJECT_ID) {
-  console.warn('⚠️ Missing EXPO_PUBLIC_FIREBASE_PROJECT_ID in .env');
-}
-
-async function fetchTopReligions(idToken: string) {
-  const url = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents:runQuery`;
-  const payload = {
-    structuredQuery: {
-      from: [{ collectionId: 'religion' }],
-      orderBy: [
-        { field: { fieldPath: 'totalPoints' }, direction: 'DESCENDING' },
-      ],
-      limit: 10,
-    },
-  };
-  try {
-    const response = await axios.post(url, payload, {
-      headers: {
-        Authorization: `Bearer ${idToken}`,
-      },
-    });
-
-    const data = response.data as any[];
-    return data
-      .map((doc: any) => doc.document)
-      .filter(Boolean)
-      .map((doc: any) => ({
-        name: doc.fields?.name?.stringValue,
-        totalPoints: parseInt(doc.fields?.totalPoints?.integerValue || '0'),
-      }));
-  } catch (err: any) {
-    logFirestoreError('QUERY', 'runQuery religion', err);
-    throw err;
-  }
-}
-
-async function fetchTopOrganizations(idToken: string) {
-  const url = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents:runQuery`;
-  const payload = {
-    structuredQuery: {
-      from: [{ collectionId: 'organizations' }],
-      orderBy: [
-        { field: { fieldPath: 'totalPoints' }, direction: 'DESCENDING' },
-      ],
-      limit: 10,
-    },
-  };
-  try {
-    const response = await axios.post(url, payload, {
-      headers: {
-        Authorization: `Bearer ${idToken}`,
-      },
-    });
-
-    const data = response.data as any[];
-    return data
-      .map((doc: any) => doc.document)
-      .filter(Boolean)
-      .map((doc: any) => ({
-        name: doc.fields?.name?.stringValue,
-        totalPoints: parseInt(doc.fields?.totalPoints?.integerValue || '0'),
-      }));
-  } catch (err: any) {
-    logFirestoreError('QUERY', 'runQuery organizations', err);
-    throw err;
-  }
-}
+// Using safe Firestore REST wrappers from services/firestoreService
 
 export default function LeaderboardScreen() {
   const theme = useTheme();
-  const { authReady, uid, idToken } = useAuth();
+  const { authReady, uid } = useAuth();
   const isDark = theme.colors.bg === '#0F1115' || theme.colors.text === '#F5F7FA';
   const cardBg = '#FBBF24';
   const cardText = isDark ? '#FFFFFF' : '#000000';
@@ -159,8 +89,8 @@ export default function LeaderboardScreen() {
 
       const [top, rel, org] = await Promise.all([
         fetchTopUsersByPoints(10),
-        idToken ? fetchTopReligions(idToken) : [],
-        idToken ? fetchTopOrganizations(idToken) : [],
+        fetchTopReligions(10),
+        fetchTopOrganizations(10),
       ]);
 
       console.log('🏆 Leaderboard results', { top, rel, org });
