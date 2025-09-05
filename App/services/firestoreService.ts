@@ -271,7 +271,12 @@ export async function queryCollection(
     );
     return parseRunQueryRows(rows);
   }
-  return runStructuredQuery(structuredQuery, parentPath);
+  // For other parents (e.g., tempReligionChat/{uid}), treat as a document subcollection
+  const rows = await runStructuredQuerySafe(
+    { kind: 'docSub', docPath: parentPath, collectionId: collectionId! },
+    structuredQuery,
+  );
+  return parseRunQueryRows(rows);
 }
 
 const PARENT = `projects/${PROJECT_ID}/databases/(default)/documents`;
@@ -309,7 +314,8 @@ export async function runStructuredQuery(
 
 export type RootSpec = { kind: 'root'; collectionId: string };
 export type UserSubSpec = { kind: 'userSub'; uid: string; collectionId: string };
-export type PathSpec = RootSpec | UserSubSpec;
+export type DocSubSpec = { kind: 'docSub'; docPath: string; collectionId: string };
+export type PathSpec = RootSpec | UserSubSpec | DocSubSpec;
 
 const RUNQUERY_URL = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents:runQuery`;
 
@@ -326,6 +332,13 @@ function buildParentAndFrom(spec: PathSpec): { parent: string; from: any[]; debu
       parent: `projects/${PROJECT_ID}/databases/(default)/documents/users/${spec.uid}`,
       from: [{ collectionId: spec.collectionId }],
       debugTarget: `/users/${spec.uid}/${spec.collectionId} (sub)`,
+    };
+  }
+  if (spec.kind === 'docSub') {
+    return {
+      parent: `projects/${PROJECT_ID}/databases/(default)/documents/${spec.docPath}`,
+      from: [{ collectionId: spec.collectionId }],
+      debugTarget: `/${spec.docPath}/${spec.collectionId} (docSub)`,
     };
   }
   const _exhaustive: never = spec;
@@ -576,6 +589,7 @@ export async function updateActiveChallenge(
   if (Object.keys(clean).length === 0) return;
   await setDocument(path, clean, { requireExists: true });
 }
+
 
 
 
