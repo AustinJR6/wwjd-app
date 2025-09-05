@@ -463,32 +463,18 @@ export async function fetchTopUsersByPoints(limit = 10): Promise<any[]> {
 }
 
 export async function fetchTopReligions(limit = 10): Promise<any[]> {
-  const query = {
-    from: [{ collectionId: 'religion' }],
-    orderBy: [{ field: { fieldPath: 'totalPoints' }, direction: 'DESCENDING' }],
-    limit,
-  };
-  console.warn('📄 Structured query path:', 'religion');
-  console.warn('🔍 Structured query filters:', {
-    orderBy: query.orderBy,
-    limit,
-  });
-  const rows = await runStructuredQuerySafe({ kind: 'root', collectionId: 'users' }, { orderBy: [{ field: { fieldPath: 'individualPoints' }, direction: 'DESCENDING' }], limit });
+  const rows = await runStructuredQuerySafe(
+    { kind: 'root', collectionId: 'religion' },
+    { orderBy: [{ field: { fieldPath: 'totalPoints' }, direction: 'DESCENDING' }], limit },
+  );
   return parseRunQueryRows(rows);
 }
 
 export async function fetchTopOrganizations(limit = 10): Promise<any[]> {
-  const query = {
-    from: [{ collectionId: 'organizations' }],
-    orderBy: [{ field: { fieldPath: 'totalPoints' }, direction: 'DESCENDING' }],
-    limit,
-  };
-  console.warn('📄 Structured query path:', 'organizations');
-  console.warn('🔍 Structured query filters:', {
-    orderBy: query.orderBy,
-    limit,
-  });
-  const rows = await runStructuredQuerySafe({ kind: 'root', collectionId: 'users' }, { orderBy: [{ field: { fieldPath: 'individualPoints' }, direction: 'DESCENDING' }], limit });
+  const rows = await runStructuredQuerySafe(
+    { kind: 'root', collectionId: 'organizations' },
+    { orderBy: [{ field: { fieldPath: 'totalPoints' }, direction: 'DESCENDING' }], limit },
+  );
   return parseRunQueryRows(rows);
 }
 
@@ -540,7 +526,12 @@ export async function runSubcollectionQuery(
     );
     return parseRunQueryRows(rows);
   }
-  return runStructuredQuery(structuredQuery, parentPath);
+  // Treat any other parent (e.g., tempReligionChat/{uid}) as a document subcollection
+  const rows = await runStructuredQuerySafe(
+    { kind: 'docSub', docPath: parentPath, collectionId: collectionName },
+    structuredQuery,
+  );
+  return parseRunQueryRows(rows);
 }
 
 // Backwards compatibility
@@ -589,6 +580,9 @@ export async function updateActiveChallenge(
   if (Object.keys(clean).length === 0) return;
   await setDocument(path, clean, { requireExists: true });
 }
+
+
+
 
 
 
