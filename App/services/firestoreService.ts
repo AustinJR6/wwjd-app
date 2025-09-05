@@ -370,6 +370,17 @@ export async function runStructuredQuerySafe(spec: PathSpec, structuredQuery: Om
             `  }\n` +
             `}`,
         );
+      } else if ((spec as any).kind === 'docSub') {
+        const ds = spec as DocSubSpec;
+        console.warn(
+          `[Rules hint] To allow reads on ${debugTarget}, add a rule like:\n` +
+            `match /databases/{db}/documents {\n` +
+            `  match /${ds.docPath}/${ds.collectionId}/{docId} {\n` +
+            `    allow read: if request.auth != null && request.auth.uid == docPath().segments(1);\n` +
+            `    // Or replace docPath check with your own owner/subscriber logic\n` +
+            `  }\n` +
+            `}`,
+        );
       } else {
         const c = (spec as RootSpec).collectionId;
         console.warn(
