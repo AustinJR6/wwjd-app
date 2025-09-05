@@ -404,8 +404,19 @@ export async function queryUserSub(
 ) {
   const spec: UserSubSpec = { kind: 'userSub', uid, collectionId };
   const q: any = {};
-  if (opts.where) q.where = opts.where;
-  if (opts.orderBy) q.orderBy = opts.orderBy;
+  if (opts.where) {
+    // Support simple where shape { fieldPath, op, value }
+    if (opts.where.fieldPath || opts.where.field) {
+      const fp = opts.where.fieldPath || opts.where.field;
+      const op = opts.where.op || 'EQUAL';
+      q.where = { fieldFilter: { field: { fieldPath: fp }, op, value: toFirestoreValue(opts.where.value) } };
+    } else {
+      q.where = opts.where;
+    }
+  }
+  if (opts.orderBy) {
+    q.orderBy = opts.orderBy.map((o: any) => (o.field ? o : { field: { fieldPath: o.fieldPath || o.field }, direction: o.direction || 'ASCENDING' }));
+  }
   if (opts.limit) q.limit = opts.limit;
   return runStructuredQuerySafe(spec, q);
 }
@@ -416,8 +427,18 @@ export async function queryRoot(
 ) {
   const spec: RootSpec = { kind: 'root', collectionId };
   const q: any = {};
-  if (opts.where) q.where = opts.where;
-  if (opts.orderBy) q.orderBy = opts.orderBy;
+  if (opts.where) {
+    if (opts.where.fieldPath || opts.where.field) {
+      const fp = opts.where.fieldPath || opts.where.field;
+      const op = opts.where.op || 'EQUAL';
+      q.where = { fieldFilter: { field: { fieldPath: fp }, op, value: toFirestoreValue(opts.where.value) } };
+    } else {
+      q.where = opts.where;
+    }
+  }
+  if (opts.orderBy) {
+    q.orderBy = opts.orderBy.map((o: any) => (o.field ? o : { field: { fieldPath: o.fieldPath || o.field }, direction: o.direction || 'ASCENDING' }));
+  }
   if (opts.limit) q.limit = opts.limit;
   return runStructuredQuerySafe(spec, q);
 }
@@ -456,6 +477,17 @@ function mapToJs(mv: any): any {
   const out: any = {};
   for (const [k, v] of Object.entries<any>(mv.fields ?? {})) out[k] = valToJs(v);
   return out;
+}
+
+// Convert primitive JS values to Firestore value objects for WHERE
+function toFirestoreValue(v: any): any {
+  if (v === null) return { nullValue: null };
+  if (typeof v === 'string') return { stringValue: v };
+  if (typeof v === 'boolean') return { booleanValue: v };
+  if (typeof v === 'number') return Number.isInteger(v) ? { integerValue: String(v) } : { doubleValue: v };
+  if (Array.isArray(v)) return { arrayValue: { values: v.map(toFirestoreValue) } };
+  if (typeof v === 'object') return { mapValue: { fields: Object.fromEntries(Object.entries(v).map(([k, val]) => [k, toFirestoreValue(val)])) } };
+  return { stringValue: String(v) };
 }
 
 export async function fetchTopUsersByPoints(limit = 10): Promise<any[]> {
