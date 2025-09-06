@@ -1,23 +1,15 @@
 // app/lib/firestoreRest.ts
-
 import axios from 'axios';
-import type { AxiosRequestConfig } from 'axios';
-import { decode as atob } from 'base-64'; // npm i base-64
+import { decode as atob } from 'base-64';
 import { getIdToken } from '@/utils/authUtils';
 
-// *** Set your project here ***
 const FIREBASE_PROJECT_ID = 'wwjd-app';
-
-// Optional: if you keep a Web API key around for REST calls
 const FIREBASE_WEB_API_KEY: string | undefined = undefined;
 
-// If you have App Check wired on RN, expose a getter; otherwise keep it null.
 async function getAppCheckTokenOrNull(): Promise<string | null> {
-  // TODO: integrate RN AppCheck here if you enforce it on Firestore.
-  return null;
+  return null; // wire if you enforce App Check later
 }
 
-// ---------------- helpers ----------------
 export async function getFirebaseIdToken(): Promise<string> {
   const token = await getIdToken(true);
   if (token) return token;
@@ -33,25 +25,21 @@ function baseURLFor(projectId: string) {
 function decodeJwt(token: string): any | null {
   try {
     const [, payload] = token.split('.');
-    // base64url -> base64
     const b64 = payload.replace(/-/g, '+').replace(/_/g, '/');
     const pad = b64.length % 4 ? 4 - (b64.length % 4) : 0;
     const normalized = b64 + '='.repeat(pad);
-    const json = JSON.parse(atob(normalized));
-    return json;
+    return JSON.parse(atob(normalized));
   } catch {
     return null;
   }
 }
 
-/** Throw if token doesn't belong to FIREBASE_PROJECT_ID. */
 function assertTokenMatchesProject(idToken: string) {
   const payload = decodeJwt(idToken);
   const iss: string | undefined = payload?.iss; // "https://securetoken.google.com/<project-id>"
   const projectFromIss = iss?.split('/').pop();
   if (!projectFromIss || projectFromIss !== FIREBASE_PROJECT_ID) {
-    // eslint-disable-next-line no-console
-    console.error('[FirestoreREST] 🚫 ID token project mismatch', {
+    console.error('[FirestoreREST] \u{1F6AB} ID token project mismatch', {
       expectedProjectId: FIREBASE_PROJECT_ID,
       iss,
       aud: payload?.aud,
@@ -61,18 +49,17 @@ function assertTokenMatchesProject(idToken: string) {
   }
 }
 
-/** Ensure parent path uses the configured project id. */
 function normalizeParent(parentPath: string) {
   return parentPath.replace(/^projects\/[^/]+\//, `projects/${FIREBASE_PROJECT_ID}/`);
 }
 
-// --------------- axios client ---------------
 const client = axios.create({
   baseURL: baseURLFor(FIREBASE_PROJECT_ID),
   timeout: 15000,
 });
 
-client.interceptors.request.use(async (config: AxiosRequestConfig) => {
+// No explicit Axios types here — works across Axios versions
+client.interceptors.request.use(async (config) => {
   const idToken = await getFirebaseIdToken();
   assertTokenMatchesProject(idToken);
 
@@ -80,11 +67,9 @@ client.interceptors.request.use(async (config: AxiosRequestConfig) => {
   (config.headers as any)['Authorization'] = `Bearer ${idToken}`;
   (config.headers as any)['Content-Type'] = 'application/json';
 
-  // Optional App Check header (only matters if enforcement is ON)
   const appCheck = await getAppCheckTokenOrNull();
-  if (appCheck) (config.headers as any)['X-Firebase-AppCheck'] = appCheck;
+  if (appCheck) (config.headers as any)['X-Firebase-App-Check'] = appCheck;
 
-  // Optionally append API key on URL (harmless with Auth; some setups expect it)
   if (FIREBASE_WEB_API_KEY) {
     try {
       const u = new URL((config.baseURL ?? '') + (config.url ?? ''));
@@ -92,21 +77,13 @@ client.interceptors.request.use(async (config: AxiosRequestConfig) => {
         u.searchParams.set('key', FIREBASE_WEB_API_KEY);
         config.url = u.pathname + '?' + u.searchParams.toString();
       }
-    } catch {
-      /* noop */
-    }
+    } catch {}
   }
-
   return config;
 });
 
-// --------------- public API ---------------
 type StructuredQuery = Record<string, any>;
 
-/**
- * Run a Firestore structured query against a subcollection of a single parent doc.
- * `parent` must be a *document* path under /documents (we normalize project).
- */
 export async function runQueryREST(params: {
   parent: string; // e.g. "projects/wwjd-app/databases/(default)/documents/users/{uid}"
   structuredQuery: StructuredQuery;
@@ -119,14 +96,12 @@ export async function runQueryREST(params: {
     const data = res.data;
     return Array.isArray(data) ? data : [data];
   } catch (err: any) {
-    // Rich diagnostics to pinpoint 403s
-    // eslint-disable-next-line no-console
-    console.error('🔥 Firestore runQuery error', {
+    console.error('\u{1F525} Firestore runQuery error', {
       status: err?.response?.status,
       data: err?.response?.data,
       url: err?.config?.baseURL + err?.config?.url,
       haveAuthHeader: !!err?.config?.headers?.Authorization,
-      haveAppCheck: !!err?.config?.headers?.['X-Firebase-AppCheck'],
+      haveAppCheck: !!err?.config?.headers?.['X-Firebase-App-Check'],
       parent,
       projectId: FIREBASE_PROJECT_ID,
     });
@@ -134,17 +109,13 @@ export async function runQueryREST(params: {
   }
 }
 
-/** Helper for "users/{uid}" parent. */
 export function parentForUserDoc(uid: string) {
   return `projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents/users/${uid}`;
 }
-
-/** Helper for arbitrary path under /documents, e.g. "journalEntries/{uid}" */
 export function parentFor(pathUnderDocuments: string) {
   return `projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents/${pathUnderDocuments}`;
 }
 
-// ---------- Firestore REST value parsers ----------
 export function parseDocument(doc: any) {
   const out: Record<string, any> = { id: doc.name?.split('/').pop() };
   const f = doc.fields ?? {};
@@ -160,7 +131,6 @@ export function parseDocument(doc: any) {
   }
   return out;
 }
-
 function parseValue(v: any): any {
   if (v.stringValue !== undefined) return v.stringValue;
   if (v.integerValue !== undefined) return Number(v.integerValue);
@@ -171,7 +141,6 @@ function parseValue(v: any): any {
   if (v.timestampValue !== undefined) return v.timestampValue;
   return v;
 }
-
 function parseMap(mapValue: any): any {
   const out: Record<string, any> = {};
   for (const [k, v] of Object.entries<any>(mapValue.fields ?? {})) {
