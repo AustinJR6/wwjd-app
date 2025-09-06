@@ -25,7 +25,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { saveTempMessage, fetchTempSession } from '@/services/confessionalSessionService';
 import { useConfessionalSession } from '@/hooks/useConfessionalSession';
 import AuthGate from '@/components/AuthGate';
-import { runQueryREST, parentForUserDoc, parentFor } from '@/lib/firestoreRest';
+import { runQueryREST, parentFor } from '@/lib/firestoreRest';
 
 export default function ConfessionalScreen() {
   const theme = useTheme();
@@ -83,27 +83,23 @@ export default function ConfessionalScreen() {
   const [loading, setLoading] = useState(false);
   const { messages, setMessages, endSession } = useConfessionalSession();
 
-  // Smoke Firestore REST queries to surface 403 diagnostics
+  // Smoke Firestore REST query to surface 403 diagnostics
   React.useEffect(() => {
     if (!uid) return;
     (async () => {
+      const parent = parentFor(`tempConfessionalSessions/${uid}`);
       try {
         const rows = await runQueryREST({
-          parent: parentForUserDoc(uid),
-          structuredQuery: { from: [{ collectionId: 'religionChats' }], limit: 1 },
+          parent,
+          structuredQuery: {
+            from: [{ collectionId: 'messages' }],
+            orderBy: [{ field: { fieldPath: 'timestamp' }, direction: 'ASCENDING' }],
+            limit: 50,
+          },
         });
-        console.log('[Smoke] religionChats rows:', Array.isArray(rows) ? rows.length : 'n/a');
+        console.log('[Smoke] confessional messages rows:', Array.isArray(rows) ? rows.length : 'n/a');
       } catch (e: any) {
-        console.warn('[Smoke] religionChats error:', e?.response?.status, e?.response?.data || e?.message);
-      }
-      try {
-        const rows = await runQueryREST({
-          parent: parentFor(`journalEntries/${uid}`),
-          structuredQuery: { from: [{ collectionId: 'entries' }], limit: 1 },
-        });
-        console.log('[Smoke] journal entries rows:', Array.isArray(rows) ? rows.length : 'n/a');
-      } catch (e: any) {
-        console.warn('[Smoke] journal entries error:', e?.response?.status, e?.response?.data || e?.message);
+        console.warn('[Smoke] confessional messages error:', e?.response?.status, e?.response?.data || e?.message);
       }
     })();
   }, [uid]);
