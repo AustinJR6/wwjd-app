@@ -1,6 +1,6 @@
 import apiClient from '@/utils/apiClient';
-import axios from 'axios';
 import { getIdToken, getCurrentUserId } from '@/utils/authUtils';
+import { runQueryREST, parentFor, parentForUserDoc } from '@/lib/firestoreRest';
 import { showPermissionDeniedForPath } from '@/utils/gracefulError';
 import { logFirestoreError } from '@/lib/logging';
 import Constants from 'expo-constants';
@@ -279,24 +279,14 @@ export async function queryCollection(
   return parseRunQueryRows(rows);
 }
 
-const PARENT = `projects/${PROJECT_ID}/databases/(default)/documents`;
-
 export async function runStructuredQuery(
   structuredQuery: any,
   parentPath = '',
 ): Promise<any[]> {
-  const url = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents:runQuery`;
-  const body: any = { structuredQuery };
-  body.parent = parentPath ? `${PARENT}/${parentPath}` : PARENT;
+  const parent = parentPath ? parentFor(parentPath) : parentFor('').replace(/\/$/, '');
   try {
-    console.log('➡️ Firestore RUNQUERY', JSON.stringify(body));
-    const res = await apiClient.post(url, body, {
-      headers: await authHeaders(),
-    });
-    const docs = Array.isArray(res.data) ? (res.data as any[]) : [];
-    return docs
-      .filter((d: any) => d.document)
-      .map((d: any) => ({ id: d.document.name.split('/').pop(), ...fromFirestore(d.document) }));
+    const rows = await runQueryREST({ parent, structuredQuery });
+    return parseRunQueryRows(rows);
   } catch (err: any) {
     logFirestoreError('QUERY', 'runQuery', err);
     if (err.response?.status === 403) {
@@ -317,26 +307,24 @@ export type UserSubSpec = { kind: 'userSub'; uid: string; collectionId: string }
 export type DocSubSpec = { kind: 'docSub'; docPath: string; collectionId: string };
 export type PathSpec = RootSpec | UserSubSpec | DocSubSpec;
 
-const RUNQUERY_URL = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents:runQuery`;
-
 function buildParentAndFrom(spec: PathSpec): { parent: string; from: any[]; debugTarget: string } {
   if (spec.kind === 'root') {
     return {
-      parent: `projects/${PROJECT_ID}/databases/(default)/documents`,
+      parent: parentFor('').replace(/\/$/, ''),
       from: [{ collectionId: spec.collectionId }],
       debugTarget: `/${spec.collectionId} (root)`,
     };
   }
   if (spec.kind === 'userSub') {
     return {
-      parent: `projects/${PROJECT_ID}/databases/(default)/documents/users/${spec.uid}`,
+      parent: parentForUserDoc(spec.uid),
       from: [{ collectionId: spec.collectionId }],
       debugTarget: `/users/${spec.uid}/${spec.collectionId} (sub)`,
     };
   }
   if (spec.kind === 'docSub') {
     return {
-      parent: `projects/${PROJECT_ID}/databases/(default)/documents/${spec.docPath}`,
+      parent: parentFor(spec.docPath),
       from: [{ collectionId: spec.collectionId }],
       debugTarget: `/${spec.docPath}/${spec.collectionId} (docSub)`,
     };
@@ -347,16 +335,15 @@ function buildParentAndFrom(spec: PathSpec): { parent: string; from: any[]; debu
 
 export async function runStructuredQuerySafe(spec: PathSpec, structuredQuery: Omit<any, 'from'>) {
   const { parent, from, debugTarget } = buildParentAndFrom(spec);
-  const body = { parent, structuredQuery: { from, ...structuredQuery } };
+  const sq = { from, ...structuredQuery };
   try {
-    const res = await axios.post(RUNQUERY_URL, body, { headers: await authHeaders(), timeout: 15000 });
-    return Array.isArray(res.data) ? res.data : [res.data];
+    return await runQueryREST({ parent, structuredQuery: sq });
   } catch (err: any) {
     const status = err?.response?.status;
     const msg = err?.response?.data?.error?.message || err?.message || String(err);
     console.error(
       `🔥 Firestore QUERY failed on runQuery`,
-      JSON.stringify({ status, message: msg, target: debugTarget, body }, null, 2),
+      JSON.stringify({ status, message: msg, target: debugTarget, body: { parent, structuredQuery: sq } }, null, 2),
     );
     if (status === 403) {
       if ((spec as any).kind === 'userSub') {
