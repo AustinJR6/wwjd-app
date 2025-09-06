@@ -32,7 +32,7 @@ service cloud.firestore {
                          .changedKeys()
                          .hasAny(['subscription','entitlementsSnapshot']);
 
-      // DELETE: owner only (optional mirror of previous write)
+      // DELETE: owner only
       allow delete: if request.auth != null && request.auth.uid == userId;
 
       // 📈 Active challenge data
@@ -65,26 +65,34 @@ service cloud.firestore {
         allow read, write: if request.auth != null && request.auth.uid == userId;
       }
 
-      // ✅ New: religion chat messages directly under the user
+      // ✅ Religion chat messages directly under the user
+      // (Allows get + list/runQuery for owner; writes require subscription)
       match /religionChats/{msgId} {
-        allow read, write: if isSubscribed(userId);
+        allow read: if isOwner(userId);
+        allow write: if isSubscribed(userId);
+      }
+
+      // Extended profile (subcollection)
+      match /profileExtended/{docId} {
+        allow read, write: if isOwner(userId);
       }
     }
 
-    // 📊 Subcollections used for tracking
+    // 📊 Top-level per-user docs used for tracking
     match /{subCollection}/{docId} {
       allow read: if isSignedIn() && request.auth.uid == docId &&
         subCollection in ['confessionalSessions', 'journalEntries', 'dailyChallenges'];
     }
 
-    // 📓 Journal entries
+    // 📓 Journal entries: allow owner to read/write (covers runQuery)
     match /journalEntries/{userId}/entries/{entryId} {
       allow read, write: if isSignedIn() && request.auth.uid == userId;
     }
 
-    // 🕊️ Religion chat history
+    // 🕊️ Religion chat history (collection pattern variant)
     match /religionChats/{userId}/messages/{messageId} {
-      allow read, write: if isSubscribed(userId);
+      allow read: if isOwner(userId);
+      allow write: if isSubscribed(userId);
     }
 
     // 🕊️ Temporary religion chat history
@@ -146,17 +154,6 @@ service cloud.firestore {
     match /leaderboards/{docId} {
       allow read: if true;
     }
-
-    // Extended profile (subcollection)
-    match /users/{userId}/profileExtended/{docId} {
-      allow read, write: if isOwner(userId);
-    }
-
-    // Religion memories (subs only)
-    match /users/{userId}/religionChats/{chatId} {
-      allow read, write: if isSubscribed(userId);
-    }
-
   }
 }
 

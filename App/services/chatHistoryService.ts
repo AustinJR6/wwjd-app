@@ -54,7 +54,6 @@ export async function saveMessage(
       await addDocument(`religionChats/${storedUid}/messages`, payload);
     } catch {}
   } else {
-    console.warn('🔥 Attempting Firestore access:', `tempReligionChat/${storedUid}/messages`);
     console.warn('👤 Using UID:', storedUid);
     await addDocument(`tempReligionChat/${storedUid}/messages`, payload);
   }
@@ -83,7 +82,6 @@ export async function fetchHistory(
       timestamp: d.timestamp,
     }));
   } else {
-    console.warn('🔥 Attempting Firestore access:', `tempReligionChat/${storedUid}/messages`);
     console.warn('👤 Using UID:', storedUid);
     const docs = await runSubcollectionQuery(
       `tempReligionChat/${storedUid}`,
@@ -114,18 +112,9 @@ export async function clearHistory(uid: string): Promise<void> {
 }
 
 export async function clearTempReligionChat(uid: string): Promise<void> {
-  const storedUid = await ensureAuth(uid);
-  if (!storedUid) return;
-  console.warn('🔥 Attempting Firestore access:', `tempReligionChat/${storedUid}/messages`);
-  console.warn('👤 Using UID:', storedUid);
-  const docs = await runSubcollectionQuery(
-    `tempReligionChat/${storedUid}`,
-    'messages',
-  );
-  for (const msg of docs) {
-    await deleteDocument(`tempReligionChat/${storedUid}/messages/${msg.id}`);
-  }
+  return;
 }
+
 
 export async function trimHistory(uid: string, limit: number): Promise<void> {
   const storedUid = await ensureAuth(uid);
@@ -143,3 +132,5 @@ export async function trimHistory(uid: string, limit: number): Promise<void> {
     await deleteDocument(`users/${storedUid}/religionChats/${docs[i].id}`);
   }
 }
+
+

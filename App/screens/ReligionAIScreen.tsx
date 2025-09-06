@@ -24,7 +24,7 @@ import { enqueueMemoryExtraction } from '@/services/chatService';
 import { useSettingsStore } from '@/state/settingsStore';
 import { showToast, toast } from '@/utils/toast';
 import { useAuth } from '@/hooks/useAuth';
-import { fetchHistory, clearTempReligionChat, ChatMessage } from '@/services/chatHistoryService';
+import { fetchHistory, ChatMessage } from '@/services/chatHistoryService';
 import { useSubscriptionStatus } from '@/hooks/useSubscriptionStatus';
 import { showInterstitialAd } from '@/services/adService';
 import { getPersonaPrompt } from '@/utils/religionPersona';
@@ -103,7 +103,7 @@ export default function ReligionAIScreen() {
       const uidVal = await ensureAuth(firebaseUid);
       try {
         await refreshSubscription();
-        const hist = await fetchHistory(uidVal, false);
+        const hist = await fetchHistory(uidVal, true);
         setMessages(hist);
         hist.forEach((m) => sessionCtx.append({ role: m.role, content: m.text }));
       } catch (err) {
@@ -119,25 +119,10 @@ export default function ReligionAIScreen() {
 
     loadHistory();
 
-    const sub = AppState.addEventListener('change', (state) => {
-      if (state !== 'active') {
-        const clear = async () => {
-          const uidVal = await ensureAuth(await getCurrentUserId());
-          await clearTempReligionChat(uidVal);
-          await AsyncStorage.setItem('tempReligionChatCleared', 'true');
-        };
-        clear();
-      }
-    });
+    const sub = AppState.addEventListener('change', () => {});
 
     return () => {
       sub.remove();
-      const cleanup = async () => {
-        const uidVal = await ensureAuth(await getCurrentUserId());
-        await clearTempReligionChat(uidVal);
-        await AsyncStorage.setItem('tempReligionChatCleared', 'true');
-      };
-      cleanup();
     };
   }, [authReady, uid, user]);
 
@@ -264,7 +249,6 @@ export default function ReligionAIScreen() {
           toast('Conversation cleared');
           const uidVal = await ensureAuth(await getCurrentUserId());
           try {
-            await clearTempReligionChat(uidVal);
             await AsyncStorage.setItem('tempReligionChatCleared', 'true');
             setShowMemoryClearedBanner(true);
           } catch (err) {
@@ -407,4 +391,6 @@ function SmallClearButton({ onPress, disabled }: { onPress: () => void; disabled
     </View>
   );
 }
+
+
 
