@@ -35,6 +35,7 @@ import { saveReligionMemory } from '@/lib/religionMemoryStore';
 import { formatExtendedProfileForContext } from '@/lib/formatExtendedProfileForContext';
 import type { ReligionMemory } from '@/types/religion';
 import { useSessionContext } from '@/hooks/useSessionContext';
+import { runQueryREST, parentForUserDoc, parentFor } from '@/lib/firestoreRest';
 
 export default function ReligionAIScreen() {
   const theme = useTheme();
@@ -125,6 +126,31 @@ export default function ReligionAIScreen() {
       sub.remove();
     };
   }, [authReady, uid, user]);
+
+  // Smoke Firestore REST queries to surface 403 diagnostics
+  useEffect(() => {
+    if (!uid) return;
+    (async () => {
+      try {
+        const rows = await runQueryREST({
+          parent: parentForUserDoc(uid),
+          structuredQuery: { from: [{ collectionId: 'religionChats' }], limit: 1 },
+        });
+        console.log('[Smoke] religionChats rows:', Array.isArray(rows) ? rows.length : 'n/a');
+      } catch (e: any) {
+        console.warn('[Smoke] religionChats error:', e?.response?.status, e?.response?.data || e?.message);
+      }
+      try {
+        const rows = await runQueryREST({
+          parent: parentFor(`journalEntries/${uid}`),
+          structuredQuery: { from: [{ collectionId: 'entries' }], limit: 1 },
+        });
+        console.log('[Smoke] journal entries rows:', Array.isArray(rows) ? rows.length : 'n/a');
+      } catch (e: any) {
+        console.warn('[Smoke] journal entries error:', e?.response?.status, e?.response?.data || e?.message);
+      }
+    })();
+  }, [uid]);
 
   const handleAsk = async () => {
     if (!question.trim()) {

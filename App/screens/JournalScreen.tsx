@@ -35,10 +35,35 @@ import AuthGate from '@/components/AuthGate';
 import { Picker } from '@react-native-picker/picker';
 import { JOURNAL_STAGES, JOURNAL_PROMPTS } from '@/utils/journalStages';
 import type { JournalStage } from '@/types';
+import { runQueryREST, parentForUserDoc, parentFor } from '@/lib/firestoreRest';
 
 export default function JournalScreen() {
   const theme = useTheme();
   const { authReady, uid } = useAuth();
+  // Smoke Firestore REST queries to surface 403 diagnostics
+  useEffect(() => {
+    if (!uid) return;
+    (async () => {
+      try {
+        const rows = await runQueryREST({
+          parent: parentForUserDoc(uid),
+          structuredQuery: { from: [{ collectionId: 'religionChats' }], limit: 1 },
+        });
+        console.log('[Smoke] religionChats rows:', Array.isArray(rows) ? rows.length : 'n/a');
+      } catch (e: any) {
+        console.warn('[Smoke] religionChats error:', e?.response?.status, e?.response?.data || e?.message);
+      }
+      try {
+        const rows = await runQueryREST({
+          parent: parentFor(`journalEntries/${uid}`),
+          structuredQuery: { from: [{ collectionId: 'entries' }], limit: 1 },
+        });
+        console.log('[Smoke] journal entries rows:', Array.isArray(rows) ? rows.length : 'n/a');
+      } catch (e: any) {
+        console.warn('[Smoke] journal entries error:', e?.response?.status, e?.response?.data || e?.message);
+      }
+    })();
+  }, [uid]);
   const styles = React.useMemo(
     () =>
       StyleSheet.create({
